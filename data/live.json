@@ -1,7 +1,7 @@
 {
  "status": "ok",
  "error": null,
- "last_attempt": "2026-10-23T00:04:53-05:00",
+ "last_attempt": "2026-10-23T03:00:50-05:00",
  "channel": {
   "id": "UCiWmHV3TxMOpCgONfbiBq-g",
   "handle": "@zapwisehq",
@@ -18,7 +18,7 @@
    "url": "https://www.youtube.com/shorts/x0e_JagO_2s",
    "published": "2026-10-22T19:03:33-05:00",
    "date": "Oct 22",
-   "views": 17,
+   "views": 68,
    "dur": 22,
    "page": "/shorts/wabi-2-group-trip-planner.html",
    "thumb": "/img/shorts/x0e_JagO_2s.jpg"
@@ -30,7 +30,7 @@
    "url": "https://www.youtube.com/shorts/uRrHIpszJTc",
    "published": "2026-10-21T23:36:10-05:00",
    "date": "Oct 21",
-   "views": 212,
+   "views": 218,
    "dur": 21,
    "page": "/shorts/chatgpt-scheduled-tasks.html",
    "thumb": "/img/shorts/uRrHIpszJTc.jpg"
@@ -42,7 +42,7 @@
    "url": "https://www.youtube.com/shorts/XFx7_B101fA",
    "published": "2026-10-21T22:40:43-05:00",
    "date": "Oct 21",
-   "views": 195,
+   "views": 208,
    "dur": 19,
    "page": "/shorts/tesseract-free-ai-slide-deck-maker.html",
    "thumb": "/img/shorts/XFx7_B101fA.jpg"
@@ -66,7 +66,7 @@
    "url": "https://www.youtube.com/shorts/A4qBL8BJmn4",
    "published": "2026-10-18T19:02:18-05:00",
    "date": "Oct 18",
-   "views": 171,
+   "views": 172,
    "dur": 43,
    "page": "/shorts/meta-muse-spark-open-free-weights.html",
    "thumb": "/img/shorts/A4qBL8BJmn4.jpg"
@@ -162,5 +162,5 @@
   "note": "YouTube Analytics for @Zapwisehq. Age and gender cover signed-in viewers only. Analytics lag YouTube's live counts by 1–3 days."
  },
  "range": "Oct 15 – Oct 20, 2026",
- "updated_at": "2026-10-23T00:04:53-05:00"
+ "updated_at": "2026-10-23T03:00:50-05:00"
 }
