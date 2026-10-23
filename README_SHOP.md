@@ -1,6 +1,6 @@
 # Zapwise site, `shop` branch (not pushed)
 
-Mobile-first static site: inline CSS, no JavaScript, no external fonts or requests. Brand palette: #070814 / #f4efe4 / #f0a202 / #5ce1e6.
+Mobile-first static site: inline CSS, ~1.5 KB inline vanilla JS (progressive: typed-prompt demo, scroll reveal, card glow; everything works with JS off), no external fonts, CDNs or requests. Hi-tech redesign Oct 22, 2026: grid/glow background, glass cards, terminal sample prompt, ticker + Latest Shorts (real titles from the YouTube API), sticky mobile CTA (utm_medium=sticky_bar), prefers-reduced-motion respected. Brand palette: #070814 / #f4efe4 / #f0a202 / #5ce1e6.
 
 ## Before pushing
 1. List the products on Payhip (see /workspace/zapwise/products/*/listing.md).
@@ -12,7 +12,7 @@ Mobile-first static site: inline CSS, no JavaScript, no external fonts or reques
 The Toolkit link (https://payhip.com/b/4WuXf) is already real.
 
 ## Link tagging
-Every Payhip button has `?utm_source=website&utm_medium=<where>&utm_campaign=shop`, where `<where>` is one of hero_free, card, inside_free or product_page.
+Every Payhip button has `?utm_source=website&utm_medium=<where>&utm_campaign=shop`, where `<where>` is one of hero_free, card, inside_free, product_page or sticky_bar.
 
 ## Files
 - `index.html`: hero + free CTA, shop cards (bundle marked "Best value"), real sample prompts, FAQ, footer.
@@ -21,4 +21,6 @@ Every Payhip button has `?utm_source=website&utm_medium=<where>&utm_campaign=sho
 - `sitemap.xml`, `robots.txt`, `404.html`.
 
 ## Regenerating
+Payhip links are now read from payhip_links.json by the generator directly. Refresh the Shorts list (read-only API) with `python3 build_shop.py --refresh-shorts`.
+
 The generator lives outside the repo at /workspace/zapwise/site_tools/build_shop.py. Edit `PRODUCTS` there and re-run it, then run swap_links.py again.
