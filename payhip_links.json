@@ -1,8 +1,8 @@
 {
   "_note": "Paste each real Payhip product URL (e.g. https://payhip.com/b/XXXXX) and run: python3 swap_links.py",
-  "PAYHIP_LINK_free_prompts": "",
-  "PAYHIP_LINK_prompt_pack": "",
-  "PAYHIP_LINK_cheat_sheet": "",
-  "PAYHIP_LINK_spreadsheet_kit": "",
-  "PAYHIP_LINK_bundle": ""
+  "PAYHIP_LINK_free_prompts": "https://payhip.com/b/62aMn",
+  "PAYHIP_LINK_prompt_pack": "https://payhip.com/b/9jBNp",
+  "PAYHIP_LINK_cheat_sheet": "https://payhip.com/b/UF0cX",
+  "PAYHIP_LINK_spreadsheet_kit": "https://payhip.com/b/RWuND",
+  "PAYHIP_LINK_bundle": "https://payhip.com/b/I1xZS"
 }
