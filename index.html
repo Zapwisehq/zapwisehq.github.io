@@ -1,129 +1,59 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Zapwise | Free AI tools that actually save you time</title>
-<meta name="description" content="Zapwise AI Toolkit: a 19-page PDF with 50 free AI tools and 35 copy-paste prompts for making faceless YouTube videos. $9, instant download.">
-<meta name="theme-color" content="#070814">
-<link rel="icon" href="favicon.ico" sizes="any">
-<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<meta property="og:type" content="website">
-<meta property="og:site_name" content="Zapwise">
-<meta property="og:title" content="Zapwise AI Toolkit: 50 free AI tools + 35 copy-paste prompts">
-<meta property="og:description" content="The 19-page PDF behind @Zapwisehq. Make faceless YouTube videos with free AI tools. $9.">
-<meta property="og:image" content="https://zapwisehq.github.io/og.jpg">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
-<meta name="twitter:card" content="summary_large_image">
-<style>
-:root{--void:#070814;--cream:#f4efe4;--amber:#f0a202;--cyan:#5ce1e6;--panel:#0e1024;--line:rgba(92,225,230,.22);--muted:rgba(244,239,228,.72)}
-*{box-sizing:border-box;margin:0;padding:0}
-html{-webkit-text-size-adjust:100%}
-body{background:var(--void);color:var(--cream);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;min-height:100vh}
-a{color:var(--cyan)}
-.wrap{max-width:1040px;margin:0 auto;padding:0 20px}
-header{border-bottom:1px solid var(--line)}
-.nav{display:flex;align-items:center;justify-content:space-between;height:60px}
-.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;letter-spacing:.5px;color:var(--cream);text-decoration:none}
-.logo img{width:32px;height:32px;border-radius:50%;box-shadow:0 0 12px rgba(92,225,230,.55)}
-.nav a.yt{font-size:14px;text-decoration:none;font-weight:600}
-.hero{padding:64px 0 56px;text-align:center;background:radial-gradient(ellipse 70% 60% at 50% 0,rgba(92,225,230,.16),transparent 70%),radial-gradient(ellipse 50% 40% at 50% 100%,rgba(240,162,2,.10),transparent 70%)}
-.kicker{display:inline-block;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--cyan);border:1px solid var(--line);border-radius:999px;padding:5px 14px;margin-bottom:22px}
-h1{font-size:clamp(46px,13vw,96px);line-height:1;font-weight:900;letter-spacing:-1px;color:var(--amber);text-shadow:0 0 28px rgba(240,162,2,.45)}
-.tag{font-size:clamp(20px,5.2vw,30px);font-weight:700;line-height:1.3;margin:18px auto 12px;max-width:620px}
-.tag span{color:var(--cyan);text-shadow:0 0 18px rgba(92,225,230,.5)}
-.sub{color:var(--muted);max-width:560px;margin:0 auto 30px}
-.btn{display:inline-block;background:var(--amber);color:var(--void);font-weight:800;font-size:18px;text-decoration:none;padding:15px 30px;border-radius:12px;box-shadow:0 0 0 1px rgba(240,162,2,.6),0 0 26px rgba(240,162,2,.45);transition:transform .15s,box-shadow .15s}
-.btn:hover,.btn:focus-visible{transform:translateY(-2px);box-shadow:0 0 0 1px var(--amber),0 0 38px rgba(240,162,2,.7)}
-.btn.ghost{background:transparent;color:var(--cyan);box-shadow:0 0 0 1px var(--cyan),0 0 20px rgba(92,225,230,.25);font-size:16px;padding:13px 24px}
-.ctas{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
-section.product{padding:56px 0}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:22px;display:grid;gap:26px;box-shadow:0 0 40px rgba(92,225,230,.07)}
-.cover{width:100%;height:auto;border-radius:12px;border:1px solid rgba(240,162,2,.35);display:block}
-h2{font-size:clamp(26px,6.5vw,36px);line-height:1.15;font-weight:850}
-h2 em{font-style:normal;color:var(--amber)}
-.meta{color:var(--cyan);font-weight:700;font-size:14px;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px}
-.desc{color:var(--muted);margin:12px 0 18px}
-ul.list{list-style:none;display:grid;gap:10px;margin-bottom:24px}
-ul.list li{position:relative;padding-left:30px}
-ul.list li::before{content:"";position:absolute;left:4px;top:.55em;width:12px;height:12px;border-radius:3px;background:var(--cyan);box-shadow:0 0 10px var(--cyan)}
-.buy{display:flex;flex-wrap:wrap;align-items:center;gap:16px}
-.price{font-size:40px;font-weight:900;color:var(--cream)}
-.price small{font-size:15px;font-weight:600;color:var(--muted);margin-left:6px}
-.fine{font-size:13px;color:var(--muted);margin-top:16px}
-.who{margin-top:44px;display:grid;gap:14px}
-.pill{background:rgba(240,162,2,.06);border:1px solid rgba(240,162,2,.25);border-radius:14px;padding:16px 18px}
-.pill b{color:var(--amber)}
-footer{border-top:1px solid var(--line);padding:28px 0 36px;font-size:14px;color:var(--muted)}
-.foot{display:flex;flex-wrap:wrap;gap:14px 26px;align-items:center;justify-content:space-between}
-.foot nav{display:flex;flex-wrap:wrap;gap:18px}
-.foot a{text-decoration:none;font-weight:600}
-@media(min-width:820px){
-.hero{padding:96px 0 84px}
-.card{grid-template-columns:1.05fr 1fr;align-items:center;padding:36px;gap:40px}
-.who{grid-template-columns:repeat(3,1fr)}
-}
-@media(prefers-reduced-motion:reduce){.btn{transition:none}}
-</style>
-</head>
-<body>
-<header><div class="wrap nav">
-<a class="logo" href="#top"><img src="favicon-32.png" width="32" height="32" alt="">Zapwise</a>
-<a class="yt" href="https://www.youtube.com/@Zapwisehq" rel="noopener">YouTube &rarr;</a>
-</div></header>
-
-<main id="top">
-<section class="hero"><div class="wrap">
-<div class="kicker">AI tools &middot; daily YouTube Shorts</div>
-<h1>Zapwise</h1>
-<p class="tag">Free AI tools that <span>actually save you time</span>.</p>
-<p class="sub">Short, no-fluff breakdowns of the newest AI tools and updates, plus the toolkit we use to make faceless YouTube videos with free tools.</p>
-<div class="ctas">
-<a class="btn" href="#toolkit">Get the AI Toolkit</a>
-<a class="btn ghost" href="https://www.youtube.com/@Zapwisehq" rel="noopener">Watch on YouTube</a>
-</div>
-</div></section>
-
-<section class="product" id="toolkit"><div class="wrap">
-<div class="card">
-<img class="cover" src="cover.jpg" width="640" height="360" alt="Zapwise AI Toolkit cover: 50 free AI tools + 35 copy-paste prompts" loading="lazy" decoding="async">
-<div>
-<div class="meta">19-page PDF &middot; instant download</div>
-<h2>Zapwise AI Toolkit: <em>50 free AI tools</em> + 35 copy-paste prompts</h2>
-<p class="desc">The toolkit behind @Zapwisehq. Every tool has a free plan, free tier, free trial or open-source version, sorted by job, so you can make faceless YouTube videos without showing your face, recording your voice or spending money on software.</p>
-<ul class="list">
-<li>50 free AI tools sorted by job: scripts, trends, voiceover, thumbnails, AI video, editing, music and scheduling</li>
-<li>35 copy-paste prompts for scripts, hooks, titles, descriptions, thumbnails and repurposing</li>
-<li>A 7-step faceless video workflow, from idea to scheduled</li>
-<li>Retention rules that keep viewers watching</li>
-<li>A printable posting checklist</li>
-<li>A 7-day starter plan</li>
-<li>Copyright and disclosure basics to keep your channel safe</li>
-</ul>
-<div class="buy">
-<div class="price">$9<small>USD &middot; PDF</small></div>
-<a class="btn" href="https://payhip.com/b/4WuXf" rel="noopener">Buy the Toolkit &rarr;</a>
-</div>
-<p class="fine">Checkout and delivery by Payhip. Free plans are set by each tool and can change, so check each tool's pricing page. No earnings are guaranteed.</p>
-</div>
-</div>
-
-<div class="who">
-<div class="pill"><b>Beginners</b> who want to start a faceless channel and don't know which AI tools to use.</div>
-<div class="pill"><b>Side-hustlers &amp; students</b> who want to make AI Shorts on a $0 software budget.</div>
-<div class="pill"><b>Small creators</b> who want a repeatable workflow and prompts that save time.</div>
-</div>
-</div></section>
-</main>
-
-<footer><div class="wrap foot">
-<span>&copy; 2026 Zapwise</span>
-<nav>
-<a href="https://www.youtube.com/@Zapwisehq" rel="noopener">YouTube @Zapwisehq</a>
-<a href="mailto:zapwisehq@gmail.com">zapwisehq@gmail.com</a>
-</nav>
-</div></footer>
-</body>
-</html>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Zapwise: AI prompts and guides that save time at work</title><meta name="description" content="Copy-paste AI prompts, cheat sheets and spreadsheet recipes for busy working adults. Start with 10 free prompts for work."><link rel="canonical" href="https://zapwisehq.github.io/">
+<meta property="og:type" content="website"><meta property="og:site_name" content="Zapwise"><meta property="og:title" content="Zapwise: AI prompts and guides that save time at work"><meta property="og:description" content="Copy-paste AI prompts, cheat sheets and spreadsheet recipes for busy working adults. Start with 10 free prompts for work."><meta property="og:url" content="https://zapwisehq.github.io/"><meta property="og:image" content="https://zapwisehq.github.io/img/og-bundle.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image"><meta name="theme-color" content="#070814">
+<link rel="icon" href="/favicon.ico"><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<style>*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}body{margin:0;background:#070814;color:#f4efe4;font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+a{color:#5ce1e6}img{max-width:100%;height:auto;display:block}.w{max-width:960px;margin:0 auto;padding:0 18px}
+header{padding:14px 0;border-bottom:1px solid #1d1f33}.logo{font-weight:800;letter-spacing:.18em;color:#f0a202;text-decoration:none}
+nav a{color:#f4efe4;opacity:.8;text-decoration:none;margin-left:14px;font-size:14px}.top{display:flex;justify-content:space-between;align-items:center}
+.hero{padding:34px 0 10px}h1{font-size:clamp(30px,8vw,52px);line-height:1.08;margin:0 0 12px}h1 em{font-style:normal;color:#5ce1e6}
+.lead{font-size:18px;opacity:.9;max-width:640px}h2{font-size:26px;margin:44px 0 14px}h3{margin:0 0 6px;font-size:19px}
+.free{background:linear-gradient(135deg,#1a1405,#0d1b24);border:2px solid #f0a202;border-radius:16px;padding:18px;margin:22px 0;display:grid;gap:14px}
+.btn{display:inline-block;background:#f0a202;color:#070814;font-weight:800;text-decoration:none;padding:14px 20px;border-radius:12px;text-align:center;min-height:48px}
+.btn.alt{background:transparent;color:#f4efe4;border:1.5px solid #5ce1e6}.small{font-size:13px;opacity:.7}
+.grid{display:grid;gap:16px}.card{background:#10122a;border:1px solid #23264a;border-radius:16px;overflow:hidden;display:flex;flex-direction:column}
+.card .b{padding:16px;display:flex;flex-direction:column;gap:8px;flex:1}.card.best{border:2px solid #f0a202}.badge{display:inline-block;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#070814;background:#5ce1e6;border-radius:99px;padding:3px 10px;width:max-content}
+.best .badge{background:#f0a202}.price{font-size:24px;font-weight:800;color:#f0a202}.price s{font-size:16px;color:#f4efe4;opacity:.55;font-weight:400}
+.card ul{margin:0;padding-left:18px;font-size:14px;opacity:.9}.card .btn{margin-top:auto}
+.pr{background:#0b0d20;border-left:4px solid #5ce1e6;border-radius:10px;padding:14px;font:14px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;word-break:break-word}
+.ph{color:#f0a202;font-weight:700}.lbl{font-size:13px;color:#f0a202;font-weight:700;margin:16px 0 6px}
+details{background:#10122a;border:1px solid #23264a;border-radius:12px;padding:14px 16px;margin:10px 0}summary{cursor:pointer;font-weight:700}
+footer{margin-top:50px;padding:26px 0 40px;border-top:1px solid #1d1f33;font-size:14px;opacity:.85}
+@media(min-width:700px){.grid{grid-template-columns:1fr 1fr}.free{grid-template-columns:1.4fr 1fr;align-items:center}.hero{padding-top:56px}}
+@media(min-width:960px){.grid.three{grid-template-columns:1fr 1fr 1fr}}</style><script type="application/ld+json">{"@context": "https://schema.org", "@type": "Organization", "name": "Zapwise", "url": "https://zapwisehq.github.io", "logo": "https://zapwisehq.github.io/apple-touch-icon.png", "email": "zapwisehq@gmail.com", "sameAs": ["https://www.youtube.com/@Zapwisehq"]}</script></head><body>
+<header><div class="w top"><a class="logo" href="/">⚡ ZAPWISE</a><nav><a href="/#free">Free</a><a href="/#shop">Shop</a><a href="/#faq">FAQ</a></nav></div></header><main class="w"><section class="hero"><h1>Get your workday done faster <em>with AI.</em></h1>
+<p class="lead">Copy-paste prompts and plain-English guides for emails, meetings, reports and spreadsheets. They work with the free versions of ChatGPT, Gemini, Copilot and Claude.</p>
+<div class="free" id="free"><div><span class="badge">Free</span><h3 style="margin-top:8px">10 AI Prompts for Work</h3><p style="margin:0">Write emails, summarize meetings, draft reports and plan your day. A 5-page PDF you can use on your phone. Just enter your email.</p></div>
+<a class="btn" href="PAYHIP_LINK_free_prompts?utm_source=website&utm_medium=hero_free&utm_campaign=shop">Get the 10 free prompts</a></div></section>
+<section id="shop"><h2>Shop</h2><div class="grid"><article class="card best" id="bundle"><img src="/img/bundle.jpg" width="640" height="360" alt="Zapwise Everything Bundle cover" loading="lazy"><div class="b">
+<span class="badge">Best value</span><h3>Zapwise Everything Bundle</h3><div class="price">$19 <s>$30</s></div><p style="margin:0">All 4 paid PDFs: Prompt Pack, Cheat Sheet, Spreadsheet Kit and AI Toolkit. $30 if bought separately.</p><ul><li>AI Work Prompt Pack ($9)</li><li>ChatGPT + Gemini Workday Cheat Sheet ($5)</li><li>AI Spreadsheet Kit ($7)</li><li>Zapwise AI Toolkit ($9)</li><li>$19 total: save $11 vs buying separately</li></ul>
+<p class="small" style="margin:0">PDF · 69 pages total · <a href="/p/bundle.html">details</a></p>
+<a class="btn" href="PAYHIP_LINK_bundle?utm_source=website&utm_medium=card&utm_campaign=shop">Get the bundle</a></div></article><article class="card" id="prompt_pack"><img src="/img/prompt_pack.jpg" width="640" height="360" alt="AI Work Prompt Pack cover" loading="lazy"><div class="b">
+<span class="badge">100 prompts</span><h3>AI Work Prompt Pack</h3><div class="price">$9</div><p style="margin:0">100 copy-paste prompts for emails, tough messages, meetings, reports, spreadsheets, slides, planning and career.</p><ul><li>18 email + 8 tough-message prompts</li><li>11 meeting and 13 report prompts</li><li>9 spreadsheet + 6 presentation prompts</li><li>9 planning, 7 career, 6 learning, 6 customer prompts</li><li>7 power-ups that improve any answer</li></ul>
+<p class="small" style="margin:0">PDF · 24 pages · <a href="/p/prompt-pack.html">details</a></p>
+<a class="btn" href="PAYHIP_LINK_prompt_pack?utm_source=website&utm_medium=card&utm_campaign=shop">Get it</a></div></article><article class="card" id="cheat_sheet"><img src="/img/cheat_sheet.jpg" width="640" height="360" alt="ChatGPT + Gemini Workday Cheat Sheet cover" loading="lazy"><div class="b">
+<span class="badge">Plans + privacy</span><h3>ChatGPT + Gemini Workday Cheat Sheet</h3><div class="price">$5</div><p style="margin:0">Which ChatGPT or Gemini plan you actually need, where the privacy settings are for work, and a 10-minute daily AI routine.</p><ul><li>Plans and US prices side by side (checked Oct 22, 2026)</li><li>Where to find memory, history and data settings</li><li>A privacy checklist before you paste work data</li><li>Which tool to use for which job</li><li>10-minute routine + 20 prompts</li></ul>
+<p class="small" style="margin:0">PDF · 11 pages · <a href="/p/cheat-sheet.html">details</a></p>
+<a class="btn" href="PAYHIP_LINK_cheat_sheet?utm_source=website&utm_medium=card&utm_campaign=shop">Get it</a></div></article><article class="card" id="spreadsheet_kit"><img src="/img/spreadsheet_kit.jpg" width="640" height="360" alt="AI Spreadsheet Kit for Excel &amp; Google Sheets cover" loading="lazy"><div class="b">
+<span class="badge">25 recipes</span><h3>AI Spreadsheet Kit for Excel &amp; Google Sheets</h3><div class="price">$7</div><p style="margin:0">25 formula recipes and 25 AI prompts for Excel and Google Sheets, plus an error decoder and 3 trackers.</p><ul><li>25 formula recipes (XLOOKUP, FILTER, SUMIFS and more)</li><li>Notes on what works in Excel vs Google Sheets</li><li>25 AI prompts for formulas, cleanup and analysis</li><li>Error decoder (#N/A, #REF!, #VALUE! and more)</li><li>3 ready-to-build trackers</li></ul>
+<p class="small" style="margin:0">PDF · 15 pages · <a href="/p/spreadsheet-kit.html">details</a></p>
+<a class="btn" href="PAYHIP_LINK_spreadsheet_kit?utm_source=website&utm_medium=card&utm_campaign=shop">Get it</a></div></article><article class="card" id="toolkit"><img src="/img/toolkit.jpg" width="640" height="360" alt="Zapwise AI Toolkit cover" loading="lazy"><div class="b">
+<span class="badge">For creators</span><h3>Zapwise AI Toolkit</h3><div class="price">$9</div><p style="margin:0">50 AI tools with free options + 35 copy-paste prompts for making faceless YouTube videos.</p><ul><li>50 AI tools sorted by job: scripts, voiceover, thumbnails, AI video, editing, music, scheduling</li><li>35 copy-paste prompts</li><li>Every tool has a free plan, tier, trial or open-source version</li></ul>
+<p class="small" style="margin:0">PDF · 19 pages · <a href="/p/toolkit.html">details</a></p>
+<a class="btn" href="https://payhip.com/b/4WuXf?utm_source=website&utm_medium=card&utm_campaign=shop">Get it</a></div></article></div></section>
+<section id="inside"><h2>What's inside: real samples</h2><p>These are copied straight from the products. Fill in the <span class="ph">[BRACKETS]</span> and paste.</p>
+<div class="lbl">AI Work Prompt Pack · Emails</div><div class="pr">Turn these notes into a clear, friendly work email to <span class=ph>[RECIPIENT / ROLE]</span>. Keep it under 150 words, put the main ask in the first two lines, and end with one specific next step.
+Notes: <span class=ph>[PASTE BULLETS]</span></div><div class="lbl">AI Work Prompt Pack · Meetings</div><div class="pr">Turn these raw meeting notes into: (1) a 3-sentence summary, (2) decisions made, (3) action items as a table with owner and due date, (4) open questions.
+<span class=ph>[PASTE NOTES OR TRANSCRIPT]</span></div><div class="lbl">AI Spreadsheet Kit · Recipe</div><div class="pr">=XLOOKUP(A2, Products!A:A, Products!C:C, &quot;Not found&quot;)</div><div class="lbl">ChatGPT + Gemini Cheat Sheet · Settings</div><div class="pr">ChatGPT: Settings → Personalization → Memory</div>
+<p style="margin-top:18px"><a class="btn alt" href="PAYHIP_LINK_free_prompts?utm_source=website&utm_medium=inside_free&utm_campaign=shop">Try 10 prompts free</a></p></section>
+<section id="faq"><h2>FAQ</h2>
+<details><summary>What do I get?</summary><p>A PDF download. After checkout, Payhip takes you to your download page and emails you the link. It's instant: nothing ships.</p></details>
+<details><summary>Does it work on my phone?</summary><p>Yes. The PDFs are designed for phone screens. Copy a prompt, paste it into your AI app, and fill in the brackets.</p></details>
+<details><summary>Do I need a paid AI subscription?</summary><p>No. Everything works with the free versions of ChatGPT, Gemini, Copilot or Claude. The Cheat Sheet explains what the paid plans add, so you can decide.</p></details>
+<details><summary>Is the free PDF really free?</summary><p>Yes. Enter your email on Payhip and download it. No card needed.</p></details>
+<details><summary>Is it safe to use AI with work data?</summary><p>Follow your employer's AI policy. Don't paste confidential or customer data into tools your company hasn't approved. Each work guide includes work-safety tips, and the Cheat Sheet shows where the privacy settings are.</p></details>
+<details><summary>Are prices and plan details up to date?</summary><p>AI plans change often. Our guides are dated (latest check: Oct 22, 2026) and tell you where to double-check.</p></details>
+<details><summary>Questions?</summary><p>Email <a href="mailto:zapwisehq@gmail.com">zapwisehq@gmail.com</a>.</p></details></section></main><footer><div class="w"><p><b>Zapwise</b> · one AI tool a day in 60 seconds.</p>
+<p>YouTube: <a href="https://www.youtube.com/@Zapwisehq">@Zapwisehq</a> · Email: <a href="mailto:zapwisehq@gmail.com">zapwisehq@gmail.com</a></p>
+<p class="small">Digital PDFs sold and delivered through Payhip. Not affiliated with OpenAI, Google, Microsoft or Anthropic. AI plans and prices change; our guides are dated.</p></div></footer></body></html>
