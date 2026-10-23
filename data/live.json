@@ -1,16 +1,28 @@
 {
  "status": "ok",
  "error": null,
- "last_attempt": "2026-10-23T15:10:04-05:00",
+ "last_attempt": "2026-10-23T18:08:42-05:00",
  "channel": {
   "id": "UCiWmHV3TxMOpCgONfbiBq-g",
   "handle": "@zapwisehq",
   "views": 3009,
-  "videos": 11,
+  "videos": 12,
   "subscribers": 5
  },
- "shorts_published": 10,
+ "shorts_published": 11,
  "latest": [
+  {
+   "id": "QwoPPVLrPzM",
+   "title": "ChatGPT Can Now Lock Your Chats (FREE) 🔒",
+   "clean": "ChatGPT Can Now Lock Your Chats (FREE) 🔒",
+   "url": "https://www.youtube.com/shorts/QwoPPVLrPzM",
+   "published": "2026-10-23T16:03:59-05:00",
+   "date": "Oct 23",
+   "views": 0,
+   "dur": 19,
+   "page": "/shorts/chatgpt-can-now-lock-your-chats-free-qwop.html",
+   "thumb": "/img/shorts/QwoPPVLrPzM.jpg"
+  },
   {
    "id": "x0e_JagO_2s",
    "title": "Wabi 2.0: Free AI That Plans Your Group Trip 💬",
@@ -18,7 +30,7 @@
    "url": "https://www.youtube.com/shorts/x0e_JagO_2s",
    "published": "2026-10-22T19:03:33-05:00",
    "date": "Oct 22",
-   "views": 111,
+   "views": 110,
    "dur": 22,
    "page": "/shorts/wabi-2-group-trip-planner.html",
    "thumb": "/img/shorts/x0e_JagO_2s.jpg"
@@ -30,7 +42,7 @@
    "url": "https://www.youtube.com/shorts/uRrHIpszJTc",
    "published": "2026-10-21T23:36:10-05:00",
    "date": "Oct 21",
-   "views": 228,
+   "views": 224,
    "dur": 21,
    "page": "/shorts/chatgpt-scheduled-tasks.html",
    "thumb": "/img/shorts/uRrHIpszJTc.jpg"
@@ -42,7 +54,7 @@
    "url": "https://www.youtube.com/shorts/XFx7_B101fA",
    "published": "2026-10-21T22:40:43-05:00",
    "date": "Oct 21",
-   "views": 220,
+   "views": 228,
    "dur": 19,
    "page": "/shorts/tesseract-free-ai-slide-deck-maker.html",
    "thumb": "/img/shorts/XFx7_B101fA.jpg"
@@ -78,7 +90,7 @@
    "url": "https://www.youtube.com/shorts/uah9glH4_Zs",
    "published": "2026-10-17T20:02:30-05:00",
    "date": "Oct 17",
-   "views": 324,
+   "views": 325,
    "dur": 22,
    "page": "/shorts/chatgpt-voice-new-voices.html",
    "thumb": "/img/shorts/uah9glH4_Zs.jpg"
@@ -102,7 +114,7 @@
    "url": "https://www.youtube.com/shorts/57Vskzw7RII",
    "published": "2026-10-16T20:02:32-05:00",
    "date": "Oct 16",
-   "views": 232,
+   "views": 234,
    "dur": 25,
    "page": "/shorts/openui-generative-ui.html",
    "thumb": "/img/shorts/57Vskzw7RII.jpg"
@@ -162,5 +174,5 @@
   "note": "YouTube Analytics for @Zapwisehq. Age and gender cover signed-in viewers only. Analytics lag YouTube's live counts by 1–3 days."
  },
  "range": "Oct 15 – Oct 21, 2026",
- "updated_at": "2026-10-23T15:10:04-05:00"
+ "updated_at": "2026-10-23T18:08:42-05:00"
 }
