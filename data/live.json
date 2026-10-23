@@ -174,5 +174,13 @@
   "note": "YouTube Analytics for @Zapwisehq. Age and gender cover signed-in viewers only. Analytics lag YouTube's live counts by 1–3 days."
  },
  "range": "Oct 15 – Oct 21, 2026",
- "updated_at": "2026-10-23T18:08:42-05:00"
+ "updated_at": "2026-10-23T18:08:42-05:00",
+ "shop": {
+  "paid_sales": 0,
+  "free_downloads": 0,
+  "revenue": 0.0,
+  "currency": "USD",
+  "source": "Payhip seller dashboard, all-time totals",
+  "updated_at": "2026-10-23T18:13:19-05:00"
+ }
 }
