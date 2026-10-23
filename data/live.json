@@ -1,11 +1,11 @@
 {
  "status": "ok",
  "error": null,
- "last_attempt": "2026-10-22T22:20:54-05:00",
+ "last_attempt": "2026-10-22T22:24:08-05:00",
  "channel": {
   "id": "UCiWmHV3TxMOpCgONfbiBq-g",
   "handle": "@zapwisehq",
-  "views": 2596,
+  "views": 2830,
   "videos": 11,
   "subscribers": 4
  },
@@ -152,5 +152,5 @@
   "note": "YouTube Analytics for @Zapwisehq. Age and gender cover signed-in viewers only. Analytics lag YouTube's live counts by 1–3 days."
  },
  "range": "Oct 15 – Oct 20, 2026",
- "updated_at": "2026-10-22T22:20:54-05:00"
+ "updated_at": "2026-10-22T22:24:08-05:00"
 }
