@@ -1,7 +1,7 @@
 {
  "status": "ok",
  "error": null,
- "last_attempt": "2026-10-23T18:08:42-05:00",
+ "last_attempt": "2026-10-23T21:01:20-05:00",
  "channel": {
   "id": "UCiWmHV3TxMOpCgONfbiBq-g",
   "handle": "@zapwisehq",
@@ -18,7 +18,7 @@
    "url": "https://www.youtube.com/shorts/QwoPPVLrPzM",
    "published": "2026-10-23T16:03:59-05:00",
    "date": "Oct 23",
-   "views": 0,
+   "views": 23,
    "dur": 19,
    "page": "/shorts/chatgpt-can-now-lock-your-chats-free-qwop.html",
    "thumb": "/img/shorts/QwoPPVLrPzM.jpg"
@@ -49,12 +49,12 @@
   },
   {
    "id": "XFx7_B101fA",
-   "title": "Hate Making Slides? This Free AI Fixes It 🎯",
-   "clean": "Hate Making Slides? This Free AI Fixes It 🎯",
+   "title": "Hate Making Slides? Tesseract AI Fixes It Free 🎯",
+   "clean": "Hate Making Slides? Tesseract AI Fixes It Free 🎯",
    "url": "https://www.youtube.com/shorts/XFx7_B101fA",
    "published": "2026-10-21T22:40:43-05:00",
    "date": "Oct 21",
-   "views": 228,
+   "views": 231,
    "dur": 19,
    "page": "/shorts/tesseract-free-ai-slide-deck-maker.html",
    "thumb": "/img/shorts/XFx7_B101fA.jpg"
@@ -109,8 +109,8 @@
   },
   {
    "id": "57Vskzw7RII",
-   "title": "Your AI Stops Texting. It Builds Real UI ⚡ #shorts",
-   "clean": "Your AI Stops Texting. It Builds Real UI ⚡",
+   "title": "OpenUI: Your AI Stops Texting, Builds Real UI ⚡",
+   "clean": "OpenUI: Your AI Stops Texting, Builds Real UI ⚡",
    "url": "https://www.youtube.com/shorts/57Vskzw7RII",
    "published": "2026-10-16T20:02:32-05:00",
    "date": "Oct 16",
@@ -121,8 +121,8 @@
   },
   {
    "id": "Slo5yIDNddI",
-   "title": "Blurry Photos? This Free AI Fixes Them 🤯 #shorts",
-   "clean": "Blurry Photos? This Free AI Fixes Them 🤯",
+   "title": "Blurry Photos? Upscayl Fixes Them Free 🤯",
+   "clean": "Blurry Photos? Upscayl Fixes Them Free 🤯",
    "url": "https://www.youtube.com/shorts/Slo5yIDNddI",
    "published": "2026-10-16T12:03:00-05:00",
    "date": "Oct 16",
@@ -174,7 +174,7 @@
   "note": "YouTube Analytics for @Zapwisehq. Age and gender cover signed-in viewers only. Analytics lag YouTube's live counts by 1–3 days."
  },
  "range": "Oct 15 – Oct 21, 2026",
- "updated_at": "2026-10-23T18:08:42-05:00",
+ "updated_at": "2026-10-23T21:01:20-05:00",
  "shop": {
   "paid_sales": 0,
   "free_downloads": 0,
