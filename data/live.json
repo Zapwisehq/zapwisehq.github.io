@@ -1,7 +1,7 @@
 {
  "status": "ok",
  "error": null,
- "last_attempt": "2026-10-24T03:01:22-05:00",
+ "last_attempt": "2026-10-24T06:06:56-05:00",
  "channel": {
   "id": "UCiWmHV3TxMOpCgONfbiBq-g",
   "handle": "@zapwisehq",
@@ -18,7 +18,7 @@
    "url": "https://www.youtube.com/shorts/QwoPPVLrPzM",
    "published": "2026-10-23T16:03:59-05:00",
    "date": "Oct 23",
-   "views": 35,
+   "views": 48,
    "dur": 19,
    "page": "/shorts/chatgpt-can-now-lock-your-chats-free-qwop.html",
    "thumb": "/img/shorts/QwoPPVLrPzM.jpg"
@@ -30,7 +30,7 @@
    "url": "https://www.youtube.com/shorts/x0e_JagO_2s",
    "published": "2026-10-22T19:03:33-05:00",
    "date": "Oct 22",
-   "views": 112,
+   "views": 114,
    "dur": 22,
    "page": "/shorts/wabi-2-group-trip-planner.html",
    "thumb": "/img/shorts/x0e_JagO_2s.jpg"
@@ -114,7 +114,7 @@
    "url": "https://www.youtube.com/shorts/57Vskzw7RII",
    "published": "2026-10-16T20:02:32-05:00",
    "date": "Oct 16",
-   "views": 236,
+   "views": 237,
    "dur": 25,
    "page": "/shorts/openui-generative-ui.html",
    "thumb": "/img/shorts/57Vskzw7RII.jpg"
@@ -164,7 +164,7 @@
   "mobile_pct": 79.5,
   "shorts_feed_pct": 84.8,
   "search_pct": 10.5,
-  "views_in_range": 2561,
+  "views_in_range": 2560,
   "top_countries": [
    "US",
    "PH",
@@ -174,7 +174,7 @@
   "note": "YouTube Analytics for @Zapwisehq. Age and gender cover signed-in viewers only. Analytics lag YouTube's live counts by 1–3 days."
  },
  "range": "Oct 15 – Oct 21, 2026",
- "updated_at": "2026-10-24T03:01:22-05:00",
+ "updated_at": "2026-10-24T06:06:56-05:00",
  "shop": {
   "paid_sales": 0,
   "free_downloads": 0,
