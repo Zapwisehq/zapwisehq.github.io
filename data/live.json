@@ -1,7 +1,7 @@
 {
  "status": "ok",
  "error": null,
- "last_attempt": "2026-10-24T09:06:46-05:00",
+ "last_attempt": "2026-10-24T12:02:58-05:00",
  "channel": {
   "id": "UCiWmHV3TxMOpCgONfbiBq-g",
   "handle": "@zapwisehq",
@@ -18,7 +18,7 @@
    "url": "https://www.youtube.com/shorts/QwoPPVLrPzM",
    "published": "2026-10-23T16:03:59-05:00",
    "date": "Oct 23",
-   "views": 52,
+   "views": 57,
    "dur": 19,
    "page": "/shorts/chatgpt-can-now-lock-your-chats-free-qwop.html",
    "thumb": "/img/shorts/QwoPPVLrPzM.jpg"
@@ -30,7 +30,7 @@
    "url": "https://www.youtube.com/shorts/x0e_JagO_2s",
    "published": "2026-10-22T19:03:33-05:00",
    "date": "Oct 22",
-   "views": 115,
+   "views": 118,
    "dur": 22,
    "page": "/shorts/wabi-2-group-trip-planner.html",
    "thumb": "/img/shorts/x0e_JagO_2s.jpg"
@@ -102,7 +102,7 @@
    "url": "https://www.youtube.com/shorts/ToDY91t5lc8",
    "published": "2026-10-17T12:31:26-05:00",
    "date": "Oct 17",
-   "views": 303,
+   "views": 304,
    "dur": 22,
    "page": "/shorts/deepseek-v4-1-flash-free-coding.html",
    "thumb": "/img/shorts/ToDY91t5lc8.jpg"
@@ -114,7 +114,7 @@
    "url": "https://www.youtube.com/shorts/57Vskzw7RII",
    "published": "2026-10-16T20:02:32-05:00",
    "date": "Oct 16",
-   "views": 239,
+   "views": 240,
    "dur": 25,
    "page": "/shorts/openui-generative-ui.html",
    "thumb": "/img/shorts/57Vskzw7RII.jpg"
@@ -174,7 +174,7 @@
   "note": "YouTube Analytics for @Zapwisehq. Age and gender cover signed-in viewers only. Analytics lag YouTube's live counts by 1–3 days."
  },
  "range": "Oct 15 – Oct 21, 2026",
- "updated_at": "2026-10-24T09:06:46-05:00",
+ "updated_at": "2026-10-24T12:02:58-05:00",
  "shop": {
   "paid_sales": 0,
   "free_downloads": 0,
