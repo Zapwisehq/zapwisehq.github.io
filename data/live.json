@@ -1,13 +1,24 @@
 {
  "status": "ok",
  "error": null,
- "last_attempt": "2026-10-25T15:03:22-05:00",
+ "last_attempt": "2026-10-25T18:08:37-05:00",
  "channel": {
   "id": "UCiWmHV3TxMOpCgONfbiBq-g",
   "handle": "@zapwisehq",
   "views": 3304
  },
  "latest": [
+  {
+   "id": "QbOxJdHKj7k",
+   "title": "Meta's Free AI Agent Hit 10M Downloads Fast 📲",
+   "clean": "Meta's Free AI Agent Hit 10M Downloads Fast 📲",
+   "url": "https://www.youtube.com/shorts/QbOxJdHKj7k",
+   "published": "2026-10-25T16:03:41-05:00",
+   "date": "Oct 25",
+   "dur": 20,
+   "page": "/shorts/meta-s-free-ai-agent-hit-10m-downloads-qbox.html",
+   "thumb": "/img/shorts/QbOxJdHKj7k.jpg"
+  },
   {
    "id": "78oSTAliqX0",
    "title": "Google TV Ads? Claude Code Can Remove Them 📺",
@@ -128,19 +139,8 @@
    "dur": 22,
    "page": "/shorts/upscayl-free-ai-photo-upscaler.html",
    "thumb": "/img/shorts/Slo5yIDNddI.jpg"
-  },
-  {
-   "id": "TJH8y5h_S94",
-   "title": "Gemini 4 Argon Just Broke AI 🤯 Try These 3 Tonight #shorts",
-   "clean": "Gemini 4 Argon Just Broke AI 🤯 Try These 3 Tonight",
-   "url": "https://www.youtube.com/shorts/TJH8y5h_S94",
-   "published": "2026-10-15T17:12:38-05:00",
-   "date": "Oct 15",
-   "dur": 30,
-   "page": "/shorts/gemini-4-argon.html",
-   "thumb": "/img/shorts/TJH8y5h_S94.jpg"
   }
  ],
  "range": "Oct 15 – Oct 23, 2026",
- "updated_at": "2026-10-25T15:03:22-05:00"
+ "updated_at": "2026-10-25T18:08:37-05:00"
 }
