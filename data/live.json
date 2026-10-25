@@ -5,11 +5,8 @@
  "channel": {
   "id": "UCiWmHV3TxMOpCgONfbiBq-g",
   "handle": "@zapwisehq",
-  "views": 3304,
-  "videos": 13,
-  "subscribers": 5
+  "views": 3304
  },
- "shorts_published": 12,
  "latest": [
   {
    "id": "78oSTAliqX0",
@@ -18,7 +15,6 @@
    "url": "https://www.youtube.com/shorts/78oSTAliqX0",
    "published": "2026-10-24T16:03:25-05:00",
    "date": "Oct 24",
-   "views": 161,
    "dur": 23,
    "page": "/shorts/google-tv-ads-claude-code-can-remove-them-78os.html",
    "thumb": "/img/shorts/78oSTAliqX0.jpg"
@@ -30,7 +26,6 @@
    "url": "https://www.youtube.com/shorts/QwoPPVLrPzM",
    "published": "2026-10-23T16:03:59-05:00",
    "date": "Oct 23",
-   "views": 81,
    "dur": 19,
    "page": "/shorts/chatgpt-can-now-lock-your-chats-free-qwop.html",
    "thumb": "/img/shorts/QwoPPVLrPzM.jpg"
@@ -42,7 +37,6 @@
    "url": "https://www.youtube.com/shorts/x0e_JagO_2s",
    "published": "2026-10-22T19:03:33-05:00",
    "date": "Oct 22",
-   "views": 121,
    "dur": 22,
    "page": "/shorts/wabi-2-group-trip-planner.html",
    "thumb": "/img/shorts/x0e_JagO_2s.jpg"
@@ -54,7 +48,6 @@
    "url": "https://www.youtube.com/shorts/uRrHIpszJTc",
    "published": "2026-10-21T23:36:10-05:00",
    "date": "Oct 21",
-   "views": 226,
    "dur": 21,
    "page": "/shorts/chatgpt-scheduled-tasks.html",
    "thumb": "/img/shorts/uRrHIpszJTc.jpg"
@@ -66,7 +59,6 @@
    "url": "https://www.youtube.com/shorts/XFx7_B101fA",
    "published": "2026-10-21T22:40:43-05:00",
    "date": "Oct 21",
-   "views": 234,
    "dur": 19,
    "page": "/shorts/tesseract-free-ai-slide-deck-maker.html",
    "thumb": "/img/shorts/XFx7_B101fA.jpg"
@@ -78,7 +70,6 @@
    "url": "https://www.youtube.com/shorts/KmNH119qqro",
    "published": "2026-10-19T20:03:27-05:00",
    "date": "Oct 19",
-   "views": 152,
    "dur": 40,
    "page": "/shorts/google-universal-cart-price-drop-alerts.html",
    "thumb": "/img/shorts/KmNH119qqro.jpg"
@@ -90,7 +81,6 @@
    "url": "https://www.youtube.com/shorts/A4qBL8BJmn4",
    "published": "2026-10-18T19:02:18-05:00",
    "date": "Oct 18",
-   "views": 174,
    "dur": 43,
    "page": "/shorts/meta-muse-spark-open-free-weights.html",
    "thumb": "/img/shorts/A4qBL8BJmn4.jpg"
@@ -102,7 +92,6 @@
    "url": "https://www.youtube.com/shorts/uah9glH4_Zs",
    "published": "2026-10-17T20:02:30-05:00",
    "date": "Oct 17",
-   "views": 325,
    "dur": 22,
    "page": "/shorts/chatgpt-voice-new-voices.html",
    "thumb": "/img/shorts/uah9glH4_Zs.jpg"
@@ -114,7 +103,6 @@
    "url": "https://www.youtube.com/shorts/ToDY91t5lc8",
    "published": "2026-10-17T12:31:26-05:00",
    "date": "Oct 17",
-   "views": 305,
    "dur": 22,
    "page": "/shorts/deepseek-v4-1-flash-free-coding.html",
    "thumb": "/img/shorts/ToDY91t5lc8.jpg"
@@ -126,7 +114,6 @@
    "url": "https://www.youtube.com/shorts/57Vskzw7RII",
    "published": "2026-10-16T20:02:32-05:00",
    "date": "Oct 16",
-   "views": 244,
    "dur": 25,
    "page": "/shorts/openui-generative-ui.html",
    "thumb": "/img/shorts/57Vskzw7RII.jpg"
@@ -138,7 +125,6 @@
    "url": "https://www.youtube.com/shorts/Slo5yIDNddI",
    "published": "2026-10-16T12:03:00-05:00",
    "date": "Oct 16",
-   "views": 124,
    "dur": 22,
    "page": "/shorts/upscayl-free-ai-photo-upscaler.html",
    "thumb": "/img/shorts/Slo5yIDNddI.jpg"
@@ -150,41 +136,11 @@
    "url": "https://www.youtube.com/shorts/TJH8y5h_S94",
    "published": "2026-10-15T17:12:38-05:00",
    "date": "Oct 15",
-   "views": 1185,
    "dur": 30,
    "page": "/shorts/gemini-4-argon.html",
    "thumb": "/img/shorts/TJH8y5h_S94.jpg"
   }
  ],
- "audience": {
-  "start": "2026-10-15",
-  "end": "2026-10-22",
-  "age": [
-   {
-    "group": "25–34",
-    "pct": 74.4
-   },
-   {
-    "group": "35–44",
-    "pct": 25.7
-   }
-  ],
-  "gender": {
-   "male": 77.3,
-   "female": 22.8
-  },
-  "mobile_pct": 78.7,
-  "shorts_feed_pct": 83.8,
-  "search_pct": 11.3,
-  "views_in_range": 3022,
-  "top_countries": [
-   "US",
-   "PH",
-   "ID",
-   "IN"
-  ],
-  "note": "YouTube Analytics for @Zapwisehq. Age and gender cover signed-in viewers only. Analytics lag YouTube's live counts by 1–3 days."
- },
  "range": "Oct 15 – Oct 22, 2026",
  "updated_at": "2026-10-25T12:53:01-05:00"
 }
