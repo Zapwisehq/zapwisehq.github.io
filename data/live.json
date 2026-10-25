@@ -1,7 +1,7 @@
 {
  "status": "ok",
  "error": null,
- "last_attempt": "2026-10-24T21:05:34-05:00",
+ "last_attempt": "2026-10-25T00:04:30-05:00",
  "channel": {
   "id": "UCiWmHV3TxMOpCgONfbiBq-g",
   "handle": "@zapwisehq",
@@ -18,7 +18,7 @@
    "url": "https://www.youtube.com/shorts/78oSTAliqX0",
    "published": "2026-10-24T16:03:25-05:00",
    "date": "Oct 24",
-   "views": 70,
+   "views": 95,
    "dur": 23,
    "page": "/shorts/google-tv-ads-claude-code-can-remove-them-78os.html",
    "thumb": "/img/shorts/78oSTAliqX0.jpg"
@@ -42,7 +42,7 @@
    "url": "https://www.youtube.com/shorts/x0e_JagO_2s",
    "published": "2026-10-22T19:03:33-05:00",
    "date": "Oct 22",
-   "views": 119,
+   "views": 120,
    "dur": 22,
    "page": "/shorts/wabi-2-group-trip-planner.html",
    "thumb": "/img/shorts/x0e_JagO_2s.jpg"
@@ -114,7 +114,7 @@
    "url": "https://www.youtube.com/shorts/ToDY91t5lc8",
    "published": "2026-10-17T12:31:26-05:00",
    "date": "Oct 17",
-   "views": 304,
+   "views": 305,
    "dur": 22,
    "page": "/shorts/deepseek-v4-1-flash-free-coding.html",
    "thumb": "/img/shorts/ToDY91t5lc8.jpg"
@@ -186,7 +186,7 @@
   "note": "YouTube Analytics for @Zapwisehq. Age and gender cover signed-in viewers only. Analytics lag YouTube's live counts by 1–3 days."
  },
  "range": "Oct 15 – Oct 22, 2026",
- "updated_at": "2026-10-24T21:05:34-05:00",
+ "updated_at": "2026-10-25T00:04:30-05:00",
  "shop": {
   "paid_sales": 0,
   "free_downloads": 0,
