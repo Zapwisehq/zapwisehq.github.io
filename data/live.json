@@ -1,13 +1,24 @@
 {
  "status": "ok",
  "error": null,
- "last_attempt": "2026-10-26T15:04:11-05:00",
+ "last_attempt": "2026-10-26T18:08:56-05:00",
  "channel": {
   "id": "UCiWmHV3TxMOpCgONfbiBq-g",
   "handle": "@zapwisehq",
   "views": 3493
  },
  "latest": [
+  {
+   "id": "9ONca57jwto",
+   "title": "Android Auto Gemini Finds Your Flight Gate 🚗",
+   "clean": "Android Auto Gemini Finds Your Flight Gate 🚗",
+   "url": "https://www.youtube.com/shorts/9ONca57jwto",
+   "published": "2026-10-26T16:04:05-05:00",
+   "date": "Oct 26",
+   "dur": 19,
+   "page": "/shorts/android-auto-gemini-finds-your-flight-gate-9onc.html",
+   "thumb": "/img/shorts/9ONca57jwto.jpg"
+  },
   {
    "id": "QbOxJdHKj7k",
    "title": "Meta's Free AI Agent Hit 10M Downloads Fast 📲",
@@ -128,19 +139,8 @@
    "dur": 25,
    "page": "/shorts/openui-generative-ui.html",
    "thumb": "/img/shorts/57Vskzw7RII.jpg"
-  },
-  {
-   "id": "Slo5yIDNddI",
-   "title": "Blurry Photos? Upscayl Fixes Them Free 🤯",
-   "clean": "Blurry Photos? Upscayl Fixes Them Free 🤯",
-   "url": "https://www.youtube.com/shorts/Slo5yIDNddI",
-   "published": "2026-10-16T12:03:00-05:00",
-   "date": "Oct 16",
-   "dur": 22,
-   "page": "/shorts/upscayl-free-ai-photo-upscaler.html",
-   "thumb": "/img/shorts/Slo5yIDNddI.jpg"
   }
  ],
  "range": "Oct 15 – Oct 24, 2026",
- "updated_at": "2026-10-26T15:04:11-05:00"
+ "updated_at": "2026-10-26T18:08:56-05:00"
 }
