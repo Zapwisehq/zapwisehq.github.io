@@ -1,13 +1,24 @@
 {
  "status": "ok",
  "error": null,
- "last_attempt": "2026-10-27T03:09:29-05:00",
+ "last_attempt": "2026-10-27T12:00:39-05:00",
  "channel": {
   "id": "UCiWmHV3TxMOpCgONfbiBq-g",
   "handle": "@zapwisehq",
   "views": 3553
  },
  "latest": [
+  {
+   "id": "rY-hmirCZn4",
+   "title": "Paint Removes Backgrounds in One Click, Free 🖼️",
+   "clean": "Paint Removes Backgrounds in One Click, Free 🖼️",
+   "url": "https://www.youtube.com/shorts/rY-hmirCZn4",
+   "published": "2026-10-27T11:00:05-05:00",
+   "date": "Oct 27",
+   "dur": 18,
+   "page": "/shorts/paint-removes-backgrounds-in-one-click-free-ry-h.html",
+   "thumb": "/img/shorts/rY-hmirCZn4.jpg"
+  },
   {
    "id": "9ONca57jwto",
    "title": "Android Auto Gemini Finds Your Flight Gate 🚗",
@@ -128,19 +139,8 @@
    "dur": 22,
    "page": "/shorts/deepseek-v4-1-flash-free-coding.html",
    "thumb": "/img/shorts/ToDY91t5lc8.jpg"
-  },
-  {
-   "id": "57Vskzw7RII",
-   "title": "OpenUI: Your AI Stops Texting, Builds Real UI ⚡",
-   "clean": "OpenUI: Your AI Stops Texting, Builds Real UI ⚡",
-   "url": "https://www.youtube.com/shorts/57Vskzw7RII",
-   "published": "2026-10-16T20:02:32-05:00",
-   "date": "Oct 16",
-   "dur": 25,
-   "page": "/shorts/openui-generative-ui.html",
-   "thumb": "/img/shorts/57Vskzw7RII.jpg"
   }
  ],
  "range": "Oct 15 – Oct 24, 2026",
- "updated_at": "2026-10-27T03:09:29-05:00"
+ "updated_at": "2026-10-27T12:00:39-05:00"
 }
