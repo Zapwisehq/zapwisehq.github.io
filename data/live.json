@@ -1,13 +1,24 @@
 {
  "status": "ok",
  "error": null,
- "last_attempt": "2026-10-27T15:10:15-05:00",
+ "last_attempt": "2026-10-27T18:02:46-05:00",
  "channel": {
   "id": "UCiWmHV3TxMOpCgONfbiBq-g",
   "handle": "@zapwisehq",
   "views": 3553
  },
  "latest": [
+  {
+   "id": "Gm-v2OQVxoQ",
+   "title": "Viggle JST-2 Turns One Sentence Into a 3D World 🌍",
+   "clean": "Viggle JST-2 Turns One Sentence Into a 3D World 🌍",
+   "url": "https://www.youtube.com/shorts/Gm-v2OQVxoQ",
+   "published": "2026-10-27T16:05:15-05:00",
+   "date": "Oct 27",
+   "dur": 22,
+   "page": "/shorts/viggle-jst-2-turns-one-sentence-into-a-gm-v.html",
+   "thumb": "/img/shorts/Gm-v2OQVxoQ.jpg"
+  },
   {
    "id": "rY-hmirCZn4",
    "title": "Paint Removes Backgrounds in One Click, Free 🖼️",
@@ -128,19 +139,8 @@
    "dur": 22,
    "page": "/shorts/chatgpt-voice-new-voices.html",
    "thumb": "/img/shorts/uah9glH4_Zs.jpg"
-  },
-  {
-   "id": "ToDY91t5lc8",
-   "title": "DeepSeek Just Dropped a FREE AI That Codes Games 🎮 #shorts",
-   "clean": "DeepSeek Just Dropped a FREE AI That Codes Games 🎮",
-   "url": "https://www.youtube.com/shorts/ToDY91t5lc8",
-   "published": "2026-10-17T12:31:26-05:00",
-   "date": "Oct 17",
-   "dur": 22,
-   "page": "/shorts/deepseek-v4-1-flash-free-coding.html",
-   "thumb": "/img/shorts/ToDY91t5lc8.jpg"
   }
  ],
  "range": "Oct 15 – Oct 25, 2026",
- "updated_at": "2026-10-27T15:10:15-05:00"
+ "updated_at": "2026-10-27T18:02:46-05:00"
 }
