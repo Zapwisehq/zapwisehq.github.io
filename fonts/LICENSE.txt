@@ -1,3 +1,6 @@
 Space Grotesk (c) The Space Grotesk Project Authors and JetBrains Mono (c) The JetBrains Mono Project Authors.
 Both licensed under the SIL Open Font License 1.1: https://openfontlicense.org
 Files here are Latin subsets converted to WOFF2.
+
+
+Chakra Petch (Cadson Demak) and Inter (Rasmus Andersson) are licensed under the SIL Open Font License, Version 1.1. https://openfontlicense.org
