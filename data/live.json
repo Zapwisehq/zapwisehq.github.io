@@ -1,11 +1,11 @@
 {
  "status": "ok",
  "error": null,
- "last_attempt": "2026-10-28T12:00:55-05:00",
+ "last_attempt": "2026-10-28T15:08:50-05:00",
  "channel": {
   "id": "UCiWmHV3TxMOpCgONfbiBq-g",
   "handle": "@zapwisehq",
-  "views": 3619
+  "views": 3805
  },
  "latest": [
   {
@@ -141,6 +141,6 @@
    "thumb": "/img/shorts/A4qBL8BJmn4.jpg"
   }
  ],
- "range": "Oct 15 – Oct 25, 2026",
- "updated_at": "2026-10-28T12:00:55-05:00"
+ "range": "Oct 15 – Oct 26, 2026",
+ "updated_at": "2026-10-28T15:08:50-05:00"
 }
