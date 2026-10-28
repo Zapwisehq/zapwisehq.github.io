@@ -1,13 +1,24 @@
 {
  "status": "ok",
  "error": null,
- "last_attempt": "2026-10-28T06:07:25-05:00",
+ "last_attempt": "2026-10-28T12:00:55-05:00",
  "channel": {
   "id": "UCiWmHV3TxMOpCgONfbiBq-g",
   "handle": "@zapwisehq",
   "views": 3619
  },
  "latest": [
+  {
+   "id": "pRUUbDmJqtA",
+   "title": "Chrome Live Caption: Subtitles for Any Video 💬",
+   "clean": "Chrome Live Caption: Subtitles for Any Video 💬",
+   "url": "https://www.youtube.com/shorts/pRUUbDmJqtA",
+   "published": "2026-10-28T11:00:25-05:00",
+   "date": "Oct 28",
+   "dur": 21,
+   "page": "/shorts/chrome-live-caption-subtitles-for-any-video-pruu.html",
+   "thumb": "/img/shorts/pRUUbDmJqtA.jpg"
+  },
   {
    "id": "Gm-v2OQVxoQ",
    "title": "Viggle JST-2 Turns One Sentence Into a 3D World 🌍",
@@ -128,19 +139,8 @@
    "dur": 43,
    "page": "/shorts/meta-muse-spark-open-free-weights.html",
    "thumb": "/img/shorts/A4qBL8BJmn4.jpg"
-  },
-  {
-   "id": "uah9glH4_Zs",
-   "title": "ChatGPT Voice Just Got New Voices — Free Plan Too 🗣️ #shorts",
-   "clean": "ChatGPT Voice Just Got New Voices — Free Plan Too 🗣️",
-   "url": "https://www.youtube.com/shorts/uah9glH4_Zs",
-   "published": "2026-10-17T20:02:30-05:00",
-   "date": "Oct 17",
-   "dur": 22,
-   "page": "/shorts/chatgpt-voice-new-voices.html",
-   "thumb": "/img/shorts/uah9glH4_Zs.jpg"
   }
  ],
  "range": "Oct 15 – Oct 25, 2026",
- "updated_at": "2026-10-28T06:07:25-05:00"
+ "updated_at": "2026-10-28T12:00:55-05:00"
 }
