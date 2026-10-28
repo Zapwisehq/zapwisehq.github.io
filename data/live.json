@@ -1,13 +1,24 @@
 {
  "status": "ok",
  "error": null,
- "last_attempt": "2026-10-28T15:08:50-05:00",
+ "last_attempt": "2026-10-28T18:02:57-05:00",
  "channel": {
   "id": "UCiWmHV3TxMOpCgONfbiBq-g",
   "handle": "@zapwisehq",
   "views": 3805
  },
  "latest": [
+  {
+   "id": "eiZR8FMlYVY",
+   "title": "AgentCloak Hides Your Real Data From ChatGPT 🛡️",
+   "clean": "AgentCloak Hides Your Real Data From ChatGPT 🛡️",
+   "url": "https://www.youtube.com/shorts/eiZR8FMlYVY",
+   "published": "2026-10-28T16:05:41-05:00",
+   "date": "Oct 28",
+   "dur": 22,
+   "page": "/shorts/agentcloak-hides-your-real-data-from-chatgpt-eizr.html",
+   "thumb": "/img/shorts/eiZR8FMlYVY.jpg"
+  },
   {
    "id": "pRUUbDmJqtA",
    "title": "Chrome Live Caption: Subtitles for Any Video 💬",
@@ -128,19 +139,8 @@
    "dur": 40,
    "page": "/shorts/google-universal-cart-price-drop-alerts.html",
    "thumb": "/img/shorts/KmNH119qqro.jpg"
-  },
-  {
-   "id": "A4qBL8BJmn4",
-   "title": "Meta's Muse Spark Open Is Free to Download 🤯 #shorts",
-   "clean": "Meta's Muse Spark Open Is Free to Download 🤯",
-   "url": "https://www.youtube.com/shorts/A4qBL8BJmn4",
-   "published": "2026-10-18T19:02:18-05:00",
-   "date": "Oct 18",
-   "dur": 43,
-   "page": "/shorts/meta-muse-spark-open-free-weights.html",
-   "thumb": "/img/shorts/A4qBL8BJmn4.jpg"
   }
  ],
  "range": "Oct 15 – Oct 26, 2026",
- "updated_at": "2026-10-28T15:08:50-05:00"
+ "updated_at": "2026-10-28T18:02:57-05:00"
 }
