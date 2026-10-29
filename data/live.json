@@ -1,7 +1,7 @@
 {
- "status": "ok",
- "error": null,
- "last_attempt": "2026-10-29T12:06:39-05:00",
+ "status": "error",
+ "error": "HTTPError: HTTP Error 400: Bad Request",
+ "last_attempt": "2026-10-29T15:03:27-05:00",
  "channel": {
   "id": "UCiWmHV3TxMOpCgONfbiBq-g",
   "handle": "@zapwisehq",
