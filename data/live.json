@@ -1,13 +1,24 @@
 {
  "status": "ok",
  "error": null,
- "last_attempt": "2026-10-29T15:07:04-05:00",
+ "last_attempt": "2026-10-29T18:08:13-05:00",
  "channel": {
   "id": "UCiWmHV3TxMOpCgONfbiBq-g",
   "handle": "@zapwisehq",
   "views": 4052
  },
  "latest": [
+  {
+   "id": "hss9S6FgHWM",
+   "title": "macOS 27 Summarizes Text Offline, Free 💻",
+   "clean": "macOS 27 Summarizes Text Offline, Free 💻",
+   "url": "https://www.youtube.com/shorts/hss9S6FgHWM",
+   "published": "2026-10-29T16:03:44-05:00",
+   "date": "Oct 29",
+   "dur": 24,
+   "page": "/shorts/macos-27-summarizes-text-offline-free-hss9.html",
+   "thumb": "/img/shorts/hss9S6FgHWM.jpg"
+  },
   {
    "id": "TpnpWSW_XOQ",
    "title": "Snipping Tool Copies Text From Any Screenshot ✂️",
@@ -128,19 +139,8 @@
    "dur": 21,
    "page": "/shorts/chatgpt-scheduled-tasks.html",
    "thumb": "/img/shorts/uRrHIpszJTc.jpg"
-  },
-  {
-   "id": "XFx7_B101fA",
-   "title": "Hate Making Slides? Tesseract AI Fixes It Free 🎯",
-   "clean": "Hate Making Slides? Tesseract AI Fixes It Free 🎯",
-   "url": "https://www.youtube.com/shorts/XFx7_B101fA",
-   "published": "2026-10-21T22:40:43-05:00",
-   "date": "Oct 21",
-   "dur": 19,
-   "page": "/shorts/tesseract-free-ai-slide-deck-maker.html",
-   "thumb": "/img/shorts/XFx7_B101fA.jpg"
   }
  ],
  "range": "Oct 15 – Oct 27, 2026",
- "updated_at": "2026-10-29T15:07:04-05:00"
+ "updated_at": "2026-10-29T18:08:13-05:00"
 }

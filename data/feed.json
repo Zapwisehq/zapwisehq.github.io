@@ -1,20 +1,20 @@
 {
  "v": 1,
- "updated_at": "2026-10-29T15:07:04-05:00",
+ "updated_at": "2026-10-29T18:08:13-05:00",
  "status": "ok",
  "channel": {
   "handle": "@zapwisehq",
   "views": 4052
  },
  "short": {
-  "id": "TpnpWSW_XOQ",
-  "url": "https://www.youtube.com/shorts/TpnpWSW_XOQ",
-  "page": "/shorts/snipping-tool-copies-text-from-any-screenshot-tpnp.html",
+  "id": "hss9S6FgHWM",
+  "url": "https://www.youtube.com/shorts/hss9S6FgHWM",
+  "page": "/shorts/macos-27-summarizes-text-offline-free-hss9.html",
   "date": "Oct 29",
-  "published": "2026-10-29T11:00:09-05:00",
-  "dur": 23,
-  "t": "Snipping Tool Copies Text From Any Screenshot ✂️",
-  "thumb": "/img/shorts/TpnpWSW_XOQ.jpg"
+  "published": "2026-10-29T16:03:44-05:00",
+  "dur": 24,
+  "t": "macOS 27 Summarizes Text Offline, Free 💻",
+  "thumb": "/img/shorts/hss9S6FgHWM.jpg"
  },
  "days": {
   "2026-10-29": {
@@ -47,6 +47,12 @@
  },
  "changes": [
   {
+   "ts": "2026-10-29T16:03:44-05:00",
+   "d": "Oct 29",
+   "t": "New Short page: macOS 27 Summarizes Text Offline, Free 💻",
+   "u": "/shorts/macos-27-summarizes-text-offline-free-hss9.html"
+  },
+  {
    "ts": "2026-10-29T15:34:18-05:00",
    "d": "Oct 29",
    "t": "New: Shortcut Builder. Fill in the blanks, get a ready prompt.",
@@ -75,13 +81,7 @@
    "d": "Oct 29",
    "t": "Moved to our own domain: zapwiseai.com.",
    "u": "/"
-  },
-  {
-   "ts": "2026-10-29T11:29:19-05:00",
-   "d": "Oct 29",
-   "t": "Ask Zapwise guide bot added to every page.",
-   "u": "/"
   }
  ],
- "generated_at": "2026-10-29T15:34:42-05:00"
+ "generated_at": "2026-10-29T18:08:23-05:00"
 }
