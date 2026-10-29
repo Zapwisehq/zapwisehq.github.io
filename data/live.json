@@ -1,11 +1,11 @@
 {
  "status": "ok",
  "error": null,
- "last_attempt": "2026-10-29T00:07:14-05:00",
+ "last_attempt": "2026-10-29T03:06:26-05:00",
  "channel": {
   "id": "UCiWmHV3TxMOpCgONfbiBq-g",
   "handle": "@zapwisehq",
-  "views": 3805
+  "views": 3947
  },
  "latest": [
   {
@@ -142,5 +142,5 @@
   }
  ],
  "range": "Oct 15 – Oct 26, 2026",
- "updated_at": "2026-10-29T00:07:14-05:00"
+ "updated_at": "2026-10-29T03:06:26-05:00"
 }
