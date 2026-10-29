@@ -1,0 +1,931 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Free AI Prompt Builder for Work: Emails, Meeting Notes, Reports | Zapwise AI</title><meta name="twitter:description" content="Free AI prompt builder: pick a work task, fill in the blanks and get a ready prompt for emails, follow-ups, meeting notes, executive summaries, spreadsheet formulas or slides. Copy it or open it in ChatGPT or Claude. Runs in your browser."><meta name="twitter:title" content="Free AI Prompt Builder for Work: Emails, Meeting Notes, Reports"><meta name="description" content="Free AI prompt builder: pick a work task, fill in the blanks and get a ready prompt for emails, follow-ups, meeting notes, executive summaries, spreadsheet formulas or slides. Copy it or open it in ChatGPT or Claude. Runs in your browser."><link rel="canonical" href="https://zapwiseai.com/ai-prompt-builder.html">
+<meta property="og:type" content="website"><meta property="og:site_name" content="Zapwise AI"><meta property="og:title" content="Free AI Prompt Builder for Work: Emails, Meeting Notes, Reports"><meta property="og:description" content="Free AI prompt builder: pick a work task, fill in the blanks and get a ready prompt for emails, follow-ups, meeting notes, executive summaries, spreadsheet formulas or slides. Copy it or open it in ChatGPT or Claude. Runs in your browser."><meta property="og:url" content="https://zapwiseai.com/ai-prompt-builder.html"><meta property="og:image" content="https://zapwiseai.com/img/og-v3-home.jpg"><meta name="twitter:image" content="https://zapwiseai.com/img/og-v3-home.jpg"><meta name="twitter:image:alt" content="Zapwise: We don&#x27;t wait for the future. We prompt it. No face. No hours. Just the shortcut."><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="Zapwise: We don&#x27;t wait for the future. We prompt it. No face. No hours. Just the shortcut.">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:site" content="@Zapwisehq"><meta name="theme-color" content="#070814"><meta name="color-scheme" content="dark">
+<link rel="icon" href="/favicon.ico" sizes="48x48"><link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="manifest" href="/site.webmanifest">
+<link rel="preload" href="/fonts/chakra-petch-700.woff2?v=21ae342" as="font" type="font/woff2" crossorigin><link rel="preload" href="/fonts/chakra-petch-400.woff2?v=21ae342" as="font" type="font/woff2" crossorigin><style>*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{margin:0;background:#070814;color:#f4efe4;font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow-x:hidden}
+body:before{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;background-image:linear-gradient(rgba(92,225,230,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(92,225,230,.07) 1px,transparent 1px);background-size:44px 44px;-webkit-mask-image:radial-gradient(ellipse 90% 60% at 50% 0%,#000 30%,transparent 80%);mask-image:radial-gradient(ellipse 90% 60% at 50% 0%,#000 30%,transparent 80%)}
+body:after{content:"";position:fixed;inset:-20%;z-index:-3;pointer-events:none;background:radial-gradient(circle at 80% 10%,rgba(92,225,230,.20),transparent 38%),radial-gradient(circle at 10% 85%,rgba(240,162,2,.15),transparent 40%);animation:drift 24s ease-in-out infinite alternate}
+@keyframes drift{to{transform:translate3d(-6%,5%,0) scale(1.08)}}
+a{color:#5ce1e6}
+img{max-width:100%;height:auto;display:block}
+.w{max-width:1040px;margin:0 auto;padding:0 18px}
+:focus-visible{outline:2px solid #5ce1e6;outline-offset:3px;border-radius:6px}
+.skip{position:absolute;left:-999px;top:8px}
+.skip:focus{left:8px;background:#f0a202;color:#070814;padding:8px 12px;z-index:50}
+header{position:sticky;top:0;z-index:20;background:rgba(7,8,20,.72);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-bottom:1px solid rgba(92,225,230,.16)}
+.top{display:flex;justify-content:space-between;align-items:center;height:56px}
+.logo{font-weight:800;letter-spacing:.18em;color:#f0a202;text-decoration:none;text-shadow:0 0 18px rgba(240,162,2,.45)}
+nav a{color:#f4efe4;text-decoration:none;margin-left:16px;font-size:14px;opacity:.85}
+nav a:hover{color:#5ce1e6;opacity:1}
+.kick{display:inline-flex;align-items:center;gap:8px;font:600 12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase;color:#5ce1e6;border:1px solid rgba(92,225,230,.35);background:rgba(92,225,230,.07);border-radius:99px;padding:7px 12px}
+.dot{width:7px;height:7px;border-radius:50%;background:#5ce1e6;box-shadow:0 0 0 0 rgba(92,225,230,.7);animation:pulse 2s infinite}
+@keyframes pulse{70%{box-shadow:0 0 0 8px rgba(92,225,230,0)}100%{box-shadow:0 0 0 0 rgba(92,225,230,0)}}
+.hero{padding:30px 0 8px}
+h1{font-size:clamp(32px,8.4vw,58px);line-height:1.05;margin:14px 0 12px;letter-spacing:-.02em}
+.gt{background:linear-gradient(90deg,#5ce1e6,#a6eef0 45%,#f0a202);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lead{font-size:18px;opacity:.92;max-width:620px}
+h2{font-size:clamp(24px,5vw,32px);margin:52px 0 6px;letter-spacing:-.01em}
+main section[id]{padding-top:46px}
+.eyebrow+h2{margin-top:4px}
+h3{margin:0 0 6px;font-size:19px}
+.eyebrow{font:600 12px ui-monospace,SFMono-Regular,Menlo,monospace;color:#f0a202;letter-spacing:.12em;text-transform:uppercase}
+.glass{background:linear-gradient(160deg,rgba(20,24,40,.72),rgba(13,16,25,.72));border:1px solid rgba(92,225,230,.18);border-radius:18px;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.free{position:relative;padding:18px;margin:22px 0;display:grid;gap:14px;border-color:rgba(240,162,2,.65);box-shadow:0 0 0 1px rgba(240,162,2,.15),0 10px 40px -12px rgba(240,162,2,.35)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,#f0a202,#f5b93a);color:#070814;font-weight:800;text-decoration:none;padding:14px 20px;border-radius:12px;min-height:48px;box-shadow:0 6px 24px -8px rgba(240,162,2,.7);transition:transform .2s,box-shadow .2s}
+.btn:hover{transform:translateY(-2px);box-shadow:0 10px 30px -8px rgba(240,162,2,.9)}
+.btn.alt{background:rgba(92,225,230,.06);color:#f4efe4;border:1.5px solid #5ce1e6;box-shadow:0 0 20px -8px rgba(92,225,230,.8)}
+.small{font-size:13px;opacity:.78}
+.row{display:flex;flex-wrap:wrap;gap:10px}
+.ph{color:#f0a202;font-weight:700}
+.cur{display:inline-block;width:.55em;height:1.05em;vertical-align:-.15em;background:#5ce1e6;margin-left:2px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.hv video{width:100%;height:auto;aspect-ratio:16/9;border-radius:18px;border:1px solid rgba(92,225,230,.2);background:#070814;display:block}
+.card{position:relative;overflow:hidden;display:flex;flex-direction:column;transition:transform .25s,border-color .25s,box-shadow .25s}
+.card:before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(420px circle at var(--mx,50%) var(--my,0%),rgba(92,225,230,.13),transparent 45%);opacity:0;transition:opacity .25s}
+.card:hover{transform:translateY(-4px);border-color:rgba(92,225,230,.55);box-shadow:0 18px 50px -20px rgba(92,225,230,.5)}
+.card:hover:before{opacity:1}
+.card img{border-bottom:1px solid rgba(92,225,230,.14)}
+.card .b{padding:16px;display:flex;flex-direction:column;gap:8px;flex:1}
+.card ul{margin:0;padding-left:0;list-style:none;font-size:14px}
+.card li{padding-left:20px;position:relative;margin:3px 0}
+.card li:before{content:"›";position:absolute;left:4px;color:#5ce1e6;font-weight:800}
+.card .btn{margin-top:auto}
+.sc{display:flex;flex-direction:column;gap:8px;padding:14px;text-decoration:none;color:#f4efe4;min-height:132px;transition:transform .2s,border-color .2s}
+.sc:hover{transform:translateY(-3px);border-color:rgba(92,225,230,.6)}
+.sc .m{font:12px ui-monospace,SFMono-Regular,Menlo,monospace;color:#5ce1e6}
+.sc .t{font-weight:700;font-size:15px;line-height:1.35}
+.sc .go{margin-top:auto;font-size:13px;color:#f0a202;font-weight:700}
+details{padding:14px 16px;margin:10px 0;border-radius:14px}
+summary{cursor:pointer;font-weight:700}
+summary::marker{color:#5ce1e6}
+footer{margin-top:56px;padding:26px 0 40px;border-top:1px solid rgba(92,225,230,.16);font-size:14px;opacity:.9}
+.mcta{position:fixed;left:10px;right:10px;bottom:10px;z-index:30;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 10px 10px 14px;border-color:rgba(240,162,2,.6);font-size:14px;margin-bottom:env(safe-area-inset-bottom)}
+.mcta b{color:#f0a202}
+.mcta .btn{padding:10px 14px;min-height:44px;font-size:14px;white-space:nowrap}
+@media(max-width:699px){body{padding-bottom:84px}}
+@media(min-width:700px){.mcta{display:none}
+.free{grid-template-columns:1.4fr 1fr;align-items:center}
+.hero{padding-top:56px}}
+.js .rv{opacity:0;transform:translateY(18px);transition:opacity .6s ease,transform .6s ease}
+.js .rv.in{opacity:1;transform:none}
+.pg{display:grid;gap:22px}
+.pg>div{min-width:0}
+@media(min-width:900px){.pg{grid-template-columns:1.1fr 1fr;align-items:start}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+.hv video{display:none}
+.js .rv{opacity:1;transform:none}}
+@font-face{font-family:"JetBrains Mono";src:url(/fonts/jetbrains-mono.woff2?v=21ae342) format("woff2");font-weight:100 800;font-display:swap}
+h1,h2,h3,.logo{font-family:"Chakra Petch",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+h1{letter-spacing:-.035em;font-weight:700}
+h2{letter-spacing:-.025em;font-weight:700}
+.kick,.eyebrow,.sc .m,.pal{font-family:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace}
+#nn{position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none;opacity:.55;-webkit-mask-image:linear-gradient(#000 0,#000 55%,transparent 100%);mask-image:linear-gradient(#000 0,#000 55%,transparent 100%)}
+.cg{position:fixed;left:0;top:0;width:520px;height:520px;margin:-260px 0 0 -260px;border-radius:50%;pointer-events:none;z-index:-1;background:radial-gradient(circle,rgba(92,225,230,.10),rgba(92,225,230,.04) 35%,transparent 65%);opacity:0;transition:opacity .4s;will-change:transform}
+.cg.on{opacity:1}
+@property --ang{syntax:"<angle>";inherits:false;initial-value:0deg}
+.holo{position:relative;isolation:isolate}
+.holo:after{content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;pointer-events:none;z-index:2;
+background:conic-gradient(from var(--ang),transparent 0deg,rgba(92,225,230,.95) 50deg,rgba(166,238,240,.8) 90deg,rgba(240,162,2,.9) 130deg,transparent 180deg,transparent 360deg);
+-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);
+opacity:.0;transition:opacity .35s;animation:ang 7s linear infinite;animation-play-state:paused}
+.holo:hover:after,.holo:focus-within:after{opacity:.9;animation-play-state:running}
+.holo.live:after{opacity:.75;animation-play-state:running}
+@keyframes ang{to{--ang:360deg}}
+.pal{border-radius:18px;overflow:hidden}
+.pal .bar{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid rgba(92,225,230,.15)}
+.pal .bar label{color:#5ce1e6;font-size:14px}
+.pal input{flex:1;min-width:0;background:transparent;border:0;color:#f4efe4;font:inherit;font-size:16px;padding:6px 0;outline:none}
+.pal input::placeholder{color:#aaa59a}
+.pal kbd{font:600 11px/1 inherit;color:#c2bdb1;border:1px solid rgba(194,189,177,.35);border-radius:6px;padding:4px 6px;white-space:nowrap}
+.pal .body{display:grid}
+.pal .body>ul{max-height:340px;overflow:auto}
+.pal ul{list-style:none;margin:0;padding:6px;max-height:none}
+.pi{display:block;width:100%;text-align:left;background:none;border:0;color:#f4efe4;font:14px/1.4 "JetBrains Mono",ui-monospace,monospace;padding:11px 10px;border-radius:10px;cursor:pointer;text-decoration:none;min-height:44px}
+.pi .n{color:#5ce1e6;margin-right:8px}
+.pi .c{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#aaa59a;margin-top:2px}
+.pi:hover,.pi[aria-selected=true]{background:rgba(92,225,230,.10)}
+.pi[aria-selected=true]{box-shadow:inset 2px 0 0 #5ce1e6}
+.pi.lock{color:#c2bdb1}
+.pi.lock .n{color:#f0a202}
+.pi.lock .c{color:#f0a202}
+.pi .pt{display:block;margin-top:8px;white-space:pre-wrap;color:#efe9dc;font-size:13px}
+.pal .bar,.pal kbd{display:none}
+.pj .pal .bar{display:flex}
+.pj .pi .pt{display:none}
+@media(min-width:900px){.pj .pal kbd{display:inline-block}
+.pj .pal .body{grid-template-columns:.95fr 1.05fr}
+.pal ul{max-height:440px;overflow:auto}}
+.btn.sm{padding:10px 14px;min-height:44px;font-size:14px}
+.ldst{display:block;font:700 11px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.1em;color:#f0a202;margin:0 0 8px}
+@media(prefers-reduced-motion:reduce){#nn,.cg{display:none}
+.holo:after{opacity:.5}}
+body:after{display:none}
+.aur{position:fixed;inset:0;z-index:-3;pointer-events:none;overflow:hidden}
+.aur i{position:absolute;width:75vmax;height:75vmax;border-radius:50%;will-change:transform}
+.aur i:nth-child(1){left:-28vmax;top:-30vmax;background:radial-gradient(circle,rgba(92,225,230,.20),transparent 62%);animation:au1 23s ease-in-out infinite alternate}
+.aur i:nth-child(2){right:-32vmax;top:-6vmax;background:radial-gradient(circle,rgba(30,34,70,.16),transparent 62%);animation:au2 29s ease-in-out infinite alternate}
+.aur i:nth-child(3){left:-6vmax;bottom:-46vmax;background:radial-gradient(circle,rgba(240,162,2,.13),transparent 62%);animation:au3 26s ease-in-out infinite alternate}
+@keyframes au1{to{transform:translate3d(22vw,16vh,0) scale(1.18)}}
+@keyframes au2{to{transform:translate3d(-18vw,24vh,0) scale(.9)}}
+@keyframes au3{to{transform:translate3d(26vw,-14vh,0) scale(1.12)}}
+.sp{position:fixed;left:0;top:0;width:100%;height:2px;z-index:40;transform-origin:0 50%;transform:scaleX(0);background:linear-gradient(90deg,#5ce1e6,#a6eef0 50%,#f0a202);box-shadow:0 0 10px rgba(92,225,230,.8);pointer-events:none}
+.boot{position:fixed;left:0;top:0;width:100%;height:56px;z-index:25;pointer-events:none;background:linear-gradient(90deg,transparent,rgba(92,225,230,.28) 45%,rgba(240,162,2,.22) 55%,transparent);transform:translateX(-100%);animation:boot .55s cubic-bezier(.2,.7,.2,1) .05s forwards}
+@keyframes boot{80%{opacity:1}to{transform:translateX(100%);opacity:0}}
+header{animation:hdr .5s ease-out both}
+@keyframes hdr{from{box-shadow:inset 0 -1px 0 rgba(92,225,230,.9)}to{box-shadow:inset 0 -1px 0 rgba(92,225,230,0)}}
+.hero .kick,.hero .free,.hero .lead,.pg>div{animation:rise .6s cubic-bezier(.2,.7,.2,1) both}
+.hero .lead{animation-delay:.12s}
+.hero .free{animation-delay:.2s}
+.pg>div:nth-child(2){animation-delay:.16s}
+@keyframes rise{from{transform:translate3d(0,14px,0);opacity:.35}}
+.wd{display:inline-block;transform:translate3d(0,.45em,0);opacity:0;animation:wd .65s cubic-bezier(.2,.75,.2,1) forwards}
+@keyframes wd{to{transform:none;opacity:1}}
+.gt{background-size:200% 100%;animation:gts 6s ease-in-out infinite alternate}
+@keyframes gts{to{background-position:100% 0}}
+.wd.gt{animation:wd .65s cubic-bezier(.2,.75,.2,1) forwards,gts 6s ease-in-out infinite alternate}
+.js .card.rv.in:hover{transform:perspective(900px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)) translate3d(0,-4px,0)}
+.card{transform:perspective(900px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)) translate3d(0,var(--ty,0px),0);transition:transform .45s cubic-bezier(.2,.7,.2,1),border-color .25s,box-shadow .25s}
+.card.tl{transition:transform .08s linear,border-color .25s,box-shadow .25s}
+.card:hover{transform:perspective(900px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)) translate3d(0,-4px,0)}
+.js .card.rv{transform:translate3d(0,22px,0)}
+.js .card.rv.in{transform:perspective(900px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)) translate3d(0,var(--ty,0px),0)}
+.card.fl{animation:flt 7s ease-in-out infinite}
+.card.fl:nth-child(2n){animation-delay:-3.5s}
+.card.fl:nth-child(3n){animation-duration:8s}
+@keyframes flt{50%{transform:translate3d(0,-5px,0)}}
+.cv{position:relative;overflow:hidden;display:block}
+.cv:after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(105deg,transparent 38%,rgba(92,225,230,.16) 47%,rgba(255,255,255,.30) 50%,rgba(92,225,230,.16) 53%,transparent 62%);transform:translate3d(-120%,0,0);animation:cscan 6s cubic-bezier(.45,0,.2,1) infinite;animation-play-state:paused}
+.cv:before{content:"";position:absolute;left:0;right:0;top:0;height:1px;background:rgba(92,225,230,.85);box-shadow:0 0 12px 2px rgba(92,225,230,.55);transform:translate3d(0,-2px,0);opacity:0;animation:vscan 6s linear infinite;animation-play-state:paused;z-index:1;pointer-events:none}
+.on .cv:after,.on .cv:before,.cv.on:after,.cv.on:before{animation-play-state:running}
+.card:nth-child(2) .cv:after,.card:nth-child(2) .cv:before{animation-delay:-1.5s}
+.card:nth-child(3) .cv:after,.card:nth-child(3) .cv:before{animation-delay:-3s}
+.card:nth-child(4) .cv:after,.card:nth-child(4) .cv:before{animation-delay:-4.5s}
+@keyframes cscan{0%,55%{transform:translate3d(-120%,0,0)}100%{transform:translate3d(120%,0,0)}}
+@keyframes vscan{0%,8%{opacity:0;transform:translate3d(0,0,0)}12%{opacity:.9}40%{opacity:.9;transform:translate3d(0,360px,0)}44%,100%{opacity:0;transform:translate3d(0,360px,0)}}
+.btn{position:relative;overflow:hidden;isolation:isolate;transform:translate3d(var(--bx,0px),var(--by,0px),0);transition:transform .3s cubic-bezier(.2,.7,.2,1),box-shadow .25s}
+.btn:hover{transform:translate3d(var(--bx,0px),calc(var(--by,0px) - 2px),0)}
+.btn:active{transform:translate3d(var(--bx,0px),var(--by,0px),0) scale(.97);transition-duration:.08s}
+.btn:after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.5) 50%,transparent 70%);transform:translate3d(-130%,0,0);transition:transform .7s cubic-bezier(.2,.7,.2,1)}
+.btn.alt:after{background:linear-gradient(110deg,transparent 30%,rgba(92,225,230,.35) 50%,transparent 70%)}
+.btn:hover:after{transform:translate3d(130%,0,0)}
+.on .btn.pulse:after,.btn.pulse.on:after{animation:shim 5s 1.2s cubic-bezier(.2,.7,.2,1) infinite}
+@keyframes shim{0%{transform:translate3d(-130%,0,0)}18%,100%{transform:translate3d(130%,0,0)}}
+.btn.mg{transition:transform .12s linear,box-shadow .25s}
+.ckt{display:block;width:100%;max-width:520px;height:18px;margin:0 0 10px;overflow:visible}
+.ckt path{fill:none;stroke-width:1.2;vector-effect:non-scaling-stroke}
+.ckt .b{stroke:rgba(92,225,230,.35);stroke-dasharray:1;stroke-dashoffset:1;transition:stroke-dashoffset 1.1s cubic-bezier(.2,.7,.2,1)}
+.ckt .p{stroke:#a6eef0;stroke-width:2;stroke-dasharray:.08 .92;stroke-dashoffset:1;opacity:0;filter:drop-shadow(0 0 3px #5ce1e6)}
+.ckt circle{fill:#f0a202;opacity:0;transition:opacity .4s .9s}
+.ckt.in .b{stroke-dashoffset:0}
+.ckt.in circle{opacity:1}
+.ckt.in.on .p{opacity:1;animation:pls 3.2s linear infinite}
+@keyframes pls{to{stroke-dashoffset:-1}}
+.holo.live:after{animation-play-state:paused}
+.holo.live.on:after{animation-play-state:running}
+.js main section[id]>*:not(.ckt){transition:transform .7s cubic-bezier(.2,.7,.2,1),opacity .7s}
+.js main section.sx>*:not(.ckt){transform:translate3d(0,26px,0);opacity:0}
+.js main section.sx.in>*{transform:none;opacity:1}
+.js main section.sx.in>*:nth-child(2){transition-delay:.06s}
+.js main section.sx.in>*:nth-child(3){transition-delay:.12s}
+.js main section.sx.in>*:nth-child(n+4){transition-delay:.18s}
+@media(prefers-reduced-motion:reduce){.aur i,.boot,.sp{display:none}
+.wd{opacity:1;transform:none}
+.card,.card:hover,.btn,.btn:hover{transform:none!important}
+.cv:after,.cv:before{display:none}
+.ckt .b{stroke-dashoffset:0}
+.ckt circle{opacity:1}
+.ckt .p{display:none}
+.js main section.sx>*{transform:none;opacity:1}}
+.aur i:nth-child(1){background:radial-gradient(circle,rgba(92,225,230,.30),transparent 62%)}
+.aur i:nth-child(2){background:radial-gradient(circle,rgba(30,34,70,.26),transparent 62%)}
+.aur i:nth-child(3){background:radial-gradient(circle,rgba(240,162,2,.18),transparent 62%)}
+#nn{opacity:.8}
+.hero{position:relative}
+.hero:before{content:"";position:absolute;z-index:-1;left:-18px;right:-18px;top:-10px;height:420px;pointer-events:none;background:radial-gradient(60% 55% at 15% 20%,rgba(92,225,230,.16),transparent 70%),radial-gradient(50% 50% at 95% 45%,rgba(30,34,70,.18),transparent 70%)}
+.hero:after{content:"";position:absolute;left:-18px;right:-18px;top:0;height:2px;pointer-events:none;background:linear-gradient(90deg,transparent,rgba(92,225,230,.9),rgba(240,162,2,.7),transparent);box-shadow:0 0 18px 3px rgba(92,225,230,.45);opacity:0;animation:hscan 1.6s cubic-bezier(.3,.6,.2,1) .15s}
+@keyframes hscan{10%{opacity:1}85%{opacity:.8}to{opacity:0;transform:translate3d(0,520px,0)}}
+h1 .gt,h2 .gt{text-shadow:none;filter:drop-shadow(0 0 18px rgba(92,225,230,.35))}
+.bx{padding:16px}
+main section[id]{scroll-margin-top:64px}
+@media(max-width:699px){main section[id]{scroll-margin-top:92px}}
+@media(max-width:699px){.top{flex-wrap:wrap;height:auto;padding-top:10px}
+.top .logo{line-height:30px}
+nav{width:100%;display:flex;justify-content:space-between;gap:4px;overflow-x:auto;scrollbar-width:none;padding:4px 0 8px}
+nav::-webkit-scrollbar{display:none}
+nav a{margin:0;font:600 11.5px/1 "JetBrains Mono",ui-monospace,monospace;letter-spacing:.05em;text-transform:uppercase;padding:8px 2px;white-space:nowrap;opacity:.9}
+.boot{height:100px}
+.hero{padding-top:18px}}
+@media(prefers-reduced-motion:reduce){.aur i{display:block}
+#nn{display:block}
+.holo:after{opacity:.85;background:linear-gradient(135deg,rgba(92,225,230,.95),rgba(92,225,230,.15) 35%,rgba(240,162,2,.15) 65%,rgba(240,162,2,.9))}
+.hero:after{display:none}
+.ckt .p{display:block;opacity:.9;stroke-dasharray:.12 .88;stroke-dashoffset:-.3}}
+.free{grid-template-rows:auto}
+.free h3{font-size:21px}
+.mcta{transition:transform .35s cubic-bezier(.2,.7,.2,1),opacity .35s}
+.mcta.hid{transform:translate3d(0,140%,0);opacity:0;pointer-events:none}
+@media(max-width:699px){h1{font-size:clamp(33px,9.4vw,40px);line-height:1.04;margin:12px 0 10px}
+.lead{font-size:16.5px;line-height:1.5;margin:0 0 4px;color:#f4efe4;opacity:1}
+.hero .kick{font-size:11px;padding:6px 11px}
+.free{margin:16px 0 0;padding:16px;gap:12px;background:linear-gradient(160deg,rgba(18,22,34,.78),rgba(13,16,25,.82));box-shadow:0 0 0 1px rgba(240,162,2,.25),0 18px 50px -14px rgba(240,162,2,.45)}
+.free p{font-size:15px}
+.free .btn{font-size:16.5px;min-height:54px}
+main section[id]{padding-top:34px}
+h2{margin:40px 0 6px}
+.ckt{margin-bottom:8px}
+footer{margin-top:40px}}
+@media(prefers-reduced-motion:reduce){.mcta{transition:none}}
+.lvc{display:inline-flex;align-items:center;gap:7px;padding:5px 10px 5px 8px;border-radius:99px;border:1px solid rgba(194,189,177,.28);background:rgba(10,12,20,.7);font:600 11px/1 "JetBrains Mono",ui-monospace,Menlo,monospace;letter-spacing:.06em;text-transform:uppercase;color:#c2bdb1;vertical-align:middle;white-space:nowrap}
+.lvc b{font-weight:600}
+.lvc i{width:7px;height:7px;border-radius:50%;background:#aaa59a;flex:none}
+.lvc.on{border-color:rgba(92,225,230,.45);color:#cdf4f5;box-shadow:0 0 14px rgba(92,225,230,.18)}
+.lvc.on i{background:#5ce1e6;box-shadow:0 0 0 0 rgba(92,225,230,.7);animation:lvp 1.8s ease-out infinite}
+.lvc.sm{padding:3px 8px 3px 6px;font-size:10px}
+@keyframes lvp{0%{box-shadow:0 0 0 0 rgba(92,225,230,.7)}70%{box-shadow:0 0 0 8px rgba(92,225,230,0)}to{box-shadow:0 0 0 0 rgba(92,225,230,0)}}
+.lvf{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;font-size:14px;font-variant-numeric:tabular-nums}
+.nw{white-space:nowrap}
+.flash{animation:lvf .9s ease}
+@keyframes lvf{0%{text-shadow:0 0 0 rgba(92,225,230,0)}30%{text-shadow:0 0 18px rgba(92,225,230,.9)}to{text-shadow:0 0 0 rgba(92,225,230,0)}}
+@media (prefers-reduced-motion:reduce){.lvc.on i{animation:none;box-shadow:0 0 0 3px rgba(92,225,230,.25)}
+.flash{animation:none}}
+.sc{padding:0;overflow:hidden;display:flex;flex-direction:column}
+.sc a.t{color:#f4efe4;text-decoration:none}
+.sc a.t:hover{color:#5ce1e6}
+.sc .go a{color:#f0a202;text-decoration:none}
+.sc .go .dt{color:#5ce1e6;font-weight:600;margin-left:6px}
+.th{position:relative;display:block;aspect-ratio:1/1;overflow:hidden;background:#0e1022}
+.th img{width:100%;height:100%;object-fit:cover;object-position:50% 30%;display:block;transition:transform .5s}
+.sc:hover .th img{transform:scale(1.04)}
+.th:before{content:"";position:absolute;inset:8px;z-index:1;pointer-events:none;background:linear-gradient(#f0a202,#f0a202) 0 0/14px 2px,linear-gradient(#f0a202,#f0a202) 0 0/2px 14px,linear-gradient(#f0a202,#f0a202) 100% 0/14px 2px,linear-gradient(#f0a202,#f0a202) 100% 0/2px 14px,linear-gradient(#f0a202,#f0a202) 0 100%/14px 2px,linear-gradient(#f0a202,#f0a202) 0 100%/2px 14px,linear-gradient(#f0a202,#f0a202) 100% 100%/14px 2px,linear-gradient(#f0a202,#f0a202) 100% 100%/2px 14px;background-repeat:no-repeat;opacity:.85}
+.crumb{font-size:13px;color:#aaa59a;margin:0 0 12px}
+.row{display:flex;flex-wrap:wrap;gap:10px}
+@media (prefers-reduced-motion:reduce){.sc:hover .th img{transform:none}}
+.core{position:absolute;z-index:-1;right:-12px;top:-22px;width:118px;height:118px;perspective:600px;display:grid;place-items:center;pointer-events:none;opacity:.9}
+.core i,.core b{position:absolute;border-radius:50%}
+.core .cg{inset:-30%;background:radial-gradient(closest-side,rgba(92,225,230,.28),rgba(30,34,70,.14) 55%,transparent 75%)}
+.core .cs{inset:14%;background:conic-gradient(from 0deg,rgba(92,225,230,.0),rgba(92,225,230,.55),rgba(240,162,2,.45),rgba(92,225,230,.45),rgba(92,225,230,.0));-webkit-mask:radial-gradient(closest-side,transparent 78%,#000 80%,#000 88%,transparent 90%);mask:radial-gradient(closest-side,transparent 78%,#000 80%,#000 88%,transparent 90%)}
+.core b{inset:18%;border:1.5px solid rgba(92,225,230,.6);box-shadow:0 0 10px rgba(92,225,230,.35)}
+.core svg{position:relative;fill:#070814;filter:drop-shadow(0 0 3px rgba(244,239,228,.9))}
+.core.on .cs{animation:cspin 9s linear infinite}
+.core.on .cg{animation:cpul 3.6s ease-in-out infinite}
+@keyframes cspin{to{transform:rotate(360deg)}}
+@keyframes cpul{0%,100%{transform:scale(1);filter:brightness(1)}50%{transform:scale(1.05);filter:brightness(1.18)}}
+main h1{position:relative;z-index:1}
+@media(min-width:700px){.core{width:150px;height:150px;right:0;top:-30px}}
+.cc{position:relative;margin:18px 0 0;padding:14px 14px 12px;overflow:hidden;clip-path:polygon(14px 0,calc(100% - 14px) 0,100% 14px,100% calc(100% - 14px),calc(100% - 14px) 100%,14px 100%,0 calc(100% - 14px),0 14px);border-color:rgba(92,225,230,.32)}
+.cc:before{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(180deg,rgba(92,225,230,.05) 0 1px,transparent 1px 4px)}
+.cc:after{content:"";position:absolute;left:0;right:0;top:0;height:40%;pointer-events:none;background:linear-gradient(180deg,transparent,rgba(92,225,230,.10) 90%,rgba(166,238,240,.35));transform:translateY(-110%)}
+.cc.on:after{animation:ccs 5.5s cubic-bezier(.5,0,.5,1) infinite}
+@keyframes ccs{0%{transform:translateY(-110%)}55%,100%{transform:translateY(270%)}}
+@keyframes ccd{50%{opacity:.35}}
+.th:after{content:"";position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .35s;background:repeating-linear-gradient(180deg,rgba(92,225,230,.07) 0 1px,transparent 1px 3px),radial-gradient(120% 80% at 50% 0,rgba(92,225,230,.18),transparent 60%);mix-blend-mode:screen}
+.th .pv{position:absolute;right:8px;top:8px;z-index:2;font:700 9.5px/1 "JetBrains Mono",ui-monospace,Menlo,monospace;letter-spacing:.1em;color:#070814;background:#5ce1e6;border-radius:5px;padding:4px 6px;opacity:0;transform:translateY(-4px);transition:opacity .3s,transform .3s;box-shadow:0 0 12px rgba(92,225,230,.7)}
+.sc{transition:border-color .3s,box-shadow .3s}
+.sc.pv,.sc:hover,.sc:focus-within{border-color:rgba(92,225,230,.55);box-shadow:0 0 0 1px rgba(92,225,230,.25),0 18px 40px -18px rgba(92,225,230,.55)}
+.sc.pv .th:after,.sc:hover .th:after,.sc:focus-within .th:after{opacity:1}
+.sc.pv .th .pv,.sc:hover .th .pv,.sc:focus-within .th .pv{opacity:1;transform:none}
+.sc.pv .th img,.sc:hover .th img{animation:kb 6s ease-in-out infinite alternate}
+@keyframes kb{0%{transform:scale(1.04) translate3d(0,0,0)}100%{transform:scale(1.14) translate3d(-3%,-4%,0)}}
+@supports (animation-timeline:view()){@media (prefers-reduced-motion:no-preference){main section:not(.hero)>h2,main section:not(.hero)>.w>h2{animation:h2in linear both;animation-timeline:view();animation-range:entry 0% entry 70%}
+@keyframes h2in{from{opacity:.15;letter-spacing:.06em;filter:blur(5px);clip-path:inset(0 100% 0 0)}to{opacity:1;filter:none;clip-path:inset(0 0 0 0)}}}}
+@media (prefers-reduced-motion:reduce){.core.on *,.cc.on:after{animation:none!important}
+.cc:after{display:none}
+.sc.pv .th img,.sc:hover .th img{animation:none}}
+.eyebrow{display:flex;align-items:center;gap:9px}
+.nocoin{opacity:.7}
+footer.zf{position:relative;margin-top:64px;padding:0 0 calc(96px + env(safe-area-inset-bottom));border-top:1px solid rgba(92,225,230,.18);font-size:14px;opacity:1;background:linear-gradient(180deg,rgba(7,8,20,.2),#070814 40%),repeating-linear-gradient(90deg,rgba(92,225,230,.035) 0 1px,transparent 1px 28px);overflow:hidden}
+.zfl{position:absolute;left:0;top:-1px;height:2px;width:34%;background:linear-gradient(90deg,transparent,#5ce1e6,#f0a202,transparent);box-shadow:0 0 14px rgba(92,225,230,.7);animation:zfl 6s cubic-bezier(.6,0,.4,1) infinite}
+@keyframes zfl{0%{transform:translateX(-110%)}60%,100%{transform:translateX(300%)}}
+.zf a{color:#efe9dc;text-decoration:none}
+.zf a:hover{color:#5ce1e6}
+.zftop{display:grid;gap:22px;padding:30px 0 26px;border-bottom:1px solid rgba(92,225,230,.12)}
+.zfn{position:relative}
+.zfk{display:inline-flex;align-items:center;gap:7px;font:700 10.5px/1 "JetBrains Mono",ui-monospace,Menlo,monospace;letter-spacing:.1em;color:#f0a202}
+.zfk i{width:7px;height:7px;border-radius:50%;background:#f0a202;box-shadow:0 0 8px #f0a202;animation:ccd 1.6s ease-in-out infinite}
+.zf .zfh{margin:10px 0 6px;font-size:clamp(22px,6vw,28px);line-height:1.15;color:#f4efe4}
+.zfn p{margin:0 0 14px;color:#d6d1c5;font-size:15px;line-height:1.5;max-width:46ch}
+.zfn .btn{min-height:50px}
+.zf .zfhd{margin:0 0 10px;font:700 11px/1.2 "JetBrains Mono",ui-monospace,Menlo,monospace;letter-spacing:.12em;text-transform:uppercase;color:#7fd9dc}
+.zfs p{margin:0 0 12px;color:#d6d1c5}
+.zfso{display:flex;flex-wrap:wrap;gap:10px}
+.zf a.zfb{display:inline-flex;align-items:center;gap:10px;min-height:52px;padding:8px 16px 8px 12px;border-radius:14px;border:1px solid rgba(92,225,230,.28);background:rgba(10,12,20,.75);color:#f4efe4;transition:border-color .25s,box-shadow .25s,transform .25s}
+.zfb svg{width:26px;height:26px;color:#5ce1e6;flex:none}
+.zfb span{display:flex;flex-direction:column;font-weight:700;line-height:1.15}
+.zfb small{font-weight:500;font-size:11.5px;color:#c2bdb1}
+.zf a.zfb:hover{border-color:#5ce1e6;box-shadow:0 0 22px -6px rgba(92,225,230,.8);transform:translateY(-2px);color:#fff}
+.zfcols{display:grid;grid-template-columns:1fr 1fr;gap:24px 18px;padding:26px 0 22px}
+.zfab{grid-column:1/-1}
+.zf a.zflogo{font:700 18px/1 "Chakra Petch",system-ui,sans-serif;letter-spacing:.06em;color:#f4efe4}
+.zfab p{margin:8px 0 0;color:#c2bdb1;max-width:40ch;line-height:1.5}
+.zfcol ul{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.zfcol li a{display:inline-flex;align-items:center;min-height:36px;color:#d6d1c5}
+.zfcol li a:hover{color:#5ce1e6}
+.zftabs{display:flex;gap:6px;flex-wrap:wrap;padding:16px 0 12px;border-top:1px solid rgba(92,225,230,.12)}
+.zftab{font:600 13.5px/1 "Chakra Petch",system-ui,sans-serif;color:#d6d1c5;background:transparent;border:1px solid transparent;border-radius:9px;padding:10px 12px;min-height:40px;cursor:pointer;transition:background .2s,border-color .2s,color .2s}
+.zftab:hover{color:#fff}
+.zftab.on{color:#070814;background:#5ce1e6;box-shadow:0 0 16px -4px rgba(92,225,230,.8)}
+.zftab:focus-visible{outline:2px solid #f0a202;outline-offset:2px}
+.zfpan{padding:4px 0 16px;border-bottom:1px solid rgba(92,225,230,.12)}
+.zfpan p{margin:0;color:#d6d1c5;line-height:1.55;max-width:80ch}
+.zfpan p a{color:#5ce1e6}
+.zf.js .zfpan{display:none}
+.zf.js .zfpan.on{display:block;animation:zfin .35s ease}
+@keyframes zfin{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.zfpol{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+.zfpol li{display:flex;align-items:center}
+.zfpol a{display:inline-flex;align-items:center;min-height:40px;color:#efe9dc}
+.zftr{display:flex;flex-wrap:wrap;gap:8px;padding:18px 0}
+.zf a.zfchip{display:inline-flex;align-items:center;gap:7px;padding:7px 11px;border-radius:99px;border:1px solid rgba(92,225,230,.25);background:rgba(10,12,20,.7);font:600 11px/1.1 "JetBrains Mono",ui-monospace,Menlo,monospace;letter-spacing:.04em;color:#cdf4f5}
+.zfchip i{width:6px;height:6px;border-radius:50%;background:#5ce1e6;box-shadow:0 0 6px #5ce1e6}
+.zfchip:nth-child(even) i{background:#f0a202;box-shadow:0 0 6px #f0a202}
+.zf a.zfchip:hover{border-color:#5ce1e6;color:#fff}
+.zfbot{padding:16px 0 0;border-top:1px solid rgba(92,225,230,.12)}
+.zfbot p{margin:0 0 8px;color:#c2bdb1}
+.zfbot .small b{color:#f4efe4}
+.zfbot .lvf{margin:0 0 12px}
+@media(min-width:760px){.zftop{grid-template-columns:1.25fr 1fr;align-items:start;gap:40px;padding:40px 0 34px}
+.zfs{justify-self:end;padding-left:32px;border-left:1px solid rgba(92,225,230,.16)}
+.zfcols{grid-template-columns:1.4fr 1fr 1fr 1fr;gap:28px}
+.zfab{grid-column:auto}
+.zfpol{display:flex;flex-wrap:wrap}
+.zfpol li+li:before{content:"";width:1px;height:14px;background:rgba(194,189,177,.35);margin:0 12px}
+footer.zf{padding-bottom:40px}}
+main{overflow-x:clip}
+@media (prefers-reduced-motion:reduce){.zfl,.zfk i{animation:none}
+.zfl{display:none}
+.zf.js .zfpan.on{animation:none}
+.zf a.zfb,.zftab{transition:none}
+.zf a.zfb:hover{transform:none}}
+.lg{max-width:780px}
+.lgh{padding:26px 0 6px}
+.lgh h1{font-size:clamp(30px,8vw,46px);margin:12px 0 8px}
+.lgs{padding:16px 18px;margin:14px 0 0;line-height:1.6}
+.lg .lgs h2{margin:0 0 8px;font-size:19px}
+.lgs p{margin:0 0 10px;color:#efe9dc}
+.lgs p:last-child{margin-bottom:0}
+.lgs ul{margin:4px 0 0;padding-left:20px;color:#efe9dc}
+.lgs li{margin:0 0 6px}
+.lgs a{color:#5ce1e6}
+.zfbuy{padding:22px 0 20px;border-bottom:1px solid rgba(92,225,230,.12)}
+.zfbuy .row{margin:10px 0 8px;gap:10px;flex-wrap:wrap}
+.zfbuy .btn{font-size:14px}
+.ww{max-width:820px}
+@font-face{font-family:"Chakra Petch";src:url(/fonts/chakra-petch-600.woff2?v=21ae342) format("woff2");font-weight:600;font-display:swap}
+@font-face{font-family:"Chakra Petch";src:url(/fonts/chakra-petch-700.woff2?v=21ae342) format("woff2");font-weight:700 900;font-display:swap}
+
+body{background:#070814;color:#f4efe4;font-family:"Chakra Petch",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+body:after{display:block;content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;animation:none;background:repeating-linear-gradient(0deg,rgba(255,255,255,.022) 0 1px,transparent 1px 3px)}
+h1,h2,h3,.logo,.zflogo{font-family:"Chakra Petch",system-ui,-apple-system,"Segoe UI",sans-serif}
+h1{letter-spacing:-.005em;font-weight:700;text-shadow:0 0 22px rgba(92,225,230,.28),0 0 2px rgba(92,225,230,.35)}
+h2{letter-spacing:0;font-weight:700;text-shadow:0 0 16px rgba(92,225,230,.22)}
+h3{font-weight:600;letter-spacing:.005em}
+.gt{background-image:linear-gradient(90deg,#5ce1e6,#a6eef0 45%,#f0a202);-webkit-background-clip:text;background-clip:text;color:transparent}
+h1 .gt,h2 .gt{filter:drop-shadow(0 0 14px rgba(240,162,2,.30))}
+code,pre,kbd,.pal{font-family:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace}
+.logo{display:inline-flex;align-items:center;text-shadow:none}
+.logo img,.zflogo img{display:block;height:31px;width:auto;filter:drop-shadow(0 0 8px rgba(92,225,230,.35))}
+.zflogo{display:inline-block;text-shadow:none}
+.zflogo img{height:28px}
+.glass{--hc:rgba(92,225,230,.9);--hm:rgba(240,162,2,.85);border-radius:6px;border:1px solid rgba(92,225,230,.16);
+background:linear-gradient(var(--hc),var(--hc)) 0 0/18px 2px no-repeat,linear-gradient(var(--hc),var(--hc)) 0 0/2px 18px no-repeat,
+linear-gradient(var(--hm),var(--hm)) 100% 100%/18px 2px no-repeat,linear-gradient(var(--hm),var(--hm)) 100% 100%/2px 18px no-repeat,
+linear-gradient(160deg,rgba(17,21,36,.84),rgba(9,10,17,.86))}
+.btn{border-radius:6px;box-shadow:0 0 0 1px rgba(240,162,2,.55),0 0 22px -4px rgba(240,162,2,.65);color:#070814}
+.btn:hover,.btn:focus-visible{box-shadow:0 0 0 1px rgba(245,185,58,.9),0 0 30px -2px rgba(240,162,2,.8)}
+a.btn:not(.alt),button.btn:not(.alt){color:#070814}
+.btn.alt{color:#f4efe4;background:rgba(92,225,230,.06);border:1.5px solid #5ce1e6;box-shadow:0 0 18px -6px rgba(92,225,230,.8)}
+.btn.alt:hover,.btn.alt:focus-visible{box-shadow:0 0 26px -4px rgba(92,225,230,.95)}
+::selection{background:#f0a202;color:#070814}
+a:focus-visible,.btn:focus-visible{outline:2px solid #f0a202;outline-offset:3px}
+.cur{animation:none;opacity:.9}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;animation-delay:0s!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+h1,h2{text-shadow:none}}</style><style id="zseo">
+.zg h2{margin-top:0}.zg h3{margin:0 0 6px;font-size:1.08rem}
+.zg ol,.zg ul{padding-left:1.25em}.zg li{margin:.35em 0}
+.zsp{margin:14px 0 6px;border:1px solid var(--hl2,rgba(92,225,230,.5));background:rgba(92,225,230,.04)}
+.zsp .zsph{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--hl,rgba(92,225,230,.22));font:600 12px/1.2 var(--hmono,"JetBrains Mono",monospace);letter-spacing:.1em;text-transform:uppercase;color:var(--hc,#5ce1e6)}
+.zsp pre{margin:0;padding:12px 14px;white-space:pre-wrap;word-break:break-word;font:500 15px/1.6 var(--hmono,"JetBrains Mono",monospace);color:var(--hw,#f4efe4);background:none;border:0;overflow-wrap:anywhere}
+.zcp{min-height:40px;min-width:76px;padding:0 14px;border:1px solid var(--hc,#5ce1e6);background:transparent;color:var(--hc,#5ce1e6);font:700 12px/1 var(--hmono,"JetBrains Mono",monospace);letter-spacing:.1em;text-transform:uppercase;cursor:pointer}
+.zcp:hover,.zcp:focus-visible{background:rgba(92,225,230,.12)}.zcp.ok{background:var(--hc,#5ce1e6);color:var(--hbg,#070814)}
+.zmeta{font-size:.86rem;opacity:.82;margin:4px 0 0}.zrel{display:flex;flex-wrap:wrap;gap:10px;margin:8px 0 0}
+</style><style id="hudx">@font-face{font-family:"Chakra Petch";src:url(/fonts/chakra-petch-400.woff2?v=21ae342) format("woff2");font-weight:300 400;font-display:swap}@font-face{font-family:"Chakra Petch";src:url(/fonts/chakra-petch-500.woff2?v=21ae342) format("woff2");font-weight:500;font-display:swap}:root{--hc:#5ce1e6;--hm:#f0a202;--hy:#f0a202;--hw:#f4efe4;--hmu:#aaa59a;--hbg:#070814;--hp:rgba(11,14,22,.92);--hl:rgba(92,225,230,.22);--hl2:rgba(92,225,230,.5);--cut:12px;--hmono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;--hhd:"Chakra Petch",system-ui,sans-serif}html{background:var(--hbg)}body{background:var(--hbg)}body:before{background-size:48px 48px!important;opacity:.6;animation:none!important;-webkit-mask-image:linear-gradient(180deg,#000,rgba(0,0,0,.25) 70%);mask-image:linear-gradient(180deg,#000,rgba(0,0,0,.25) 70%)}body:after{display:block!important;content:""!important;position:fixed;inset:0;z-index:-3;pointer-events:none;animation:none!important;background:radial-gradient(60% 45% at 85% 0%,rgba(92,225,230,.10),transparent 70%),radial-gradient(50% 40% at 0% 100%,rgba(240,162,2,.08),transparent 70%)!important}.aur,#nn,.cg:not(.core *),.boot,.sp,.scan,.ckt,.th .tg,.pv{display:none!important}h1,h2,h3,.zfh,.zfhd{font-family:var(--hhd);letter-spacing:.01em}main h2{text-transform:uppercase;letter-spacing:.03em}.gt{background:none!important;-webkit-text-fill-color:currentColor!important;color:var(--hc)!important;text-shadow:0 0 22px rgba(92,225,230,.3);animation:none!important}.kick,.eyebrow,.badge,.chip,.ldst,.crumb,.lbl,.htk,.m,.small,.lvc,.cch,.zfk,.zftab{font-family:var(--hmono)}main{counter-reset:hx}.eyebrow{counter-increment:hx;display:flex!important;align-items:center;gap:10px;margin-bottom:10px;font:600 12px/1 var(--hmono)!important;letter-spacing:.16em!important;text-transform:uppercase;color:var(--hc)!important;background:none!important;border:0!important;padding:0!important}.eyebrow svg{display:none}.eyebrow:before{content:counter(hx,decimal-leading-zero);color:var(--hbg);background:var(--hc);padding:4px 6px;clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px)}.eyebrow:after{content:"";flex:1;height:8px;min-width:40px;background:linear-gradient(90deg,var(--hl2),var(--hl) 60%,transparent) left center/100% 1px no-repeat,repeating-linear-gradient(90deg,var(--hm) 0 6px,transparent 6px 9px) right center/45px 8px no-repeat}.kick{border-radius:0!important;clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px);background:rgba(92,225,230,.07)!important}.dot{border-radius:0!important;animation:none!important;box-shadow:0 0 8px var(--hc)!important}.glass,.card,.sc,.htc,.stat,.lgs,.term,.pal,.free,.mcta,.cv.glass,main details,.zfb,.ins,.hxba li{border-radius:0!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}.glass,.card,.sc,.htc,.lgs,.pal,.free,main details,.ins,.hxba li{--c0:var(--hl);position:relative;background:linear-gradient(135deg,transparent calc(var(--cut)*.7),var(--c0) calc(var(--cut)*.7) calc(var(--cut)*.7 + 1.2px),transparent 0) left top/calc(var(--cut) + 2px) calc(var(--cut) + 2px) no-repeat,linear-gradient(315deg,transparent calc(var(--cut)*.7),var(--c0) calc(var(--cut)*.7) calc(var(--cut)*.7 + 1.2px),transparent 0) right bottom/calc(var(--cut) + 2px) calc(var(--cut) + 2px) no-repeat,linear-gradient(160deg,rgba(16,20,32,.94),rgba(9,11,18,.94))!important;border:1px solid var(--c0)!important;clip-path:polygon(var(--cut) 0,100% 0,100% calc(100% - var(--cut)),calc(100% - var(--cut)) 100%,0 100%,0 var(--cut));box-shadow:none!important;transition:border-color .2s,box-shadow .25s,transform .25s}.mcta{position:fixed!important}.card.best,.free{--c0:rgba(240,162,2,.6)}.glass:after,.holo:after,.card:before,.cc:before,.cc:after,.cv:before,.cv:after,.btn:after,.htc:before,.th:after{content:none!important;animation:none!important}.card:hover,.js .card.rv.in:hover,.card.tl,.card.fl{transform:none!important}.hxk{position:absolute;inset:5px;pointer-events:none;z-index:3;opacity:0;transform:scale(1.04);transition:opacity .2s,transform .28s cubic-bezier(.2,.8,.2,1);--k:var(--hc);background:linear-gradient(var(--k),var(--k)) 0 0/12px 1.5px,linear-gradient(var(--k),var(--k)) 0 0/1.5px 12px,linear-gradient(var(--k),var(--k)) 100% 0/12px 1.5px,linear-gradient(var(--k),var(--k)) 100% 0/1.5px 12px,linear-gradient(var(--k),var(--k)) 0 100%/12px 1.5px,linear-gradient(var(--k),var(--k)) 0 100%/1.5px 12px,linear-gradient(var(--k),var(--k)) 100% 100%/12px 1.5px,linear-gradient(var(--k),var(--k)) 100% 100%/1.5px 12px;background-repeat:no-repeat}.hxk:after{content:"";position:absolute;top:-5px;bottom:-5px;left:-5px;width:35%;background:linear-gradient(100deg,transparent,rgba(92,225,230,.12) 45%,rgba(255,255,255,.10) 50%,rgba(92,225,230,.12) 55%,transparent);transform:translate3d(-120%,0,0);opacity:0}.card.best .hxk,.free .hxk{--k:var(--hm)}.hxa:hover .hxk,.hxa:focus-within .hxk,.hxa.hxon .hxk{opacity:1;transform:none}.hxa:hover,.hxa:focus-within,.hxa.hxon{--c0:var(--hl2);box-shadow:inset 0 0 0 1px rgba(92,225,230,.25),inset 0 0 34px rgba(92,225,230,.10)!important}.card.best.hxa:hover,.free.hxa:focus-within,.free.hxa:hover{box-shadow:inset 0 0 0 1px rgba(240,162,2,.3),inset 0 0 34px rgba(240,162,2,.10)!important}.hxa.hxs .hxk:after{animation:hxsw .9s cubic-bezier(.3,.6,.2,1) 1}@keyframes hxsw{0%{opacity:1;transform:translate3d(-120%,0,0)}100%{opacity:1;transform:translate3d(330%,0,0)}}.hx-rv{opacity:0;clip-path:polygon(0 0,0 0,0 calc(100% - var(--cut)),0 100%,0 100%,0 var(--cut))!important}.hx-rv.hx-in{opacity:1;clip-path:polygon(var(--cut) 0,100% 0,100% calc(100% - var(--cut)),calc(100% - var(--cut)) 100%,0 100%,0 var(--cut))!important;transition:clip-path .7s cubic-bezier(.2,.75,.2,1),opacity .45s ease}.js .rv,.js .card.rv,.js .rv.in,.js main section.sx>*{opacity:1!important;transform:none!important}.btn{border-radius:0!important;border:0!important;font-family:var(--hhd)!important;letter-spacing:.05em;text-transform:uppercase;color:var(--hbg)!important;box-shadow:none!important;transform:none!important;background:linear-gradient(135deg,transparent 8px,var(--hm) 8.5px) top/100% 51% no-repeat,linear-gradient(-45deg,transparent 8px,var(--hm) 8.5px) bottom/100% 51% no-repeat!important;transition:filter .2s}.btn:hover,.btn:focus-visible{filter:brightness(1.08) drop-shadow(0 0 10px rgba(240,162,2,.65))}.btn.alt{color:var(--hc)!important;background:linear-gradient(135deg,transparent 8px,rgba(92,225,230,.55) 8px 9.5px,rgba(92,225,230,.07) 9.5px) top/100% 51% no-repeat,linear-gradient(-45deg,transparent 8px,rgba(92,225,230,.55) 8px 9.5px,rgba(92,225,230,.07) 9.5px) bottom/100% 51% no-repeat!important;box-shadow:inset 1px 0 0 rgba(92,225,230,.55),inset -1px 0 0 rgba(92,225,230,.55)!important}.btn.alt:hover,.btn.alt:focus-visible{filter:drop-shadow(0 0 9px rgba(92,225,230,.55))}.btn:focus-visible,a:focus-visible,button:focus-visible,summary:focus-visible,input:focus-visible{outline:2px solid var(--hc)!important;outline-offset:3px}.ring:before{display:none!important}.badge,.chip,.ldst{border-radius:0!important;clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px);letter-spacing:.1em;text-transform:uppercase}.ldst{color:var(--hm)!important}.price{font-family:var(--hmono)!important}.pay{margin:6px 0 8px!important;font:700 17px/1.3 var(--hhd);color:var(--hw);letter-spacing:.01em}.card .pay{font-size:18px}.card h3{font-size:15px;color:var(--hc);text-transform:uppercase;letter-spacing:.06em;margin-top:2px}.sc .pay{font-size:16px;margin:0 0 6px!important}.sc .t{font-size:13.5px;color:var(--hmu)!important}.stat{position:relative}.stat b{font-family:var(--hhd)!important;color:var(--hc)!important;font-variant-numeric:tabular-nums}.stat:after{content:"";position:absolute;left:12px;right:12px;bottom:8px;height:4px;background:repeating-linear-gradient(90deg,rgba(92,225,230,.55) 0 8px,transparent 8px 11px);opacity:.5;-webkit-mask-image:linear-gradient(90deg,#000 60%,transparent);mask-image:linear-gradient(90deg,#000 60%,transparent)}.cc .stat:nth-child(even):after{background:repeating-linear-gradient(90deg,rgba(240,162,2,.6) 0 8px,transparent 8px 11px)}main details summary{font-family:var(--hhd);font-weight:700;letter-spacing:.02em;list-style:none;cursor:pointer}main details summary::-webkit-details-marker{display:none}main details:not(.mkits) summary:before{content:"[+] ";font-family:var(--hmono);color:var(--hc);font-weight:600}main details:not(.mkits)[open] summary:before{content:"[−] ";color:var(--hm)}main details[open]{--c0:rgba(240,162,2,.45)}header{background:rgba(7,8,20,.9)!important;border-bottom:1px solid var(--hl)!important;box-shadow:0 1px 0 rgba(240,162,2,.15)}.hxnav{display:flex;gap:4px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.hxnav::-webkit-scrollbar{display:none}.hxnav a{flex:none;display:inline-flex;align-items:center;min-height:40px;padding:0 11px;font:600 12px/1 var(--hmono)!important;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;color:var(--hw)!important;border:1px solid transparent;clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);transition:background-color .15s,border-color .15s}.hxnav a:before{content:attr(data-n);color:var(--hmu);margin-right:6px;font-size:10px}.hxnav a:hover,.hxnav a:focus-visible{background:rgba(92,225,230,.09);border-color:var(--hl2)}.hxnav a[aria-current]{color:var(--hbg)!important;background:var(--hc)}.hxnav a[aria-current]:before{color:rgba(7,8,20,.6)}@media(max-width:760px){header .top{flex-wrap:wrap;gap:6px;padding-bottom:6px}.hxnav{width:100%;margin:0 -4px}.hxnav a{min-height:40px;padding:0 9px;font-size:12px}.hxnav a:before{display:none}}.crumb{font-size:12px!important;letter-spacing:.1em;text-transform:uppercase;color:var(--hmu)!important}.crumb a{color:var(--hc)!important}.sc .th{border-radius:0!important}.sc .th img{border-radius:0!important}footer.zf{border-top:0!important;background:linear-gradient(180deg,rgba(7,8,20,0),rgba(92,225,230,.03))!important}footer.zf .zfl{display:block;height:2px;background:linear-gradient(90deg,transparent,var(--hc) 20%,var(--hm) 80%,transparent)!important;animation:none!important;opacity:.7}.zftab{border-radius:0!important}.hxba{margin:26px 0 8px}.hxba h2{font-size:clamp(22px,5.4vw,30px);margin:0 0 12px}.hxba ol{list-style:none;margin:0;padding:0;display:grid;gap:10px}.hxba li{padding:14px 16px;display:grid;gap:8px}.hxba .bf,.hxba .af{display:grid;grid-template-columns:76px 1fr;gap:10px;align-items:baseline;font-size:16px;line-height:1.4}.hxba .bf{color:var(--hmu)}.hxba .bf s{text-decoration-color:rgba(240,162,2,.7)}.hxba .af{color:var(--hw);font-weight:600}.hxba i{font:700 11px/1 var(--hmono);font-style:normal;letter-spacing:.14em;padding:5px 6px;text-align:center;clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px)}.hxba .bf i{color:var(--hmu);border:1px solid rgba(170,165,154,.5)}.hxba .af i{color:var(--hbg);background:var(--hc)}.hxba .pr{font:500 12px/1.3 var(--hmono);color:var(--hmu);letter-spacing:.06em;text-transform:uppercase}.hxba .go{margin:12px 0 0;font-size:16px}.hxba .go a{color:var(--hc);font-weight:700}@media(min-width:900px){.hxba ol{grid-template-columns:repeat(3,1fr)}.hxba{margin-top:40px}}body.hxh .hero .kr,body.hxh .hero .core{display:none!important}.hxd{position:relative}.hxd.hxdg{color:transparent!important}.hxd.hxdg .gt{color:transparent!important;text-shadow:none}.hxo{position:absolute;left:0;top:0;width:100%;pointer-events:none;color:var(--hw)}.hxd.hxdg .hxo .gt{color:var(--hc)!important}@media(prefers-reduced-motion:reduce){.hx-rv{opacity:1!important;clip-path:polygon(var(--cut) 0,100% 0,100% calc(100% - var(--cut)),calc(100% - var(--cut)) 100%,0 100%,0 var(--cut))!important}.hxk,.hxk:after{transition:none!important;animation:none!important}.hxo{display:none}.hxd.hxdg,.hxd.hxdg .gt{color:inherit!important}}.sc .th img,.sc:hover .th img,.sc.pv .th img{animation:none!important;transform:none!important}.hxfp{margin:34px 0 10px}.hxfp h2{font-size:clamp(24px,6vw,34px);margin:0 0 14px}.hxt{--cut:16px;position:relative;padding:0;border:1px solid rgba(92,225,230,.55);background:linear-gradient(180deg,rgba(92,225,230,.06),rgba(8,10,16,.96) 60px),#080916;clip-path:polygon(var(--cut) 0,100% 0,100% calc(100% - var(--cut)),calc(100% - var(--cut)) 100%,0 100%,0 var(--cut));box-shadow:inset 0 0 40px rgba(92,225,230,.07)}.hxth{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 16px 10px 22px;border-bottom:1px solid rgba(92,225,230,.25);font:600 12px/1.2 var(--hmono);letter-spacing:.12em;color:var(--hc)}.hxdots{display:flex;gap:5px}.hxdots i{width:9px;height:9px;background:var(--hc);opacity:.35}.hxdots i:last-child{background:var(--hm);opacity:.9}.hxtt{margin:16px 18px 0;font:700 15px/1.3 var(--hmono);color:var(--hy);letter-spacing:.04em}.hxtt:before{content:"> ";color:var(--hm)}.hxt pre{margin:10px 18px 4px;padding:0;white-space:pre-wrap;word-break:break-word;font:500 17px/1.6 var(--hmono);color:var(--hw);background:none;border:0;max-width:62em}.hxt pre:focus-visible{outline:2px solid var(--hc);outline-offset:6px}.hxtf{display:flex;flex-wrap:wrap;align-items:center;gap:12px 16px;padding:14px 18px 18px}.hxcp{min-height:52px;min-width:190px;font-size:17px!important;justify-content:center}.hxcp.ok{background:linear-gradient(135deg,transparent 8px,var(--hc) 8.5px) top/100% 51% no-repeat,linear-gradient(-45deg,transparent 8px,var(--hc) 8.5px) bottom/100% 51% no-repeat!important}.hxok{font:600 14px/1.2 var(--hmono);color:var(--hc);min-width:1px}.hxw{font-size:15px;color:var(--hmu)}.hxw b{color:var(--hw);font-weight:600}.hxcta{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin:18px 0 0}.hxcta span{font-size:15px;color:var(--hmu)}.btn.big{min-height:56px;font-size:18px!important;padding:12px 24px!important;display:inline-flex;align-items:center;justify-content:center}.hxsx{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0 18px}.hxsx .btn{flex-direction:column;gap:4px;width:100%;text-align:center}.hxsx small{font:600 12px/1.2 var(--hmono);letter-spacing:.06em;text-transform:none;opacity:.85}.hxsx .yt{background:linear-gradient(135deg,transparent 8px,#f0a202 8.5px) top/100% 51% no-repeat,linear-gradient(-45deg,transparent 8px,#f0a202 8.5px) bottom/100% 51% no-repeat!important;color:#070814!important}.hxsx .yt small{opacity:1}body.hxh #shorts{margin-top:34px}@media(max-width:640px){.hxsx{grid-template-columns:1fr 1fr;gap:10px}.hxsx .btn{min-height:68px;font-size:15px;line-height:1.2;padding:10px 8px}.hxsx small{font-size:11px}body.hxh #shorts .sh{display:grid;grid-auto-flow:column;grid-auto-columns:72%;grid-template-columns:none;overflow-x:auto;scroll-snap-type:x mandatory;gap:12px;padding-bottom:8px;overscroll-behavior-x:contain;scrollbar-width:thin}body.hxh #shorts .sc{scroll-snap-align:start;scroll-snap-stop:normal}.hxt pre{font-size:16px;margin:10px 14px 4px}.hxtt{margin:14px 14px 0}.hxtf{padding:12px 14px 16px}.hxcp{width:100%}.hxcta .btn{width:100%}.hxth{padding-left:18px;font-size:11px}}@media(min-width:900px){body.hxh #shorts .sh{grid-template-columns:repeat(3,1fr)}}.hxfree{margin-top:34px}@media(max-width:899px){main p:not(.small):not(.lvw):not(.hxtt):not(.eyb),main li,main .sub,main .pi,main .sc .t,main .sc a,main .btn.sm,main details p,main summary{font-size:16px!important;line-height:1.5}main .small,main .lvw{font-size:14px!important}}.zfmotto{margin:12px 0 6px;font:600 14px/1.3 var(--hmono);letter-spacing:.05em;text-transform:uppercase;color:var(--hm)}body.hxh .hv .pst{display:block!important;border-radius:0;clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}#shorts .sc .th{aspect-ratio:9/16}#shorts .sc .th img{object-fit:cover;object-position:50% 50%}#shorts .sc .scan,#shorts .sc .hxk,#shorts .sc .pv{display:none!important;animation:none!important}@media(hover:none),(pointer:coarse),(max-width:899px){body.hxh #shorts .sh{grid-auto-columns:62%;-webkit-overflow-scrolling:touch;scroll-behavior:auto;overflow-anchor:none}#shorts .sc,#shorts .sc *{transition:none!important;animation:none!important}#shorts .sc{box-shadow:none!important}#shorts .sc .th{transform:translateZ(0)}}.zg-l{position:fixed;right:14px;bottom:14px;z-index:9990;isolation:isolate;display:flex;align-items:center;gap:9px;min-height:48px;min-width:48px;padding:0 16px 0 8px;border:0;background:linear-gradient(135deg,#5ce1e6,#f0a202);color:#f4efe4;font:600 12.5px/1 "JetBrains Mono",ui-monospace,monospace;letter-spacing:.16em;cursor:pointer;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px);transition:opacity .25s,visibility 0s .25s;-webkit-tap-highlight-color:transparent}.zg-l:before{content:"";position:absolute;inset:1.5px;z-index:-1;background:#070814;clip-path:polygon(9px 0,100% 0,100% calc(100% - 9px),calc(100% - 9px) 100%,0 100%,0 9px)}.zg-l i{display:grid;place-items:center;width:30px;height:30px;background:#f0a202;color:#070814;font:700 17px/1 "Chakra Petch",system-ui,sans-serif;font-style:normal;letter-spacing:0;clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px)}.zg-l b{font-weight:600;color:#5ce1e6}.zg-l:hover:before{background:#0e1022}.zg-l:focus-visible{outline:2px solid #f4efe4;outline-offset:3px}.zg-l.zg-off,.zg-open .zg-l{opacity:0;visibility:hidden;pointer-events:none}.zg-l:not(.zg-off){transition:opacity .25s}.zg-p{position:fixed;right:14px;bottom:14px;z-index:9991;width:min(410px,calc(100vw - 28px));height:min(660px,calc(100vh - 28px));padding:1.5px;background:linear-gradient(160deg,#5ce1e6,rgba(92,225,230,.35) 45%,#f0a202);clip-path:polygon(16px 0,100% 0,100% calc(100% - 16px),calc(100% - 16px) 100%,0 100%,0 16px);color:#f4efe4;font:400 15px/1.5 "Chakra Petch",system-ui,-apple-system,"Segoe UI",sans-serif}.zg-p[hidden]{display:none}.zg-p.zg-in{animation:zgwipe .34s cubic-bezier(.2,.7,.2,1) both}@keyframes zgwipe{from{clip-path:polygon(16px 0,100% 0,100% 0,calc(100% - 16px) 0,0 0,0 0)}to{clip-path:polygon(16px 0,100% 0,100% calc(100% - 16px),calc(100% - 16px) 100%,0 100%,0 16px)}}.zg-w{display:flex;flex-direction:column;height:100%;background:#070814;clip-path:polygon(15px 0,100% 0,100% calc(100% - 15px),calc(100% - 15px) 100%,0 100%,0 15px)}.zg-hd{display:flex;align-items:center;gap:10px;padding:8px 8px 8px 18px;border-bottom:1px solid rgba(92,225,230,.28)}.zg-t{margin:0;flex:1;font:600 13px/1.2 "JetBrains Mono",ui-monospace,monospace;letter-spacing:.18em;color:#f4efe4}.zg-t small{display:block;margin-top:3px;font-size:10.5px;letter-spacing:.14em;color:#5ce1e6}.zg-dot{width:8px;height:8px;background:#f0a202;box-shadow:0 0 10px rgba(240,162,2,.7)}.zg-x{display:grid;place-items:center;width:44px;height:44px;border:1px solid rgba(244,239,228,.25);background:transparent;color:#f4efe4;font:500 18px/1 "Chakra Petch",system-ui,sans-serif;cursor:pointer;clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px)}.zg-x:hover{border-color:#5ce1e6;color:#5ce1e6}.zg-log{flex:1;overflow-y:auto;overscroll-behavior:contain;padding:14px 14px 6px;display:flex;flex-direction:column;gap:10px;scrollbar-width:thin;scrollbar-color:rgba(92,225,230,.4) transparent}.zg-m{max-width:94%;padding:10px 12px;font-size:15px;line-height:1.5;clip-path:polygon(9px 0,100% 0,100% calc(100% - 9px),calc(100% - 9px) 100%,0 100%,0 9px);animation:zgm .26s cubic-bezier(.2,.7,.2,1) both}@keyframes zgm{from{opacity:.3;clip-path:polygon(9px 0,0 0,0 100%,0 100%,0 100%,0 9px)}to{opacity:1;clip-path:polygon(9px 0,100% 0,100% calc(100% - 9px),calc(100% - 9px) 100%,0 100%,0 9px)}}.zg-b{align-self:flex-start;background:rgba(92,225,230,.07);border-left:2px solid #5ce1e6}.zg-u{align-self:flex-end;background:rgba(240,162,2,.12);border-right:2px solid #f0a202;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:13.5px}.zg-m p,.zg-m div.zg-pp{margin:0 0 8px}.zg-m>:last-child{margin-bottom:0}.zg-m ul{margin:6px 0 0;padding:0;list-style:none;display:grid;gap:8px}.zg-m li{padding-left:12px;border-left:1px solid rgba(240,162,2,.5);font-size:14px}.zg-m a{color:#5ce1e6;text-decoration:underline;text-underline-offset:2px}.zg-m b{color:#f4efe4;font-weight:600}.zg-k{display:block;margin-bottom:4px;font:600 10.5px/1.3 "JetBrains Mono",ui-monospace,monospace;letter-spacing:.16em;color:#f0a202}.zg-ls{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.zg-ls a.zg-a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:8px 14px;text-decoration:none;font:600 13px/1.2 "JetBrains Mono",ui-monospace,monospace;letter-spacing:.04em;color:#f4efe4;border:1px solid rgba(244,239,228,.35);clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px)}.zg-ls a.zg-buy{background:#f0a202;border-color:#f0a202;color:#070814}.zg-ls a.zg-soc{flex:1 1 40%;border-color:rgba(92,225,230,.6);color:#5ce1e6}.zg-ls a.zg-a:hover{border-color:#5ce1e6}.zg-ls a.zg-buy:hover{background:#f5b93a}.zg-pc{margin-top:10px;border:1px solid rgba(240,162,2,.45);background:#0b0c1c;clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}.zg-pc .zg-k{padding:8px 10px 0;margin:0}.zg-pc pre{margin:0;padding:6px 10px 8px;max-height:170px;overflow:auto;white-space:pre-wrap;word-break:break-word;font:400 12.5px/1.55 "JetBrains Mono",ui-monospace,monospace;color:#f4efe4;background:none;border:0}.zg-pf{display:flex;align-items:center;gap:10px;padding:0 10px 10px}.zg-cp{min-height:44px;padding:0 16px;border:0;background:#f0a202;color:#070814;font:700 13px/1 "JetBrains Mono",ui-monospace,monospace;letter-spacing:.06em;cursor:pointer;clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px)}.zg-cp.ok{background:#5ce1e6}.zg-ok{font-size:12.5px;color:#5ce1e6}.zg-cs{display:flex;flex-wrap:wrap;gap:8px;align-self:stretch;animation:zgm .3s .05s cubic-bezier(.2,.7,.2,1) both}.zg-c{min-height:44px;padding:8px 12px;border:1px solid rgba(92,225,230,.5);background:rgba(92,225,230,.05);color:#f4efe4;font:500 13.5px/1.25 "Chakra Petch",system-ui,sans-serif;text-align:left;cursor:pointer;clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px)}.zg-c:hover{border-color:#f0a202;background:rgba(240,162,2,.1)}.zg-c.zg-all{border-style:dashed;color:#5ce1e6}.zg-c:disabled{opacity:.4;cursor:default}.zg-f{display:flex;gap:8px;padding:10px 14px 6px;border-top:1px solid rgba(92,225,230,.28)}.zg-f input{flex:1;min-width:0;min-height:44px;padding:0 12px;border:1px solid rgba(92,225,230,.45);background:#0b0c1c;color:#f4efe4;font:400 16px/1 "Chakra Petch",system-ui,sans-serif;border-radius:0}.zg-f input::placeholder{color:#9c978c}.zg-f input:focus{outline:none;border-color:#f0a202}.zg-f button{min-height:44px;min-width:64px;padding:0 14px;border:0;background:#f0a202;color:#070814;font:700 13px/1 "JetBrains Mono",ui-monospace,monospace;letter-spacing:.08em;cursor:pointer;clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px)}.zg-ft{margin:0;padding:0 14px 10px;font:400 10.5px/1.4 "JetBrains Mono",ui-monospace,monospace;letter-spacing:.06em;color:#9c978c}.zg-sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}.zg-p button:focus-visible,.zg-p a:focus-visible{outline:2px solid #5ce1e6;outline-offset:2px}.zg-p .zg-c:focus-visible,.zg-p .zg-cp:focus-visible,.zg-p .zg-a:focus-visible,.zg-p .zg-x:focus-visible,.zg-f button:focus-visible{outline:none;box-shadow:inset 0 0 0 2px #f4efe4}@media(max-width:600px){.zg-l{right:10px;padding:0 9px}.zg-l span b{display:none}.zg-l span{font-size:12px}.zg-p{left:8px;right:8px;bottom:8px;width:auto;height:calc(100vh - 16px);height:calc(100dvh - 16px);max-height:720px}}@media(prefers-reduced-motion:reduce){.zg-p.zg-in,.zg-m,.zg-cs{animation:none}.zg-l{transition:none}}.zg-ty{display:flex;gap:5px;align-items:center;padding:12px 14px;min-height:20px}.zg-ty i{width:6px;height:6px;background:#5ce1e6;display:block;animation:zgty 1s infinite ease-in-out}.zg-ty i:nth-of-type(2){animation-delay:.15s}.zg-ty i:nth-of-type(3){animation-delay:.3s}@keyframes zgty{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}.zg-st>:last-child::after{content:"";display:inline-block;width:7px;height:1em;margin-left:2px;vertical-align:-2px;background:#f0a202;animation:zgcar .7s steps(2) infinite}@keyframes zgcar{50%{opacity:0}}.zg-c.zg-say{border-color:rgba(240,162,2,.55);background:rgba(240,162,2,.06)}.zg-c.zg-say:hover{border-color:#f0a202}.zg-p[data-busy] .zg-f button{opacity:.75}@media (prefers-reduced-motion:reduce){.zg-ty i,.zg-st>:last-child::after{animation:none}}.zlt{display:flex;align-items:center;gap:10px;margin:14px 0 6px;padding:8px 12px;border:1px solid var(--hl);background:rgba(10,14,24,.82);font:600 12px/1.35 var(--hmono);letter-spacing:.06em;clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);min-width:0}.zlt-l{display:inline-flex;align-items:center;gap:6px;color:var(--hc);flex:none;font-weight:700}.zlt-l b,.zlst b{width:8px;height:8px;border-radius:50%;background:var(--hc);box-shadow:0 0 0 0 rgba(92,225,230,.6);animation:zlp 2s ease-out infinite}.zlt-l.old b,.zlst.old b{background:var(--hmu);animation:none;box-shadow:none}@keyframes zlp{0%{box-shadow:0 0 0 0 rgba(92,225,230,.55)}70%,100%{box-shadow:0 0 0 7px rgba(92,225,230,0)}}.zlt-r{display:flex;gap:16px;min-width:0;flex:1;overflow:hidden}.zlt-r a{color:var(--hw);text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}.zlt-r a i{font-style:normal;color:var(--hy);margin-right:4px}.zlt-r a:hover,.zlt-r a:focus-visible{color:var(--hc)}.zlt-u{flex:none;color:var(--hmu);font-weight:500}@media(max-width:640px){.zlt{flex-wrap:wrap;gap:6px 10px}.zlt-r{flex-basis:100%;order:3;flex-direction:column;gap:4px}.zlt-u{margin-left:auto}}.zlv{margin:28px 0}.zlh{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 14px}.zlh h2{margin:6px 0 4px}.zlst{display:inline-flex;align-items:center;gap:7px;font:600 12px/1.3 var(--hmono);color:var(--hmu);letter-spacing:.05em}.zlg{display:grid;gap:12px;margin-top:12px;grid-template-columns:1fr}@media(min-width:760px){.zlg{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(min-width:1100px){.zlg{grid-template-columns:minmax(0,.8fr) minmax(0,1.3fr) minmax(0,1fr)}.zlc-l{grid-column:auto}.zlg:not(:has(.zlc-c)) .zlc-l{grid-column:auto}}.zlc{padding:16px;min-width:0}.zlk{display:block;font:700 11.5px/1.3 var(--hmono);letter-spacing:.1em;color:var(--hc);margin-bottom:8px}.zls{display:flex;gap:12px;align-items:flex-start;color:var(--hw);text-decoration:none;font:600 15px/1.4 var(--hhd)}.zls img{width:72px;height:128px;object-fit:cover;flex:none;border:1px solid var(--hl);clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px)}.zls:hover span,.zls:focus-visible span{color:var(--hc)}.zlc h3{margin:0 0 8px;font-size:1.05rem}.zlc pre{margin:0;padding:10px 12px;max-height:9.5em;overflow:auto;white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;font:500 13.5px/1.55 var(--hmono);color:var(--hw);background:rgba(92,225,230,.05);border:1px solid var(--hl)}.zla{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:10px 0 0}.zla .btn{min-height:40px}.zlm{font-size:.86rem;color:var(--hmu);margin:8px 0 0}.zlf{margin-top:10px}.zln{display:block;font:700 2rem/1.1 var(--hhd);color:var(--hw)}.zll{list-style:none;margin:0;padding:0;display:grid;gap:8px}.zll li{display:grid;grid-template-columns:52px 1fr;gap:8px;font-size:.92rem;line-height:1.4}.zll time{font:600 11.5px/1.6 var(--hmono);color:var(--hy)}.zll a{color:var(--hw)}.zll a:hover,.zll a:focus-visible{color:var(--hc)}.zlok,.zbok{font:600 12px/1.3 var(--hmono);color:var(--hc)}.zlcp.ok,.zbcp.ok{filter:brightness(1.15)}.zbp{margin:14px 0 0;font:600 14px/1.4 var(--hmono)}.zbp a{color:var(--hc)}.zbs{margin:4px 0 12px}.zbtabs{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}.zbt,.zbc{min-height:40px;padding:0 14px;border:1px solid var(--hl2);background:rgba(10,14,24,.6);color:var(--hw);font:600 13px/1.2 var(--hmono);letter-spacing:.03em;cursor:pointer;clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px)}.zbt[aria-selected=true],.zbc[aria-checked=true]{background:var(--hc);color:var(--hbg);border-color:var(--hc)}.zbt:hover,.zbt:focus-visible,.zbc:hover,.zbc:focus-visible{border-color:var(--hc);outline:none;box-shadow:0 0 0 2px rgba(92,225,230,.35)}.zbf{display:grid;gap:12px;grid-template-columns:1fr}@media(min-width:760px){.zbf{grid-template-columns:1fr 1fr}.zbfi:has(textarea),.zbf>.zmeta{grid-column:1/-1}}.zbfi{display:flex;flex-direction:column;gap:6px;min-width:0}.zbfl{font:700 12px/1.3 var(--hmono);letter-spacing:.08em;text-transform:uppercase;color:var(--hc)}.zbin{width:100%;box-sizing:border-box;min-height:44px;padding:10px 12px;border:1px solid var(--hl2);background:rgba(5,10,20,.7);color:var(--hw);font:500 16px/1.45 var(--hhd);border-radius:0}textarea.zbin{resize:vertical;min-height:120px;font-family:var(--hmono);font-size:15px}.zbin:focus{outline:none;border-color:var(--hc);box-shadow:0 0 0 2px rgba(92,225,230,.3)}.zbin::placeholder{color:var(--hmu);opacity:.85}.zbch{display:flex;flex-wrap:wrap;gap:8px}.zbx{display:flex;gap:10px;align-items:flex-start;margin:14px 0 4px;font-size:.95rem;cursor:pointer}.zbx input{width:20px;height:20px;margin:2px 0 0;accent-color:var(--hc);flex:none}.zbo pre{min-height:6em;max-height:24em;overflow:auto}.zbn{color:var(--hy)}.zbn.ok{color:var(--hc)}.zba{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:12px 0 4px}.zba .btn[aria-disabled=true]{opacity:.45;pointer-events:none}@media(max-width:420px){.zba .btn{flex:1 1 100%;justify-content:center;text-align:center}}@media (prefers-reduced-motion:reduce){.zlt-l b,.zlst b{animation:none}}</style><script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Zapwise AI","item":"https://zapwiseai.com/"},{"@type":"ListItem","position":2,"name":"Shortcut Builder","item":"https://zapwiseai.com/ai-prompt-builder.html"}]}</script></head><body><a class="skip" href="#main">Skip to content</a>
+<header><div class="w top"><a class="logo" href="/" aria-label="Zapwise home"><img src="/img/brand/zapwise-logo.svg?v=21ae342" alt="Zapwise" width="136" height="31" decoding="async"></a><nav class="hxnav" aria-label="Site"><a data-n="01" href="/#free">Free</a><a data-n="02" href="/#prompts">Prompts</a><a data-n="03" href="/ai-shortcuts-for-work.html">Guides</a><a data-n="04" href="/#shop">Shop</a><a data-n="05" href="/tools.html">Tools</a><a data-n="06" href="/#shorts">Shorts</a><a data-n="07" href="/#faq">FAQ</a></nav></div></header><main id="main" class="w lg ww zg"><p class="crumb"><a href="/">Zapwise</a> › Guides › Shortcut Builder</p><section class="lgh"><span class="kick"><span class="dot" aria-hidden="true"></span>free tool</span><h1>Shortcut Builder <span class="gt">for AI prompts</span></h1><p class="lead">Pick a work task, fill in the blanks, and get a ready prompt for ChatGPT, Gemini, Copilot or Claude. Copy it, or open it straight in ChatGPT or Claude. Free, no sign-up, and it runs in your browser.</p></section><div class="zlt" data-zlt role="region" aria-label="Live updates"><span class="zlt-l"><b aria-hidden="true"></b>LIVE</span><div class="zlt-r"><a href="/shorts/snipping-tool-copies-text-from-any-screenshot-tpnp.html" data-zl="short"><i>NEW SHORT</i> Snipping Tool Copies Text From Any Screenshot ✂️</a><a href="/#feed" data-zl="sod"><i>TODAY</i> % complete</a></div><span class="zlt-u" data-zl="upd">Oct 29, 3:07 PM CT</span></div><section class="lgs glass zb" id="build" aria-labelledby="zb-h"><h2 id="zb-h">Build your prompt</h2>
+<p class="zbs">1. Pick a task. 2. Fill in what you know. 3. Copy it, or open it in ChatGPT or Claude and press send.</p>
+<div class="zbtabs" role="tablist" aria-label="Task"><button type="button" class="zbt" role="tab" data-t="email" aria-selected="true">Email from bullet points</button><button type="button" class="zbt" role="tab" data-t="followup" aria-selected="false">Polite follow-up</button><button type="button" class="zbt" role="tab" data-t="meeting" aria-selected="false">Meeting notes to summary</button><button type="button" class="zbt" role="tab" data-t="report" aria-selected="false">Executive summary</button><button type="button" class="zbt" role="tab" data-t="formula" aria-selected="false">Spreadsheet formula</button><button type="button" class="zbt" role="tab" data-t="slides" aria-selected="false">Slide outline</button></div>
+<div class="zbf" id="zbf" aria-live="off"><p class="zmeta">Turn on JavaScript to fill in the blanks here, or copy a template from the list below.</p></div>
+<label class="zbx"><input type="checkbox" id="zbq"> <span>Add “Ask me questions first” (the AI asks you up to 5 questions before it answers)</span></label>
+<div class="zsp zbo"><div class="zsph"><span id="zbl">Your prompt · Email from bullet points</span><span id="zbn" class="zbn"></span></div><pre id="zbo" tabindex="0" aria-label="Your prompt">Turn these notes into a clear, friendly work email to [RECIPIENT / ROLE]. Keep it under 150 words, put the main ask in the first two lines, and end with one specific next step.
+Notes: [PASTE BULLETS]</pre></div>
+<div class="zba"><button type="button" class="btn zbcp" id="zbcp" data-nosfx>Copy prompt</button>
+<a class="btn alt" id="zbgpt" href="https://chatgpt.com/?q=Turn%20these%20notes%20into%20a%20clear%2C%20friendly%20work%20email%20to%20%5BRECIPIENT%20%2F%20ROLE%5D.%20Keep%20it%20under%20150%20words%2C%20put%20the%20main%20ask%20in%20the%20first%20two%20lines%2C%20and%20end%20with%20one%20specific%20next%20step.%0ANotes%3A%20%5BPASTE%20BULLETS%5D" target="_blank" rel="noopener">Open in ChatGPT ↗</a>
+<a class="btn alt" id="zbcl" href="https://claude.ai/new?q=Turn%20these%20notes%20into%20a%20clear%2C%20friendly%20work%20email%20to%20%5BRECIPIENT%20%2F%20ROLE%5D.%20Keep%20it%20under%20150%20words%2C%20put%20the%20main%20ask%20in%20the%20first%20two%20lines%2C%20and%20end%20with%20one%20specific%20next%20step.%0ANotes%3A%20%5BPASTE%20BULLETS%5D" target="_blank" rel="noopener">Open in Claude ↗</a>
+<span class="zbok" id="zbok" role="status" aria-live="polite"></span></div>
+<p class="zmeta" id="zbw">The prompt opens already typed in. Nothing sends until you press send. Using Gemini or Copilot? Copy the prompt and paste it in.</p>
+<script type="application/json" id="zb-data">{"ask": "Before you answer, ask me up to 5 questions about anything you need to know to do this well. Ask them all at once, then wait.", "r": [{"id": "email", "label": "Email from bullet points", "fields": [{"k": "to", "l": "Who is it to?", "ph": "e.g. my manager, a new client", "blank": "RECIPIENT / ROLE"}, {"k": "tone", "l": "Tone", "ch": ["friendly", "direct", "formal", "warm"], "d": "friendly"}, {"k": "words", "l": "Max length", "ch": ["100", "150", "200"], "d": "150", "suf": " words"}, {"k": "points", "l": "Your bullet points", "ta": 1, "ph": "- what happened\n- what you need\n- by when", "blank": "PASTE BULLETS"}], "tpl": "Turn these notes into a clear, {tone} work email to {to}. Keep it under {words} words, put the main ask in the first two lines, and end with one specific next step.\nNotes: {points}", "src": true}, {"id": "followup", "label": "Polite follow-up", "fields": [{"k": "name", "l": "Who hasn't replied?", "ph": "e.g. Sam in finance", "blank": "NAME"}, {"k": "topic", "l": "About what?", "ph": "e.g. the Q3 invoice", "blank": "TOPIC"}, {"k": "date", "l": "When did you first email?", "ph": "e.g. last Tuesday", "blank": "DATE"}], "tpl": "Write a short, polite follow-up to {name} about {topic}. I first emailed on {date}. Don't sound annoyed. Offer one easy way to answer (e.g. a yes/no or a 10-minute call).", "src": true}, {"id": "meeting", "label": "Meeting notes to summary", "fields": [{"k": "notes", "l": "Paste your notes or transcript", "ta": 1, "ph": "Rough notes are fine.", "blank": "PASTE NOTES OR TRANSCRIPT"}], "tpl": "Turn these raw meeting notes into: (1) a 3-sentence summary, (2) decisions made, (3) action items as a table with owner and due date, (4) open questions.\n{notes}", "src": true}, {"id": "report", "label": "Executive summary", "fields": [{"k": "n", "l": "Sentences", "ch": ["3", "5", "7"], "d": "5"}, {"k": "reader", "l": "Who reads it?", "ph": "e.g. a senior leader", "d": "a senior leader", "blank": "READER"}, {"k": "doc", "l": "Paste the document", "ta": 1, "ph": "Paste the text, not a file.", "blank": "PASTE DOCUMENT"}], "tpl": "Write a {n}-sentence executive summary of this document for {reader} who has 60 seconds. Lead with the conclusion and the decision needed.\n{doc}", "src": true}, {"id": "formula", "label": "Spreadsheet formula", "fields": [{"k": "app", "l": "App", "ch": ["Excel", "Google Sheets"], "blank": "EXCEL / GOOGLE SHEETS"}, {"k": "a", "l": "Column A holds", "ph": "e.g. order date", "blank": "WHAT"}, {"k": "b", "l": "Column B holds", "ph": "e.g. customer", "blank": "WHAT"}, {"k": "c", "l": "Column C holds", "ph": "e.g. amount", "blank": "WHAT"}, {"k": "rows", "l": "Last row", "ph": "e.g. 500", "blank": "N"}, {"k": "goal", "l": "What should it do?", "ph": "e.g. total per customer this month", "blank": "GOAL"}], "tpl": "I use {app}. My data: column A = {a}, B = {b}, C = {c}, rows 2 to {rows}. Write a formula for {goal} and explain it in plain English.", "src": true}, {"id": "slides", "label": "Slide outline", "fields": [{"k": "topic", "l": "What's the talk about?", "ph": "e.g. our new onboarding process", "blank": "TOPIC"}, {"k": "audience", "l": "Who is it for?", "ph": "e.g. the sales team", "blank": "AUDIENCE"}, {"k": "n", "l": "Slides", "ch": ["5", "7", "10"], "d": "7"}, {"k": "facts", "l": "Facts to use (optional)", "ta": 1, "ph": "Numbers, dates, names the AI must not change.", "opt": 1}], "tpl": "Plan a {n}-slide presentation about {topic} for {audience}. For each slide give a short title, 3 bullet points of no more than 12 words each, and one line of speaker notes. Open with the main message and end with one clear next step.\n?Use only these facts and don't change them: {facts}", "src": false}]}</script></section><section class="zlv" id="feed" data-feed aria-labelledby="zlv-h"><div class="eyebrow"><span>// live</span></div><div class="zlh"><h2 id="zlv-h">Live on Zapwise</h2><span class="zlst" data-zl="st"><b aria-hidden="true"></b><span data-zl="upd">updated Oct 29, 3:07 PM CT</span></span></div><div class="zlg"><article class="zlc zlc-s glass"><span class="zlk">LATEST SHORT · Oct 29</span><a class="zls" href="/shorts/snipping-tool-copies-text-from-any-screenshot-tpnp.html" data-zl="slink"><img src="/img/shorts/TpnpWSW_XOQ.jpg" width="99" height="176" alt="Thumbnail: Snipping Tool Copies Text From Any Screenshot ✂️" loading="lazy" decoding="async" data-zl="simg"><span data-zl="stitle">Snipping Tool Copies Text From Any Screenshot ✂️</span></a><p class="zla"><a href="https://www.youtube.com/shorts/TpnpWSW_XOQ" data-zl="syt" rel="noopener">Watch on YouTube →</a></p></article><article class="zlc zlc-d glass"><span class="zlk" data-zl="dkind">SHORTCUT OF THE DAY · FORMULA</span><h3 data-zl="dt">% complete</h3><pre id="zlpre" data-zl="dx">=COUNTIF(F2:F200, &quot;Done&quot;) / COUNTA(A2:A200)</pre><p class="zlm" data-zl="dtag">Checked on fictional sample data in LibreOffice Calc 25.2</p><p class="zla"><button type="button" class="btn zlcp" data-nosfx data-c="zlpre">Copy</button><a class="btn ghost" href="/spreadsheet-formula-shortcuts.html#sc109" data-zl="du">See what it does →</a><span class="zlok" role="status" aria-live="polite"></span></p></article><article class="zlc zlc-c glass"><span class="zlk">CHANNEL · YOUTUBE API</span><b class="zln" data-zl="views">4,052</b><span class="zlm">total views on <a href="https://www.youtube.com/@zapwisehq">@Zapwisehq</a></span></article><article class="zlc zlc-l glass"><span class="zlk">SITE UPDATES</span><ol class="zll" data-zl="log"><li><time datetime="2026-10-29T14:44:28-05:00">Oct 29</time><a href="/ai-shortcuts-for-work.html">Ask Zapwise guide bot now holds a conversation and searches the whole site.</a></li><li><time datetime="2026-10-29T14:44:28-05:00">Oct 29</time><a href="/ai-hacks-for-work.html">Free guides: AI shortcuts, AI hacks and spreadsheet formulas for work.</a></li><li><time datetime="2026-10-29T13:17:38-05:00">Oct 29</time><a href="/">Moved to our own domain: zapwiseai.com.</a></li><li><time datetime="2026-10-29T12:00:00-05:00">Oct 29</time><a href="/ai-prompt-builder.html">New: Shortcut Builder. Fill in the blanks, get a ready prompt.</a></li><li><time datetime="2026-10-29T11:29:19-05:00">Oct 29</time><a href="/">Ask Zapwise guide bot added to every page.</a></li><li><time datetime="2026-10-29T11:00:09-05:00">Oct 29</time><a href="/shorts/snipping-tool-copies-text-from-any-screenshot-tpnp.html">New Short page: Snipping Tool Copies Text From Any Screenshot ✂️</a></li></ol></article></div><p class="zlm zlf">Updates on its own: new Shorts and channel views come from the YouTube API every few hours, the shortcut changes every day at midnight CT.</p></section><section class="lgs glass"><h2>Private by design</h2><ul>
+<li>The builder runs in your browser. What you type here is not sent to Zapwise or saved.</li>
+<li>Open in ChatGPT or Claude puts the prompt in the link to that service. It goes to them when you press send, under their privacy terms.</li>
+<li>Use placeholders like [CLIENT] or [AMOUNT] instead of confidential names and numbers, and follow your company's AI policy.</li>
+<li>Check the answer before you use it. AI can sound sure and still be wrong.</li></ul></section>
+<section class="lgs glass"><h2>The templates</h2><p>Five templates are our free-pack prompts with the blanks turned into fields, so the defaults give you the exact free-pack wording. The slide outline is new and was written for this builder. We haven't measured how much time any of them saves: that depends on your task and your AI app.</p></section>
+<section class="lgs glass" id="tpl-email"><span class="ldst">TEMPLATE</span><h3>Email from bullet points</h3><p class="zmeta">Based on the free-pack prompt “Write a clear email from bullet points”.</p><div class="zsp"><div class="zsph"><span>Template</span><button class="zcp" type="button" data-nosfx aria-controls="zt-email">Copy</button></div><pre id="zt-email">Turn these notes into a clear, friendly work email to [RECIPIENT / ROLE]. Keep it under 150 words, put the main ask in the first two lines, and end with one specific next step.
+Notes: [PASTE BULLETS]</pre></div><p class="row" style="margin:8px 0 0"><a class="btn ghost" href="/ai-prompt-builder.html?t=email#build">Fill this one in →</a></p></section><section class="lgs glass" id="tpl-followup"><span class="ldst">TEMPLATE</span><h3>Polite follow-up</h3><p class="zmeta">Based on the free-pack prompt “Polite follow-up (no reply yet)”.</p><div class="zsp"><div class="zsph"><span>Template</span><button class="zcp" type="button" data-nosfx aria-controls="zt-followup">Copy</button></div><pre id="zt-followup">Write a short, polite follow-up to [NAME] about [TOPIC]. I first emailed on [DATE]. Don&#x27;t sound annoyed. Offer one easy way to answer (e.g. a yes/no or a 10-minute call).</pre></div><p class="row" style="margin:8px 0 0"><a class="btn ghost" href="/ai-prompt-builder.html?t=followup#build">Fill this one in →</a></p></section><section class="lgs glass" id="tpl-meeting"><span class="ldst">TEMPLATE</span><h3>Meeting notes to summary</h3><p class="zmeta">Based on the free-pack prompt “Notes to summary”.</p><div class="zsp"><div class="zsph"><span>Template</span><button class="zcp" type="button" data-nosfx aria-controls="zt-meeting">Copy</button></div><pre id="zt-meeting">Turn these raw meeting notes into: (1) a 3-sentence summary, (2) decisions made, (3) action items as a table with owner and due date, (4) open questions.
+[PASTE NOTES OR TRANSCRIPT]</pre></div><p class="row" style="margin:8px 0 0"><a class="btn ghost" href="/ai-prompt-builder.html?t=meeting#build">Fill this one in →</a></p></section><section class="lgs glass" id="tpl-report"><span class="ldst">TEMPLATE</span><h3>Executive summary</h3><p class="zmeta">Based on the free-pack prompt “Executive summary”.</p><div class="zsp"><div class="zsph"><span>Template</span><button class="zcp" type="button" data-nosfx aria-controls="zt-report">Copy</button></div><pre id="zt-report">Write a 5-sentence executive summary of this document for a senior leader who has 60 seconds. Lead with the conclusion and the decision needed.
+[PASTE DOCUMENT]</pre></div><p class="row" style="margin:8px 0 0"><a class="btn ghost" href="/ai-prompt-builder.html?t=report#build">Fill this one in →</a></p></section><section class="lgs glass" id="tpl-formula"><span class="ldst">TEMPLATE</span><h3>Spreadsheet formula</h3><p class="zmeta">Based on the free-pack prompt “Write the formula for me”.</p><div class="zsp"><div class="zsph"><span>Template</span><button class="zcp" type="button" data-nosfx aria-controls="zt-formula">Copy</button></div><pre id="zt-formula">I use [EXCEL / GOOGLE SHEETS]. My data: column A = [WHAT], B = [WHAT], C = [WHAT], rows 2 to [N]. Write a formula for [GOAL] and explain it in plain English.</pre></div><p class="row" style="margin:8px 0 0"><a class="btn ghost" href="/ai-prompt-builder.html?t=formula#build">Fill this one in →</a></p></section><section class="lgs glass" id="tpl-slides"><span class="ldst">TEMPLATE</span><h3>Slide outline</h3><p class="zmeta">Written for the Shortcut Builder (not in the free pack).</p><div class="zsp"><div class="zsph"><span>Template</span><button class="zcp" type="button" data-nosfx aria-controls="zt-slides">Copy</button></div><pre id="zt-slides">Plan a 7-slide presentation about [TOPIC] for [AUDIENCE]. For each slide give a short title, 3 bullet points of no more than 12 words each, and one line of speaker notes. Open with the main message and end with one clear next step.</pre></div><p class="row" style="margin:8px 0 0"><a class="btn ghost" href="/ai-prompt-builder.html?t=slides#build">Fill this one in →</a></p></section>
+<section class="lgs glass"><h2>Want more ready-made prompts?</h2><p class="row" style="margin:0"><a class="btn" href="https://payhip.com/b/62aMn?utm_source=website&utm_medium=builder&utm_campaign=shop">Get all 10 free prompts (PDF) →</a></p>
+<p>Or start with <a href="/ai-shortcuts-for-work.html">5 free AI shortcuts for work</a> and <a href="/ai-hacks-for-work.html">7 AI hacks that hold up</a>.</p></section><section class="lgs glass"><h2>Related guides</h2><div class="zrel"><a class="btn ghost" href="/ai-shortcuts-for-work.html">AI shortcuts for work →</a><a class="btn ghost" href="/ai-hacks-for-work.html">AI hacks for work →</a><a class="btn ghost" href="/spreadsheet-formula-shortcuts.html">Spreadsheet formula shortcuts →</a><a class="btn ghost" href="/shorts/">Zapwise Shorts →</a></div></section></main><script>
+document.addEventListener('click',function(e){var b=e.target.closest('.zcp');if(!b)return;var p=document.getElementById(b.getAttribute('aria-controls'));if(!p)return;
+var t=p.textContent,done=function(){b.classList.add('ok');b.textContent='Copied';try{window.zwSfx&&window.zwSfx('lock')}catch(_){}setTimeout(function(){b.classList.remove('ok');b.textContent='Copy'},1600)};
+if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(t).then(done,function(){fb()})}else fb();
+function fb(){var a=document.createElement('textarea');a.value=t;a.setAttribute('readonly','');a.style.position='fixed';a.style.opacity='0';document.body.appendChild(a);a.select();try{document.execCommand('copy');done()}catch(_){}a.remove()}});
+</script><footer class="zf"><i class="zfl" aria-hidden="true"></i><div class="w">
+<div class="zftop">
+<div class="zfn"><span class="zfk"><i aria-hidden="true"></i>FREE · 5-PAGE PDF</span><h2 class="zfh">Get our free AI prompts</h2>
+<p>10 copy-paste prompts for emails, meetings and reports. Enter your email on Payhip and download instantly. No card needed.</p>
+<a class="btn" href="https://payhip.com/b/62aMn?utm_source=website&utm_medium=footer&utm_campaign=shop">Get the 10 free prompts →</a>
+</div>
+<div class="zfs"><h2 class="zfhd">Follow Zapwise</h2><p>A new AI tool Short every day at 4 PM CT.</p>
+<div class="zfso"><a class="zfb" href="https://www.youtube.com/@Zapwisehq"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="1.5" y="5" width="21" height="14" rx="4.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M10 9.2v5.6l5-2.8z" fill="currentColor"/></svg><span>YouTube<small>@Zapwisehq</small></span></a><a class="zfb" href="https://x.com/Zapwisehq" aria-label="Follow Zapwise on X"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.8 3h3.1l-6.8 7.8L22 21h-6.2l-4.9-6.4L5.3 21H2.2l7.3-8.3L2 3h6.4l4.4 5.8zm-1.1 16.2h1.7L7.4 4.7H5.6z" fill="currentColor"/></svg><span>Follow on X<small>@Zapwisehq</small></span></a><a class="zfb" href="https://payhip.com/Zapwisehq?utm_source=website&utm_medium=footer_follow&utm_campaign=shop"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1.2 12H6.2z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span>Shop<small>on Payhip</small></span></a></div></div>
+</div>
+<div class="zfbuy"><h2 class="zfhd">Buy direct · instant PDF download</h2><p class="row"><a class="btn alt" href="https://payhip.com/b/62aMn?utm_source=website&utm_medium=footer_buy&utm_campaign=shop">Free · 10 prompts →</a><a class="btn" href="https://payhip.com/b/9jBNp?utm_source=website&utm_medium=footer_buy&utm_campaign=shop">Prompt Pack · $9 →</a><a class="btn" href="https://payhip.com/b/GmYVd?utm_source=website&utm_medium=footer_buy&utm_campaign=shop">7-Day Path · $7 →</a><a class="btn" href="https://payhip.com/b/I1xZS?utm_source=website&utm_medium=footer_buy&utm_campaign=shop">4-PDF Bundle · $19 →</a></p><p class="small">Each button opens the product on Payhip: pay or enter your email, then download. <a href="/#shop">Compare all guides</a></p></div>
+<div class="zfcols">
+<div class="zfcol zfab"><a class="zflogo" href="/" aria-label="Zapwise home"><img src="/img/brand/zapwise-logo.svg?v=21ae342" alt="Zapwise" width="136" height="31" decoding="async"></a><p class="zfmotto">No face. No hours. Just the shortcut.</p><p>Short, plain-English videos about new AI tools, plus prompts that save time at work.</p></div>
+<div class="zfcol"><h2 class="zfhd">Product</h2><ul><li><a href="/#free">Free prompts</a></li><li><a href="/#shop">Shop</a></li><li><a href="/p/bundle.html">Bundle</a></li><li><a href="/shorts/">All Shorts</a></li><li><a href="/tools.html">AI tools</a></li></ul></div>
+<div class="zfcol"><h2 class="zfhd">Guides</h2><ul><li><a href="/ai-shortcuts-for-work.html">AI shortcuts for work</a></li><li><a href="/ai-hacks-for-work.html">AI hacks for work</a></li><li><a href="/spreadsheet-formula-shortcuts.html">Spreadsheet formula shortcuts</a></li><li><a href="/ai-prompt-builder.html">Shortcut Builder</a></li></ul></div>
+<div class="zfcol"><h2 class="zfhd">Company</h2><ul><li><a href="/#about">About</a></li><li><a href="/#how-we-test">How we test</a></li><li><a href="/work-with-us.html">Work with us</a></li><li><a href="/work-with-us.html#affiliates">Affiliate program</a></li></ul></div>
+<div class="zfcol"><h2 class="zfhd">Support</h2><ul><li><a href="mailto:zapwisehq@gmail.com">Contact</a></li><li><a href="/#faq">FAQ</a></li><li><a href="/corrections.html">Report a mistake</a></li></ul></div>
+</div>
+<div class="zftabs" role="tablist" aria-label="Footer information"><button class="zftab on" type="button" role="tab" aria-selected="true" aria-controls="zfp-pol" id="zft-pol">Policies</button><button class="zftab" type="button" role="tab" aria-selected="false" aria-controls="about" id="zft-about">About</button></div>
+<div class="zfpan" id="zfp-pol" role="tabpanel" aria-labelledby="zft-pol"><ul class="zfpol"><li><a href="/privacy.html">Privacy Policy</a></li><li><a href="/terms.html">Terms of Use</a></li><li><a href="/#how-we-test">Editorial Policy</a></li><li><a href="/affiliate-disclosure.html">Affiliate Disclosure</a></li><li><a href="/corrections.html">Corrections Policy</a></li></ul></div>
+<div class="zfpan" id="about" role="tabpanel" aria-labelledby="zft-about"><p><b>About Zapwise.</b> Zapwise is an independent YouTube channel and website about new AI tools. Every day we make one short video on a tool you can actually use, check it against the maker's own pages, and link our sources. We fund the work by selling our own PDF guides through Payhip. Questions: <a href="mailto:zapwisehq@gmail.com">zapwisehq@gmail.com</a>.</p></div>
+<div class="zftr"><a class="zfchip" href="/#live"><i aria-hidden="true"></i>Live stats from YouTube API</a><a class="zfchip" href="/privacy.html#payhip"><i aria-hidden="true"></i>Payments by Payhip</a><a class="zfchip" href="/#faq"><i aria-hidden="true"></i>No token or coin</a><a class="zfchip" href="/#how-we-test"><i aria-hidden="true"></i>Sources linked</a></div>
+<div class="zfbot">
+<p class="lvf"><a href="https://www.youtube.com/@Zapwisehq?sub_confirmation=1">@Zapwisehq</a> · <span class="nw"><span data-k="channel.views" data-f="n">4,052</span> views on YouTube</span> <span class="lvc sm" data-ts="2026-10-29T15:07:04-05:00"><i aria-hidden="true"></i><b>updated Oct 29, 2026</b></span></p><p class="small"><b>© 2026 Zapwise. All rights reserved.</b> Zapwise is an independent channel and isn't affiliated with the AI companies we cover. Product names and logos belong to their owners.</p>
+<p class="small">Digital PDFs sold and delivered through Payhip. AI plans and prices change; our guides are dated.</p>
+<p class="small nocoin">Zapwise has no token or coin. Anything claiming to be one is not affiliated with us.</p>
+<!-- build v3.11-21ae342 --></div>
+</div></footer>
+<div class="mcta glass" role="complementary" aria-label="Quick download"><span><b>Free:</b> 10 AI prompts for work</span><a class="btn" href="https://payhip.com/b/62aMn?utm_source=website&utm_medium=guide_sticky&utm_campaign=shop">Get free</a></div><script>(function(){var d=document,rm=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+if(rm){var v=d.querySelector('.hv video');if(v){v.removeAttribute('autoplay');v.pause();v.preload='none'}}
+var rv=d.querySelectorAll('.rv');if(!rm&&'IntersectionObserver'in window){d.documentElement.classList.add('js');var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})},{rootMargin:'0px 0px -6% 0px'});rv.forEach(function(e){io.observe(e)})}
+var t=d.getElementById('typed');if(t&&!rm){var full=t.innerHTML,txt=t.textContent,i=0;t.textContent='';(function step(){i+=2;t.textContent=txt.slice(0,i);if(i<txt.length)setTimeout(step,22);else t.innerHTML=full})()}
+if(window.matchMedia&&matchMedia('(hover:hover)').matches)d.querySelectorAll('.card').forEach(function(c){c.addEventListener('pointermove',function(e){var r=c.getBoundingClientRect();c.style.setProperty('--mx',(e.clientX-r.left)+'px');c.style.setProperty('--my',(e.clientY-r.top)+'px')})})})();</script><script>(function(){var d=document,w=window,rm=w.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+/* neural-net canvas: 30fps cap, pauses when tab hidden or canvas off, off under reduced motion */
+var c=d.getElementById('nn');if(c&&!rm&&c.getContext){var x=c.getContext('2d'),W=0,H=0,P=[],dpr=Math.min(w.devicePixelRatio||1,1.5),run=!d.hidden,last=0,raf=0;
+function rs(){W=w.innerWidth;H=w.innerHeight;c.width=W*dpr;c.height=H*dpr;x.setTransform(dpr,0,0,dpr,0,0);var n=W<700?24:52;P=[];for(var i=0;i<n;i++)P.push({x:Math.random()*W,y:Math.random()*H*.75,vx:(Math.random()-.5)*.22,vy:(Math.random()-.5)*.22,r:Math.random()<.15?1.8:1.1})}
+function fr(t){raf=0;if(!run)return;raf=requestAnimationFrame(fr);if(t-last<33)return;last=t;x.clearRect(0,0,W,H);var R=W<700?105:150,i,j,p,q,dx,dy,dd;
+for(i=0;i<P.length;i++){p=P[i];p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>W)p.vx*=-1;if(p.y<0||p.y>H*.8)p.vy*=-1}
+x.lineWidth=1;for(i=0;i<P.length;i++){p=P[i];for(j=i+1;j<P.length;j++){q=P[j];dx=p.x-q.x;dy=p.y-q.y;dd=dx*dx+dy*dy;if(dd<R*R){x.strokeStyle='rgba(92,225,230,'+((1-Math.sqrt(dd)/R)*.22).toFixed(3)+')';x.beginPath();x.moveTo(p.x,p.y);x.lineTo(q.x,q.y);x.stroke()}}}
+for(i=0;i<P.length;i++){p=P[i];x.fillStyle=p.r>1.5?'rgba(240,162,2,.85)':'rgba(166,238,240,.7)';x.beginPath();x.arc(p.x,p.y,p.r,0,6.283);x.fill()}}
+function go(){if(run&&!raf)raf=requestAnimationFrame(fr)}
+rs();go();var rt;w.addEventListener('resize',function(){clearTimeout(rt);rt=setTimeout(rs,200)});
+d.addEventListener('visibilitychange',function(){run=!d.hidden;go()});}
+/* cursor glow: desktop pointers only */
+var g=d.querySelector('.cg');if(g&&!rm&&w.matchMedia&&matchMedia('(hover:hover) and (pointer:fine)').matches){var gx=0,gy=0,pend=0;
+d.addEventListener('pointermove',function(e){gx=e.clientX;gy=e.clientY;g.classList.add('on');if(!pend){pend=1;requestAnimationFrame(function(){pend=0;g.style.transform='translate3d('+gx+'px,'+gy+'px,0)'})}},{passive:true});
+d.addEventListener('pointerleave',function(){g.classList.remove('on')})}
+/* counters (real numbers are already in the HTML; this only animates them in) */
+var cs=d.querySelectorAll('[data-to]');if(cs.length&&!rm&&'IntersectionObserver'in w){var co=new IntersectionObserver(function(es){es.forEach(function(e){if(!e.isIntersecting)return;co.unobserve(e.target);var el=e.target,to=+el.getAttribute('data-to'),pre=el.getAttribute('data-pre')||'',t0=performance.now();
+(function st(t){var k=Math.min(1,(t-t0)/1100),v=Math.round(to*(1-Math.pow(1-k,3)));el.textContent=pre+v;if(k<1)requestAnimationFrame(st)})(t0)})},{threshold:.6});
+cs.forEach(function(el){el.textContent=(el.getAttribute('data-pre')||'')+'0';co.observe(el)})}
+/* prompt palette */
+var pal=d.getElementById('pal');if(pal){d.documentElement.classList.add('pj');var it=[].slice.call(pal.querySelectorAll('.pi')),q=d.getElementById('palq'),ot=d.getElementById('palt'),oc=d.getElementById('palc'),cp=d.getElementById('palcp'),cur=-1;
+function vis(){return it.filter(function(b){return !b.hidden})}
+function sel(b){if(!b||b.classList.contains('lock'))return;it.forEach(function(o){o.setAttribute('aria-selected',o===b?'true':'false')});cur=b;ot.textContent=b.getAttribute('data-t');oc.textContent=b.querySelector('.pt').textContent}
+it.forEach(function(b){if(!b.classList.contains('lock'))b.addEventListener('click',function(){sel(b)})});
+q.addEventListener('input',function(){var v=q.value.toLowerCase().trim();it.forEach(function(b){b.parentNode.hidden=b.hidden=v&&b.textContent.toLowerCase().indexOf(v)<0});var f=vis().filter(function(b){return !b.classList.contains('lock')})[0];if(f)sel(f)});
+q.addEventListener('keydown',function(e){var V=vis().filter(function(b){return !b.classList.contains('lock')}),i=V.indexOf(cur);if(e.key==='ArrowDown'){e.preventDefault();sel(V[Math.min(V.length-1,i+1)])}else if(e.key==='ArrowUp'){e.preventDefault();sel(V[Math.max(0,i-1)])}else if(e.key==='Enter'){e.preventDefault();cp.click()}});
+cp.addEventListener('click',function(){var t=oc.textContent,ok=function(){cp.textContent='Copied ✓';setTimeout(function(){cp.textContent='Copy prompt'},1600)};
+if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(ok,function(){});else{var r=d.createRange();r.selectNodeContents(oc);var s=w.getSelection();s.removeAllRanges();s.addRange(r);try{d.execCommand('copy');ok()}catch(_){}}});
+d.addEventListener('keydown',function(e){var a=d.activeElement,typing=a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA');if(((e.metaKey||e.ctrlKey)&&(e.key==='k'||e.key==='K'))||(e.key==='/'&&!typing)){e.preventDefault();pal.scrollIntoView({block:'center',behavior:rm?'auto':'smooth'});q.focus({preventScroll:true})}});
+sel(it.filter(function(b){return !b.classList.contains('lock')})[0])}
+})();</script><script>(function(){var d=document,m=d.querySelector('.mcta'),f=d.getElementById('free');
+/* sticky bar appears once the hero free CTA is off screen (no duplicate CTA on the first screen) */
+if(m&&f&&'IntersectionObserver'in window){m.classList.add('hid');new IntersectionObserver(function(es){es.forEach(function(e){m.classList.toggle('hid',e.isIntersecting||e.boundingClientRect.top>0)})}).observe(f)}})();</script><script>(function(){var d=document,w=window,rm=w.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+if(!w.fetch||!d.querySelector('[data-k],.lvc'))return;var last=0,D=null;
+function g(o,p){return p.split('.').reduce(function(a,k){return a==null?a:a[k]},o)}
+function f(v,t){if(t=='n')return Math.round(v).toLocaleString('en-US');if(t=='p')return Math.round(v)+'%';if(t=='a')return '~'+Math.round(v)+'%';if(t=='c')return v.join('·');if(t=='u')return '$'+(v%1?(+v).toFixed(2):Math.round(v).toLocaleString('en-US'));return String(v)}
+function num(s){return parseFloat(String(s).replace(/[^0-9.]/g,''))}
+function es(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function setv(el,v){var t=el.getAttribute('data-f'),nx=f(v,t);if(el.textContent==nx)return;var a=num(el.textContent),num_=t=='n'||t=='p'||t=='a'||t=='u';
+if(rm||!num_||isNaN(a)||el.getBoundingClientRect().bottom<0){el.textContent=nx;return}
+var t0=performance.now();el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash');
+(function st(n){var k=Math.min(1,(n-t0)/900),e=1-Math.pow(1-k,3);el.textContent=k<1?f(a+(v-a)*e,t):nx;if(k<1)requestAnimationFrame(st)})(t0)}
+function ago(){d.querySelectorAll('.lvc:not([data-src])').forEach(function(c){var ts=D&&D.updated_at||c.getAttribute('data-ts');if(!ts)return;var dt=new Date(ts),m=(Date.now()-dt)/6e4,b=c.querySelector('b'),tx;
+if(m<720){c.classList.add('on');tx='LIVE · updated '+(m<1?'just now':m<60?Math.floor(m)+' min ago':Math.floor(m/60)+' h ago')}
+else{c.classList.remove('on');tx='updated '+dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}
+if(b.textContent!=tx)b.textContent=tx;c.title='Last refreshed '+dt.toLocaleString()})}
+function shorts(L){/* never rebuild the carousel in the browser: replacing its children reset scrollLeft and swapped cards mid-swipe. New Shorts arrive with the next static build. */return}
+function apply(j){D=j;if(w.zwShop)w.zwShop(j);d.querySelectorAll('[data-k]').forEach(function(el){var v=g(j,el.getAttribute('data-k'));if(v==null||v==='')return;setv(el,v)});if(j.latest&&j.latest.length){shorts(j.latest);d.querySelectorAll('[data-sv]').forEach(function(el){j.latest.forEach(function(s){if(s.id==el.getAttribute('data-sv')&&s.views!=null)setv(el,s.views)})})}ago()}
+function load(){if(d.hidden)return;last=Date.now();fetch('/data/live.json?t='+last,{cache:'no-store'}).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(j){if(j&&j.updated_at)apply(j)}).catch(function(){})}
+ago();load();setInterval(function(){if(!d.hidden&&Date.now()-last>=3e5)load()},3e4);setInterval(ago,3e4);
+d.addEventListener('visibilitychange',function(){if(!d.hidden){ago();if(Date.now()-last>=3e5)load()}})})()</script><script>(function(){var d=document,w=window,rm=w.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+if(rm)return;var c=d.querySelector('.core'),cc=d.querySelector('.cc');if(c)c.classList.add('on');
+if(!('IntersectionObserver'in w))return;
+if(cc){new IntersectionObserver(function(es){es.forEach(function(e){cc.classList.toggle('on',e.isIntersecting)})}).observe(cc)}
+var hov=w.matchMedia&&matchMedia('(hover:hover)').matches;
+function tag(){d.querySelectorAll('.sc .th').forEach(function(t){if(!t.querySelector('.pv')){var s=d.createElement('span');s.className='pv';s.setAttribute('aria-hidden','true');s.textContent='\u25B6 PREVIEW';t.appendChild(s)}})}
+tag();return;/* touch: no scroll-toggled preview state (caused flicker on iOS) */
+var io=new IntersectionObserver(function(es){es.forEach(function(e){e.target.classList.toggle('pv',e.isIntersecting)})},{rootMargin:'-38% 0px -38% 0px'});
+function obs(){d.querySelectorAll('.sc').forEach(function(s){if(!s._pv){s._pv=1;io.observe(s)}})}obs();
+var g=d.getElementById('shorts');if(g&&'MutationObserver'in w)new MutationObserver(function(){tag();obs()}).observe(g,{childList:true,subtree:true})})()</script><script>(function(){var d=document,f=d.querySelector('footer.zf');if(!f)return;var T=[].slice.call(f.querySelectorAll('.zftab'));
+f.classList.add('js');
+function act(b,focus){T.forEach(function(t){var on=t==b,p=d.getElementById(t.getAttribute('aria-controls'));t.classList.toggle('on',on);t.setAttribute('aria-selected',on?'true':'false');t.tabIndex=on?0:-1;if(p)p.classList.toggle('on',on)});if(focus)b.focus()}
+T.forEach(function(b,i){b.addEventListener('click',function(){act(b)});b.addEventListener('keydown',function(e){var k=e.key=='ArrowRight'?1:e.key=='ArrowLeft'?-1:0;if(k){e.preventDefault();act(T[(i+k+T.length)%T.length],true)}})});
+function hash(){if(location.hash=='#about'){act(d.getElementById('zft-about'));var a=d.getElementById('about');if(a)a.scrollIntoView({block:'center'})}}
+act(T[0]);hash();window.addEventListener('hashchange',hash)})()</script><script id="hudxj">(function(){var d=document,w=window,rm=w.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches,IO='IntersectionObserver'in w,hov=w.matchMedia&&matchMedia('(hover:hover) and (pointer:fine)').matches;
+var SEL='.glass,.card,.sc,.htc,.lgs,.pal,.free,main details,.ins,.hxba li,.hxt';
+function arm(p){if(p._hx||p.closest('.mcta'))return;p._hx=1;var k=d.createElement('i');k.className='hxk';k.setAttribute('aria-hidden','true');(p.tagName==='DETAILS'&&p.querySelector('summary')||p).appendChild(k);p.classList.add('hxa');
+if(!rm){p.addEventListener('pointerenter',function(e){if(e.pointerType==='mouse')sw(p)});p.addEventListener('focusin',function(){sw(p)})}}
+function sw(p){if(p.classList.contains('hxs'))return;p.classList.add('hxs');setTimeout(function(){p.classList.remove('hxs')},950)}
+var P=[].slice.call(d.querySelectorAll(SEL)).filter(function(p){return !p.parentNode.closest||!p.parentNode.closest('.glass,.card,.sc,.pal,.free,details')});P.forEach(arm);
+/* touch: the panel crossing the middle of the screen becomes the active one */
+if(!hov&&IO&&!rm){var ao=new IntersectionObserver(function(es){es.forEach(function(e){e.target.classList.toggle('hxon',e.isIntersecting);if(e.isIntersecting)sw(e.target)})},{rootMargin:'-46% 0px -46% 0px'});P.forEach(function(p){if(!p.classList.contains('sc'))ao.observe(p)})}
+/* reveal: only panels that start below the fold, so nothing above the fold ever blinks */
+if(!rm&&IO){var vh=w.innerHeight,ro=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){var t=e.target;ro.unobserve(t);requestAnimationFrame(function(){t.classList.add('hx-in')})}})},{rootMargin:'0px 0px -8% 0px'});
+P.forEach(function(p){if(!p.closest('body.hxh #shorts .sh')&&p.getBoundingClientRect().top>vh*0.95&&getComputedStyle(p).position!=='fixed'){p.classList.add('hx-rv');ro.observe(p)}});
+setTimeout(function(){d.querySelectorAll('.hx-rv:not(.hx-in)').forEach(function(p){var r=p.getBoundingClientRect();if(r.top<w.innerHeight&&r.bottom>0)p.classList.add('hx-in')})},2500)}
+/* re-arm cards the live script re-renders */
+var sh=d.querySelector('[data-live=sh]');if(sh&&'MutationObserver'in w)new MutationObserver(function(){sh.querySelectorAll('.sc').forEach(arm)}).observe(sh,{childList:true});
+if(rm||!IO)return;
+/* count-up on live numbers (stops if the live feed writes a newer value) */
+var co=new IntersectionObserver(function(es){es.forEach(function(e){if(!e.isIntersecting)return;co.unobserve(e.target);var el=e.target,tx=el.textContent,to=parseFloat(tx.replace(/[^0-9.]/g,''));if(!(to>0))return;var t0=performance.now(),cur=tx;
+(function st(n){if(el.textContent!==cur)return;var k=Math.min(1,(n-t0)/1100),v=Math.round(to*(1-Math.pow(1-k,3)));cur=k<1?v.toLocaleString('en-US'):tx;el.textContent=cur;if(k<1)requestAnimationFrame(st)})(t0);setTimeout(function(){if(el.textContent===cur)el.textContent=tx},1600)})},{threshold:.6});
+d.querySelectorAll('.stat [data-k][data-f=n],.stat b[data-k]').forEach(function(el){if(/^[\d,]+$/.test(el.textContent.trim()))co.observe(el)});
+/* one-time decode on headings only: a scrambled copy sits on top, the real text never moves */
+var C='ABCDEFGHJKLMNPRSTUVWXYZ0123456789#/<>_';
+function dec(h){var txt=h.textContent,o=d.createElement('span');o.className='hxo';o.setAttribute('aria-hidden','true');h.classList.add('hxd','hxdg');h.appendChild(o);var t0=performance.now(),last=0;setTimeout(function(){if(o.parentNode)h.removeChild(o);h.classList.remove('hxdg')},1200);
+(function st(n){var k=(n-t0)/650;if(!o.parentNode)return;if(k>=1){h.removeChild(o);h.classList.remove('hxdg');return}if(n-last>33){last=n;var r='';for(var i=0;i<txt.length;i++){var ch=txt[i];r+=(ch===' '||i<txt.length*k)?ch:C[(Math.random()*C.length)|0]}o.textContent=r}requestAnimationFrame(st)})(t0)}
+var ho=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){ho.unobserve(e.target);dec(e.target)}})},{threshold:.8});
+d.querySelectorAll('main h1:not(.vh-sr),main h2').forEach(function(h){if(h.textContent.length<90)ho.observe(h)})})();
+/* one-tap copy for the featured prompt */
+(function(){var b=document.getElementById('hxcp');if(!b)return;var pre=document.getElementById(b.getAttribute('data-c')),ok=b.parentNode.querySelector('.hxok'),t0;
+function done(m){b.textContent=m?'Copied ✓':'Copy prompt';b.classList.toggle('ok',!!m);if(ok)ok.textContent=m?'Copied. Paste it into your AI chat.':''}
+b.addEventListener('click',function(){var t=pre.textContent,f=function(){done(1);if(window.zwSfx)window.zwSfx('lock');clearTimeout(t0);t0=setTimeout(function(){done(0)},2200)};
+if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(f,fb);else fb();
+function fb(){var r=document.createRange();r.selectNodeContents(pre);var s=getSelection();s.removeAllRanges();s.addRange(r);try{document.execCommand('copy');f()}catch(_){if(ok)ok.textContent='Select the text and copy it.'}}})})();
+
+/* UI sound set C (warm chirp): always on, no toggle. Web Audio, preloaded buffers, unlocked on first gesture, never on load. */
+(function(){var W=window,d=document,AC=W.AudioContext||W.webkitAudioContext;
+try{localStorage.removeItem('zw-sfx')}catch(_){}
+try{if(navigator.audioSession)navigator.audioSession.type='playback'}catch(_){}
+if(!AC)return;
+var ctx=null,g=null,buf={},live=false,last={},V=.3,GAP={click:60,hover:130,lock:150};
+function load(n){fetch('/sfx/'+n+'.mp3').then(function(r){return r.arrayBuffer()}).then(function(a){ctx.decodeAudioData(a,function(b){buf[n]=b},function(){})}).catch(function(){})}
+function init(){if(ctx)return;try{ctx=new AC();g=ctx.createGain();g.gain.value=V;g.connect(ctx.destination);['click','hover','lock'].forEach(load)}catch(_){ctx=null}}
+function unlock(){init();if(!ctx)return;if(ctx.state!=='running'){try{ctx.resume()}catch(_){}}
+if(!live){try{var s=ctx.createBufferSource();s.buffer=ctx.createBuffer(1,1,22050);s.connect(g);s.start(0)}catch(_){}}live=true}
+['touchstart','touchend','pointerdown','keydown','click'].forEach(function(e){d.addEventListener(e,unlock,{capture:true,passive:true})});
+d.addEventListener('visibilitychange',function(){if(!d.hidden&&ctx&&live&&ctx.state!=='running'){try{ctx.resume()}catch(_){}}});
+function play(n,vol){var t=performance.now();if(last[n]&&t-last[n]<GAP[n])return;last[n]=t;if(!live||!ctx||!buf[n])return;if(ctx.state!=='running'){try{ctx.resume()}catch(_){}}
+try{var s=ctx.createBufferSource(),v=ctx.createGain();s.buffer=buf[n];v.gain.value=vol||1;s.connect(v);v.connect(g);s.start(0)}catch(_){}}
+W.zwSfx=function(n,v){return W.zwSfx._p(n,v)};W.zwSfx._p=play;
+var CL='a,button,[role="button"],input[type="submit"],input[type="button"],summary,label,.btn,.cta,.sc,.glass,.card,.panel,.htc,.pal,.free,.ins,nav *,.hxnav *';
+d.addEventListener('click',function(e){var t=e.target.closest&&e.target.closest(CL);if(!t||t.closest('#hxcp,[data-nosfx]'))return;W.zwSfx('click')},true);
+var fine=W.matchMedia&&W.matchMedia('(hover:hover) and (pointer:fine)').matches,cur=null,HL='a,button,[role="button"],input[type="submit"],summary,.btn,.cta,.glass,.panel';
+if(fine)d.addEventListener('pointerover',function(e){if(e.pointerType&&e.pointerType!=='mouse')return;var t=e.target.closest&&e.target.closest(HL);if(!t||t===cur)return;cur=t;W.zwSfx('hover',.6)},true);
+if(fine)d.addEventListener('pointerout',function(e){if(cur&&!cur.contains(e.relatedTarget))cur=null},true);
+/* Shorts carousel: one soft tick when it settles on a new card (never during the swipe) */
+function rail(){var r=d.querySelector('#shorts .sh');if(!r)return;var idx=-1,tm=0,down=false;
+function at(){var c=r.children;if(!c.length)return 0;var w=c[0].getBoundingClientRect().width+12;return Math.round(r.scrollLeft/w)}
+idx=at();r.addEventListener('touchstart',function(){down=true},{passive:true});r.addEventListener('touchend',function(){down=false;kick()},{passive:true});
+function kick(){clearTimeout(tm);tm=setTimeout(function(){if(down)return;var i=at();if(i!==idx){idx=i;W.zwSfx('hover',.8)}},180)}
+r.addEventListener('scroll',kick,{passive:true});if('onscrollend'in r)r.addEventListener('scrollend',kick)}
+if(d.readyState==='loading')d.addEventListener('DOMContentLoaded',rail);else rail()})();
+
+/* Ask Zapwise guide bot v3 (Oct 29, 2026): holds a conversation and searches everything on the site (guides, shortcuts, Shorts, tools, FAQ), still scripted and client-side; v2 added the chat layer. Answers come from /data/guide.json (built from our own files by guidebot.py), fetched on first open.
+   Nothing typed leaves the browser and nothing is saved: the chat and what it remembers (job, task, AI level) live only in this page's memory. */
+(function(){var W=window,d=document,L,P,log,inp,sr,data,busy=false,back=null,tk=0,TG=null,tgT=0,
+RM=W.matchMedia&&W.matchMedia('(prefers-reduced-motion: reduce)').matches,
+C={job:null,task:null,lvl:null,prod:null,last:null,topic:null,pending:null,offer:null,thanks:0,bye:false,seenNew:false,askedLvl:false,n:0},Q=[],cur=null;
+function S(n){try{if(W.zwSfx)W.zwSfx(n)}catch(_){}}
+function el(t,c,h){var e=d.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function fill(s,o){return String(s).replace(/\{(\w+)\}/g,function(_,k){return o[k]!=null?o[k]:''})}
+function rot(a){return a[(C.n++)%a.length]}
+/* launcher: sits above the phone download bar and fades out while it would cover the Shorts rail or a call-to-action */
+function targets(){var n=Date.now();if(TG&&n-tgT<1500)return TG;var a=[].slice.call(d.querySelectorAll('#shorts .sh,.btn,.hxcp,.hxsx a,.hxcta a,.zf a,.pal,input,select,textarea'));var z=d.getElementById('zhud');if(z&&z.shadowRoot)a=a.concat([].slice.call(z.shadowRoot.querySelectorAll('a,button')));TG=a;tgT=n;return a}
+function place(){if(!L)return;var m=d.querySelector('.mcta'),b=14;if(m&&!m.classList.contains('hid')&&getComputedStyle(m).display!=='none'){var r=m.getBoundingClientRect();if(r.height&&r.top<innerHeight)b=Math.max(b,Math.round(innerHeight-r.top+10))}
+L.style.bottom=b+'px';var lr=L.getBoundingClientRect(),hit=false,T=targets();
+for(var i=0;i<T.length&&!hit;i++){var t=T[i];if(m&&m.contains(t))continue;var q=t.getBoundingClientRect();if(q.width&&q.height&&q.bottom>lr.top-8&&q.top<lr.bottom+8&&q.right>lr.left-8&&q.left<lr.right+8)hit=true}
+L.classList.toggle('zg-off',hit&&d.activeElement!==L)}
+var st=0;function sched(){if(!tk)tk=requestAnimationFrame(function(){tk=0;place()});clearTimeout(st);st=setTimeout(place,420)}
+function init(){if(d.getElementById('zg-l'))return;L=el('button','zg-l','<i aria-hidden="true">?</i><span>ASK<b> ZAPWISE</b></span>');L.id='zg-l';L.type='button';
+L.setAttribute('data-nosfx','');L.setAttribute('aria-haspopup','dialog');L.setAttribute('aria-controls','zg-p');L.setAttribute('aria-expanded','false');L.setAttribute('aria-label','Ask Zapwise: open the guide');
+d.body.appendChild(L);L.addEventListener('click',open);W.addEventListener('scroll',sched,{passive:true});W.addEventListener('resize',sched);place();setTimeout(place,900)}
+/* panel: built on first open */
+function build(){P=el('div','zg-p');P.id='zg-p';P.hidden=true;P.setAttribute('role','dialog');P.setAttribute('aria-modal','true');P.setAttribute('aria-labelledby','zg-h');
+P.innerHTML='<div class="zg-w"><div class="zg-hd"><span class="zg-dot" aria-hidden="true"></span><p class="zg-t" id="zg-h">ASK ZAPWISE<small>// LIVE GUIDE · AI SHORTCUTS FOR WORK</small></p><button type="button" class="zg-x" aria-label="Close the guide">✕</button></div>'+
+'<div class="zg-log" role="log" aria-live="off" tabindex="-1"></div><p class="zg-sr" role="status" aria-live="polite"></p><form class="zg-f" autocomplete="off"><label class="zg-sr" for="zg-i">Type your message</label><input id="zg-i" type="text" maxlength="160" placeholder="Ask me anything about AI at work…" enterkeyhint="send" autocomplete="off"><button type="submit">SEND</button></form>'+
+'<p class="zg-ft">No face. No hours. Just the shortcut. · What you type stays in your browser.</p></div>';
+d.body.appendChild(P);log=P.querySelector('.zg-log');inp=P.querySelector('#zg-i');sr=P.querySelector('p.zg-sr');
+P.querySelector('.zg-x').addEventListener('click',close);
+P.querySelector('form').addEventListener('submit',function(e){e.preventDefault();var v=inp.value.trim();if(!v)return;inp.value='';ask(v)});
+P.addEventListener('keydown',function(e){if(e.key==='Escape'){e.preventDefault();S('click');close();return}if(e.key!=='Tab')return;
+var f=[].filter.call(P.querySelectorAll('button:not([disabled]),a[href],input'),function(x){return x.offsetParent!==null});if(!f.length)return;var a=f[0],z=f[f.length-1];
+if(e.shiftKey&&d.activeElement===a){e.preventDefault();z.focus()}else if(!e.shiftKey&&d.activeElement===z){e.preventDefault();a.focus()}});
+P.addEventListener('click',function(e){var t=e.target.closest('[data-q],[data-pk],[data-t],[data-d],[data-g],.zg-cp');if(!t)return;
+if(t.hasAttribute('data-d')){var dc=data&&data.docs[+t.getAttribute('data-d')];if(dc){flush();you(t.textContent);showDoc(dc)}return}
+if(t.hasAttribute('data-g')){var gg=gById(t.getAttribute('data-g'));if(gg){flush();you(t.textContent);showGuide(gg)}return}
+
+if(t.classList.contains('zg-cp'))return copy(t);if(t.hasAttribute('data-t'))return ask(t.getAttribute('data-t'),1);if(t.hasAttribute('data-q'))return pick(t.getAttribute('data-q'),t.textContent);step(t.getAttribute('data-pk'),t.getAttribute('data-v'),t.textContent)})}
+function open(){S('hover');if(!P)build();back=d.activeElement;P.hidden=false;P.classList.remove('zg-in');void P.offsetWidth;P.classList.add('zg-in');d.documentElement.classList.add('zg-open');L.setAttribute('aria-expanded','true');
+if(!data&&!busy)load();setTimeout(function(){var g=P.querySelectorAll('.zg-cs'),c=g.length?g[g.length-1].querySelector('.zg-c'):null;(c||P.querySelector('.zg-x')).focus({preventScroll:true})},40)}
+function close(){if(!P||P.hidden)return;flush();P.hidden=true;P.classList.remove('zg-in');d.documentElement.classList.remove('zg-open');L.setAttribute('aria-expanded','false');L.classList.remove('zg-off');L.focus({preventScroll:true});sched()}
+function load(){busy=true;var m=el('div','zg-m zg-b','<p>Loading answers…</p>');log.appendChild(m);fetch('/data/guide.json',{cache:'no-cache'}).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(j){data=j;busy=false;m.remove();prep();
+var g=el('div','zg-m zg-b',j.greet.map(function(p){return'<p>'+esc(p)+'</p>'}).join(''));log.appendChild(g);chips(j.quick,false);var c=P.querySelector('.zg-cs .zg-c');if(c)c.focus({preventScroll:true})})
+.catch(function(){busy=false;m.innerHTML='<p>I couldn\'t load my answers. Check your connection, then close and reopen me.</p><div class="zg-ls"><a class="zg-a" href="/#faq">Read the FAQ</a></div>'})}
+function scroll(n){requestAnimationFrame(function(){log.scrollTop=Math.max(0,n.offsetTop-log.offsetTop-8)})}
+function you(t){var m=el('div','zg-m zg-u');m.textContent=t;log.appendChild(m);scroll(m);return m}
+/* ---- live replies: a short typing indicator, then the text streams in; links, prompt cards and reply chips land when it's done ---- */
+function say(html,extra,after){Q.push({h:html,x:extra||'',f:after});if(!cur)next()}
+function setBusy(b){if(P){if(b)P.setAttribute('data-busy','1');else P.removeAttribute('data-busy')}}
+function next(){var j=Q.shift();if(!j){cur=null;setBusy(false);return}cur=j;setBusy(true);
+var txt=j.h.replace(/<[^>]+>/g,'').length,ty=el('div','zg-m zg-b zg-ty','<span class="zg-sr">Zapwise is typing</span><i></i><i></i><i></i>');log.appendChild(ty);scroll(ty);j.ty=ty;
+j.t=setTimeout(function(){ty.remove();j.ty=null;stream(j)},RM?60:Math.min(750,320+txt*1.2))}
+function stream(j){var m=el('div','zg-m zg-b',j.h);j.m=m;log.appendChild(m);scroll(m);
+var w=d.createTreeWalker(m,NodeFilter.SHOW_TEXT,null),ns=[],n;while(n=w.nextNode())ns.push([n,n.data]);
+var tot=0;ns.forEach(function(x){tot+=x[1].length;x[0].data=''});j.ns=ns;if(RM||!tot)return land(j);
+var per=Math.max(3,Math.ceil(tot/55)),i=0,k=0;m.classList.add('zg-st');
+(function tick(){if(j.done)return;var b=per;while(b>0&&i<ns.length){var s=ns[i][1],c=Math.min(b,s.length-k);k+=c;b-=c;ns[i][0].data=s.slice(0,k);if(k>=s.length){i++;k=0}}
+if(i>=ns.length)return land(j);j.r=requestAnimationFrame(tick)})();j.ns=ns}
+function land(j){if(j.done)return;j.done=true;cancelAnimationFrame(j.r);clearTimeout(j.t);if(j.ty){j.ty.remove();j.ty=null}
+if(!j.m){j.m=el('div','zg-m zg-b',j.h);log.appendChild(j.m)}else if(j.ns)j.ns.forEach(function(x){x[0].data=x[1]});
+j.m.classList.remove('zg-st');if(j.x)j.m.insertAdjacentHTML('beforeend',j.x);if(sr)sr.textContent=j.m.innerText.slice(0,400);
+if(j.f)try{j.f(j.m)}catch(e){setTimeout(function(){throw e})}scroll(j.m);next()}
+function flush(){var g=0;while(cur&&g++<50){var j=cur;if(j.done){cur=null;next();continue}if(!j.m&&j.ty){j.ty.remove();j.ty=null}land(j)}}
+/* ---- rendering helpers (same look as v1) ---- */
+function A(id){for(var i=0;i<data.answers.length;i++)if(data.answers[i].id===id)return data.answers[i]}
+function links(ls){if(!ls||!ls.length)return'';return'<div class="zg-ls">'+ls.map(function(l){var ext=/^https?:/.test(l.href);return'<a class="zg-a'+(l.k==='buy'?' zg-buy':l.k==='social'?' zg-soc':'')+'" href="'+esc(l.href)+'"'+(ext?' rel="noopener"':'')+'>'+esc(l.t)+'</a>'}).join('')+'</div>'}
+function prompt(p,lab){if(!p)return'';return'<div class="zg-pc"><span class="zg-k">'+esc(lab||'PROMPT')+' // '+esc(p.src.toUpperCase())+' · '+esc(p.title)+'</span><pre>'+esc(p.text)+'</pre><div class="zg-pf"><button type="button" class="zg-cp" data-nosfx>Copy prompt</button><span class="zg-ok" role="status" aria-live="polite"></span></div></div>'}
+/* chips: ids = answer ids (data-q), says = suggested replies sent as if typed (data-t) */
+function chips(ids,all,says){var c=el('div','zg-cs');c.setAttribute('role','group');c.setAttribute('aria-label','Suggested replies');
+c.innerHTML=(says||[]).map(function(s){return'<button type="button" class="zg-c zg-say" data-t="'+esc(s)+'">'+esc(s)+'</button>'}).join('')+(ids||[]).map(function(id){var a=A(id);return a?'<button type="button" class="zg-c" data-q="'+id+'">'+esc(a.q)+'</button>':''}).join('')+(all?'<button type="button" class="zg-c zg-all" data-q="_all">All questions</button>':'');log.appendChild(c);return c}
+function para(a){return a.map(function(p){return/^<ul/.test(p)?p:'<p>'+p+'</p>'}).join('')}
+function show(a,pre){if(a.id==='picker')return pk0();C.topic=a.id;C.last='faq';C.offer=null;
+if(a.id==='paid'||a.id==='bundle')C.prod=C.prod||'bundle';say((pre?'<p>'+esc(pre)+'</p>':'')+para(a.a),links(a.links)+prompt(a.prompt,'TRY IT'),function(){chips(a.next,true,says())})}
+function pick(id,label){if(!data)return;flush();you(label);if(id==='_all'){say('<p>Here\'s everything I can help with:</p>','',function(){chips(data.quick,false)});return}var a=A(id);if(a)show(a)}
+/* ---- understanding: normalise, fix typos, map synonyms, find topics and slots ---- */
+var VOC={},STOP={};
+'the a an and or but is are am was be to of in on for with my me i you your it this that what whats how do does can could should would will just so im its about get got have has any some there here them they we our us at as by from if not no yes ok okay please'.split(' ').forEach(function(w){STOP[w]=1});
+function prep(){var add=function(p){String(p).toLowerCase().split(/[^a-z0-9']+/).forEach(function(w){if(w.length>3)VOC[w]=1})};
+data.answers.forEach(function(a){a.kw.forEach(add)});var o=data.alias||{},s=data.slots||{},k,j;for(k in o)o[k].forEach(add);for(k in s)for(j in s[k])s[k][j].forEach(add);for(k in data.syn||{}){add(data.syn[k])}prep3()}
+function lev(a,b,mx){if(Math.abs(a.length-b.length)>mx)return mx+1;var p=[],i,j;for(j=0;j<=b.length;j++)p[j]=j;for(i=1;i<=a.length;i++){var c=[i],lo=i;for(j=1;j<=b.length;j++){c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));if(i>1&&j>1&&a[i-1]===b[j-2]&&a[i-2]===b[j-1])c[j]=Math.min(c[j],p[j-2]+1);lo=Math.min(lo,c[j])}if(lo>mx)return mx+1;p.pp=p;var pp=p;p=c;p.pp=pp}return p[b.length]}
+function fix(w){if(w.length<5||VOC[w]||STOP[w]||/\d/.test(w))return w;var mx=w.length>=7?2:1,best=w,bd=mx+1;for(var v in VOC){if(v[0]!==w[0]&&w.length<6)continue;var e=lev(w,v,mx);if(e<bd){bd=e;best=v}}if(best===w&&/s$/.test(w)&&w.length>5){var f2=fix(w.slice(0,-1));if(f2!==w.slice(0,-1))return f2}return best}
+function norm(t){var s=' '+t.toLowerCase().replace(/[\u2019']/g,"'").replace(/[^a-z0-9'$ -]+/g,' ').replace(/\s+/g,' ').trim()+' ',sy=data.syn||{},k;
+for(k in sy)if(k.indexOf(' ')>0||k.indexOf('-')>0)s=s.split(' '+k+' ').join(' '+sy[k]+' ');
+var o=s.trim().split(' ').filter(Boolean).map(function(x){x=x.replace(/^'+|'+$/g,'');return sy[x]||x}),w=o.map(function(x){return VOC[x]?x:fix(x)}),x=o.concat(w);w.concat(o).forEach(function(v){if(v.length>3&&/s$/.test(v)&&!/ss$/.test(v))x.push(v.slice(0,-1))});
+return{s:' '+o.join(' ')+' ',all:' '+w.join(' ')+' '+x.join(' ')+' ',w:o}}
+function has(n,p){return n.all.indexOf(' '+p+' ')>-1}
+function score(n){var best=null,bs=0;data.answers.forEach(function(a){var s=0;a.kw.forEach(function(k){if(has(n,k))s+=k.split(' ').length});if(s>bs){bs=s;best=a}});return{a:best,s:bs}}
+function find(n,map){var best=null,bl=0,k;for(k in map)map[k].forEach(function(p){p=p.toLowerCase();if(p.length>bl&&has(n,p)){best=k;bl=p.length}});return best}
+var WEAK={'a bit':1,'a little':1,'some experience':1,'familiar':1,'comfortable':1,'pretty good':1,'intermediate':1};
+function lvlOf(n,loose){var s=data.slots.lvl,k,r=null;for(k in s)s[k].forEach(function(p){if((loose||!WEAK[p])&&has(n,p))r=r||k});return r}
+function re(n,r){return r.test(n.s)}
+function isP0(n){return RX.price.test(n.s)}
+/* ---- conversation ---- */
+function says(){var o=[],t=C.task,P_=data.products||{};
+if(C.last==='rec'||C.last==='prod'||C.last==='price'){if(C.last!=='price')o.push('How much is it?');var ot=['spreadsheets','email','meetings','reports','slides'].filter(function(x){return x!==t})[0];o.push('What about '+data.labels.task[ot].toLowerCase()+'?');
+if(t&&data.task_prompts[t])o.push('Show me a free prompt');if(C.prod!=='bundle'&&P_.bundle)o.push("What's in the bundle?");if(C.prod&&P_[C.prod]&&!P_[C.prod].free&&C.last==='price')o.push("What's inside it?")}
+else if(C.last==='faq'){if(C.topic==='paid')o.push('Which one fits me?');if(C.topic==='free'||C.topic==='start')o.push('Recommend a pack for my job')}
+return o.slice(0,3)}
+function lab(k,v){return data.labels[k][v]||v}
+function memo(){var m=[];if(C.job)m.push('you work in '+lab('job',C.job));if(C.task)m.push('your main task is '+lab('task',C.task).toLowerCase());if(C.lvl)m.push('you\'re '+lab('lvl',C.lvl));return m.join(', ')}
+function prod(k,mode,pre){var p=data.products[k];if(!p)return;C.prod=k;C.last=mode==='price'?'price':'prod';C.offer=null;var T=data.talk,h=pre?'<p>'+esc(pre)+'</p>':'',x='';
+if(mode==='price'||mode==='free'){if(mode==='free'&&!p.free)h+='<p>'+esc(fill(T.free_not,{name:p.name}))+'</p>';else if(p.free)h+='<p>'+esc(fill(T.free_yes,{name:p.name}))+'</p>';
+else h+='<p>'+fill(esc(T.price),{name:'<b>'+esc(p.name)+'</b>'})+'</p>';h+='<p>'+esc(p.short)+'</p>';
+if(!p.free){var f=data.products.free;if(f)x=links(p.links)+'<p style="margin-top:12px">Not ready to buy? Start free with the <b>'+esc(f.name)+'</b>.</p>'+links(f.links.slice(0,1));else x=links(p.links)}else x=links(p.links)}
+else{if(k==='bundle'&&A('bundle')&&mode==='more'){return show(A('bundle'))}h+='<p><b>'+esc(p.name)+'</b>'+(p.free?' · Free':'')+'</p><p>'+esc(p.short)+'</p>'+(p.bullets.length?'<ul>'+p.bullets.map(function(b){return'<li>'+esc(b)+'</li>'}).join('')+'</ul>':'');x=links(p.links)}
+say(h,x,function(){chips([],true,says())})}
+function rec(r,ctx,pre,note){C.prod=r.k;C.last='rec';C.offer=(C.task&&data.task_prompts[C.task])?'prompt':null;var p=data.picker,alt=r.k==='path7'?p.free.day1.concat(p.free.links):p.free.links;
+say((pre?'<p>'+esc(pre)+'</p>':'')+'<span class="zg-k">MY PICK // '+esc(ctx.toUpperCase())+'</span><p><b>'+esc(r.name)+'</b>'+(r.price==='Free'?' · Free':'')+'</p><p>'+esc(r.short)+'</p>'+(r.short.toLowerCase().indexOf(r.why.toLowerCase().split(' ').slice(0,3).join(' '))<0?'<p>For you: '+esc(r.why)+'.</p>':'')+(note?'<p>'+esc(note)+'</p>':''),
+links(r.links)+'<p style="margin-top:12px">Not ready to buy? Start free with the <b>'+esc(p.free.name)+'</b>'+(r.k==='path7'?' or the Day 1 Starter':'')+'.</p>'+links(alt)+prompt(r.prompt,'TRY IT FREE'),function(){chips(['start','paid','download'],true,says())})}
+function ctxLabel(){return(C.job?lab('job',C.job)+' · ':'')+(C.task?lab('task',C.task):'')+(C.lvl==='new'?' · new to AI':'')}
+/* the typed-chat recommender: asks only for what it doesn't know yet */
+function recFlow(pre){var p=data.picker,T=data.talk;
+if(C.job==='creator'&&!C.task)return rec(p.recs.creator,'For making videos',pre);
+if(!C.task){C.pending='task';C.last='ask';return say((pre?'<p>'+esc(pre)+'</p>':'')+'<p>'+esc(T.ask_task)+'</p>','',function(){opts('task',p.tasks)})}
+if(!C.lvl&&!C.askedLvl){C.askedLvl=true;C.pending='lvl';C.last='ask';return say((pre?'<p>'+esc(pre)+'</p>':'')+'<p>'+esc(T.ask_lvl)+'</p>','',function(){opts('lvl',p.levels)})}
+C.pending=null;if(C.lvl==='new'&&!C.seenNew){C.seenNew=true;return rec(p.recs['new'],ctxLabel(),pre)}
+rec(p.recs[C.task],ctxLabel(),pre,C.lvl==='new'?T.still_new:null)}
+function taskPrompt(pre){var T=data.talk,t=C.task;C.offer=null;if(!t){C.pending='ptask';C.last='ask';return say('<p>'+esc(T.vague_task)+'</p>','',function(){chips([],false,['A prompt for email','A prompt for meetings','A prompt for reports','A prompt for spreadsheets'])})}
+var pp=data.task_prompts[t];C.last='prompt';if(!pp)return say('<p>'+esc(T.no_slides_prompt)+'</p>',links(data.products.prompt_pack?data.products.prompt_pack.links:[]),function(){chips([],true,says())});
+say((pre?'<p>'+esc(pre)+'</p>':'')+'<p>Here\'s a free '+esc(lab('task',t).toLowerCase())+' prompt from our free pack. Copy it, swap the [BRACKETS] for your details and paste it into your AI chat.</p>',prompt(pp,'TRY IT FREE')+links(data.picker.free.links),function(){chips(['prompt'],true,['What about '+(t==='email'?'meetings':'email')+'?','Which pack fits me?'])})}
+/* ---- v3: search over everything on the site, general how-to guides, meta answers ---- */
+var DX=null,IDF={},GEN={},TASKOF={email:'email',meetings:'meetings',reports:'reports',spreadsheets:'spreadsheets',slides:'slides'},
+VLAB={gmail:'Gmail',outlook:'Outlook',zoom:'Zoom',teams:'Teams',meet:'Google Meet',word:'Word','google docs':'Google Docs',excel:'Excel','google sheets':'Google Sheets',powerpoint:'PowerPoint','google slides':'Google Slides'};
+'ai use using used want need help zapwise work working job thing things stuff something way best good make get know tell show give like does doing done really just also more most very can could would should will one ones much many lot lots new free please thanks hey hi im ive dont try tried'.split(' ').forEach(function(w){GEN[w]=1});
+function toks(s){var o=[];String(s||'').toLowerCase().replace(/[\u2019']/g,'').split(/[^a-z0-9]+/).forEach(function(w){if(w.length<2||STOP[w])return;o.push(w);if(w.length>3&&/s$/.test(w)&&!/ss$/.test(w))o.push(w.slice(0,-1))});return o}
+function setOf(a){var s={};a.forEach(function(w){s[w]=1});return s}
+function prep3(){var add=function(p){String(p).toLowerCase().split(/[^a-z0-9']+/).forEach(function(w){if(w.length>3)VOC[w]=1})},k;
+DX=(data.docs||[]).map(function(dc){var e={d:dc,t:setOf(toks(dc.t)),k:setOf(toks(dc.k)),x:setOf(toks(dc.x+' '+(dc.more||'')))},all={},w;[e.t,e.k,e.x].forEach(function(s){for(w in s)all[w]=1});for(w in all)IDF[w]=(IDF[w]||0)+1;add(dc.t);return e});
+var N=DX.length;for(k in IDF)IDF[k]=Math.log(1+N/IDF[k]);(data.guides||[]).forEach(function(g){g.kw.forEach(add)});var va=data.var_alias||{};for(k in va)va[k].forEach(add)}
+function qterms(n){var seen={},o=[];n.w.forEach(function(w){w=w.replace(/'s$/,'').replace(/'/g,'');if(w.length<2||STOP[w]||GEN[w]||seen[w])return;seen[w]=1;var c=[w],f=fix(w);if(f!==w)c.push(f);c.slice().forEach(function(x){if(x.length>3&&/s$/.test(x)&&!/ss$/.test(x))c.push(x.slice(0,-1))});o.push(c)});return o}
+/* BM25-ish: rare words count more, a hit in the title counts 3x, in the topic tags 2x; then scaled by how much of the question it covers */
+function search(n){var q=qterms(n),out=[];if(!q.length||!DX)return out;
+function ex(c,e){var w=c[0],v=w.length>3&&/s$/.test(w)?w.slice(0,-1):w;return e.t[w]||e.k[w]||e.x[w]||e.t[v]||e.k[v]||e.x[v]}
+DX.forEach(function(e){var s=0,hit=0,th=0,exh=0;q.forEach(function(c){var b=0,tt=0;c.forEach(function(w,ci){var i=(IDF[w]||0)*(ci&&w.indexOf(c[0])!==0?0.6:1),v=!i?0:e.t[w]?3*i:e.k[w]?2*i:e.x[w]?i:0;if(v>b){b=v;tt=e.t[w]?1:0}});if(b){s+=b;hit++;th+=tt;if(ex(c,e))exh++}});
+if(!hit)return;var cov=hit/q.length,tl=' '+e.d.t.toLowerCase().replace(/[^a-z0-9' ]+/g,' ').replace(/\s+/g,' ').trim()+' ';s*=0.5+cov;if(tl.length>8&&n.s.indexOf(tl)>-1)s+=8;out.push({d:e.d,s:s,hit:hit,th:th,cov:cov,ex:exh,strong:false})});
+out.sort(function(a,b){return b.s-a.s});out.forEach(function(r){r.strong=r.cov>=0.5&&r.s>=5&&(r.ex>0||r.cov===1)});return out}
+function gById(id){return(data.guides||[]).filter(function(x){return x.id===id})[0]}
+function gbest(n){var best=null,bs=0;(data.guides||[]).forEach(function(g){var s=0;g.kw.forEach(function(k){if(has(n,k))s+=k.split(' ').length+(/^(chatgpt|gemini|copilot|claude|microsoft copilot)$/.test(k)?2:0)});if(s>bs){bs=s;best=g}});return{g:best,s:bs}}
+function pp(pre){return pre?'<p>'+esc(pre)+'</p>':''}
+function cut(t,n){return t.length>n?t.slice(0,n-1).replace(/\s+\S*$/,'')+'…':t}
+function chipsD(ds,sy){var sn={};ds=(ds||[]).filter(function(x){var k=(x.t||'').toLowerCase();if(sn[k])return false;sn[k]=1;return true});var c=el('div','zg-cs');c.setAttribute('role','group');c.setAttribute('aria-label','Suggested replies');
+c.innerHTML=(sy||[]).map(function(s){return'<button type="button" class="zg-c zg-say" data-t="'+esc(s)+'">'+esc(s)+'</button>'}).join('')+(ds||[]).map(function(x){return x.kw?'<button type="button" class="zg-c" data-g="'+esc(x.id)+'">'+esc(x.t)+'</button>':'<button type="button" class="zg-c zg-doc" data-d="'+x.i+'">'+esc(cut(x.t,44))+'</button>'}).join('');log.appendChild(c);return c}
+function rel(g){return search(norm(g.t+' '+g.kw.slice(0,3).join(' '))).filter(function(r){return r.d.s!=='Product'}).slice(0,3).map(function(r){return r.d})}
+function showGuide(g,pre,v){C.g=g;C.doc=null;C.gm=0;C.last='guide';C.topic='g:'+g.id;C.offer=null;C.pending=null;if(g.pk)C.prod=g.pk;if(TASKOF[g.id])C.task=TASKOF[g.id];
+var vt=v&&g.var&&g.var[v],h=pp(pre)+'<span class="zg-k">GUIDE // '+esc(g.t.toUpperCase())+(vt?' · '+esc(VLAB[v]||v).toUpperCase():'')+'</span>'+(vt?'<p>'+esc(vt)+'</p>':'')+g.a.map(function(p){return'<p>'+esc(p)+'</p>'}).join('');
+say(h,prompt(g.p,'TRY IT FREE')+links(g.links),function(){var vs=[],k;for(k in (g.var||{}))if(k!==v)vs.push('What about '+(VLAB[k]||k)+'?');var sy=['Tell me more'].concat(vs.slice(0,1));var P_=g.pk&&data.products[g.pk];if(P_&&!P_.free)sy.push('Which pack has more?');chipsD(rel(g).slice(0,2),sy)})}
+function guideMore(pre){var g=C.g,M=data.meta;C.last='guide';if(C.gm<(g.more||[]).length){var t=g.more[C.gm++],P_=g.pk&&data.products[g.pk];
+return say(pp(pre)+'<p>'+esc(t)+'</p>',C.gm===1&&P_?links(P_.links.slice(0,1)):'',function(){chipsD(rel(g),C.gm<g.more.length?['Tell me more']:[])})}
+say(pp(pre)+'<p>'+esc(M.done_more)+'</p>','',function(){chipsD(rel(g),[])})}
+function openLab(dc){return{Short:'Open the Short',"AI tools":'See it on our tools page',FAQ:'Read the FAQ',Privacy:'Read our privacy policy',Shortcut:'See what\'s inside'}[dc.s]||'Read it in the guide'}
+function others(){var o=(C.res||[]).map(function(r){return r.d}).filter(function(x){return x!==C.doc&&x.s!=='Product'});if(!o.length&&C.doc)o=search(norm(C.doc.t)).map(function(r){return r.d}).filter(function(x){return x!==C.doc&&x.s!=='Product'});return o.slice(0,3)}
+function showDoc(dc,pre,res){if(dc.s==='Product'&&dc.pk)return prod(dc.pk,'more',pre);C.doc=dc;C.g=null;C.dm=0;C.last='doc';C.topic='d'+dc.i;C.offer=null;C.pending=null;if(dc.pk)C.prod=dc.pk;C.res=res||null;
+var P_=dc.pk&&data.products[dc.pk],h=pp(pre)+'<span class="zg-k">FROM // '+esc(dc.s.toUpperCase())+'</span><p><b>'+esc(dc.t)+'</b></p>'+(dc.x?'<p>'+esc(dc.x)+'</p>':''),ls=[];
+if(dc.s==='Shortcut'&&P_){h+='<p>The full shortcut is inside that guide. Tap below to see everything it includes.</p>';ls=P_.links.slice(0,1)}else{ls.push({t:openLab(dc)+' →',href:dc.u});if(dc.yt)ls.push({t:'Watch on YouTube',href:dc.yt,k:'social'})}
+if(dc.p)h+='<p>'+(dc.p.lab==='FORMULA'?'Here\'s the formula. Tap to copy it, then change the ranges to match your sheet.':'Here\'s the prompt. Tap to copy it, swap the [BRACKETS] for your details and paste it into your AI chat.')+'</p>';
+say(h,(dc.p?prompt(dc.p,dc.p.lab||'PROMPT'):'')+links(ls),function(){var sy=[],o=others();if(dc.more||o.length)sy.push('Tell me more');if(P_&&!P_.free)sy.push('How much is it?');chipsD(o.slice(0,2),sy)})}
+function docMore(pre){var dc=C.doc,M=data.meta;C.last='doc';if(dc.more&&!C.dm){C.dm=1;return say(pp(pre)+'<p>'+esc(dc.more)+'</p>',links([{t:openLab(dc)+' →',href:dc.u}]),function(){chipsD(others(),[])})}
+var o=others();if(o.length&&C.dm<2){C.dm=2;return say(pp(pre)+'<p>Here are related ones you might like:</p>','',function(){chipsD(o,[])})}
+say(pp(pre)+'<p>'+esc(M.done_more)+'</p>','',function(){chips([],false,M.general)})}
+function meta(k,pre){var M=data.meta,T=data.talk;C.last='meta';C.pending=null;
+if(k==='about')return say(pp(pre)+M.about.map(function(p){return'<p>'+p+'</p>'}).join(''),'',function(){chips([],false,['What can you help with?','How do I use AI for email?','Is this site safe?'])});
+if(k==='can'||k==='help')return say(pp(pre)+(k==='help'?'<p>'+esc(T.vague)+'</p>':'')+M.can.map(function(p){return/^<ul/.test(p)?p:'<p>'+esc(p)+'</p>'}).join(''),'',function(){chips([],false,['How do I use AI for meeting notes?','Which AI tool should I use?','Show me a free prompt'])});
+if(k==='who')return say(pp(pre)+'<p>'+esc(M.who)+'</p>','',function(){chips([],false,['What can you help with?','What is Zapwise?'])});
+if(k==='safe')return say(pp(pre)+M.safe.map(function(p){return'<p>'+esc(p)+'</p>'}).join(''),links([{t:'Read our privacy policy →',href:'/privacy.html'}]),function(){chips([],false,['Is it safe to use AI with work data?','What is this site?'])});
+if(k==='money'){var fr=data.products.free;return say(pp(pre)+'<p>'+esc(M.money)+'</p>',fr?links(fr.links.slice(0,1)):'',function(){chips([],false,['How do I use AI for email?','What can you help with?'])})}
+if(k==='owner'){var c=A('contact');return say(pp(pre)+'<p>'+esc(M.owner)+'</p>',c?links(c.links):'',function(){chips([],false,['What is Zapwise?','What can you help with?'])})}}
+var MX={about:/ (what is this|whats this|what's this|what does (this|it) do|what does this (site|website|page|bot|thing|app) do|what is this (site|website|page|place|bot|chat|thing|app|about)|what's this about|whats this about|what (is|does) zapwise( ai)?( do)?|whats zapwise|what's zapwise|what do you do|how does (this|it|this site|this bot|this thing|zapwise) work|explain this|what am i looking at|where am i|what is the (point|purpose)|tell me about (zapwise|this site|yourself|you)|about zapwise|about this site) /,
+can:/ (what can (you|i) (do|ask|help)|what (can|do) you help|how can you help|what are you (for|good for)|what do you know|what can you answer|what questions|what can this do|capabilities|what should i ask|what can you tell me) /,
+safe:/( is (this|this site|this website|the site|zapwise|it|this chat|this bot) (safe|legit|legitimate|secure|a scam|real|trustworthy|private) $| scam | legit | cookies? | do you (track|collect|store|save|keep|sell|record|log) | is my (chat|data|info|information) (private|safe|saved|stored) | are you (tracking|recording|saving) )/,
+owner:/ (who (runs|made|owns|created|built|is behind|started|makes) (this|zapwise|the site|this site|it|you)|who is the (owner|founder|creator)|who's behind|whos behind|owner|founder|your (creator|owner|boss|maker)|real name|face reveal) /,
+money:/ (make|earn|making|earning) (money|income|cash|a living)|how much (money|income|cash) (will|can|could|do)|get rich|passive income|side hustle|guarantee(d)? (income|results|money) /,
+help:/^ (help|help me|i need help|can you help|can you help me|need help|helpp+) $/},
+RX3={cont:/^ (ok |okay |and |so |yes )?(tell me more|more|more please|more info|go on|keep going|continue|then|and then|then what|what else|what next|whats next|what's next|next|anything else|tell me more about (it|that|this)|more about (it|that|this)|explain more|elaborate|go deeper|any more|more tips)( please)? $/,
+which:/ (which one|which pack|which product|which guide|which pdf|what should i (get|buy)|where (do|can) i get (it|that|more|them)|is there a pack|do you have a pack|has more|where is it|which has) /,
+howto:/ (how (do|can|should|would|to|does)|should i use|is it worth|how i |help (me )?(with|write|use|make)|tips?|use ai|using ai|with ai|ai for|ai to|ai in|best way|can ai|can i use|teach me|explain|what is|what's|whats|what are|is it safe|basics|guide to|get started with|start with) /};
+var RX={hello:/^ (hi+|hey+|hello+|hiya|howdy|yo|sup|good (morning|afternoon|evening)|greetings|hola|what's up|whats up|wassup)( there| zapwise| bot| guide)? /,
+how:/ how are (you|u)| how's it going | how is it going | how you doing | how r u /,thanks:/ (thanks|thank|thx|ty|appreciate|cheers|helpful|awesome|perfect) /,
+bye:/ (bye|goodbye|good bye|see ya|see you|later|cya|gotta go|that's all|thats all|i'm done|im done) /,
+who:/ (who are you|what are you|are you (a )?(bot|robot|human|real|person|ai|chatgpt)|is this (a )?(bot|ai|human)|your name) /,
+human:/ (talk to (a )?(human|person|someone|real)|real person|customer service|speak to) /,joke:/ (tell me a joke|joke|make me laugh) /,
+yes:/^ (yes|yeah|yep|yup|sure|ok|okay|please|yes please|sounds good|go ahead|do it|show me|alright|definitely) $/,no:/^ (no|nope|nah|not now|no thanks|no thank you|maybe later) $/,
+price:/ (price|cost|how much|pay for|dollars|\$) /,free:/ (free|is it free|for free) /,
+rec:/ (recommend|recommendation|suggest|which (one|pack|guide|pdf|product)|what should i (get|buy)|fits me|fit me|for me|best (one|pack|for)|help me (pick|choose)|pack for my job) /,
+more:/ (more|details|tell me about|what's in|whats in|inside|what is|what's the|whats the|contents|include|includes) /,
+promptq:/ (prompt|example|template) /,follow:/^ (what|how) about | ^ and (for |the )?| ^ for | ^ what if /,
+it:/ (it|that|this|that one|this one|the one) /,mem:/ (what do you (know|remember)|what did i (say|tell)|my info|remember me) /,forget:/ (forget|reset|start over|clear) /,
+vague:/^ (help|help me|i need help|question|i have a question|one more thing|another question|one more question|quick question|i have another question|can i ask (you )?(something|a question)|hmm+|um+|idk|\?+|what|huh|can you help|info|information|anything) $/};
+var WI=/^ (please |pls |can you |could you |would you |will you |help me |i need to |i want to |i have to |i need you to |lets |let's |i need |i want )*(write|draft|compose|create|make|build|generate|reply to|respond to|answer|prepare|put together|outline|turn)( me| us)? (a |an |my |the |some |this |these |our )?/;
+var BT=[['followup',/ (follow ?up|followup|chase|chasing|nudge|reminder email|(no|hasn't|hasnt|didn't|didnt|haven't|havent) (reply|replied|respond|responded|answer|answered|heard)) /],
+['formula',/ (formula|formulas|spreadsheet|excel|google sheets|sheets|vlookup|xlookup|sumif|sumifs) /],
+['slides',/ (slide|slides|slide deck|deck|presentation|powerpoint|keynote) /],
+['meeting',/ (meeting (notes|summary|minutes|recap)|minutes|notes from (the|my|a|our|this) (meeting|call)|(meeting|call) recap|transcript) /],
+['report',/ (executive summary|exec summary|report|summary of (a|this|the|my|our) (report|document|doc)) /],
+['email',/ (e ?mail|emails|message|reply|note to|letter) /],
+['',/ (prompt|prompts) /]];
+function btask(s){for(var i=0;i<BT.length;i++)if(BT[i][1].test(s))return BT[i];return null}
+function builderOffer(bt,raw,pre){var id=bt[0],r=String(raw||'').replace(/\s+/g,' ').trim(),q=[],got=[];
+function cl(x){return x.replace(/^(my|the|a|an) (?=\S)/i,function(m){return m}).replace(/[.?!,;:]+$/,'').trim().slice(0,160)}
+var ab=r.match(/\b(?:about|regarding|re:|on the topic of|asking (?:for|about)|asking)\s+(.+)$/i),to=r.match(/\bto\s+((?:my|the|our|a|an)\s+[\w'-]+(?:\s+[\w'-]+)?|[A-Z][\w'-]+(?:\s+[A-Z][\w'-]+)?)(?=\s+(?:about|regarding|asking|re:|on|for|that)\b|\s*[.?!]*$)/);
+if(id==='formula'&&!ab)ab=r.match(/\bformula\s+(?:to|that|which|for)\s+(.+)$/i);
+if(id==='slides'&&!ab)ab=r.match(/\b(?:presentation|deck|slides)\s+(?:on|for)\s+(.+)$/i);
+if(id&&ab&&cl(ab[1])){q.push('about='+encodeURIComponent(cl(ab[1])));got.push('what it\'s about')}
+if(id&&to&&cl(to[1])&&/^(email|followup|slides)$/.test(id)){q.push('to='+encodeURIComponent(cl(to[1])));got.push('who it\'s for')}
+var url='/ai-prompt-builder.html'+(id?'?t='+id+(q.length?'&'+q.join('&'):''):'')+'#build',L={email:'email',followup:'follow-up email',meeting:'meeting summary',report:'executive summary',formula:'spreadsheet formula',slides:'slide outline'};
+C.last='builder';C.pending=null;C.offer=null;C.topic='builder';
+var h=pp(pre)+'<span class="zg-k">SHORTCUT BUILDER</span><p>'+(id?'I can\'t write the '+esc(L[id])+' for you here (I\'m a scripted guide, not an AI), but I can set up the prompt that gets your AI app to write it.':'I\'m a scripted guide, so I don\'t write text myself. The Shortcut Builder turns your details into a ready prompt for your AI app.')+'</p>'+
+'<p>'+(got.length?'I\'ve filled in '+got.join(' and ')+'. Add the rest, then':'Fill in the blanks, then')+' copy it or open it already typed in ChatGPT or Claude. What you type there stays in your browser.</p>';
+say(h,links([{t:'Open the Shortcut Builder →',href:url}]),function(){chips([],false,['How do I use a prompt?','Is it safe to use AI with work data?','Show me a free prompt'])})}
+function ask(t,chip){if(!data){you(t);return}flush();if(!chip)S('click');you(t);var n=norm(t),T=data.talk,pre=null,m;
+var g=n.s.replace(RX.hello,' ');var greeted=g!==n.s;if(greeted)n=norm(g.trim()||' ');
+if(C.bye&&!RX.bye.test(n.s)){C.bye=false;pre=T.back}
+if(!n.w.length){C.last='talk';return say('<p>'+esc((pre?pre+' ':'')+rot(T.hello))+' '+esc(T.hello_tail)+'</p>','',function(){chips(data.quick.slice(0,4),true,memo()?['Which pack fits me?']:[])})}
+if(greeted)pre=(pre?pre+' ':'')+rot(T.hello);
+var short=n.w.length<=6;
+if(RX.thanks.test(n.s)&&short&&!RX.price.test(n.s)){C.thanks++;C.last='talk';return say('<p>'+esc(T.thanks[Math.min(C.thanks-1,T.thanks.length-1)])+' '+esc(T.thanks_tail)+'</p>','',function(){chips(['start','paid','videos'],true)})}
+if(RX.bye.test(n.s)&&short){C.bye=true;C.last='talk';return say('<p>'+esc(rot(T.bye))+'</p><p>'+esc(T.bye_tail)+'</p>',links(data.social),null)}
+if(RX.how.test(n.s)&&short){C.last='talk';return say('<p>'+esc((pre?pre+' ':'')+rot(T.how))+' '+esc(T.hello_tail)+'</p>','',function(){chips(data.quick.slice(0,4),true)})}
+var MK=null;for(var mk in MX)if(MX[mk].test(n.s)){MK=mk;break}
+if(!MK&&RX.who.test(n.s))MK='who';
+if(MK){if(MK==='about'&&/ what does (this|it) do /.test(n.s)&&C.doc&&C.last==='doc'&&(C.doc.s==='Short'||C.doc.s==='AI tools'))return docMore(pre);if(!(MK==='help'&&C.pending))return meta(MK,pre)}
+if(RX3.cont.test(n.s)){if(C.last==='guide'&&C.g)return guideMore(pre);if(C.last==='doc'&&C.doc)return docMore(pre);if(C.prod&&/^(rec|prod|price)$/.test(C.last))return prod(C.prod,'more',pre);if(C.last==='meta')return meta('can',pre);C.last='ask';return say(pp(pre)+'<p>'+esc(data.meta.more_none)+'</p>','',function(){chips([],false,data.meta.general)})}
+if(RX.human.test(n.s)){var c=A('contact');if(c)return show(c,pre)}
+if(RX.joke.test(n.s)&&short){C.last='talk';return say('<p>'+esc(T.joke)+'</p>','',function(){chips(['prompt','start'],true)})}
+if(RX.mem.test(n.s)){C.last='talk';var mm=memo();return say('<p>'+esc(mm?fill(T.mem,{mem:mm}):T.mem_none)+'</p>','',function(){chips([],true,mm?['Which pack fits me?','Forget that']:['Recommend a pack for my job'])})}
+if(RX.forget.test(n.s)&&short){C.job=C.task=C.lvl=C.prod=C.pending=C.offer=null;C.askedLvl=C.seenNew=false;C.last='talk';return say('<p>'+esc(T.forget)+'</p>','',function(){chips(data.quick,false)})}
+/* answers to a question we just asked */
+var pend=C.pending;
+if(RX.yes.test(n.s)){if(C.offer==='prompt')return taskPrompt();if(pend==='lvl'){C.lvl='some';return recFlow()}C.last='talk';return say('<p>'+esc(T.yes_none)+'</p>','',function(){chips(data.quick.slice(0,4),true)})}
+if(RX.no.test(n.s)){C.offer=null;if(pend==='lvl'){C.lvl='new';return recFlow()}C.pending=null;C.last='talk';return say('<p>'+esc(T.no)+' '+esc(T.thanks_tail)+'</p>','',function(){chips(data.quick.slice(0,4),true)})}
+/* Oct 29 (t425): "write me an email to X about Y" -> the Shortcut Builder, prefilled (the bot is scripted: it builds no text itself) */
+var wi=n.s.replace(/-/g,' ');if(!C.pending&&WI.test(wi)){var bt=btask(wi);if(bt)return builderOffer(bt,t,pre)}
+/* slots */
+var job=find(n,data.slots.job),task=find(n,data.slots.task),lvl=lvlOf(n,pend==='lvl'),pk=find(n,data.alias||{}),sc=score(n),newInfo=false;
+if(job&&job!==C.job){C.job=job;newInfo=true;if(job==='creator'&&!task&&!pk&&!isP0(n)){C.task=null}}if(task&&task!==C.task){C.task=task;newInfo=true}if(lvl&&lvl!==C.lvl){C.lvl=lvl;newInfo=true}
+var fol=RX.follow.test(n.s)||(short&&!sc.a&&(task||pk||job)),isPrice=RX.price.test(n.s),isFree=RX.free.test(n.s)&&(RX.it.test(n.s)||!!pk),isPrompt=RX.promptq.test(n.s)&&!pk;
+if(pend==='ptask'&&task)return taskPrompt(pre);
+if(pend==='task'&&task||pend==='lvl'&&lvl||pend==='job'&&job)return recFlow(pre);
+var how=RX3.howto.test(n.s),GB=gbest(n);if(/ (safe|private|privacy|confidential|sensitive|leak|data|secure|allowed) /.test(n.all)&&GB.g&&/^(chatgpt|gemini|copilot|claude)$/.test(GB.g.id)&&gById('privacy'))GB={g:gById('privacy'),s:GB.s};var VA=find(n,data.var_alias||{}),toolQ=GB.g&&/^(chatgpt|gemini|copilot|claude)$/.test(GB.g.id);
+if(/^(guide|doc|price|prod)$/.test(C.last)&&C.prod&&RX3.which.test(n.s)&&!pk){var pn=data.products[C.prod];return prod(C.prod,'more',(pre?pre+' ':'')+'For '+(C.last!=='guide'?'that':C.g?C.g.t.replace(/^Using AI /,'').replace(/^(for|to) /,''):'that')+', the one to look at is the '+pn.name+'.')}
+if(VA&&!pk&&!isP0(n)&&n.w.length<=6&&(!GB.g||!(GB.g.var||{})[VA])){var gv=(C.g&&(C.g.var||{})[VA])?C.g:(data.guides||[]).filter(function(g){return(g.var||{})[VA]})[0];if(gv)return showGuide(gv,pre,VA)}
+var skipG=!GB.g||pk||(RX.rec.test(n.s)&&!toolQ)||((job||lvl)&&!how&&!toolQ)||(C.last==='prompt'&&fol&&task)||(/^(rec|prod|price)$/.test(C.last)&&fol&&task&&!how)||(isPrompt&&(task||/ (show|give|send|try|example|free) /.test(n.s)))||(isPrice&&!toolQ);
+var RS0=search(n),T0=RS0[0];if(T0&&T0.strong&&T0.th>=2&&T0.d.s!=='Shortcut'&&T0.d.s!=='Product'&&!toolQ&&!/ (how (do|can|should) i|use ai|using ai|ai for|ai to) /.test(n.s))return showDoc(T0.d,pre,RS0);
+if(!skipG&&(how||GB.s>=sc.s||n.w.length<=4||toolQ))return showGuide(GB.g,pre,VA&&(GB.g.var||{})[VA]?VA:null);
+if(isPrice&&!pk&&!(fol&&task)){if(C.prod&&(RX.it.test(n.s)||short))return prod(C.prod,'price',pre);if(!sc.a||sc.a.id==='paid'||sc.a.id==='free'){if(n.w.length<=4){C.last='ask';C.pending='prod';return say('<p>'+esc(T.ask_which)+'</p>','',function(){chips(['paid'],false,['How much is the Prompt Pack?','How much is the bundle?','Is anything free?'])})}}}
+if(pk&&(isPrice||isFree||(fol&&C.last==='price')))return prod(pk,isFree&&!isPrice?'free':'price',pre);
+if(isFree&&C.prod&&!pk&&RX.it.test(n.s))return prod(C.prod,'free',pre);
+if(isPrompt&&(task||C.task||/ (show|give|send|try|need|want|example|free) /.test(n.s)))return taskPrompt(pre);
+if(fol&&task&&C.last==='prompt')return taskPrompt(pre);
+if(pk&&(RX.more.test(n.s)||fol||n.w.length<=4||!sc.a||sc.s<2))return prod(pk,'more',pre);
+if(RX.more.test(n.s)&&RX.it.test(n.s)&&C.prod&&n.w.length<=6)return prod(C.prod,'more',pre);
+if(RX.rec.test(n.s)||(newInfo&&(!sc.a||sc.s<2||fol))||(fol&&task)){if(job&&!task&&!C.task&&job!=='creator')pre=(pre?pre+' ':'')+fill(T.ack_job,{job:lab('job',job)});return recFlow(pre)}
+if(RX.vague.test(n.s)&&!newInfo&&!pk){C.last='ask';return say('<p>'+esc((pre?pre+' ':'')+data.talk.vague)+'</p>','',function(){chips(['start','picker','paid','download'],false,[])})}
+var RS=search(n),top=RS[0];
+if(top&&top.strong&&!(sc.a&&sc.s>=2&&top.th<2))return showDoc(top.d,pre,RS);
+if(sc.a&&sc.s>=1){if(sc.a.id==='picker'){C.pending=null;return recFlow(pre)}return show(sc.a,pre)}
+if(RX.vague.test(n.s)||(n.w.length<=2&&!chip&&!(top&&top.s>=2))){C.last='ask';return say('<p>'+esc((pre?pre+' ':'')+T.vague)+'</p>','',function(){chips(['start','picker','paid','download'],false,[])})}
+var M=data.meta;if(top&&top.s>=2&&top.ex>0){C.last='ask';C.res=RS;return say(pp(pre)+'<p>'+esc(M.unsure)+'</p>','<p>'+esc(M.clarify)+'</p>',function(){chipsD(RS.slice(0,3).map(function(r){return r.d}),[])})}
+C.last='none';say(pp(pre)+'<p>'+esc(M.outside)+'</p><p>'+esc(M.outside_q)+'</p>',links(data.nomatch_links),function(){chips([],false,M.general)})}
+/* job picker (tap flow): job -> task -> experience -> one product (+ the free pack); also answers the typed recommender's questions */
+var PK={};function opts(kind,list){var c=el('div','zg-cs');c.setAttribute('role','group');c.innerHTML=list.map(function(o){return'<button type="button" class="zg-c" data-pk="'+kind+'" data-v="'+esc(o[0])+'">'+esc(o[1])+'</button>'}).join('');log.appendChild(c);var b=c.querySelector('button');setTimeout(function(){if(b&&d.activeElement!==inp)b.focus({preventScroll:true})},30);return c}
+function pk0(){PK={on:1};C.pending=null;C.last='ask';say('<span class="zg-k">STEP 1 / 3</span><p>What kind of work do you do?</p>','',function(){opts('job',data.picker.jobs)})}
+function step(kind,v,label){var p=data.picker;flush();you(label);
+if(!PK.on){if(kind==='job')C.job=v;if(kind==='task')C.task=v;if(kind==='lvl')C.lvl=v;return recFlow()}
+if(kind==='job'){PK.job=C.job=v;if(v==='creator'){PK={};return rec(p.recs.creator,'For making videos')}return say('<span class="zg-k">STEP 2 / 3</span><p>What eats most of your time?</p>','',function(){opts('task',p.tasks)})}
+if(kind==='task'){PK.task=C.task=v;return say('<span class="zg-k">STEP 3 / 3</span><p>How new are you to AI tools?</p>','',function(){opts('lvl',p.levels)})}
+if(kind==='lvl'){C.lvl=v;C.askedLvl=true;var r=v==='new'?p.recs['new']:p.recs[PK.task];if(v==='new')C.seenNew=true;var cx=lab('job',PK.job)+' · '+lab('task',PK.task)+(v==='new'?' · new to AI':'');PK={};rec(r,cx)}}
+function copy(b){var pre=b.closest('.zg-pc').querySelector('pre'),ok=b.parentNode.querySelector('.zg-ok'),t=pre.textContent;
+function done(){S('lock');b.textContent='Copied ✓';b.classList.add('ok');ok.textContent='Copied. Paste it into your AI chat.';setTimeout(function(){b.textContent='Copy prompt';b.classList.remove('ok');ok.textContent=''},2200)}
+function fb(){var r=d.createRange();r.selectNodeContents(pre);var s=getSelection();s.removeAllRanges();s.addRange(r);try{if(d.execCommand('copy'))done();else throw 0}catch(_){ok.textContent='Select the text and copy it.'}}
+if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(done,fb);else fb()}
+if(d.readyState==='loading')d.addEventListener('DOMContentLoaded',init);else init()})();
+
+/* Zapwise AI layer (Oct 29, 2026): Shortcut Builder + live feed. No network calls except /data/feed.json on this site. */
+(function(){var d=document,W=window;
+function S(n){try{if(W.zwSfx)W.zwSfx(n)}catch(_){}}
+function $(s,r){return(r||d).querySelector(s)}function $$(s,r){return[].slice.call((r||d).querySelectorAll(s))}
+function copyText(t,done,fail){function fb(){var a=d.createElement('textarea');a.value=t;a.setAttribute('readonly','');a.style.position='fixed';a.style.opacity='0';d.body.appendChild(a);a.select();var ok=false;try{ok=d.execCommand('copy')}catch(_){}a.remove();ok?done():fail&&fail()}
+if(navigator.clipboard&&W.isSecureContext)navigator.clipboard.writeText(t).then(done,fb);else fb()}
+var TZ='America/Chicago';
+function ctDay(dt){try{return new Intl.DateTimeFormat('en-CA',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit'}).format(dt||new Date())}catch(_){var x=new Date((dt||new Date()).getTime()-5*36e5);return x.toISOString().slice(0,10)}}
+function ctTime(ts){var x=new Date(ts);if(isNaN(x))return'';try{return new Intl.DateTimeFormat('en-US',{timeZone:TZ,month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}).format(x)+' CT'}catch(_){return x.toUTCString()}}
+function ago(ts){var m=Math.round((Date.now()-new Date(ts).getTime())/6e4);if(isNaN(m)||m<0)return'';if(m<2)return'just now';if(m<60)return m+' min ago';var h=Math.round(m/60);if(h<48)return h+'h ago';return Math.round(h/24)+' days ago'}
+/* ---------------- live feed ---------------- */
+var F=null;
+function pick(f){var k=ctDay();return(f.days&&f.days[k])||(f.days&&f.days[Object.keys(f.days)[0]])}
+function paint(f){if(!f)return;F=f;var sc=pick(f),s=f.short,u=f.updated_at,old=u&&(Date.now()-new Date(u).getTime())>8*36e5;
+$$('[data-zl="upd"]').forEach(function(e){var a=ago(u);e.textContent=(e.closest('.zlt')?'':'updated ')+ctTime(u)+(a&&!e.closest('.zlt')?' · '+a:'')});
+$$('.zlst,.zlt-l').forEach(function(e){e.classList.toggle('old',!!old)});
+if(s){$$('[data-zl="slink"],[data-zl="short"]').forEach(function(a){a.href=s.page});$$('[data-zl="syt"]').forEach(function(a){a.href=s.url});
+$$('[data-zl="stitle"]').forEach(function(e){e.textContent=s.t});$$('[data-zl="short"]').forEach(function(a){a.innerHTML='<i>NEW SHORT</i> ';a.appendChild(d.createTextNode(s.t))});
+$$('[data-zl="simg"]').forEach(function(i){if(i.getAttribute('src').split('?')[0]!==s.thumb){i.onerror=function(){i.onerror=null;i.src='https://i.ytimg.com/vi/'+s.id+'/hqdefault.jpg'};i.src=s.thumb}i.alt='Thumbnail: '+s.t});
+$$('.zlc-s .zlk').forEach(function(e){e.textContent='LATEST SHORT · '+(s.date||'')})}
+if(sc){$$('[data-zl="dt"]').forEach(function(e){e.textContent=sc.t});$$('[data-zl="dx"]').forEach(function(e){e.textContent=sc.x});
+$$('[data-zl="dtag"]').forEach(function(e){e.textContent=sc.tag});$$('[data-zl="dkind"]').forEach(function(e){e.textContent='SHORTCUT OF THE DAY · '+sc.kind});
+$$('[data-zl="du"]').forEach(function(a){a.href=sc.u;a.textContent=sc.ul+' →'});
+$$('[data-zl="sod"]').forEach(function(a){a.innerHTML='<i>TODAY</i> ';a.appendChild(d.createTextNode(sc.t))})}
+var v=f.channel&&f.channel.views;if(typeof v==='number')$$('[data-zl="views"]').forEach(function(e){e.textContent=v.toLocaleString('en-US')});
+if(f.changes&&f.changes.length)$$('[data-zl="log"]').forEach(function(ol){ol.textContent='';f.changes.forEach(function(c){var li=d.createElement('li'),t=d.createElement('time'),a=d.createElement('a');t.dateTime=c.ts;t.textContent=c.d;a.href=c.u;a.textContent=c.t;li.appendChild(t);li.appendChild(a);ol.appendChild(li)})})}
+function load(){if(!$('[data-feed],[data-zlt]')||!W.fetch)return;fetch('/data/feed.json?t='+Math.floor(Date.now()/3e5),{cache:'no-store'}).then(function(r){if(!r.ok)throw 0;return r.json()}).then(paint).catch(function(){})}
+d.addEventListener('click',function(e){var b=e.target.closest('.zlcp');if(!b)return;var p=d.getElementById(b.getAttribute('data-c')),ok=b.parentNode.querySelector('.zlok');if(!p)return;
+copyText(p.textContent,function(){S('lock');b.textContent='Copied';b.classList.add('ok');if(ok){var kd=d.querySelector('[data-zl="dkind"]');ok.textContent=/FORMULA/.test(kd?kd.textContent:'')?'Copied. Paste it into a cell in your sheet.':'Copied. Paste it into your AI chat.'}setTimeout(function(){b.textContent='Copy';b.classList.remove('ok');if(ok)ok.textContent=''},1800)})});
+/* ---------------- Shortcut Builder ---------------- */
+function builder(){var dj=d.getElementById('zb-data');if(!dj)return;var D;try{D=JSON.parse(dj.textContent)}catch(_){return}
+var R=D.r,ASK=D.ask,box=d.getElementById('zbf'),out=d.getElementById('zbo'),lab=d.getElementById('zbl'),cnt=d.getElementById('zbn'),q=d.getElementById('zbq'),gpt=d.getElementById('zbgpt'),cl=d.getElementById('zbcl'),okm=d.getElementById('zbok'),warn=d.getElementById('zbw'),cp=d.getElementById('zbcp');
+var V={},cur=null,MAP={about:{email:'points',followup:'topic',report:'doc',formula:'goal',slides:'topic',meeting:'notes'},to:{email:'to',followup:'name',slides:'audience',report:'reader'}};
+var P=new URLSearchParams(location.search),t0=P.get('t');R.forEach(function(r){V[r.id]={}});
+function byId(id){for(var i=0;i<R.length;i++)if(R[i].id===id)return R[i];return null}
+if(t0&&byId(t0)){var r0=byId(t0);r0.fields.forEach(function(f){var x=P.get(f.k);if(x)V[r0.id][f.k]=x.slice(0,2000)});['about','to'].forEach(function(k){var x=P.get(k),fk=MAP[k][r0.id];if(x&&fk&&!V[r0.id][fk])V[r0.id][fk]=x.slice(0,2000)})}
+function val(r,f){var x=(V[r.id][f.k]||'').trim();return x||f.d||''}
+function render(r){var F={},left=0;r.fields.forEach(function(f){F[f.k]=f});var lines=[];
+r.tpl.split('\n').forEach(function(line){if(line.charAt(0)==='?'){var ks=(line.match(/\{(\w+)\}/g)||[]).map(function(x){return x.slice(1,-1)});if(!ks.every(function(k){return(V[r.id][k]||'').trim()}))return;line=line.slice(1)}
+lines.push(line.replace(/\{(\w+)\}/g,function(_,k){var f=F[k],x=val(r,f);if(!x){left++;return'['+(f.blank||k.toUpperCase())+']'}return x}))});
+var s=lines.join('\n');if(q&&q.checked)s+='\n\n'+ASK;return{s:s,left:left}}
+function update(){var r=cur,o=render(r);out.textContent=o.s;cnt.textContent=o.left?(o.left+(o.left===1?' blank':' blanks')+' left'):'Ready';cnt.classList.toggle('ok',!o.left);
+var u=encodeURIComponent(o.s),big=u.length>6000;[[gpt,'https://chatgpt.com/?q='],[cl,'https://claude.ai/new?q=']].forEach(function(p){if(!p[0])return;if(big){p[0].removeAttribute('href');p[0].setAttribute('aria-disabled','true')}else{p[0].href=p[1]+u;p[0].removeAttribute('aria-disabled')}});
+warn.textContent=big?'This prompt is too long for a link. Copy it and paste it into your AI app.':'The prompt opens already typed in. Nothing sends until you press send. Using Gemini or Copilot? Copy the prompt and paste it in.'}
+function field(r,f){var w=d.createElement('div');w.className='zbfi';var id='zb-'+r.id+'-'+f.k;
+if(f.ch){var l=d.createElement('span');l.className='zbfl';l.id=id+'-l';l.textContent=f.l;w.appendChild(l);var g=d.createElement('div');g.className='zbch';g.setAttribute('role','radiogroup');g.setAttribute('aria-labelledby',id+'-l');
+f.ch.forEach(function(c){var b=d.createElement('button');b.type='button';b.className='zbc';b.textContent=c+(f.suf||'');var on=val(r,f)===c;b.setAttribute('role','radio');b.setAttribute('aria-checked',on?'true':'false');
+b.addEventListener('click',function(){V[r.id][f.k]=c;$$('.zbc',g).forEach(function(x){x.setAttribute('aria-checked',x===b?'true':'false')});update()});g.appendChild(b)});w.appendChild(g);return w}
+var lb=d.createElement('label');lb.className='zbfl';lb.setAttribute('for',id);lb.setAttribute('data-nosfx','');lb.textContent=f.l+(f.opt?'':'');w.appendChild(lb);
+var i=d.createElement(f.ta?'textarea':'input');i.id=id;i.className='zbin';if(!f.ta)i.type='text';else i.rows=5;i.placeholder=f.ph||'';i.value=V[r.id][f.k]||'';i.setAttribute('autocomplete','off');i.maxLength=8000;
+i.addEventListener('input',function(){V[r.id][f.k]=i.value;update()});w.appendChild(i);return w}
+function show(id,focus){var r=byId(id)||R[0];cur=r;box.textContent='';r.fields.forEach(function(f){box.appendChild(field(r,f))});
+var n=d.createElement('p');n.className='zmeta';n.textContent=r.src?'Built on a prompt from our free 10 AI Prompts for Work. Leave a field empty to keep its [BRACKET].':'Written for the Shortcut Builder. Leave a field empty to keep its [BRACKET].';box.appendChild(n);
+lab.textContent='Your prompt · '+r.label;$$('.zbt').forEach(function(b){var on=b.getAttribute('data-t')===r.id;b.setAttribute('aria-selected',on?'true':'false');b.tabIndex=on?0:-1});update();
+if(focus){var f=box.querySelector('input,textarea');if(f)f.focus({preventScroll:true})}}
+$$('.zbt').forEach(function(b){b.addEventListener('click',function(){show(b.getAttribute('data-t'));try{history.replaceState(null,'',location.pathname+'?t='+b.getAttribute('data-t')+location.hash)}catch(_){}})});
+var tl=$('.zbtabs');if(tl)tl.addEventListener('keydown',function(e){if(e.key!=='ArrowRight'&&e.key!=='ArrowLeft')return;var bs=$$('.zbt'),i=bs.indexOf(d.activeElement);if(i<0)return;e.preventDefault();var j=(i+(e.key==='ArrowRight'?1:-1)+bs.length)%bs.length;bs[j].focus();bs[j].click()});
+if(q)q.addEventListener('change',update);
+cp.addEventListener('click',function(){copyText(out.textContent,function(){S('lock');cp.textContent='Copied';cp.classList.add('ok');okm.textContent='Copied. Paste it into your AI app.';setTimeout(function(){cp.textContent='Copy prompt';cp.classList.remove('ok');okm.textContent=''},1800)},function(){okm.textContent='Select the prompt and copy it.'})});
+[gpt,cl].forEach(function(a){if(a)a.addEventListener('click',function(e){if(a.getAttribute('aria-disabled')==='true'){e.preventDefault();warn.focus&&warn.focus()}})});
+show(t0&&byId(t0)?t0:R[0].id,false);if(t0&&location.hash!=='#build'&&P.get('about')){var bx=d.getElementById('build');if(bx)bx.scrollIntoView({block:'start'})}}
+function init(){builder();load();setInterval(function(){if(!d.hidden)load()},6e5);d.addEventListener('visibilitychange',function(){if(!d.hidden&&F&&Date.now()-new Date(F.generated_at).getTime()>6e5)load()})}
+if(d.readyState==='loading')d.addEventListener('DOMContentLoaded',init);else init()})();
+</script></body></html>

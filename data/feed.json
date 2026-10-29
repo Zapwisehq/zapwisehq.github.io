@@ -1,0 +1,87 @@
+{
+ "v": 1,
+ "updated_at": "2026-10-29T15:07:04-05:00",
+ "status": "ok",
+ "channel": {
+  "handle": "@zapwisehq",
+  "views": 4052
+ },
+ "short": {
+  "id": "TpnpWSW_XOQ",
+  "url": "https://www.youtube.com/shorts/TpnpWSW_XOQ",
+  "page": "/shorts/snipping-tool-copies-text-from-any-screenshot-tpnp.html",
+  "date": "Oct 29",
+  "published": "2026-10-29T11:00:09-05:00",
+  "dur": 23,
+  "t": "Snipping Tool Copies Text From Any Screenshot ✂️",
+  "thumb": "/img/shorts/TpnpWSW_XOQ.jpg"
+ },
+ "days": {
+  "2026-10-29": {
+   "kind": "FORMULA",
+   "t": "% complete",
+   "sec": "Spreadsheets",
+   "x": "=COUNTIF(F2:F200, \"Done\") / COUNTA(A2:A200)",
+   "tag": "Checked on fictional sample data in LibreOffice Calc 25.2",
+   "u": "/spreadsheet-formula-shortcuts.html#sc109",
+   "ul": "See what it does"
+  },
+  "2026-10-30": {
+   "kind": "FORMULA",
+   "t": "Show only matching rows",
+   "sec": "Spreadsheets",
+   "x": "=FILTER(A2:F200, B2:B200=\"Open\")",
+   "tag": "Checked on fictional sample data in LibreOffice Calc 25.2",
+   "u": "/spreadsheet-formula-shortcuts.html#sc110",
+   "ul": "See what it does"
+  },
+  "2026-10-31": {
+   "kind": "FORMULA",
+   "t": "Remove extra spaces",
+   "sec": "Spreadsheets",
+   "x": "=TRIM(A2)",
+   "tag": "Checked on fictional sample data in LibreOffice Calc 25.2",
+   "u": "/spreadsheet-formula-shortcuts.html#sc113",
+   "ul": "See what it does"
+  }
+ },
+ "changes": [
+  {
+   "ts": "2026-10-29T14:44:28-05:00",
+   "d": "Oct 29",
+   "t": "Ask Zapwise guide bot now holds a conversation and searches the whole site.",
+   "u": "/ai-shortcuts-for-work.html"
+  },
+  {
+   "ts": "2026-10-29T14:44:28-05:00",
+   "d": "Oct 29",
+   "t": "Free guides: AI shortcuts, AI hacks and spreadsheet formulas for work.",
+   "u": "/ai-hacks-for-work.html"
+  },
+  {
+   "ts": "2026-10-29T13:17:38-05:00",
+   "d": "Oct 29",
+   "t": "Moved to our own domain: zapwiseai.com.",
+   "u": "/"
+  },
+  {
+   "ts": "2026-10-29T12:00:00-05:00",
+   "d": "Oct 29",
+   "t": "New: Shortcut Builder. Fill in the blanks, get a ready prompt.",
+   "u": "/ai-prompt-builder.html"
+  },
+  {
+   "ts": "2026-10-29T11:29:19-05:00",
+   "d": "Oct 29",
+   "t": "Ask Zapwise guide bot added to every page.",
+   "u": "/"
+  },
+  {
+   "ts": "2026-10-29T11:00:09-05:00",
+   "d": "Oct 29",
+   "t": "New Short page: Snipping Tool Copies Text From Any Screenshot ✂️",
+   "u": "/shorts/snipping-tool-copies-text-from-any-screenshot-tpnp.html"
+  }
+ ],
+ "generated_at": "2026-10-29T15:32:40-05:00"
+}
