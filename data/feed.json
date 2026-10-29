@@ -47,6 +47,18 @@
  },
  "changes": [
   {
+   "ts": "2026-10-29T15:34:18-05:00",
+   "d": "Oct 29",
+   "t": "New: Shortcut Builder. Fill in the blanks, get a ready prompt.",
+   "u": "/ai-prompt-builder.html"
+  },
+  {
+   "ts": "2026-10-29T15:34:18-05:00",
+   "d": "Oct 29",
+   "t": "New: live feed with the latest Short and a shortcut of the day.",
+   "u": "/#feed"
+  },
+  {
    "ts": "2026-10-29T14:44:28-05:00",
    "d": "Oct 29",
    "t": "Ask Zapwise guide bot now holds a conversation and searches the whole site.",
@@ -65,23 +77,11 @@
    "u": "/"
   },
   {
-   "ts": "2026-10-29T12:00:00-05:00",
-   "d": "Oct 29",
-   "t": "New: Shortcut Builder. Fill in the blanks, get a ready prompt.",
-   "u": "/ai-prompt-builder.html"
-  },
-  {
    "ts": "2026-10-29T11:29:19-05:00",
    "d": "Oct 29",
    "t": "Ask Zapwise guide bot added to every page.",
    "u": "/"
-  },
-  {
-   "ts": "2026-10-29T11:00:09-05:00",
-   "d": "Oct 29",
-   "t": "New Short page: Snipping Tool Copies Text From Any Screenshot ✂️",
-   "u": "/shorts/snipping-tool-copies-text-from-any-screenshot-tpnp.html"
   }
  ],
- "generated_at": "2026-10-29T15:32:40-05:00"
+ "generated_at": "2026-10-29T15:34:42-05:00"
 }
