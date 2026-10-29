@@ -1,13 +1,24 @@
 {
  "status": "ok",
  "error": null,
- "last_attempt": "2026-10-29T09:09:06-05:00",
+ "last_attempt": "2026-10-29T12:06:39-05:00",
  "channel": {
   "id": "UCiWmHV3TxMOpCgONfbiBq-g",
   "handle": "@zapwisehq",
-  "views": 3947
+  "views": 4052
  },
  "latest": [
+  {
+   "id": "TpnpWSW_XOQ",
+   "title": "Snipping Tool Copies Text From Any Screenshot ✂️",
+   "clean": "Snipping Tool Copies Text From Any Screenshot ✂️",
+   "url": "https://www.youtube.com/shorts/TpnpWSW_XOQ",
+   "published": "2026-10-29T11:00:09-05:00",
+   "date": "Oct 29",
+   "dur": 23,
+   "page": "/shorts/snipping-tool-copies-text-from-any-screenshot-tpnp.html",
+   "thumb": "/img/shorts/TpnpWSW_XOQ.jpg"
+  },
   {
    "id": "eiZR8FMlYVY",
    "title": "AgentCloak Hides Your Real Data From ChatGPT 🛡️",
@@ -128,19 +139,8 @@
    "dur": 19,
    "page": "/shorts/tesseract-free-ai-slide-deck-maker.html",
    "thumb": "/img/shorts/XFx7_B101fA.jpg"
-  },
-  {
-   "id": "KmNH119qqro",
-   "title": "Google's New AI Deal Hunter Watches Prices for You 🛒 #shorts",
-   "clean": "Google's New AI Deal Hunter Watches Prices for You 🛒",
-   "url": "https://www.youtube.com/shorts/KmNH119qqro",
-   "published": "2026-10-19T20:03:27-05:00",
-   "date": "Oct 19",
-   "dur": 40,
-   "page": "/shorts/google-universal-cart-price-drop-alerts.html",
-   "thumb": "/img/shorts/KmNH119qqro.jpg"
   }
  ],
  "range": "Oct 15 – Oct 26, 2026",
- "updated_at": "2026-10-29T09:09:06-05:00"
+ "updated_at": "2026-10-29T12:06:39-05:00"
 }
