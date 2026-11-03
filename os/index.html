@@ -15,7 +15,11 @@
 <link rel="manifest" href="/os/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/os/icon-180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/os/icon-192.png">
-<link rel="stylesheet" href="/os/app.css?v=2.0.2">
+<link rel="preconnect" href="https://api.open-meteo.com" crossorigin>
+<link rel="preconnect" href="https://api.coingecko.com" crossorigin>
+<link rel="preconnect" href="https://tile.openstreetmap.org" crossorigin>
+<link rel="stylesheet" href="/os/app.css?v=2.1.0">
+<script>/* paint the saved theme on the first frame */try{var z=JSON.parse(localStorage.getItem("zapos.device")||"{}").themeCss;if(z&&z.css){var s=document.createElement("style");s.textContent=z.css;document.head.appendChild(s);if(z.light)document.documentElement.classList.add("light");var m=document.querySelector('meta[name="theme-color"]');if(m&&z.meta)m.setAttribute("content",z.meta);}}catch(e){}</script>
 </head>
 <body>
 <div class="grid-bg" aria-hidden="true"></div>
@@ -144,6 +148,6 @@
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/os/app.js?v=2.0.2"></script>
+<script src="/os/app.js?v=2.1.0"></script>
 </body>
 </html>

@@ -1,9 +1,23 @@
-/* ZAPWISE//OS web app v2.0 (Nov 2, 2026): HUD look matched to the Scriptable widget v7.2. Static, no build step, no API keys.
+/* ZAPWISE//OS web app v2.1 (Nov 2, 2026). Static, no build step, no API keys.
    Data: Open-Meteo (weather + city search), api-bdc.io (city name for weather), CoinGecko (crypto + PAX Gold),
-   OpenStreetMap tiles + Nominatim reverse geocoding (road + city, cached, re-queried only after moving > 40 m). */
+   OpenStreetMap tiles + Nominatim reverse geocoding (road + city, cached, re-queried only after moving > 40 m).
+
+   SECTIONS
+     1  config + DOM helpers        6  clock, meters, focus timer   11  sheets: menu, edit apps, add app,
+     2  STATE (one versioned store)  7  weather FX (canvas)              theme, city, watchlist, settings, help
+     3  themes                       8  weather data                12  return-to-app (restore view + scroll)
+     4  apps: data + migration       9  markets                     13  boot
+     5  apps: icons, open, render   10  map + tabs
+
+   STATE: everything the user chooses lives in ONE object, zapos.state = { v, updatedAt, prefs, ui }.
+     prefs = settings, theme, apps (list, order, on/off), coins (watchlist), loc (GPS mode or a saved city).
+     ui    = last view + scroll position of each view.
+   Live GPS coordinates, the street name, weather/market caches and the focus timer stay on this device only, in
+   zapos.device, and never go in the shared state. Stage 2 (sync) plugs in through Store.onChange / Store.snapshot /
+   Store.applyRemote below. */
 (function () {
 "use strict";
-var VERSION = "2.0.2";
+var VERSION = "2.1.0";
 var STATUS_MSGS = ["> SHORTCUTS ARMED", "> NET SECURE", "> AI LINK STABLE", "> SIGNAL CLEAN", "> APPS READY"];
 var FOCUS_MS = 25 * 60000, DOCK_N = 5;
 var DAY_START = 7, DAY_END = 23;
@@ -11,12 +25,61 @@ var $ = function (s, r) { return (r || document).querySelector(s); };
 var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
 var Q = new URLSearchParams(location.search);
 var FORCE_FX = Q.get("fx");
+function clone(o) { return o == null ? o : JSON.parse(JSON.stringify(o)); }
 
-// ---------- storage ----------
-function load(k, d) { try { var v = localStorage.getItem("zapos." + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
-function save(k, v) { try { localStorage.setItem("zapos." + k, JSON.stringify(v)); } catch (e) {} }
+// ========== 2. STATE: one versioned object + one save/load layer ==========
+var Store = (function () {
+  var STATE_KEY = "zapos.state", DEVICE_KEY = "zapos.device", VER = 1;
+  var PREF_KEYS = ["settings", "theme", "apps", "coins", "loc"];                     // shared state (sync-ready)
+  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss"]; // this device only
+  function read(k) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
+  function write(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
+  var state = read(STATE_KEY), dev = read(DEVICE_KEY), subs = [], uiT = null;
+  if (!state || typeof state !== "object" || !state.prefs) {
+    // v0 -> v1: gather the old one-key-per-setting values (zapos.apps, zapos.theme, ...) into the single object.
+    // The old keys are left untouched so nothing is lost if an older version ever loads.
+    state = { v: VER, updatedAt: 0, prefs: {}, ui: {} };
+    PREF_KEYS.forEach(function (k) { var v = read("zapos." + k); if (v != null) { state.prefs[k] = v; state.updatedAt = Date.now(); } });
+  }
+  if (!dev || typeof dev !== "object") { dev = {}; DEVICE_KEYS.forEach(function (k) { var v = read("zapos." + k); if (v != null) dev[k] = v; }); }
+  // live GPS position never stays in the shared state: split it into the device store
+  var L = state.prefs.loc;
+  if (L && L.mode !== "city") { if (L.lat != null) dev.gpsLoc = { lat: L.lat, lon: L.lon, name: L.name }; state.prefs.loc = { mode: "gps" }; }
+  if (state.prefs.settings) delete state.prefs.settings.play; // left over from the old PLAY setting
+  if (!state.ui || typeof state.ui !== "object") state.ui = {};
+  state.v = VER;
+  write(STATE_KEY, state); write(DEVICE_KEY, dev);
+  function persist() { write(STATE_KEY, state); }
+  return {
+    get: function (k, d) { var v = state.prefs[k]; return v == null ? d : clone(v); },
+    set: function (k, v) {
+      if (PREF_KEYS.indexOf(k) < 0) throw new Error("unknown pref " + k);
+      state.prefs[k] = clone(v); state.updatedAt = Date.now(); persist();
+      subs.forEach(function (f) { try { f(k, clone(v), "local"); } catch (e) {} });
+    },
+    getLocal: function (k, d) { var v = dev[k]; return v == null ? d : v; },
+    setLocal: function (k, v) { if (DEVICE_KEYS.indexOf(k) < 0) throw new Error("unknown device key " + k); dev[k] = v; write(DEVICE_KEY, dev); },
+    ui: function () { return state.ui; },
+    setUI: function (patch, now) { Object.assign(state.ui, patch); clearTimeout(uiT); if (now) persist(); else uiT = setTimeout(persist, 300); },
+    flush: function () { clearTimeout(uiT); persist(); },
+    onChange: function (f) { subs.push(f); },
+    snapshot: function () { return { v: state.v, updatedAt: state.updatedAt, prefs: clone(state.prefs) }; },
+    // stage 2 entry point: apply prefs that came from another device (newer wins), then the app re-renders
+    applyRemote: function (snap) {
+      if (!snap || !snap.prefs || (snap.updatedAt || 0) <= (state.updatedAt || 0)) return false;
+      PREF_KEYS.forEach(function (k) { if (snap.prefs[k] !== undefined) state.prefs[k] = clone(snap.prefs[k]); });
+      state.updatedAt = snap.updatedAt; persist();
+      subs.forEach(function (f) { try { f("*", null, "remote"); } catch (e) {} });
+      return true;
+    },
+    reset: function () {
+      try { localStorage.removeItem(STATE_KEY); localStorage.removeItem(DEVICE_KEY); } catch (e) {}
+      PREF_KEYS.concat(DEVICE_KEYS).forEach(function (k) { try { localStorage.removeItem("zapos." + k); } catch (e) {} });
+    }
+  };
+})();
 
-// ---------- themes (v2.0.2): applied instantly from the THEME button, saved on this device ----------
+// ========== 3. themes: applied instantly from the THEME button ==========
 var THEMES = [
   { id: "zapwise", name: "ZAPWISE", sub: "Default · void, cream, amber, cyan", v: { void: "#070814", panel: "#0d1226", panel2: "#111833", cream: "#f4efe4", amber: "#f0a202", cyan: "#5ce1e6", magenta: "#ff4fd8", dim: "#6b7896", on: "#070814" } },
   { id: "neon", name: "NEON PINK", sub: "Hot pink and violet on deep plum", v: { void: "#10040f", panel: "#1d0a1f", panel2: "#28102b", cream: "#fde9f6", amber: "#ffd166", cyan: "#ff4fd8", magenta: "#9d7bff", dim: "#8f7393", on: "#10040f" } },
@@ -35,8 +98,10 @@ function applyTheme(id) {
   if (document.body) document.body.classList.toggle("light", !!t.light);
   var m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute("content", t.v.void);
   THEME = t;
+  // a copy of the colors for the tiny script in <head>, so the saved theme paints on the first frame (no flash)
+  Store.setLocal("themeCss", { light: !!t.light, css: ":root{" + Object.keys(t.v).map(function (k) { return "--" + k + ":" + t.v[k] + ";--" + k + "-rgb:" + hexRgb(t.v[k]); }).join(";") + "}", meta: t.v.void });
 }
-applyTheme(load("theme", "zapwise"));
+applyTheme(Store.get("theme", "zapwise"));
 function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
 function pad2(n) { return (n < 10 ? "0" : "") + n; }
 function t12(d) { var h = d.getHours(); return (h % 12 || 12) + ":" + pad2(d.getMinutes()) + (h < 12 ? "A" : "P"); }
@@ -44,7 +109,8 @@ function isoT12(iso) { var h = +iso.slice(11, 13), m = iso.slice(14, 16); return
 function isoH(iso) { var h = +iso.slice(11, 13); return (h % 12 || 12) + (h < 12 ? "A" : "P"); }
 function toast(msg) { var t = $("#toast"); t.textContent = msg; t.classList.add("on"); clearTimeout(toast.k); toast.k = setTimeout(function () { t.classList.remove("on"); }, 2600); }
 
-// ---------- glyphs (original, simple shapes; no third-party logos) ----------
+// ========== 4. apps: data + migration ==========
+// glyphs (original, simple shapes) for custom apps that have no icon
 var G = {
   play: '<path d="M8 5.5v13l11-6.5z" fill="#fff"/>',
   chat: '<path d="M4 5h16v10.5H9.5L4 19.5z" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><path d="M12 7.3l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9z" fill="#fff"/>',
@@ -129,20 +195,25 @@ CATALOG.forEach(function (c) { c.icon = "/os/icons/" + c.id + ".jpg"; });
 var DEFAULT_COINS = [{ id: "bitcoin", sym: "BTC", name: "Bitcoin" }, { id: "pax-gold", sym: "GOLD", name: "Gold (PAX Gold)" }];
 var DEFAULT_SET = { name: "", units: "F" };
 
-var S = Object.assign({}, DEFAULT_SET, load("settings", {}));
-var APPS = load("apps", null);
-(function migrateApps() {
-  var fresh = JSON.parse(JSON.stringify(DEFAULT_APPS));
-  if (!APPS) { APPS = fresh; return; }
+var S = Object.assign({}, DEFAULT_SET, Store.get("settings", {}));
+var APPS = Store.get("apps", null);
+// keeps saved built-in apps up to date with the latest links/icons and adds any new defaults
+function migrateApps() {
+  if (!APPS || !APPS.length) { APPS = clone(DEFAULT_APPS); return; }
   var OLD_ORDER = "x,youtube,chatgpt,grok,gemini,maps,messages,phone,mail,calendar,notes,web";
   APPS = APPS.filter(function (a) { return a.custom || (a.id !== "music" && a.id !== "spotify"); }); // now in the PLAY hub
   APPS.forEach(function (a) { var d = DEFAULT_APPS.filter(function (x) { return x.id === a.id; })[0]; if (d && !a.custom) { var on = a.on; Object.keys(d).forEach(function (k) { a[k] = d[k]; }); delete a.fb; delete a.store; a.on = on; } });
   if (APPS.map(function (a) { return a.id; }).join(",") === OLD_ORDER) APPS.sort(function (p, q) { return DEFAULT_APPS.findIndex(function (d) { return d.id === p.id; }) - DEFAULT_APPS.findIndex(function (d) { return d.id === q.id; }); });
-  DEFAULT_APPS.forEach(function (d) { if (!APPS.some(function (a) { return a.id === d.id; })) APPS.push(JSON.parse(JSON.stringify(d))); });
-  save("apps", APPS);
-})();
-var COINS = load("coins", null) || JSON.parse(JSON.stringify(DEFAULT_COINS));
-var LOC = load("loc", { mode: "gps" });
+  DEFAULT_APPS.forEach(function (d) { if (!APPS.some(function (a) { return a.id === d.id; })) APPS.push(clone(d)); });
+}
+migrateApps(); if (JSON.stringify(APPS) !== JSON.stringify(Store.get("apps", null))) Store.set("apps", APPS);
+var COINS = Store.get("coins", null) || clone(DEFAULT_COINS);
+// LOC: weather location. Shared state keeps only the choice (GPS, or a typed city); the live GPS fix is device-local.
+function readLoc() { var l = Store.get("loc", { mode: "gps" }); return l.mode === "city" ? l : Object.assign({ mode: "gps" }, Store.getLocal("gpsLoc", {})); }
+function saveLoc() { if (LOC.mode === "city") Store.set("loc", LOC); else { Store.set("loc", { mode: "gps" }); Store.setLocal("gpsLoc", { lat: LOC.lat, lon: LOC.lon, name: LOC.name }); } }
+var LOC = readLoc();
+function saveApps() { Store.set("apps", APPS); }
+function saveCoins() { Store.set("coins", COINS); }
 
 function iconHTML(a) {
   var inner;
@@ -157,7 +228,7 @@ function iconHTML(a) {
   return '<span class="ico" style="background:' + esc(a.bg) + '">' + inner + '</span>';
 }
 
-// ---------- opening apps ----------
+// ========== 5. apps: open + render ==========
 // One tap, no App Store detours. Phone: try the app link; if the page is still showing ~1.2 s later the app
 // isn't installed, so open its website instead. Computer: open the website straight away (Mac uses Messages/FaceTime for sms/phone).
 var IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
@@ -226,7 +297,7 @@ function renderApps() {
   if (!dock.length) dt.innerHTML = '<span class="d-none">NO APPS ON · TAP EDIT APPS</span>';
 }
 
-// ---------- clock, date, status, meters ----------
+// ========== 6. clock, date, status, meters, focus ==========
 var MON = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"], DOW = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 function segs(el) { if (!el.children.length) el.innerHTML = new Array(17).join("<i></i>"); return el.children; }
 function setSegs(el, pct, cls) { var c = segs(el), n = Math.round(Math.max(0, Math.min(1, pct)) * 16); for (var i = 0; i < 16; i++) c[i].className = i < n ? cls : ""; }
@@ -256,10 +327,10 @@ function minute(d) {
   updateStamps();
 }
 // FOCUS: a 25-minute sprint timer (the web can't read battery on iPhone, so this replaces the widget's PWR meter)
-var FOC = load("focus", { st: "idle" });
+var FOC = Store.getLocal("focus", { st: "idle" });
 function renderFocus() {
   var now = Date.now(), left = FOCUS_MS, line;
-  if (FOC.st === "run") { left = FOC.end - now; if (left <= 0) { FOC = { st: "done" }; save("focus", FOC); left = 0; toast("Focus sprint done. Take 5."); try { navigator.vibrate && navigator.vibrate([200, 100, 200]); } catch (e) {} } }
+  if (FOC.st === "run") { left = FOC.end - now; if (left <= 0) { FOC = { st: "done" }; Store.setLocal("focus", FOC); left = 0; toast("Focus sprint done. Take 5."); try { navigator.vibrate && navigator.vibrate([200, 100, 200]); } catch (e) {} } }
   else if (FOC.st === "pause") left = FOC.left;
   else if (FOC.st === "done") left = 0;
   var pct = 1 - left / FOCUS_MS, s = Math.ceil(left / 1000);
@@ -271,7 +342,7 @@ function renderFocus() {
 }
 (function bindFocus() {
   var b = $("#mFocus"), hold = null, held = false;
-  function down() { held = false; clearTimeout(hold); hold = setTimeout(function () { held = true; FOC = { st: "idle" }; save("focus", FOC); renderFocus(); toast("Focus timer reset"); }, 650); }
+  function down() { held = false; clearTimeout(hold); hold = setTimeout(function () { held = true; FOC = { st: "idle" }; Store.setLocal("focus", FOC); renderFocus(); toast("Focus timer reset"); }, 650); }
   function up() { clearTimeout(hold); }
   b.addEventListener("pointerdown", down); b.addEventListener("pointerup", up); b.addEventListener("pointerleave", up); b.addEventListener("pointercancel", up);
   b.addEventListener("contextmenu", function (e) { e.preventDefault(); });
@@ -281,7 +352,7 @@ function renderFocus() {
     if (FOC.st === "run") FOC = { st: "pause", left: Math.max(0, FOC.end - now) };
     else if (FOC.st === "pause") FOC = { st: "run", end: now + FOC.left };
     else FOC = { st: "run", end: now + FOCUS_MS };
-    save("focus", FOC); renderFocus();
+    Store.setLocal("focus", FOC); renderFocus();
   });
 })();
 function renderNet() { var on = navigator.onLine !== false; $("#hNet").classList.toggle("off", !on); $("#hNet b").textContent = on ? "ONLINE" : "OFFLINE"; }
@@ -297,7 +368,7 @@ function openMedia() {
   sheet("♪ MORE MUSIC APPS", html, function (b) { b.addEventListener("click", function (e) { var x = e.target.closest("[data-m]"); if (x) { closeSheet(); openApp(MEDIA[x.getAttribute("data-m")]); } }); });
 }
 
-// ---------- weather FX (canvas only) ----------
+// ========== 7. weather FX (canvas only) ==========
 var FXS = [];
 var RM = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
 function FX(cv) { this.cv = cv; this.ctx = cv.getContext("2d"); this.kind = "none"; this.p = []; this.flash = 0; this.bolt = null; this.t0 = performance.now(); this.w = 0; this.h = 0; FXS.push(this); }
@@ -419,8 +490,8 @@ function wxEmoji(c, day) {
 }
 var FX_DEBUG = { rain: [63, 1], snow: [73, 1], sun: [0, 1], night: [0, 0], cloud: [3, 1], storm: [95, 1], fog: [45, 1] };
 
-// ---------- weather data ----------
-var WX = load("wx", null);
+// ========== 8. weather data ==========
+var WX = Store.getLocal("wx", null);
 function unitQ() { return S.units === "C" ? "&temperature_unit=celsius&wind_speed_unit=kmh" : "&temperature_unit=fahrenheit&wind_speed_unit=mph"; }
 function getJSON(url, ms) {
   var ctl = window.AbortController ? new AbortController() : null, to = setTimeout(function () { ctl && ctl.abort(); }, ms || 12000);
@@ -444,7 +515,7 @@ function refreshWeather(force) {
   var p = LOC.mode === "city" && LOC.lat != null ? Promise.resolve(LOC) :
     getPos().then(function (pos) {
       var same = LOC.mode === "gps" && LOC.lat === pos.lat && LOC.lon === pos.lon && LOC.name;
-      return (same ? Promise.resolve(LOC.name) : placeName(pos.lat, pos.lon)).then(function (nm) { LOC = { mode: "gps", lat: pos.lat, lon: pos.lon, name: nm }; save("loc", LOC); return LOC; });
+      return (same ? Promise.resolve(LOC.name) : placeName(pos.lat, pos.lon)).then(function (nm) { LOC = { mode: "gps", lat: pos.lat, lon: pos.lon, name: nm }; saveLoc(); return LOC; });
     }, function (err) { if (LOC.lat != null) return LOC; throw { geo: true, err: err }; });
   p.then(function (L) {
     var url = "https://api.open-meteo.com/v1/forecast?latitude=" + L.lat + "&longitude=" + L.lon +
@@ -452,7 +523,7 @@ function refreshWeather(force) {
       "&hourly=temperature_2m,weather_code,is_day,precipitation_probability" +
       "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunset" +
       unitQ() + "&timezone=auto&forecast_days=6";
-    return getJSON(url).then(function (j) { WX = { at: Date.now(), units: S.units, key: locKey(), place: L.name || "MY LOCATION", j: j }; save("wx", WX); $("#wxNote").textContent = ""; });
+    return getJSON(url).then(function (j) { WX = { at: Date.now(), units: S.units, key: locKey(), place: L.name || "MY LOCATION", j: j }; Store.setLocal("wx", WX); $("#wxNote").textContent = ""; });
   }).catch(function (e) {
     if (e && e.geo) $("#wxNote").innerHTML = "Location is off for this app. Tap <b>◎ CHANGE</b> above to type your city instead.";
     else $("#wxNote").textContent = navigator.onLine === false ? "You're offline. Showing the last weather we saved." : "Weather service didn't answer. We'll retry in a few minutes.";
@@ -510,8 +581,8 @@ function renderWeather() {
   updateStamps();
 }
 
-// ---------- markets ----------
-var MK = load("mk", null), mkErr = false, mkPage = 0;
+// ========== 9. markets ==========
+var MK = Store.getLocal("mk", null), mkErr = false, mkPage = 0;
 function money(n) {
   if (n == null || isNaN(n)) return "--";
   if (n >= 1000) return "$" + Math.round(n).toLocaleString("en-US");
@@ -522,7 +593,7 @@ function refreshMarkets() {
   if (!COINS.length) { renderMarkets(); return; }
   var ids = COINS.map(function (c) { return c.id; }).join(",");
   getJSON("https://api.coingecko.com/api/v3/simple/price?ids=" + encodeURIComponent(ids) + "&vs_currencies=usd&include_24hr_change=true")
-    .then(function (j) { MK = { at: Date.now(), d: Object.assign({}, MK && MK.d, j) }; save("mk", MK); mkErr = false; })
+    .then(function (j) { MK = { at: Date.now(), d: Object.assign({}, MK && MK.d, j) }; Store.setLocal("mk", MK); mkErr = false; })
     .catch(function () { mkErr = true; })
     .then(renderMarkets);
 }
@@ -551,11 +622,11 @@ function updateStamps() {
 }
 function short12(at) { return t12(new Date(at)).replace(/ ?([AP])M$/, "$1"); }
 
-// ---------- map: OpenStreetMap tiles + Nominatim (road · city) ----------
+// ========== 10. map (OpenStreetMap tiles + Nominatim road · city) and tabs ==========
 // The street and city always come from your live location; nothing is hard-coded. Nominatim is only asked again after you move > 40 m.
-var GPS = load("gps", null), PLACE = load("place", null), GEO_OFF = false, mapDrawn = null, nomBusy = false, nomLast = 0;
+var GPS = Store.getLocal("gps", null), PLACE = Store.getLocal("place", null), GEO_OFF = false, mapDrawn = null, nomBusy = false, nomLast = 0;
 function meters(a, b) { var R = 6371000, r = Math.PI / 180, dLa = (b.lat - a.lat) * r, dLo = (b.lon - a.lon) * r; var h = Math.sin(dLa / 2) * Math.sin(dLa / 2) + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLo / 2) * Math.sin(dLo / 2); return 2 * R * Math.asin(Math.sqrt(h)); }
-function setGPS(lat, lon) { GPS = { lat: lat, lon: lon, at: Date.now() }; save("gps", GPS); GEO_OFF = false; renderMap(); updateStamps(); geocode(); }
+function setGPS(lat, lon) { GPS = { lat: lat, lon: lon, at: Date.now() }; Store.setLocal("gps", GPS); GEO_OFF = false; renderMap(); updateStamps(); geocode(); }
 function geocode() {
   if (!GPS || nomBusy || navigator.onLine === false) return;
   if (PLACE && meters(PLACE, GPS) <= 40) return;
@@ -566,7 +637,7 @@ function geocode() {
       var a = j && j.address || {};
       var road = a.road || a.pedestrian || a.footway || a.path || a.residential || a.neighbourhood || a.hamlet || "";
       var city = a.city || a.town || a.village || a.municipality || a.suburb || a.county || "";
-      PLACE = { road: road.toUpperCase(), city: city.toUpperCase(), lat: GPS.lat, lon: GPS.lon, at: Date.now() }; save("place", PLACE);
+      PLACE = { road: road.toUpperCase(), city: city.toUpperCase(), lat: GPS.lat, lon: GPS.lon, at: Date.now() }; Store.setLocal("place", PLACE);
     }).catch(function () {}).then(function () { nomBusy = false; renderPlace(); });
 }
 function renderPlace() {
@@ -599,11 +670,15 @@ $("#hMap").addEventListener("click", function (e) {
 $("#hMap").addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("#hMap").click(); } });
 window.addEventListener("resize", function () { clearTimeout(renderMap.t); renderMap.t = setTimeout(renderMap, 150); });
 
-// ---------- tabs ----------
+// ----- tabs -----
+var VIEWS = ["home", "weather", "markets"], VIEW = "home";
 function show(tab) {
   if (tab === "menu") { openMenu(); return; }
-  ["home", "weather", "markets"].forEach(function (t) { $("#v-" + t).hidden = t !== tab; });
-  document.body.classList.toggle("on-home", tab === "home"); window.scrollTo(0, 0);
+  if (VIEWS.indexOf(tab) < 0) tab = "home";
+  VIEW = tab;
+  VIEWS.forEach(function (t) { $("#v-" + t).hidden = t !== tab; });
+  document.body.classList.toggle("on-home", tab === "home");
+  Store.setUI({ view: tab }); restoreScroll();
   if (tab === "home") setTimeout(renderMap, 0);
   $$(".tab").forEach(function (b) { b.classList.toggle("on", b.getAttribute("data-tab") === tab); });
 }
@@ -611,7 +686,7 @@ $$(".tab").forEach(function (b) { b.addEventListener("click", function () { show
 $("#hWx").addEventListener("click", function () { show("weather"); });
 $("#hMk").addEventListener("click", function () { openEditCoins(); });
 
-// ---------- sheet ----------
+// ========== 11. sheets ==========
 var sheetStack = [];
 function sheet(title, html, bind, push) {
   if (!push) sheetStack = [];
@@ -666,7 +741,7 @@ function openEditApps(push) {
           else if (m === "up" && i) { APPS.splice(i, 1); APPS.splice(i - 1, 0, a); }
           else if (m === "dn" && i < APPS.length - 1) { APPS.splice(i, 1); APPS.splice(i + 1, 0, a); }
           else if (m === "del") { if (!confirm("Remove " + a.name + "?")) return; APPS.splice(i, 1); }
-          save("apps", APPS); renderApps(); drawList();
+          saveApps(); renderApps(); drawList();
         });
         L.appendChild(r);
       });
@@ -674,7 +749,7 @@ function openEditApps(push) {
     b.querySelector("#eAdd").addEventListener("click", function () { openAddApp(true); });
     b.querySelector("#appsReset").addEventListener("click", function () {
       if (!confirm("Reset apps to the default list? Apps you added will be removed.")) return;
-      APPS = JSON.parse(JSON.stringify(DEFAULT_APPS)); save("apps", APPS); renderApps(); drawList(); toast("Apps reset");
+      APPS = clone(DEFAULT_APPS); saveApps(); renderApps(); drawList(); toast("Apps reset");
     });
     drawList();
   }, push);
@@ -705,7 +780,7 @@ function openAddApp(push) {
       if (has(c)) { toast(c.name + " is already in your apps"); return; }
       var a = { id: "p-" + c.id, name: c.name, url: c.url, icon: c.icon, glyph: "letter", letter: c.name, bg: "#111827", on: true, custom: true, pick: true };
       if (c.web) a.web = c.web;
-      APPS.push(a); save("apps", APPS); renderApps(); drawGrid(); toast(c.name + " added to your apps");
+      APPS.push(a); saveApps(); renderApps(); drawGrid(); toast(c.name + " added to your apps");
     });
     function drawPick() {
       b.querySelector("#caG").innerHTML = CUSTOM_GLYPHS.map(function (g) {
@@ -723,7 +798,7 @@ function openAddApp(push) {
       if (/^javascript:|^data:/i.test(u)) { toast("That link type isn't allowed"); return; }
       if (!/^[a-z][a-z0-9+.-]*:/i.test(u)) u = "https://" + u.replace(/^\/+/, "");
       APPS.push({ id: "c" + Date.now(), name: nm, url: u, glyph: gSel, letter: nm, bg: cSel, on: true, custom: true });
-      save("apps", APPS); renderApps();
+      saveApps(); renderApps();
       b.querySelector("#caName").value = ""; b.querySelector("#caUrl").value = ""; drawPick();
       toast(nm + " added to your apps");
     });
@@ -742,7 +817,7 @@ function openTheme() {
   sheet("◐ THEME", '<p class="note" style="margin-bottom:10px">Tap a theme to switch. It changes right away and is saved on this device.</p><div id="thList">' + rowsHTML() + "</div>", function (b) {
     b.querySelector("#thList").addEventListener("click", function (e) {
       var x = e.target.closest("[data-th]"); if (!x) return;
-      applyTheme(x.getAttribute("data-th")); save("theme", THEME.id); b.querySelector("#thList").innerHTML = rowsHTML(); toast("Theme: " + THEME.name);
+      applyTheme(x.getAttribute("data-th")); Store.set("theme", THEME.id); b.querySelector("#thList").innerHTML = rowsHTML(); toast("Theme: " + THEME.name);
     });
   });
 }
@@ -754,7 +829,7 @@ function openCity(push) {
     '<button class="btn alt" id="useGps">◎ Use my location</button>' +
     '<h3>OR TYPE A CITY</h3><label class="field">CITY<input id="cityQ" placeholder="e.g. Chicago" autocomplete="off"></label><div id="cityRes"></div>',
     function (b) {
-      b.querySelector("#useGps").addEventListener("click", function () { LOC = { mode: "gps" }; save("loc", LOC); WX = null; closeSheet(); toast("Using your location"); refreshWeather(true); });
+      b.querySelector("#useGps").addEventListener("click", function () { LOC = { mode: "gps" }; saveLoc(); WX = null; closeSheet(); toast("Using your location"); refreshWeather(true); });
       var tm;
       b.querySelector("#cityQ").addEventListener("input", function (e) {
         clearTimeout(tm); var q = e.target.value.trim(); if (q.length < 2) { b.querySelector("#cityRes").innerHTML = ""; return; }
@@ -766,7 +841,7 @@ function openCity(push) {
               x.addEventListener("click", function () {
                 var r = R[+x.getAttribute("data-i")]; var st = r.admin1_code && r.country_code === "US" ? r.admin1_code : r.country_code;
                 LOC = { mode: "city", lat: +r.latitude.toFixed(3), lon: +r.longitude.toFixed(3), name: r.name + (r.admin1 ? ", " + (r.country_code === "US" ? r.admin1 : r.country_code) : "") };
-                save("loc", LOC); WX = null; closeSheet(); toast("Weather set to " + r.name); refreshWeather(true);
+                saveLoc(); WX = null; closeSheet(); toast("Weather set to " + r.name); refreshWeather(true);
               });
             });
           }).catch(function () { b.querySelector("#cityRes").innerHTML = '<p class="note">Search is offline. Try again in a moment.</p>'; });
@@ -794,7 +869,7 @@ function openEditCoins(push) {
             if (m === "up" && i) { COINS.splice(i, 1); COINS.splice(i - 1, 0, c); }
             else if (m === "dn" && i < COINS.length - 1) { COINS.splice(i, 1); COINS.splice(i + 1, 0, c); }
             else if (m === "del") COINS.splice(i, 1);
-            save("coins", COINS); renderMarkets(); drawList();
+            saveCoins(); renderMarkets(); drawList();
           });
           L.appendChild(r);
         });
@@ -811,13 +886,13 @@ function openEditCoins(push) {
                 var r = R[+x.getAttribute("data-i")];
                 if (COINS.some(function (c) { return c.id === r.id; })) { toast(r.symbol + " is already on your list"); return; }
                 if (COINS.length >= 8) { toast("Up to 8 coins. Remove one first."); return; }
-                COINS.push({ id: r.id, sym: String(r.symbol).toUpperCase().slice(0, 8), name: r.name }); save("coins", COINS); drawList(); renderMarkets(); refreshMarkets(); toast(r.symbol + " added");
+                COINS.push({ id: r.id, sym: String(r.symbol).toUpperCase().slice(0, 8), name: r.name }); saveCoins(); drawList(); renderMarkets(); refreshMarkets(); toast(r.symbol + " added");
               });
             });
           }).catch(function () { b.querySelector("#coinRes").innerHTML = '<p class="note">Search is busy or offline. Try again in a moment.</p>'; });
         }, 450);
       });
-      b.querySelector("#coinReset").addEventListener("click", function () { COINS = JSON.parse(JSON.stringify(DEFAULT_COINS)); save("coins", COINS); drawList(); refreshMarkets(); toast("Watchlist reset"); });
+      b.querySelector("#coinReset").addEventListener("click", function () { COINS = clone(DEFAULT_COINS); saveCoins(); drawList(); refreshMarkets(); toast("Watchlist reset"); });
       drawList();
     }, push);
 }
@@ -834,13 +909,12 @@ function openSettings(push) {
       function seg() { $$("#stU button", b).forEach(function (x) { x.classList.toggle("on", x.getAttribute("data-v") === u); }); }
       b.querySelector("#stU").addEventListener("click", function (e) { var x = e.target.closest("[data-v]"); if (x) { u = x.getAttribute("data-v"); seg(); } });
       b.querySelector("#stSave").addEventListener("click", function () {
-        var uc = u !== S.units; S.name = b.querySelector("#stName").value.trim().slice(0, 20); S.units = u; delete S.play; save("settings", S);
+        var uc = u !== S.units; S.name = b.querySelector("#stName").value.trim().slice(0, 20); S.units = u; Store.set("settings", S);
         minute(new Date()); closeSheet(); toast("Saved"); if (uc) refreshWeather(true);
       });
       b.querySelector("#stReset").addEventListener("click", function () {
         if (!confirm("Reset apps, watchlist, weather city and settings to the defaults?")) return;
-        ["settings", "apps", "coins", "loc", "wx", "mk", "focus", "gps", "place", "theme"].forEach(function (k) { try { localStorage.removeItem("zapos." + k); } catch (e) {} });
-        location.reload();
+        Store.reset(); location.reload();
       });
       seg();
     }, push);
@@ -858,21 +932,54 @@ function openHelp(push) {
     null, push);
 }
 
-// ---------- boot ----------
+// ========== 12. return-to-app: keep the exact view + scroll, refresh live data quietly ==========
+function saveScroll(now) {
+  var sc = Object.assign({}, Store.ui().scroll);
+  VIEWS.forEach(function (t) { var v = $("#v-" + t); if (!v.hidden) sc[t] = Math.round(v.scrollTop); });
+  Store.setUI({ view: VIEW, scroll: sc }, now);
+}
+function restoreScroll() {
+  var y = (Store.ui().scroll || {})[VIEW] || 0, v = $("#v-" + VIEW);
+  if (Math.abs(v.scrollTop - y) > 1) v.scrollTop = y;
+}
+VIEWS.forEach(function (t) { $("#v-" + t).addEventListener("scroll", function () { saveScroll(false); }, { passive: true }); });
+var lastLive = Date.now();
+function onReturn() {
+  if (Store.ui().view && Store.ui().view !== VIEW) show(Store.ui().view); else restoreScroll();
+  tick(); renderMap();
+  if (Date.now() - lastLive < 20000) return; lastLive = Date.now(); // refresh live data, at most every 20 s
+  refreshWeather(); refreshGPS();
+  if (!MK || Date.now() - MK.at > 120000) refreshMarkets();
+}
+function onLeave() { saveScroll(true); }
+document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible") onReturn(); else onLeave(); });
+window.addEventListener("pagehide", onLeave);
+window.addEventListener("pageshow", function (e) { if (e.persisted) onReturn(); });
+// when shared prefs change from elsewhere (stage 2 sync, or another tab), re-read them and redraw
+function rehydrate() {
+  S = Object.assign({}, DEFAULT_SET, Store.get("settings", {})); APPS = Store.get("apps", null); migrateApps();
+  COINS = Store.get("coins", null) || clone(DEFAULT_COINS); LOC = readLoc();
+  applyTheme(Store.get("theme", "zapwise")); renderApps(); renderMarkets(); minute(new Date()); refreshWeather(); refreshMarkets();
+}
+Store.onChange(function (k, v, src) { if (src === "remote") rehydrate(); });
+window.addEventListener("storage", function (e) { if (e.key === "zapos.state" && e.newValue) { try { Store.applyRemote(JSON.parse(e.newValue)); } catch (x) {} } });
+window.ZAPOS = { store: Store, version: VERSION }; // for the stage 2 sync add-on
+
+// ========== 13. boot ==========
 document.body.classList.add("on-home"); applyTheme(THEME.id);
 renderApps(); renderNet(); tick(); setInterval(tick, 1000);
 renderWeather(); renderMarkets(); renderMap();
 window.addEventListener("offline", renderNet);
 setInterval(function () { if (COINS.length > 2) { mkPage++; renderMarkets(); } }, 8000);
 requestAnimationFrame(loop);
-var t = Q.get("tab"); if (t === "weather" || t === "markets" || t === "home") show(t);
+show(Q.get("tab") || Store.ui().view || "home");
+requestAnimationFrame(restoreScroll); setTimeout(restoreScroll, 400); // again after late content (weather, icons) settles
 refreshWeather(); refreshMarkets(); refreshGPS();
 setInterval(function () { if (document.visibilityState === "visible") { refreshWeather(); refreshGPS(); } }, 5 * 60000);
 setInterval(function () { if (document.visibilityState === "visible") refreshMarkets(); }, 2 * 60000);
-document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible") { tick(); refreshWeather(); if (!MK || Date.now() - MK.at > 120000) refreshMarkets(); } });
 window.addEventListener("online", function () { renderNet(); refreshWeather(true); refreshMarkets(); geocode(); });
 if ("serviceWorker" in navigator && location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1") {
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("/os/sw.js", { scope: "/os/" }).catch(function () {});
 }
-if (!load("seenHelp", false) && !(window.navigator.standalone === true)) { save("seenHelp", true); setTimeout(function () { toast("Tip: MENU → Help shows how to add this to your Home Screen"); }, 1500); }
+if (!Store.getLocal("seenHelp", false) && !(window.navigator.standalone === true)) { Store.setLocal("seenHelp", true); setTimeout(function () { toast("Tip: MENU → Help shows how to add this to your Home Screen"); }, 1500); }
 })();
