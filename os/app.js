@@ -17,7 +17,7 @@
    Store.applyRemote below. */
 (function () {
 "use strict";
-var VERSION = "2.1.0";
+var VERSION = "2.1.1";
 var STATUS_MSGS = ["> SHORTCUTS ARMED", "> NET SECURE", "> AI LINK STABLE", "> SIGNAL CLEAN", "> APPS READY"];
 var FOCUS_MS = 25 * 60000, DOCK_N = 5;
 var DAY_START = 7, DAY_END = 23;
@@ -33,8 +33,8 @@ var Store = (function () {
   var PREF_KEYS = ["settings", "theme", "apps", "coins", "loc"];                     // shared state (sync-ready)
   var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss"]; // this device only
   function read(k) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
-  function write(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
-  var state = read(STATE_KEY), dev = read(DEVICE_KEY), subs = [], uiT = null;
+  function write(k, v) { if (dead) return false; try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
+  var state = read(STATE_KEY), dev = read(DEVICE_KEY), subs = [], uiT = null, dead = false; // dead: after a reset, write nothing more
   if (!state || typeof state !== "object" || !state.prefs) {
     // v0 -> v1: gather the old one-key-per-setting values (zapos.apps, zapos.theme, ...) into the single object.
     // The old keys are left untouched so nothing is lost if an older version ever loads.
@@ -73,6 +73,7 @@ var Store = (function () {
       return true;
     },
     reset: function () {
+      dead = true; clearTimeout(uiT);
       try { localStorage.removeItem(STATE_KEY); localStorage.removeItem(DEVICE_KEY); } catch (e) {}
       PREF_KEYS.concat(DEVICE_KEYS).forEach(function (k) { try { localStorage.removeItem("zapos." + k); } catch (e) {} });
     }
@@ -164,7 +165,7 @@ var HUB = ["music", "spotify", "ytmusic"];
 // app when installed), web = website fallback on a phone and what opens on a computer. No App Store links.
 var CATALOG = [
   { id: "instagram", name: "Instagram", url: "instagram://", web: "https://www.instagram.com" },
-  { id: "tiktok", name: "TikTok", url: "snssdk1233://", web: "https://www.tiktok.com" },
+  { id: "tiktok", name: "TikTok", url: "https://www.tiktok.com" },
   { id: "facebook", name: "Facebook", url: "fb://", web: "https://www.facebook.com" },
   { id: "whatsapp", name: "WhatsApp", url: "whatsapp://", web: "https://web.whatsapp.com" },
   { id: "snapchat", name: "Snapchat", url: "snapchat://", web: "https://web.snapchat.com" },
@@ -189,7 +190,7 @@ var CATALOG = [
   { id: "capcut", name: "CapCut", url: "capcut://", web: "https://www.capcut.com" },
   { id: "canva", name: "Canva", url: "canva://", web: "https://www.canva.com" },
   { id: "venmo", name: "Venmo", url: "venmo://", web: "https://venmo.com" },
-  { id: "cashapp", name: "Cash App", url: "cashme://", web: "https://cash.app" }
+  { id: "cashapp", name: "Cash App", url: "https://cash.app" }
 ];
 CATALOG.forEach(function (c) { c.icon = "/os/icons/" + c.id + ".jpg"; });
 var DEFAULT_COINS = [{ id: "bitcoin", sym: "BTC", name: "Bitcoin" }, { id: "pax-gold", sym: "GOLD", name: "Gold (PAX Gold)" }];
@@ -204,6 +205,9 @@ function migrateApps() {
   APPS = APPS.filter(function (a) { return a.custom || (a.id !== "music" && a.id !== "spotify"); }); // now in the PLAY hub
   APPS.forEach(function (a) { var d = DEFAULT_APPS.filter(function (x) { return x.id === a.id; })[0]; if (d && !a.custom) { var on = a.on; Object.keys(d).forEach(function (k) { a[k] = d[k]; }); delete a.fb; delete a.store; a.on = on; } });
   if (APPS.map(function (a) { return a.id; }).join(",") === OLD_ORDER) APPS.sort(function (p, q) { return DEFAULT_APPS.findIndex(function (d) { return d.id === p.id; }) - DEFAULT_APPS.findIndex(function (d) { return d.id === q.id; }); });
+  // picked apps follow the catalog's current links (v2.1.1: TikTok / Cash App went website-only: their app links
+  // aren't officially documented for opening, and an unknown link makes iPhone say "invalid address")
+  APPS.forEach(function (a) { if (!a.pick || String(a.id).indexOf("p-") !== 0) return; var c = CATALOG.filter(function (x) { return "p-" + x.id === a.id; })[0]; if (c) { a.url = c.url; if (c.web) a.web = c.web; else delete a.web; } });
   DEFAULT_APPS.forEach(function (d) { if (!APPS.some(function (a) { return a.id === d.id; })) APPS.push(clone(d)); });
 }
 migrateApps(); if (JSON.stringify(APPS) !== JSON.stringify(Store.get("apps", null))) Store.set("apps", APPS);
@@ -215,16 +219,18 @@ var LOC = readLoc();
 function saveApps() { Store.set("apps", APPS); }
 function saveCoins() { Store.set("coins", COINS); }
 
+// light custom colors (cyan, amber, green…) get a dark letter/glyph so it stays readable
+function lightHex(c) { var m = /^#([0-9a-f]{6})$/i.exec(c || ""); if (!m) return false; var n = parseInt(m[1], 16); return (0.299 * (n >> 16) + 0.587 * (n >> 8 & 255) + 0.114 * (n & 255)) > 150; }
 function iconHTML(a) {
-  var inner;
+  var inner, dark = !a.fg && lightHex(a.bg);
   if (a.glyph === "cal") {
     var d = new Date();
     inner = '<span class="cal"><i>' + d.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase() + '</i><b>' + d.getDate() + '</b></span>';
   } else if (a.icon) {
     return '<span class="ico img"><img src="' + esc(a.icon) + '" alt="" loading="lazy" decoding="async"></span>';
   } else if (a.glyph === "letter" || !G[a.glyph]) {
-    inner = '<span class="let" style="color:' + (a.fg || "#f4efe4") + '">' + esc((a.letter || a.name || "?").trim().charAt(0).toUpperCase()) + '</span>';
-  } else inner = '<svg viewBox="0 0 24 24" aria-hidden="true">' + G[a.glyph] + '</svg>';
+    inner = '<span class="let" style="color:' + (a.fg || (dark ? "#0b0f1e" : "#f4efe4")) + '">' + esc((a.letter || a.name || "?").trim().charAt(0).toUpperCase()) + '</span>';
+  } else inner = '<svg viewBox="0 0 24 24" aria-hidden="true"' + (dark ? ' style="filter:brightness(0);opacity:.85"' : "") + '>' + G[a.glyph] + '</svg>';
   return '<span class="ico" style="background:' + esc(a.bg) + '">' + inner + '</span>';
 }
 
@@ -234,7 +240,8 @@ function iconHTML(a) {
 var IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 var MOBILE = IOS || /Android|Mobi/i.test(navigator.userAgent);
 var MAC = !MOBILE && /Mac/i.test(navigator.platform || navigator.userAgent);
-function go(u) { var w = window.open(u, "_blank", "noopener"); if (!w) location.href = u; }
+// new tab for websites. (window.open with "noopener" always returns null, which used to ALSO send this page away.)
+function go(u) { var w = null; try { w = window.open(u, "_blank"); } catch (e) {} if (w) { try { w.opener = null; } catch (e) {} } else location.href = u; }
 function openApp(a) {
   var url = a.url || "";
   if (/^https?:/i.test(url)) { go(url); return; }
@@ -370,8 +377,11 @@ function openMedia() {
 
 // ========== 7. weather FX (canvas only) ==========
 var FXS = [];
-var RM = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
-function FX(cv) { this.cv = cv; this.ctx = cv.getContext("2d"); this.kind = "none"; this.p = []; this.flash = 0; this.bolt = null; this.t0 = performance.now(); this.w = 0; this.h = 0; FXS.push(this); }
+var RMQ = window.matchMedia ? matchMedia("(prefers-reduced-motion: reduce)") : null, RM = !!(RMQ && RMQ.matches);
+if (RMQ) { var rmf = function (e) { RM = e.matches; FXS.forEach(function (f) { f.drawn = false; }); }; RMQ.addEventListener ? RMQ.addEventListener("change", rmf) : RMQ.addListener && RMQ.addListener(rmf); }
+// pause a canvas while it's scrolled off screen (and the whole loop while the page is hidden)
+var FX_IO = window.IntersectionObserver ? new IntersectionObserver(function (es) { es.forEach(function (e) { FXS.forEach(function (f) { if (f.cv === e.target) f.vis = e.isIntersecting; }); }); }) : null;
+function FX(cv) { this.cv = cv; this.ctx = cv.getContext("2d"); this.kind = "none"; this.p = []; this.flash = 0; this.bolt = null; this.t0 = performance.now(); this.w = 0; this.h = 0; this.vis = true; FXS.push(this); if (FX_IO) FX_IO.observe(cv); }
 FX.prototype.size = function () {
   var r = this.cv.getBoundingClientRect(), dp = Math.min(window.devicePixelRatio || 1, 2);
   if (!r.width || !r.height) return false;
@@ -462,7 +472,8 @@ var lastT = performance.now();
 function loop(now) {
   var dt = Math.min(.05, (now - lastT) / 1000); lastT = now;
   if (document.visibilityState === "visible") FXS.forEach(function (f) {
-    if (!f.size()) return;
+    if (!f.vis || !f.size()) return;
+    if (f.kind === "none") { if (!f.drawn) { f.draw(now, 0); f.drawn = true; } return; }
     if (RM) { if (!f.drawn) { f.draw(now, 0); f.drawn = true; } return; }
     f.draw(now, dt);
   });
@@ -660,6 +671,14 @@ function renderMap() {
   tl.innerHTML = html; $("#mapDot").hidden = false; msg.hidden = true;
   mapDrawn = { lat: GPS.lat, lon: GPS.lon, w: W, h: H };
 }
+// every tile failed (offline / tile server down): say so instead of an empty dark box, and redraw next time
+$("#mapTiles").addEventListener("error", function (e) {
+  if (e.target && e.target.tagName === "IMG") e.target.style.visibility = "hidden";
+  var im = $("#mapTiles").querySelectorAll("img"), bad = 0;
+  for (var i = 0; i < im.length; i++) if (im[i].style.visibility === "hidden") bad++;
+  if (im.length && bad === im.length) { var m = $("#mapMsg"); m.textContent = "MAP OFFLINE · RETRYING SOON"; m.hidden = false; mapDrawn = null; }
+}, true);
+window.addEventListener("online", function () { mapDrawn = null; renderMap(); });
 function refreshGPS() { getPos().catch(function () {}); }
 $("#hMap").addEventListener("click", function (e) {
   if (e.target.closest(".map-attr")) return;
@@ -687,15 +706,14 @@ $("#hWx").addEventListener("click", function () { show("weather"); });
 $("#hMk").addEventListener("click", function () { openEditCoins(); });
 
 // ========== 11. sheets ==========
-var sheetStack = [];
-function sheet(title, html, bind, push) {
-  if (!push) sheetStack = [];
-  sheetStack.push([title, html, bind]);
-  $("#sheetTitle").textContent = title; $("#sheetBody").innerHTML = html; $("#sheet").hidden = false; $("#scrim").hidden = false;
-  $("#sheetBody").scrollTop = 0;
+function sheet(title, html, bind) {
+  // fresh body each time: listeners bound by the previous sheet must not fire here (the music list's
+  // [data-m] handler used to close Edit Apps when you tapped ↑/↓/toggle, which also use data-m)
+  var old = $("#sheetBody"), nb = old.cloneNode(false); old.parentNode.replaceChild(nb, old);
+  $("#sheetTitle").textContent = title; nb.innerHTML = html; $("#sheet").hidden = false; $("#scrim").hidden = false;
   if (bind) bind($("#sheetBody"));
 }
-function closeSheet() { $("#sheet").hidden = true; $("#scrim").hidden = true; sheetStack = []; }
+function closeSheet() { $("#sheet").hidden = true; $("#scrim").hidden = true; }
 $("#sheetClose").addEventListener("click", closeSheet);
 $("#scrim").addEventListener("click", closeSheet);
 document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !$("#sheet").hidden) closeSheet(); });
@@ -715,13 +733,13 @@ function openMenu() {
     function (b) {
       b.addEventListener("click", function (e) {
         var g = e.target.closest("[data-go]"); if (!g) return; var k = g.getAttribute("data-go");
-        if (k === "apps") openEditApps(true); else if (k === "city") openCity(true); else if (k === "coins") openEditCoins(true); else if (k === "settings") openSettings(true); else openHelp(true);
+        if (k === "apps") openEditApps(); else if (k === "city") openCity(); else if (k === "coins") openEditCoins(); else if (k === "settings") openSettings(); else openHelp();
       });
     });
 }
 
 // ----- edit apps -----
-function openEditApps(push) {
+function openEditApps() {
   var html = '<button class="btn" id="eAdd" style="margin-bottom:12px">＋ ADD APP</button>' +
     '<p class="note" style="margin-bottom:10px">Switch an app on or off, use ▲ ▼ to move it, and ✕ to remove an app you added. The first 5 apps that are on sit in the dock; the rest show under MORE APPS. Music apps live in the PLAY box.</p><div id="eList"></div>' +
     '<button class="btn alt" id="appsReset" style="margin-top:12px">Reset apps to default</button>';
@@ -746,17 +764,17 @@ function openEditApps(push) {
         L.appendChild(r);
       });
     }
-    b.querySelector("#eAdd").addEventListener("click", function () { openAddApp(true); });
+    b.querySelector("#eAdd").addEventListener("click", function () { openAddApp(); });
     b.querySelector("#appsReset").addEventListener("click", function () {
       if (!confirm("Reset apps to the default list? Apps you added will be removed.")) return;
       APPS = clone(DEFAULT_APPS); saveApps(); renderApps(); drawList(); toast("Apps reset");
     });
     drawList();
-  }, push);
+  });
 }
 
 // ----- + add app: popular apps (one tap) + custom name and link -----
-function openAddApp(push) {
+function openAddApp() {
   var html = '<p class="note" style="margin-bottom:10px">Tap an app to add it. It opens the app on your phone (or its website if the app isn\'t installed) and the website on a computer. Remove or move apps in ⚙ EDIT APPS.</p>' +
     '<div class="pick" id="pkGrid"></div>' +
     '<h3>CUSTOM APP</h3>' +
@@ -803,7 +821,7 @@ function openAddApp(push) {
       toast(nm + " added to your apps");
     });
     drawGrid(); drawPick();
-  }, push);
+  });
 }
 
 // ----- theme picker -----
@@ -824,7 +842,7 @@ function openTheme() {
 $$("[data-theme-btn]").forEach(function (b) { b.addEventListener("click", openTheme); });
 
 // ----- weather location -----
-function openCity(push) {
+function openCity() {
   sheet("☁ WEATHER LOCATION",
     '<button class="btn alt" id="useGps">◎ Use my location</button>' +
     '<h3>OR TYPE A CITY</h3><label class="field">CITY<input id="cityQ" placeholder="e.g. Chicago" autocomplete="off"></label><div id="cityRes"></div>',
@@ -848,11 +866,11 @@ function openCity(push) {
         }, 350);
       });
       setTimeout(function () { var i = b.querySelector("#cityQ"); i && i.focus && i.focus({ preventScroll: true }); }, 50);
-    }, push);
+    });
 }
 
 // ----- markets edit -----
-function openEditCoins(push) {
+function openEditCoins() {
   sheet("₿ EDIT WATCHLIST",
     '<div id="cList"></div><h3>ADD A COIN</h3><label class="field">SEARCH<input id="coinQ" placeholder="e.g. Ethereum, SOL, Dogecoin" autocomplete="off" autocapitalize="off"></label><div id="coinRes"></div>' +
     '<p class="note" style="margin-top:10px">Prices come from CoinGecko. Stock tickers aren\'t available here: there\'s no free stock price feed a web page can use without a key.</p>' +
@@ -894,11 +912,11 @@ function openEditCoins(push) {
       });
       b.querySelector("#coinReset").addEventListener("click", function () { COINS = clone(DEFAULT_COINS); saveCoins(); drawList(); refreshMarkets(); toast("Watchlist reset"); });
       drawList();
-    }, push);
+    });
 }
 
 // ----- settings -----
-function openSettings(push) {
+function openSettings() {
   sheet("⚙ SETTINGS",
     '<label class="field">YOUR NAME (FOR THE GREETING)<input id="stName" maxlength="20" placeholder="e.g. Sam" value="' + esc(S.name) + '" autocomplete="off"></label>' +
     '<div class="field">TEMPERATURE</div><div class="seg" id="stU"><button data-v="F">°F · mph</button><button data-v="C">°C · km/h</button></div>' +
@@ -917,11 +935,11 @@ function openSettings(push) {
         Store.reset(); location.reload();
       });
       seg();
-    }, push);
+    });
 }
 
 // ----- help -----
-function openHelp(push) {
+function openHelp() {
   var standalone = window.navigator.standalone === true || (window.matchMedia && matchMedia("(display-mode: standalone)").matches);
   sheet("? ADD TO HOME SCREEN",
     (standalone ? '<p class="note" style="color:#3ddc84;margin-bottom:10px">✓ You\'re already using it from your Home Screen.</p>' : "") +
@@ -929,7 +947,7 @@ function openHelp(push) {
     '<li>Scroll down and tap <b>Add to Home Screen</b>, then tap <b>Add</b>.</li>' +
     '<li>Open <b>ZAP//OS</b> from the new icon on your Home Screen. It opens full screen, like an app.</li></ol>' +
     '<h3>GOOD TO KNOW</h3><p class="note">One tap opens an app if it\'s installed. If it isn\'t, its website opens after about a second. On a computer the website opens right away (Calendar, Notes and Mail open iCloud.com). The map shows your street from your live location; tap it to open Maps. Weather asks for your location once; tap Allow, or set a city in the menu. Your choices are saved on this phone only.</p>',
-    null, push);
+    null);
 }
 
 // ========== 12. return-to-app: keep the exact view + scroll, refresh live data quietly ==========
