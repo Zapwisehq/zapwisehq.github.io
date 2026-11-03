@@ -1,7 +1,7 @@
 /* ZAPWISE//OS service worker: keeps the app shell available offline. Live data (weather, markets) always comes
    from the network; the app keeps its own last-known copy in localStorage. */
-const VER = "zapos-v1.0.1";
-const SHELL = ["/os/", "/os/index.html", "/os/app.css", "/os/app.js", "/os/manifest.webmanifest",
+const VER = "zapos-v2.0.0";
+const SHELL = ["/os/", "/os/index.html", "/os/app.css?v=2.0", "/os/app.js?v=2.0", "/os/manifest.webmanifest",
   "/os/icon-180.png", "/os/icon-192.png", "/os/icon-512.png"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(VER).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));

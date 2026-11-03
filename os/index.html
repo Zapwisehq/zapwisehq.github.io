@@ -15,47 +15,85 @@
 <link rel="manifest" href="/os/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/os/icon-180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/os/icon-192.png">
-<link rel="stylesheet" href="/os/app.css">
+<link rel="stylesheet" href="/os/app.css?v=2.0">
 </head>
 <body>
 <div class="grid-bg" aria-hidden="true"></div>
 <div id="app">
 
- <header class="top">
+ <header class="top" id="top">
   <div class="brand"><span class="bolt" aria-hidden="true">⚡</span>ZAPWISE<b>//OS</b></div>
-  <button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-haspopup="dialog"><span aria-hidden="true">☰</span> MENU</button>
  </header>
 
  <main>
- <!-- HOME -->
+ <!-- HOME: HUD panel (matches the Scriptable widget v7.2 look), then shortcuts + all apps below -->
  <section class="view" id="v-home" aria-label="Home">
-  <div class="clock-card card br">
-   <div class="clock" id="clock" aria-live="off">--:--<small id="sec">--</small><em id="ampm"></em></div>
-   <div class="date" id="date">—</div>
-   <div class="greet" id="greet">&gt; HELLO</div>
-   <div class="daybar" aria-hidden="true"><i id="dayFill"></i></div>
-   <div class="daytxt" id="dayTxt"></div>
-  </div>
+  <div class="hud" id="hud">
+   <i class="cb tl" aria-hidden="true"></i><i class="cb tr" aria-hidden="true"></i><i class="cb bl" aria-hidden="true"></i><i class="cb brr" aria-hidden="true"></i>
+   <div class="h-hdr">
+    <span class="h-tag">ZAPWISE//OS</span><span class="h-sync" id="hSync">SYNC --</span>
+    <span class="h-net" id="hNet"><i></i><b>ONLINE</b></span>
+   </div>
 
-  <div class="actions" id="actions">
-   <a class="act" id="actRecap" href="#" data-act="recap"><span class="ai" aria-hidden="true">⚡</span><b>RECAP DAY</b><small>3 questions → recap</small></a>
-   <a class="act" id="actPlan" href="#" data-act="plan"><span class="ai" aria-hidden="true">☀</span><b>PLAN TODAY</b><small>time-blocked plan</small></a>
-   <a class="act" href="#" data-act="build"><span class="ai" aria-hidden="true">✚</span><b>BUILD</b><small>prompt builder</small></a>
-   <a class="act" href="#" data-act="play"><span class="ai" aria-hidden="true">▶</span><b>PLAY</b><small id="playSub">music</small></a>
-  </div>
+   <div class="h-main">
+    <div class="h-left">
+     <div class="h-clock" id="hClock" aria-live="off">--:--<em id="hAmpm"></em></div>
+     <div class="h-date"><span id="hDate">—</span> <span class="h-status" id="hStatus">&gt; SIGNAL CLEAN</span></div>
+     <div class="h-info"><span class="h-ss"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18h16M7 14.5a5 5 0 0 1 10 0" fill="none" stroke="#f0a202" stroke-width="2.2" stroke-linecap="round"/><path d="M12 3.5v4M9.6 6.5L12 9l2.4-2.5" fill="none" stroke="#f0a202" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.5 11l1.8 1M20.5 11l-1.8 1" stroke="#f0a202" stroke-width="2" stroke-linecap="round"/></svg><span id="hSunset">SUNSET --</span></span>
+      <span class="h-wd"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9h11a3 3 0 1 0-3-3M3 13h15a3 3 0 1 1-3 3M3 17h7" fill="none" stroke="#5ce1e6" stroke-width="2" stroke-linecap="round"/></svg><span id="hWind">-- MPH</span></span></div>
+    </div>
+    <div class="h-play" id="hPlay">
+     <div class="hp-top"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 17.5V5.5l10-2v11.5" fill="none" stroke="#5ce1e6" stroke-width="2.2"/><circle cx="6.8" cy="17.6" r="2.7" fill="#5ce1e6"/><circle cx="16.8" cy="15.4" r="2.7" fill="#5ce1e6"/></svg><span><b>PLAY</b><small>Select Music App &gt;</small></span></div>
+     <div class="hp-row">
+      <button data-media="music" aria-label="Open Apple Music"><svg viewBox="0 0 24 24"><path d="M9 17.5V5.5l10-2v11.5" fill="none" stroke="#f4efe4" stroke-width="2.4"/><circle cx="6.8" cy="17.6" r="2.8" fill="#f4efe4"/><circle cx="16.8" cy="15.4" r="2.8" fill="#f4efe4"/></svg></button>
+      <button data-media="spotify" aria-label="Open Spotify"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="#3ddc84"/><path d="M10 8.3v7.4l5.8-3.7z" fill="#070814"/></svg></button>
+      <button data-media="ytmusic" aria-label="Open YouTube Music"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="#ff4d5e"/><circle cx="12" cy="12" r="5.4" fill="none" stroke="#070814" stroke-width="1.6"/><path d="M10.6 9.7v4.6l3.8-2.3z" fill="#070814"/></svg></button>
+      <button data-media="more" aria-label="More music apps"><svg viewBox="0 0 24 24"><g fill="#6b7896"><circle cx="5.5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18.5" cy="12" r="2"/></g></svg></button>
+     </div>
+    </div>
+   </div>
 
-  <div class="minis">
-   <button class="mini wx-mini card" id="wxMini" aria-label="Open weather">
-    <canvas class="fx" id="fxMini" aria-hidden="true"></canvas>
-    <span class="mini-in"><span class="lbl">WEATHER</span><span class="big" id="wxMiniT">--°</span><span class="sub" id="wxMiniC">LOADING…</span></span>
+   <button class="h-panel h-wx" id="hWx" aria-label="Open weather">
+    <canvas class="fx" id="fxHud" aria-hidden="true"></canvas>
+    <span class="hw-in">
+     <span class="hw-r1"><span class="hw-ic" id="hwIc" aria-hidden="true">·</span><b id="hwNow">WEATHER LOADING…</b><span class="hw-hl" id="hwHL"></span></span>
+     <span class="hw-r2"><span id="hwFeels">FEELS --</span><span class="hw-rain"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 0 1 18 0z" fill="#ff4fd8"/><path d="M12 12v6.5a2 2 0 0 1-4 0" fill="none" stroke="#ff4fd8" stroke-width="2" stroke-linecap="round"/></svg><span id="hwRain">RAIN --</span></span><span class="hw-upd" id="hwUpd">UPD --</span></span>
+     <span class="hw-hrs" id="hwHrs"></span>
+    </span>
    </button>
-   <button class="mini mk-mini card" id="mkMini" aria-label="Open markets">
-    <span class="mini-in"><span class="lbl">MARKETS</span><span id="mkMiniList" class="mklist"><span class="sub">LOADING…</span></span></span>
-   </button>
+
+   <div class="h-meters">
+    <div class="meter" aria-label="Day progress"><span class="m-l">DAY</span><span class="segs" id="mDay"></span><span class="m-v c-cyan" id="mDayV">--%</span></div>
+    <div class="m-line" id="mDayL">—</div>
+    <button class="meter m-focus" id="mFocus" aria-label="Focus timer: tap to start or pause"><span class="m-l">FOCUS</span><span class="segs" id="mFoc"></span><span class="m-v" id="mFocV">25:00</span></button>
+    <div class="m-line" id="mFocL">TAP FOCUS TO START A 25-MIN SPRINT</div>
+   </div>
+
+   <button class="h-mk" id="hMk" aria-label="Edit markets watchlist"><span class="mk-items" id="hMkList"><span class="dim">MARKETS LOADING…</span></span><span class="mk-t" id="hMkT">--</span></button>
+
+   <div class="h-panel h-map" id="hMap" role="button" tabindex="0" aria-label="Open Maps at my location">
+    <div class="map-h"><b id="hPlace">&gt; LOCATING…</b><span id="hGps">GPS --</span></div>
+    <div class="map-v" id="mapV"><div class="map-tiles" id="mapTiles"></div><i class="map-shade"></i><i class="map-dot" id="mapDot" hidden></i>
+     <span class="map-msg" id="mapMsg">LOCATING…</span>
+     <a class="map-attr" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a></div>
+   </div>
+
+   <div class="h-dock" id="hDock">
+    <button class="d-edit" id="dEdit"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7zm8.4 5l-1.7-.4a6.9 6.9 0 0 1-.6 1.5l1 1.5-1.8 1.8-1.5-1a6.9 6.9 0 0 1-1.5.6l-.4 1.7h-2.6l-.4-1.7a6.9 6.9 0 0 1-1.5-.6l-1.5 1-1.8-1.8 1-1.5a6.9 6.9 0 0 1-.6-1.5l-1.7-.4v-2.6l1.7-.4a6.9 6.9 0 0 1 .6-1.5l-1-1.5 1.8-1.8 1.5 1a6.9 6.9 0 0 1 1.5-.6l.4-1.7h2.6l.4 1.7a6.9 6.9 0 0 1 1.5.6l1.5-1 1.8 1.8-1 1.5c.3.5.5 1 .6 1.5l1.7.4z" fill="#5ce1e6"/></svg>EDIT APPS</button>
+    <span class="d-tiles" id="dTiles"></span>
+   </div>
   </div>
 
-  <div class="apps-head"><span>APPS</span><button class="chip" id="editAppsBtn">✎ EDIT APPS</button></div>
-  <div class="apps" id="apps" role="list"></div>
+  <div class="below">
+   <div class="sec-h"><span id="greet">&gt; HELLO</span><small>SHORTCUTS</small></div>
+   <div class="actions" id="actions">
+    <a class="act" id="actRecap" href="#" data-act="recap"><span class="ai" aria-hidden="true">⚡</span><b>RECAP DAY</b><small>3 questions → recap</small></a>
+    <a class="act" id="actPlan" href="#" data-act="plan"><span class="ai" aria-hidden="true">☀</span><b>PLAN TODAY</b><small>time-blocked plan</small></a>
+    <a class="act" href="#" data-act="build"><span class="ai" aria-hidden="true">✚</span><b>BUILD</b><small>prompt builder</small></a>
+   </div>
+   <div class="apps-head" id="appsHead"><span>MORE APPS</span><small>EDIT THEM WITH ⚙ EDIT APPS ABOVE</small></div>
+   <div class="apps" id="apps" role="list"></div>
+  </div>
  </section>
 
  <!-- WEATHER -->
@@ -110,6 +148,6 @@
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/os/app.js"></script>
+<script src="/os/app.js?v=2.0"></script>
 </body>
 </html>
