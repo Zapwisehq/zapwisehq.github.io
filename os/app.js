@@ -48,30 +48,31 @@ var G = {
 var CUSTOM_GLYPHS = ["letter", "globe", "play", "chat", "spark", "note", "star", "heart", "bolt", "cart", "compass", "map"];
 var CUSTOM_COLORS = ["#5ce1e6", "#f0a202", "#ff4fd8", "#3ddc84", "#ff4d5e", "#4f7cff", "#8b5cf6", "#111827"];
 
-// url = app link (scheme) or https; web = website; store = App Store id (verified on apps.apple.com, Nov 2, 2026)
+// url = app link (scheme) or https; web = website (phone fallback + desktop); desk/mac = desktop override; ios = iPhone override
+// icon = real app icon, App Store artwork from the iTunes Lookup API, served from /os/icons (Nov 2, 2026)
 var DEFAULT_APPS = [
-  { id: "x", name: "X", url: "twitter://", web: "https://x.com", store: "333903271", glyph: "letter", letter: "X", bg: "#000", accent: "#f4efe4" },
-  { id: "youtube", name: "YouTube", url: "youtube://", web: "https://www.youtube.com", store: "544007664", glyph: "play", bg: "#ff0033", accent: "#ff4d5e" },
-  { id: "grok", name: "Grok", url: "xai-grok://", web: "https://grok.com", store: "6670324846", glyph: "spark", bg: "#16161d", accent: "#f0a202" },
-  { id: "chatgpt", name: "ChatGPT", url: "chatgpt://", web: "https://chatgpt.com", store: "6448311069", glyph: "chat", bg: "#10a37f", accent: "#3ddc84" },
-  { id: "web", name: "Web", url: "https://www.google.com", glyph: "compass", bg: "linear-gradient(180deg,#5ce1e6,#1a73e8)", accent: "#5ce1e6" },
-  { id: "gemini", name: "Gemini", url: "googlegemini://", web: "https://gemini.google.com", store: "6477489729", glyph: "gem", bg: "linear-gradient(135deg,#4f7cff,#a25cff)", accent: "#8b9dff" },
-  { id: "maps", name: "Maps", url: "maps://", web: "https://maps.apple.com/", store: "915056765", glyph: "map", bg: "linear-gradient(135deg,#3ddc84,#2a9df4)", accent: "#3ddc84" },
-  { id: "messages", name: "Messages", url: "sms:", glyph: "bubble", bg: "linear-gradient(180deg,#5af575,#16c13c)", accent: "#3ddc84" },
-  { id: "phone", name: "Phone", url: "tel:", glyph: "phone", bg: "linear-gradient(180deg,#5af575,#16c13c)", accent: "#3ddc84" },
-  { id: "mail", name: "Mail", url: "mailto:", store: "1108187098", glyph: "mail", bg: "linear-gradient(180deg,#1ea1ff,#1166dd)", accent: "#1ea1ff" },
-  { id: "calendar", name: "Calendar", url: "calshow://", store: "1108185179", glyph: "cal", bg: "#fff", accent: "#ff4d5e" },
-  { id: "notes", name: "Notes", url: "mobilenotes://", store: "1110145109", glyph: "notes", bg: "linear-gradient(180deg,#fff6c2 0 28%,#ffd23f 28%)", accent: "#ffd23f" }
+  { id: "x", name: "X", url: "twitter://", icon: "/os/icons/x.jpg", web: "https://x.com", glyph: "letter", letter: "X", bg: "#000", accent: "#f4efe4" },
+  { id: "youtube", name: "YouTube", url: "youtube://", icon: "/os/icons/youtube.jpg", web: "https://www.youtube.com", glyph: "play", bg: "#ff0033", accent: "#ff4d5e" },
+  { id: "grok", name: "Grok", url: "xai-grok://", icon: "/os/icons/grok.jpg", web: "https://grok.com", glyph: "spark", bg: "#16161d", accent: "#f0a202" },
+  { id: "chatgpt", name: "ChatGPT", url: "chatgpt://", icon: "/os/icons/chatgpt.jpg", web: "https://chatgpt.com", glyph: "chat", bg: "#10a37f", accent: "#3ddc84" },
+  { id: "web", name: "Web", url: "https://www.google.com", icon: "/os/icons/web.jpg", glyph: "compass", bg: "linear-gradient(180deg,#5ce1e6,#1a73e8)", accent: "#5ce1e6" },
+  { id: "gemini", name: "Gemini", url: "googlegemini://", icon: "/os/icons/gemini.jpg", web: "https://gemini.google.com", glyph: "gem", bg: "linear-gradient(135deg,#4f7cff,#a25cff)", accent: "#8b9dff" },
+  { id: "maps", name: "Maps", url: "maps://", icon: "/os/icons/maps.jpg", web: "https://maps.apple.com/", glyph: "map", bg: "linear-gradient(135deg,#3ddc84,#2a9df4)", accent: "#3ddc84" },
+  { id: "messages", name: "Messages", url: "sms:", icon: "/os/icons/messages.jpg", mac: "sms:", desk: "https://messages.google.com/web", glyph: "bubble", bg: "linear-gradient(180deg,#5af575,#16c13c)", accent: "#3ddc84" },
+  { id: "phone", name: "Phone", url: "tel:", icon: "/os/icons/phone.jpg", ios: "mobilephone://", mac: "facetime://", desk: "https://voice.google.com", glyph: "phone", bg: "linear-gradient(180deg,#5af575,#16c13c)", accent: "#3ddc84" },
+  { id: "mail", name: "Mail", url: "mailto:", icon: "/os/icons/mail.jpg", web: "https://www.icloud.com/mail", glyph: "mail", bg: "linear-gradient(180deg,#1ea1ff,#1166dd)", accent: "#1ea1ff" },
+  { id: "calendar", name: "Calendar", url: "calshow://", icon: "/os/icons/calendar.jpg", web: "https://www.icloud.com/calendar", glyph: "cal", bg: "#fff", accent: "#ff4d5e" },
+  { id: "notes", name: "Notes", url: "mobilenotes://", icon: "/os/icons/notes.jpg", web: "https://www.icloud.com/notes", glyph: "notes", bg: "linear-gradient(180deg,#fff6c2 0 28%,#ffd23f 28%)", accent: "#ffd23f" }
 ];
 DEFAULT_APPS.forEach(function (a) { a.on = true; });
 // music apps live in the PLAY hub only (not in the dock or app grid, so nothing shows twice)
 var MEDIA = {
-  music: { name: "Apple Music", url: "music://", web: "https://music.apple.com", store: "1108187390" },
-  spotify: { name: "Spotify", url: "spotify://", web: "https://open.spotify.com", store: "324684580" },
-  ytmusic: { name: "YouTube Music", url: "youtubemusic://", web: "https://music.youtube.com", store: "1017492454" },
-  podcasts: { name: "Podcasts", url: "podcasts://", web: "https://podcasts.apple.com", store: "525463029" },
-  pandora: { name: "Pandora", url: "pandora://", web: "https://www.pandora.com", store: "284035177" },
-  soundcloud: { name: "SoundCloud", url: "soundcloud://", web: "https://soundcloud.com", store: "336353151" }
+  music: { name: "Apple Music", url: "music://", web: "https://music.apple.com", icon: "/os/icons/music.jpg" },
+  spotify: { name: "Spotify", url: "spotify://", web: "https://open.spotify.com", icon: "/os/icons/spotify.jpg" },
+  ytmusic: { name: "YouTube Music", url: "youtubemusic://", web: "https://music.youtube.com", icon: "/os/icons/ytmusic.jpg" },
+  podcasts: { name: "Podcasts", url: "podcasts://", web: "https://podcasts.apple.com", icon: "/os/icons/podcasts.jpg" },
+  pandora: { name: "Pandora", url: "pandora://", web: "https://www.pandora.com", icon: "/os/icons/pandora.jpg" },
+  soundcloud: { name: "SoundCloud", url: "soundcloud://", web: "https://soundcloud.com", icon: "/os/icons/soundcloud.jpg" }
 };
 var HUB = ["music", "spotify", "ytmusic"];
 var DEFAULT_COINS = [{ id: "bitcoin", sym: "BTC", name: "Bitcoin" }, { id: "pax-gold", sym: "GOLD", name: "Gold (PAX Gold)" }];
@@ -84,7 +85,7 @@ var APPS = load("apps", null);
   if (!APPS) { APPS = fresh; return; }
   var OLD_ORDER = "x,youtube,chatgpt,grok,gemini,maps,messages,phone,mail,calendar,notes,web";
   APPS = APPS.filter(function (a) { return a.custom || (a.id !== "music" && a.id !== "spotify"); }); // now in the PLAY hub
-  APPS.forEach(function (a) { var d = DEFAULT_APPS.filter(function (x) { return x.id === a.id; })[0]; if (d && !a.custom) { var on = a.on; Object.keys(d).forEach(function (k) { a[k] = d[k]; }); delete a.fb; a.on = on; } });
+  APPS.forEach(function (a) { var d = DEFAULT_APPS.filter(function (x) { return x.id === a.id; })[0]; if (d && !a.custom) { var on = a.on; Object.keys(d).forEach(function (k) { a[k] = d[k]; }); delete a.fb; delete a.store; a.on = on; } });
   if (APPS.map(function (a) { return a.id; }).join(",") === OLD_ORDER) APPS.sort(function (p, q) { return DEFAULT_APPS.findIndex(function (d) { return d.id === p.id; }) - DEFAULT_APPS.findIndex(function (d) { return d.id === q.id; }); });
   DEFAULT_APPS.forEach(function (d) { if (!APPS.some(function (a) { return a.id === d.id; })) APPS.push(JSON.parse(JSON.stringify(d))); });
   save("apps", APPS);
@@ -97,6 +98,8 @@ function iconHTML(a) {
   if (a.glyph === "cal") {
     var d = new Date();
     inner = '<span class="cal"><i>' + d.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase() + '</i><b>' + d.getDate() + '</b></span>';
+  } else if (a.icon) {
+    return '<span class="ico img"><img src="' + esc(a.icon) + '" alt="" loading="lazy" decoding="async"></span>';
   } else if (a.glyph === "letter" || !G[a.glyph]) {
     inner = '<span class="let" style="color:' + (a.fg || "#f4efe4") + '">' + esc((a.letter || a.name || "?").trim().charAt(0).toUpperCase()) + '</span>';
   } else inner = '<svg viewBox="0 0 24 24" aria-hidden="true">' + G[a.glyph] + '</svg>';
@@ -104,24 +107,29 @@ function iconHTML(a) {
 }
 
 // ---------- opening apps ----------
-// One tap: app link first. If the page is still showing ~1.2 s later the app isn't installed, so
-// iPhone/iPad go to the App Store page and other devices go to the website. Desktop/Android open the website directly.
+// One tap, no App Store detours. Phone: try the app link; if the page is still showing ~1.2 s later the app
+// isn't installed, so open its website instead. Computer: open the website straight away (Mac uses Messages/FaceTime for sms/phone).
 var IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-function storeURL(id) { return "https://apps.apple.com/app/id" + id; }
+var MOBILE = IOS || /Android|Mobi/i.test(navigator.userAgent);
+var MAC = !MOBILE && /Mac/i.test(navigator.platform || navigator.userAgent);
 function go(u) { var w = window.open(u, "_blank", "noopener"); if (!w) location.href = u; }
 function openApp(a) {
-  var isWeb = /^https?:/i.test(a.url || "");
-  var web = isWeb ? a.url : a.web;
-  if (isWeb) { go(a.url); return; }
-  if (!IOS && web) { go(web); return; }
-  var fb = IOS ? (a.store ? storeURL(a.store) : web) : web;
-  if (!fb) { location.href = a.url; return; }
+  var url = a.url || "";
+  if (/^https?:/i.test(url)) { go(url); return; }
+  if (!MOBILE) {
+    var d = (MAC && a.mac) || a.desk || a.web || url;
+    if (/^https?:/i.test(d)) go(d); else location.href = d;
+    return;
+  }
+  if (IOS && a.ios) url = a.ios;
+  var fb = a.web;
+  if (!fb) { location.href = url; return; }
   var left = false;
   function gone() { left = true; }
   document.addEventListener("visibilitychange", gone, { once: true });
   window.addEventListener("pagehide", gone, { once: true });
   window.addEventListener("blur", gone, { once: true });
-  location.href = a.url;
+  location.href = url;
   setTimeout(function () {
     document.removeEventListener("visibilitychange", gone); window.removeEventListener("pagehide", gone); window.removeEventListener("blur", gone);
     if (!left && document.visibilityState === "visible") location.href = fb;
@@ -136,7 +144,8 @@ function accentOf(a) {
   return l < 60 ? "#f4efe4" : h;
 }
 function dockGlyph(a) {
-  if (a.glyph === "cal") return '<b class="dcal">' + new Date().getDate() + "</b>";
+  if (a.glyph === "cal") return '<span class="dcal"><i>' + DOW[new Date().getDay()] + '</i><b>' + new Date().getDate() + "</b></span>";
+  if (a.icon) return '<img class="dimg" src="' + esc(a.icon) + '" alt="">';
   if (a.glyph === "letter" || !G[a.glyph]) return '<b class="dlet">' + esc((a.letter || a.name || "?").trim().charAt(0).toUpperCase()) + "</b>";
   return '<svg viewBox="0 0 24 24" aria-hidden="true">' + G[a.glyph].replace(/#fff|#5a4500/g, "currentColor") + "</svg>";
 }
@@ -192,7 +201,7 @@ function minute(d) {
   $("#actPlan").classList.toggle("primary", planFirst);
   $("#actRecap").classList.toggle("primary", !planFirst);
   $$(".app .cal").forEach(function (c) { c.innerHTML = '<i>' + DOW[d.getDay()] + '</i><b>' + d.getDate() + '</b>'; });
-  $$(".d-tile .dcal").forEach(function (c) { c.textContent = d.getDate(); });
+  $$(".d-tile .dcal").forEach(function (c) { c.innerHTML = '<i>' + DOW[d.getDay()] + '</i><b>' + d.getDate() + '</b>'; });
   updateStamps();
 }
 // FOCUS: a 25-minute sprint timer (the web can't read battery on iPhone, so this replaces the widget's PWR meter)
@@ -240,8 +249,8 @@ $("#hPlay").addEventListener("click", function (e) {
   if (k === "more") openMedia(); else openApp(MEDIA[k]);
 });
 function openMedia() {
-  var html = '<p class="note" style="margin-bottom:10px">Opens the app if it\'s on this phone, otherwise its App Store page (or website on a computer).</p>' +
-    Object.keys(MEDIA).filter(function (k) { return HUB.indexOf(k) < 0; }).map(function (k) { return '<button class="mrow" data-m="' + k + '"><span class="mi" aria-hidden="true">♪</span><span class="grow">' + esc(MEDIA[k].name) + '</span><span aria-hidden="true">↗</span></button>'; }).join("");
+  var html = '<p class="note" style="margin-bottom:10px">Opens the app if it\'s on this phone, otherwise its website (on a computer, the website opens right away).</p>' +
+    Object.keys(MEDIA).filter(function (k) { return HUB.indexOf(k) < 0; }).map(function (k) { return '<button class="mrow" data-m="' + k + '"><img class="mimg" src="' + esc(MEDIA[k].icon) + '" alt=""><span class="grow">' + esc(MEDIA[k].name) + '</span><span aria-hidden="true">↗</span></button>'; }).join("");
   sheet("♪ MORE MUSIC APPS", html, function (b) { b.addEventListener("click", function (e) { var x = e.target.closest("[data-m]"); if (x) { closeSheet(); openApp(MEDIA[x.getAttribute("data-m")]); } }); });
 }
 
@@ -542,7 +551,7 @@ $("#hMap").addEventListener("click", function (e) {
   if (e.target.closest(".map-attr")) return;
   if (!GPS) { toast(GEO_OFF ? "Turn on Location for this app to see where you are" : "Still finding you…"); return; }
   var ll = GPS.lat.toFixed(6) + "," + GPS.lon.toFixed(6);
-  openApp({ url: "maps://?ll=" + ll, web: "https://maps.apple.com/?ll=" + ll + "&q=" + encodeURIComponent("You are here"), store: "915056765" });
+  openApp({ url: "maps://?ll=" + ll, web: "https://maps.apple.com/?ll=" + ll + "&q=" + encodeURIComponent("You are here") });
 });
 $("#hMap").addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("#hMap").click(); } });
 window.addEventListener("resize", function () { clearTimeout(renderMap.t); renderMap.t = setTimeout(renderMap, 150); });
@@ -759,7 +768,7 @@ function openHelp(push) {
     '<ol class="steps"><li>Open <b>zapwiseai.com/os</b> in <b>Safari</b> and tap the <b>Share</b> button (the square with an arrow ↑).</li>' +
     '<li>Scroll down and tap <b>Add to Home Screen</b>, then tap <b>Add</b>.</li>' +
     '<li>Open <b>ZAP//OS</b> from the new icon on your Home Screen. It opens full screen, like an app.</li></ol>' +
-    '<h3>GOOD TO KNOW</h3><p class="note">One tap opens an app if it\'s installed. If it isn\'t, your iPhone goes to its App Store page after about a second (on a computer, the website opens). The map shows your street from your live location; tap it to open Maps. Weather asks for your location once; tap Allow, or set a city in the menu. Your choices are saved on this phone only.</p>',
+    '<h3>GOOD TO KNOW</h3><p class="note">One tap opens an app if it\'s installed. If it isn\'t, its website opens after about a second. On a computer the website opens right away (Calendar, Notes and Mail open iCloud.com). The map shows your street from your live location; tap it to open Maps. Weather asks for your location once; tap Allow, or set a city in the menu. Your choices are saved on this phone only.</p>',
     null, push);
 }
 
