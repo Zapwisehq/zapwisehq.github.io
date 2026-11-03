@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ZAPWISE//OS</title>
+<meta name="robots" content="noindex,follow">
+<meta name="description" content="ZAPWISE//OS: one full-screen home for your clock, quick AI actions, weather, markets and apps.">
+<meta name="theme-color" content="#070814">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ZAP//OS">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="/os/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/os/icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/os/icon-192.png">
+<link rel="stylesheet" href="/os/app.css">
+</head>
+<body>
+<div class="grid-bg" aria-hidden="true"></div>
+<div id="app">
+
+ <header class="top">
+  <div class="brand"><span class="bolt" aria-hidden="true">⚡</span>ZAPWISE<b>//OS</b></div>
+  <button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-haspopup="dialog"><span aria-hidden="true">☰</span> MENU</button>
+ </header>
+
+ <main>
+ <!-- HOME -->
+ <section class="view" id="v-home" aria-label="Home">
+  <div class="clock-card card br">
+   <div class="clock" id="clock" aria-live="off">--:--<small id="sec">--</small><em id="ampm"></em></div>
+   <div class="date" id="date">—</div>
+   <div class="greet" id="greet">&gt; HELLO</div>
+   <div class="daybar" aria-hidden="true"><i id="dayFill"></i></div>
+   <div class="daytxt" id="dayTxt"></div>
+  </div>
+
+  <div class="actions" id="actions">
+   <a class="act" id="actRecap" href="#" data-act="recap"><span class="ai" aria-hidden="true">⚡</span><b>RECAP DAY</b><small>3 questions → recap</small></a>
+   <a class="act" id="actPlan" href="#" data-act="plan"><span class="ai" aria-hidden="true">☀</span><b>PLAN TODAY</b><small>time-blocked plan</small></a>
+   <a class="act" href="#" data-act="build"><span class="ai" aria-hidden="true">✚</span><b>BUILD</b><small>prompt builder</small></a>
+   <a class="act" href="#" data-act="play"><span class="ai" aria-hidden="true">▶</span><b>PLAY</b><small id="playSub">music</small></a>
+  </div>
+
+  <div class="minis">
+   <button class="mini wx-mini card" id="wxMini" aria-label="Open weather">
+    <canvas class="fx" id="fxMini" aria-hidden="true"></canvas>
+    <span class="mini-in"><span class="lbl">WEATHER</span><span class="big" id="wxMiniT">--°</span><span class="sub" id="wxMiniC">LOADING…</span></span>
+   </button>
+   <button class="mini mk-mini card" id="mkMini" aria-label="Open markets">
+    <span class="mini-in"><span class="lbl">MARKETS</span><span id="mkMiniList" class="mklist"><span class="sub">LOADING…</span></span></span>
+   </button>
+  </div>
+
+  <div class="apps-head"><span>APPS</span><button class="chip" id="editAppsBtn">✎ EDIT APPS</button></div>
+  <div class="apps" id="apps" role="list"></div>
+ </section>
+
+ <!-- WEATHER -->
+ <section class="view" id="v-weather" aria-label="Weather" hidden>
+  <div class="wx-card card br">
+   <canvas class="fx" id="fxMain" aria-hidden="true"></canvas>
+   <div class="wx-in">
+    <div class="wx-place"><span id="wxPlace">LOCATING…</span><button class="chip" id="cityBtn">◎ CHANGE</button></div>
+    <div class="wx-now">
+     <div class="wx-temp" id="wxTemp">--°</div>
+     <div class="wx-cond"><span id="wxIcon" class="wx-ic" aria-hidden="true">·</span><b id="wxCond">—</b><span id="wxHL">H -- · L --</span></div>
+    </div>
+    <div class="wx-stats">
+     <div><small>FEELS</small><b id="wxFeels">--</b></div>
+     <div><small>RAIN</small><b id="wxRain">--</b></div>
+     <div><small>WIND</small><b id="wxWind">--</b></div>
+     <div><small>SUNSET</small><b id="wxSun">--</b></div>
+    </div>
+    <div class="stamp" id="wxStamp">UPDATED --</div>
+   </div>
+  </div>
+  <div class="sec-h">NEXT 12 HOURS <small>swipe →</small></div>
+  <div class="hours" id="wxHours"></div>
+  <div class="sec-h">5-DAY OUTLOOK</div>
+  <div class="days card" id="wxDays"></div>
+  <p class="note" id="wxNote"></p>
+ </section>
+
+ <!-- MARKETS -->
+ <section class="view" id="v-markets" aria-label="Markets" hidden>
+  <div class="sec-h big-h">WATCHLIST <button class="chip" id="editMkBtn">✎ EDIT</button></div>
+  <div class="mk card br" id="mkList"></div>
+  <div class="stamp" id="mkStamp">UPDATED --</div>
+  <p class="note">Crypto and gold (PAX Gold token) prices from CoinGecko, in US dollars. 24-hour change. Not financial advice.</p>
+ </section>
+ </main>
+
+ <nav class="tabs" aria-label="Sections">
+  <button class="tab on" data-tab="home"><span aria-hidden="true">⌂</span>HOME</button>
+  <button class="tab" data-tab="weather"><span aria-hidden="true">☁</span>WEATHER</button>
+  <button class="tab" data-tab="markets"><span aria-hidden="true">₿</span>MARKETS</button>
+  <button class="tab" data-tab="menu"><span aria-hidden="true">☰</span>MENU</button>
+ </nav>
+ <footer class="motto">No face. No hours. Just the shortcut.</footer>
+</div>
+
+<!-- SHEET (menu, edit apps, edit markets, city) -->
+<div class="scrim" id="scrim" hidden></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" hidden>
+ <div class="sheet-h"><b id="sheetTitle">MENU</b><button class="chip" id="sheetClose" aria-label="Close">✕ CLOSE</button></div>
+ <div class="sheet-b" id="sheetBody"></div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="/os/app.js"></script>
+</body>
+</html>
