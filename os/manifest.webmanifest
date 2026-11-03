@@ -1,7 +1,7 @@
 {
   "name": "ZAPWISE//OS",
   "short_name": "ZAP//OS",
-  "description": "Your all-in-one home screen: clock, quick AI actions, weather, markets and your apps.",
+  "description": "Your all-in-one home screen: clock, weather, markets and your apps.",
   "id": "/os/",
   "start_url": "/os/",
   "scope": "/os/",

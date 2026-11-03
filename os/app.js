@@ -3,12 +3,9 @@
    OpenStreetMap tiles + Nominatim reverse geocoding (road + city, cached, re-queried only after moving > 40 m). */
 (function () {
 "use strict";
-var VERSION = "2.0";
-var STATUS_MSGS = ["> SHORTCUTS ARMED", "> NET SECURE", "> AI LINK STABLE", "> SIGNAL CLEAN", "> BUILD MODE READY"];
+var VERSION = "2.0.2";
+var STATUS_MSGS = ["> SHORTCUTS ARMED", "> NET SECURE", "> AI LINK STABLE", "> SIGNAL CLEAN", "> APPS READY"];
 var FOCUS_MS = 25 * 60000, DOCK_N = 5;
-var PROMPT_RECAP = "Recap my day: ask me 3 quick questions about what I did today, then give me a 5-bullet recap, my biggest win, and one thing to fix tomorrow. Keep it short.";
-var PROMPT_PLAN = "Plan my day: ask me my top 3 tasks and how much time I have, then give me a simple time-blocked plan with breaks, starting with one quick win. Keep it short.";
-var BUILD_URL = "https://zapwiseai.com/ai-prompt-builder.html";
 var DAY_START = 7, DAY_END = 23;
 var $ = function (s, r) { return (r || document).querySelector(s); };
 var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
@@ -18,6 +15,28 @@ var FORCE_FX = Q.get("fx");
 // ---------- storage ----------
 function load(k, d) { try { var v = localStorage.getItem("zapos." + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
 function save(k, v) { try { localStorage.setItem("zapos." + k, JSON.stringify(v)); } catch (e) {} }
+
+// ---------- themes (v2.0.2): applied instantly from the THEME button, saved on this device ----------
+var THEMES = [
+  { id: "zapwise", name: "ZAPWISE", sub: "Default · void, cream, amber, cyan", v: { void: "#070814", panel: "#0d1226", panel2: "#111833", cream: "#f4efe4", amber: "#f0a202", cyan: "#5ce1e6", magenta: "#ff4fd8", dim: "#6b7896", on: "#070814" } },
+  { id: "neon", name: "NEON PINK", sub: "Hot pink and violet on deep plum", v: { void: "#10040f", panel: "#1d0a1f", panel2: "#28102b", cream: "#fde9f6", amber: "#ffd166", cyan: "#ff4fd8", magenta: "#9d7bff", dim: "#8f7393", on: "#10040f" } },
+  { id: "terminal", name: "TERMINAL GREEN", sub: "Green phosphor on black", v: { void: "#020a05", panel: "#07170d", panel2: "#0b2013", cream: "#d8ffe2", amber: "#c6ff3d", cyan: "#3dff7e", magenta: "#7affc8", dim: "#57805f", on: "#020a05" } },
+  { id: "arctic", name: "ARCTIC BLUE", sub: "Ice blue on midnight navy", v: { void: "#03101d", panel: "#081c30", panel2: "#0c253d", cream: "#eaf6ff", amber: "#a8e1ff", cyan: "#47a8ff", magenta: "#b9a6ff", dim: "#6d88a3", on: "#03101d" } },
+  { id: "sunset", name: "SUNSET ORANGE", sub: "Warm orange and coral on dusk", v: { void: "#140806", panel: "#22100b", panel2: "#2d160f", cream: "#fff0e3", amber: "#ffc04d", cyan: "#ff7a3d", magenta: "#ff4f7b", dim: "#94705f", on: "#140806" } },
+  { id: "mono", name: "MONO", sub: "Black, white and grey", v: { void: "#0a0a0b", panel: "#161618", panel2: "#1f1f22", cream: "#f2f2f2", amber: "#ffffff", cyan: "#cfcfd4", magenta: "#9a9aa2", dim: "#76767e", on: "#0a0a0b" } },
+  { id: "light", name: "LIGHT", sub: "Dark text on a bright page", light: true, v: { void: "#f1efe9", panel: "#ffffff", panel2: "#e7e4dc", cream: "#16181e", amber: "#b45a00", cyan: "#0a6f8c", magenta: "#b0186e", dim: "#666c79", on: "#ffffff" } }
+];
+function hexRgb(h) { var n = parseInt(h.slice(1), 16); return (n >> 16 & 255) + "," + (n >> 8 & 255) + "," + (n & 255); }
+var THEME = THEMES[0];
+function applyTheme(id) {
+  var t = THEMES.filter(function (x) { return x.id === id; })[0] || THEMES[0], st = document.documentElement.style;
+  Object.keys(t.v).forEach(function (k) { st.setProperty("--" + k, t.v[k]); st.setProperty("--" + k + "-rgb", hexRgb(t.v[k])); });
+  document.documentElement.classList.toggle("light", !!t.light);
+  if (document.body) document.body.classList.toggle("light", !!t.light);
+  var m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute("content", t.v.void);
+  THEME = t;
+}
+applyTheme(load("theme", "zapwise"));
 function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
 function pad2(n) { return (n < 10 ? "0" : "") + n; }
 function t12(d) { var h = d.getHours(); return (h % 12 || 12) + ":" + pad2(d.getMinutes()) + (h < 12 ? "A" : "P"); }
@@ -75,6 +94,38 @@ var MEDIA = {
   soundcloud: { name: "SoundCloud", url: "soundcloud://", web: "https://soundcloud.com", icon: "/os/icons/soundcloud.jpg" }
 };
 var HUB = ["music", "spotify", "ytmusic"];
+// + ADD APP picker (v2.0.2): real icons from App Store artwork, served from /os/icons. url = app link (or https, which opens the
+// app when installed), web = website fallback on a phone and what opens on a computer. No App Store links.
+var CATALOG = [
+  { id: "instagram", name: "Instagram", url: "instagram://", web: "https://www.instagram.com" },
+  { id: "tiktok", name: "TikTok", url: "snssdk1233://", web: "https://www.tiktok.com" },
+  { id: "facebook", name: "Facebook", url: "fb://", web: "https://www.facebook.com" },
+  { id: "whatsapp", name: "WhatsApp", url: "whatsapp://", web: "https://web.whatsapp.com" },
+  { id: "snapchat", name: "Snapchat", url: "snapchat://", web: "https://web.snapchat.com" },
+  { id: "messenger", name: "Messenger", url: "fb-messenger://", web: "https://www.messenger.com" },
+  { id: "threads", name: "Threads", url: "barcelona://", web: "https://www.threads.com" },
+  { id: "telegram", name: "Telegram", url: "tg://", web: "https://web.telegram.org" },
+  { id: "discord", name: "Discord", url: "discord://", web: "https://discord.com/app" },
+  { id: "reddit", name: "Reddit", url: "reddit://", web: "https://www.reddit.com" },
+  { id: "linkedin", name: "LinkedIn", url: "linkedin://", web: "https://www.linkedin.com" },
+  { id: "pinterest", name: "Pinterest", url: "pinterest://", web: "https://www.pinterest.com" },
+  { id: "netflix", name: "Netflix", url: "nflx://", web: "https://www.netflix.com" },
+  { id: "twitch", name: "Twitch", url: "twitch://", web: "https://www.twitch.tv" },
+  { id: "amazon", name: "Amazon", url: "https://www.amazon.com" },
+  { id: "uber", name: "Uber", url: "uber://", web: "https://m.uber.com" },
+  { id: "gmail", name: "Gmail", url: "googlegmail://", web: "https://mail.google.com" },
+  { id: "drive", name: "Drive", url: "googledrive://", web: "https://drive.google.com" },
+  { id: "gphotos", name: "Google Photos", url: "googlephotos://", web: "https://photos.google.com" },
+  { id: "photos", name: "Photos", url: "photos-redirect://", web: "https://www.icloud.com/photos/" },
+  { id: "claude", name: "Claude", url: "https://claude.ai" },
+  { id: "perplexity", name: "Perplexity", url: "https://www.perplexity.ai" },
+  { id: "copilot", name: "Copilot", url: "https://copilot.microsoft.com" },
+  { id: "capcut", name: "CapCut", url: "capcut://", web: "https://www.capcut.com" },
+  { id: "canva", name: "Canva", url: "canva://", web: "https://www.canva.com" },
+  { id: "venmo", name: "Venmo", url: "venmo://", web: "https://venmo.com" },
+  { id: "cashapp", name: "Cash App", url: "cashme://", web: "https://cash.app" }
+];
+CATALOG.forEach(function (c) { c.icon = "/os/icons/" + c.id + ".jpg"; });
 var DEFAULT_COINS = [{ id: "bitcoin", sym: "BTC", name: "Bitcoin" }, { id: "pax-gold", sym: "GOLD", name: "Gold (PAX Gold)" }];
 var DEFAULT_SET = { name: "", units: "F" };
 
@@ -135,7 +186,6 @@ function openApp(a) {
     if (!left && document.visibilityState === "visible") location.href = fb;
   }, 1200);
 }
-function openLink(url) { openApp({ url: url }); }
 
 function accentOf(a) {
   if (a.accent) return a.accent;
@@ -168,7 +218,11 @@ function renderApps() {
     b.addEventListener("click", function (e) { e.preventDefault(); openApp(a); });
     box.appendChild(b);
   });
-  $("#appsHead").hidden = !rest.length; box.hidden = !rest.length;
+  var ad = document.createElement("a");
+  ad.className = "app add"; ad.href = "#"; ad.id = "addApp"; ad.setAttribute("role", "listitem"); ad.setAttribute("aria-label", "Add an app");
+  ad.innerHTML = '<span class="ico" aria-hidden="true">＋</span><span class="nm">ADD APP</span>';
+  ad.addEventListener("click", function (e) { e.preventDefault(); openAddApp(); });
+  box.appendChild(ad);
   if (!dock.length) dt.innerHTML = '<span class="d-none">NO APPS ON · TAP EDIT APPS</span>';
 }
 
@@ -195,11 +249,8 @@ function minute(d) {
   var remain = Math.max(0, DAY_END - hrs), lh = Math.floor(remain), lm = Math.round((remain - lh) * 60);
   if (lm === 60) { lh++; lm = 0; }
   setSegs($("#mDay"), pct, "on-c"); $("#mDayV").textContent = Math.round(pct * 100) + "%";
-  $("#mDayL").textContent = hrs < DAY_START ? "DAY STARTS AT 7A · PLAN TODAY WHEN YOU WAKE" : pct >= 1 ? "DAY COMPLETE · TAP RECAP DAY" :
-    lh + "H " + pad2(lm) + "M LEFT TODAY · " + (hrs < 15 ? "TAP PLAN TODAY TO START" : "FINISH STRONG, THEN RECAP");
-  var planFirst = hrs < 15;
-  $("#actPlan").classList.toggle("primary", planFirst);
-  $("#actRecap").classList.toggle("primary", !planFirst);
+  $("#mDayL").textContent = hrs < DAY_START ? "DAY STARTS AT 7A" : pct >= 1 ? "DAY COMPLETE" :
+    lh + "H " + pad2(lm) + "M LEFT TODAY · " + (hrs < 15 ? "KEEP GOING" : "FINISH STRONG");
   $$(".app .cal").forEach(function (c) { c.innerHTML = '<i>' + DOW[d.getDay()] + '</i><b>' + d.getDate() + '</b>'; });
   $$(".d-tile .dcal").forEach(function (c) { c.innerHTML = '<i>' + DOW[d.getDay()] + '</i><b>' + d.getDate() + '</b>'; });
   updateStamps();
@@ -235,14 +286,6 @@ function renderFocus() {
 })();
 function renderNet() { var on = navigator.onLine !== false; $("#hNet").classList.toggle("off", !on); $("#hNet b").textContent = on ? "ONLINE" : "OFFLINE"; }
 
-// ---------- actions ----------
-$("#actions").addEventListener("click", function (e) {
-  var a = e.target.closest("[data-act]"); if (!a) return; e.preventDefault();
-  var k = a.getAttribute("data-act");
-  if (k === "recap") openLink("https://chatgpt.com/?q=" + encodeURIComponent(PROMPT_RECAP));
-  else if (k === "plan") openLink("https://chatgpt.com/?q=" + encodeURIComponent(PROMPT_PLAN));
-  else if (k === "build") openLink(BUILD_URL);
-});
 // PLAY hub: Apple Music, Spotify, YouTube Music, and … for more
 $("#hPlay").addEventListener("click", function (e) {
   var b = e.target.closest("[data-media]"); if (!b) return; var k = b.getAttribute("data-media");
@@ -293,7 +336,7 @@ FX.prototype.draw = function (now, dt) {
   }
   if (k === "night") {
     c.fillStyle = "rgba(244,239,228,.85)"; c.beginPath(); c.arc(W * .84, H * .2, Math.min(W, H) * .08, 0, 6.283); c.fill();
-    c.fillStyle = "#0d1226"; c.beginPath(); c.arc(W * .84 + Math.min(W, H) * .035, H * .2 - Math.min(W, H) * .02, Math.min(W, H) * .075, 0, 6.283); c.fill();
+    c.fillStyle = THEME.v.panel; c.beginPath(); c.arc(W * .84 + Math.min(W, H) * .035, H * .2 - Math.min(W, H) * .02, Math.min(W, H) * .075, 0, 6.283); c.fill();
     for (i = 0; i < this.p.length; i++) { q = this.p[i]; c.globalAlpha = .25 + .75 * Math.abs(Math.sin(t * q.f + q.s)); c.fillStyle = "#f4efe4"; c.beginPath(); c.arc(q.x, q.y, q.r, 0, 6.283); c.fill(); }
     c.globalAlpha = 1;
   }
@@ -307,7 +350,7 @@ FX.prototype.draw = function (now, dt) {
     }
   }
   if (k === "rain" || k === "storm") {
-    c.strokeStyle = "rgba(92,225,230,.6)"; c.lineWidth = 1.2; c.lineCap = "round";
+    c.strokeStyle = "rgba(" + hexRgb(THEME.v.cyan) + ",.6)"; c.lineWidth = 1.2; c.lineCap = "round";
     for (i = 0; i < this.p.length; i++) {
       q = this.p[i]; q.y += q.v * dt; q.x -= q.v * dt * .18;
       if (q.y > H) { q.y = -q.l; q.x = Math.random() * (W + 40); }
@@ -588,7 +631,7 @@ $("#cityBtn").addEventListener("click", function () { openCity(); });
 function row(icon, label, sub, act) { return '<button class="mrow" data-go="' + act + '"><span class="mi" aria-hidden="true">' + icon + '</span><span class="grow">' + label + "<small>" + sub + '</small></span><span aria-hidden="true">›</span></button>'; }
 function openMenu() {
   sheet("☰ MENU",
-    "<h3>APPS</h3>" + row("▦", "Edit apps", "Show, hide, reorder, or add your own", "apps") +
+    "<h3>APPS</h3>" + row("▦", "Edit apps", "Add, remove, show, hide or reorder apps", "apps") +
     "<h3>WEATHER</h3>" + row("☁", "Weather location", LOC.mode === "city" ? "City: " + esc(LOC.name) : "Using my location", "city") +
     "<h3>MARKETS</h3>" + row("₿", "Edit watchlist", COINS.map(function (c) { return esc(c.sym); }).join(" · ") || "Empty", "coins") +
     "<h3>SETTINGS</h3>" + row("⚙", "Settings", "Your name, °F / °C, reset", "settings") +
@@ -604,16 +647,10 @@ function openMenu() {
 
 // ----- edit apps -----
 function openEditApps(push) {
-  var html = '<p class="note" style="margin-bottom:10px">Switch an app on or off, and use ▲ ▼ to move it. The first 5 apps that are on sit in the dock; the rest show under MORE APPS. Music apps live in the PLAY box.</p><div id="eList"></div>' +
-    '<h3>ADD YOUR OWN APP</h3>' +
-    '<label class="field">NAME<input id="caName" maxlength="14" placeholder="e.g. Instagram" autocomplete="off"></label>' +
-    '<label class="field">LINK OR APP LINK<input id="caUrl" placeholder="e.g. instagram.com or instagram://" autocomplete="off" autocapitalize="off" spellcheck="false"></label>' +
-    '<div class="field">ICON</div><div class="glyphs" id="caG"></div>' +
-    '<div class="field">COLOR</div><div class="colors" id="caC"></div>' +
-    '<button class="btn" id="caAdd">＋ ADD APP</button>' +
+  var html = '<button class="btn" id="eAdd" style="margin-bottom:12px">＋ ADD APP</button>' +
+    '<p class="note" style="margin-bottom:10px">Switch an app on or off, use ▲ ▼ to move it, and ✕ to remove an app you added. The first 5 apps that are on sit in the dock; the rest show under MORE APPS. Music apps live in the PLAY box.</p><div id="eList"></div>' +
     '<button class="btn alt" id="appsReset" style="margin-top:12px">Reset apps to default</button>';
   sheet("▦ EDIT APPS", html, function (b) {
-    var gSel = "letter", cSel = CUSTOM_COLORS[0];
     function drawList() {
       var L = b.querySelector("#eList"); L.innerHTML = "";
       APPS.forEach(function (a, i) {
@@ -621,19 +658,55 @@ function openEditApps(push) {
         r.innerHTML = iconHTML(a) + '<span class="en">' + esc(a.name) + '</span>' +
           '<button class="sq" data-m="up" aria-label="Move ' + esc(a.name) + ' up"' + (i ? "" : " disabled") + '>▲</button>' +
           '<button class="sq" data-m="dn" aria-label="Move ' + esc(a.name) + ' down"' + (i < APPS.length - 1 ? "" : " disabled") + '>▼</button>' +
-          (a.custom ? '<button class="sq" data-m="del" aria-label="Delete ' + esc(a.name) + '" style="color:#ff4d5e">✕</button>' : "") +
+          (a.custom ? '<button class="sq" data-m="del" aria-label="Remove ' + esc(a.name) + '" style="color:var(--red)">✕</button>' : "") +
           '<button class="sw" role="switch" aria-checked="' + a.on + '" aria-label="Show ' + esc(a.name) + '" data-m="tog"></button>';
         r.addEventListener("click", function (e) {
           var m = e.target.closest("[data-m]"); if (!m) return; m = m.getAttribute("data-m");
           if (m === "tog") a.on = !a.on;
           else if (m === "up" && i) { APPS.splice(i, 1); APPS.splice(i - 1, 0, a); }
           else if (m === "dn" && i < APPS.length - 1) { APPS.splice(i, 1); APPS.splice(i + 1, 0, a); }
-          else if (m === "del") { if (!confirm("Delete " + a.name + "?")) return; APPS.splice(i, 1); }
+          else if (m === "del") { if (!confirm("Remove " + a.name + "?")) return; APPS.splice(i, 1); }
           save("apps", APPS); renderApps(); drawList();
         });
         L.appendChild(r);
       });
     }
+    b.querySelector("#eAdd").addEventListener("click", function () { openAddApp(true); });
+    b.querySelector("#appsReset").addEventListener("click", function () {
+      if (!confirm("Reset apps to the default list? Apps you added will be removed.")) return;
+      APPS = JSON.parse(JSON.stringify(DEFAULT_APPS)); save("apps", APPS); renderApps(); drawList(); toast("Apps reset");
+    });
+    drawList();
+  }, push);
+}
+
+// ----- + add app: popular apps (one tap) + custom name and link -----
+function openAddApp(push) {
+  var html = '<p class="note" style="margin-bottom:10px">Tap an app to add it. It opens the app on your phone (or its website if the app isn\'t installed) and the website on a computer. Remove or move apps in ⚙ EDIT APPS.</p>' +
+    '<div class="pick" id="pkGrid"></div>' +
+    '<h3>CUSTOM APP</h3>' +
+    '<label class="field">NAME<input id="caName" maxlength="14" placeholder="e.g. Instagram" autocomplete="off"></label>' +
+    '<label class="field">LINK OR APP LINK<input id="caUrl" placeholder="e.g. instagram.com or instagram://" autocomplete="off" autocapitalize="off" spellcheck="false"></label>' +
+    '<div class="field">ICON</div><div class="glyphs" id="caG"></div>' +
+    '<div class="field">COLOR</div><div class="colors" id="caC"></div>' +
+    '<button class="btn" id="caAdd">＋ ADD CUSTOM APP</button>';
+  sheet("＋ ADD APP", html, function (b) {
+    var gSel = "letter", cSel = CUSTOM_COLORS[0];
+    function has(c) { return APPS.some(function (a) { return a.id === "p-" + c.id || (a.custom && a.name === c.name); }); }
+    function drawGrid() {
+      b.querySelector("#pkGrid").innerHTML = CATALOG.map(function (c) {
+        var on = has(c);
+        return '<button class="pk' + (on ? " added" : "") + '" data-pk="' + c.id + '" aria-label="' + (on ? "Added: " : "Add ") + esc(c.name) + '"><img src="' + c.icon + '" alt="" loading="lazy"><span>' + esc(c.name) + "</span></button>";
+      }).join("");
+    }
+    b.querySelector("#pkGrid").addEventListener("click", function (e) {
+      var x = e.target.closest("[data-pk]"); if (!x) return;
+      var c = CATALOG.filter(function (q) { return q.id === x.getAttribute("data-pk"); })[0];
+      if (has(c)) { toast(c.name + " is already in your apps"); return; }
+      var a = { id: "p-" + c.id, name: c.name, url: c.url, icon: c.icon, glyph: "letter", letter: c.name, bg: "#111827", on: true, custom: true, pick: true };
+      if (c.web) a.web = c.web;
+      APPS.push(a); save("apps", APPS); renderApps(); drawGrid(); toast(c.name + " added to your apps");
+    });
     function drawPick() {
       b.querySelector("#caG").innerHTML = CUSTOM_GLYPHS.map(function (g) {
         return '<button data-g="' + g + '" class="' + (g === gSel ? "on" : "") + '" aria-label="Icon ' + g + '" style="background:' + cSel + '">' + (g === "letter" ? '<span style="font-weight:800;font-size:18px;color:#fff">' + esc((b.querySelector("#caName").value || "A").charAt(0).toUpperCase()) + "</span>" : '<svg viewBox="0 0 24 24">' + G[g] + "</svg>") + "</button>";
@@ -650,17 +723,30 @@ function openEditApps(push) {
       if (/^javascript:|^data:/i.test(u)) { toast("That link type isn't allowed"); return; }
       if (!/^[a-z][a-z0-9+.-]*:/i.test(u)) u = "https://" + u.replace(/^\/+/, "");
       APPS.push({ id: "c" + Date.now(), name: nm, url: u, glyph: gSel, letter: nm, bg: cSel, on: true, custom: true });
-      save("apps", APPS); renderApps(); drawList();
+      save("apps", APPS); renderApps();
       b.querySelector("#caName").value = ""; b.querySelector("#caUrl").value = ""; drawPick();
       toast(nm + " added to your apps");
     });
-    b.querySelector("#appsReset").addEventListener("click", function () {
-      if (!confirm("Reset apps to the default list? Your own apps will be removed.")) return;
-      APPS = JSON.parse(JSON.stringify(DEFAULT_APPS)); save("apps", APPS); renderApps(); drawList(); toast("Apps reset");
-    });
-    drawList(); drawPick();
+    drawGrid(); drawPick();
   }, push);
 }
+
+// ----- theme picker -----
+function openTheme() {
+  function rowsHTML() {
+    return THEMES.map(function (t) {
+      var v = t.v, on = t.id === THEME.id;
+      return '<button class="thm' + (on ? " on" : "") + '" data-th="' + t.id + '" aria-pressed="' + on + '" style="background:' + v.panel + ';color:' + v.cream + '"><span class="sw4" aria-hidden="true"><i style="background:' + v.void + '"></i><i style="background:' + v.cream + '"></i><i style="background:' + v.amber + '"></i><i style="background:' + v.cyan + '"></i></span><span><b style="color:' + v.amber + '">' + t.name + '</b><small>' + t.sub + '</small></span><span class="ck" style="color:' + v.cyan + '">' + (on ? "✓" : "") + "</span></button>";
+    }).join("");
+  }
+  sheet("◐ THEME", '<p class="note" style="margin-bottom:10px">Tap a theme to switch. It changes right away and is saved on this device.</p><div id="thList">' + rowsHTML() + "</div>", function (b) {
+    b.querySelector("#thList").addEventListener("click", function (e) {
+      var x = e.target.closest("[data-th]"); if (!x) return;
+      applyTheme(x.getAttribute("data-th")); save("theme", THEME.id); b.querySelector("#thList").innerHTML = rowsHTML(); toast("Theme: " + THEME.name);
+    });
+  });
+}
+$$("[data-theme-btn]").forEach(function (b) { b.addEventListener("click", openTheme); });
 
 // ----- weather location -----
 function openCity(push) {
@@ -701,7 +787,7 @@ function openEditCoins(push) {
         var L = b.querySelector("#cList"); L.innerHTML = COINS.length ? "" : '<p class="note">Empty. Search below to add a coin.</p>';
         COINS.forEach(function (c, i) {
           var r = document.createElement("div"); r.className = "erow";
-          r.innerHTML = '<span class="en"><b style="color:#5ce1e6">' + esc(c.sym) + '</b> <small style="color:#6b7896">' + esc(c.name) + '</small></span>' +
+          r.innerHTML = '<span class="en"><b style="color:var(--cyan)">' + esc(c.sym) + '</b> <small style="color:var(--dim)">' + esc(c.name) + '</small></span>' +
             '<button class="sq" data-m="up" aria-label="Move up"' + (i ? "" : " disabled") + '>▲</button><button class="sq" data-m="dn" aria-label="Move down"' + (i < COINS.length - 1 ? "" : " disabled") + '>▼</button><button class="sq" data-m="del" aria-label="Remove ' + esc(c.sym) + '" style="color:#ff4d5e">✕</button>';
           r.addEventListener("click", function (e) {
             var m = e.target.closest("[data-m]"); if (!m) return; m = m.getAttribute("data-m");
@@ -753,7 +839,7 @@ function openSettings(push) {
       });
       b.querySelector("#stReset").addEventListener("click", function () {
         if (!confirm("Reset apps, watchlist, weather city and settings to the defaults?")) return;
-        ["settings", "apps", "coins", "loc", "wx", "mk", "focus", "gps", "place"].forEach(function (k) { try { localStorage.removeItem("zapos." + k); } catch (e) {} });
+        ["settings", "apps", "coins", "loc", "wx", "mk", "focus", "gps", "place", "theme"].forEach(function (k) { try { localStorage.removeItem("zapos." + k); } catch (e) {} });
         location.reload();
       });
       seg();
@@ -773,7 +859,7 @@ function openHelp(push) {
 }
 
 // ---------- boot ----------
-document.body.classList.add("on-home");
+document.body.classList.add("on-home"); applyTheme(THEME.id);
 renderApps(); renderNet(); tick(); setInterval(tick, 1000);
 renderWeather(); renderMarkets(); renderMap();
 window.addEventListener("offline", renderNet);

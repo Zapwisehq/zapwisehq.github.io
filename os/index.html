@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>ZAPWISE//OS</title>
 <meta name="robots" content="noindex,follow">
-<meta name="description" content="ZAPWISE//OS: one full-screen home for your clock, quick AI actions, weather, markets and apps.">
+<meta name="description" content="ZAPWISE//OS: one full-screen home for your clock, weather, markets and your apps.">
 <meta name="theme-color" content="#070814">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -15,7 +15,7 @@
 <link rel="manifest" href="/os/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/os/icon-180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/os/icon-192.png">
-<link rel="stylesheet" href="/os/app.css?v=2.0.1">
+<link rel="stylesheet" href="/os/app.css?v=2.0.2">
 </head>
 <body>
 <div class="grid-bg" aria-hidden="true"></div>
@@ -23,6 +23,7 @@
 
  <header class="top" id="top">
   <div class="brand"><span class="bolt" aria-hidden="true">⚡</span>ZAPWISE<b>//OS</b></div>
+  <button class="h-theme" data-theme-btn aria-label="Change theme" title="Change theme"><i aria-hidden="true"></i>THEME</button>
  </header>
 
  <main>
@@ -32,6 +33,7 @@
    <i class="cb tl" aria-hidden="true"></i><i class="cb tr" aria-hidden="true"></i><i class="cb bl" aria-hidden="true"></i><i class="cb brr" aria-hidden="true"></i>
    <div class="h-hdr">
     <span class="h-tag">ZAPWISE//OS</span><span class="h-sync" id="hSync">SYNC --</span>
+    <button class="h-theme" data-theme-btn aria-label="Change theme" title="Change theme"><i aria-hidden="true"></i>THEME</button>
     <span class="h-net" id="hNet"><i></i><b>ONLINE</b></span>
    </div>
 
@@ -39,16 +41,16 @@
     <div class="h-left">
      <div class="h-clock" id="hClock" aria-live="off">--:--<em id="hAmpm"></em></div>
      <div class="h-date"><span id="hDate">—</span> <span class="h-status" id="hStatus">&gt; SIGNAL CLEAN</span></div>
-     <div class="h-info"><span class="h-ss"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18h16M7 14.5a5 5 0 0 1 10 0" fill="none" stroke="#f0a202" stroke-width="2.2" stroke-linecap="round"/><path d="M12 3.5v4M9.6 6.5L12 9l2.4-2.5" fill="none" stroke="#f0a202" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.5 11l1.8 1M20.5 11l-1.8 1" stroke="#f0a202" stroke-width="2" stroke-linecap="round"/></svg><span id="hSunset">SUNSET --</span></span>
-      <span class="h-wd"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9h11a3 3 0 1 0-3-3M3 13h15a3 3 0 1 1-3 3M3 17h7" fill="none" stroke="#5ce1e6" stroke-width="2" stroke-linecap="round"/></svg><span id="hWind">-- MPH</span></span></div>
+     <div class="h-info"><span class="h-ss"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18h16M7 14.5a5 5 0 0 1 10 0" fill="none" style="stroke:var(--amber)" stroke-width="2.2" stroke-linecap="round"/><path d="M12 3.5v4M9.6 6.5L12 9l2.4-2.5" fill="none" style="stroke:var(--amber)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.5 11l1.8 1M20.5 11l-1.8 1" style="stroke:var(--amber)" stroke-width="2" stroke-linecap="round"/></svg><span id="hSunset">SUNSET --</span></span>
+      <span class="h-wd"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9h11a3 3 0 1 0-3-3M3 13h15a3 3 0 1 1-3 3M3 17h7" fill="none" style="stroke:var(--cyan)" stroke-width="2" stroke-linecap="round"/></svg><span id="hWind">-- MPH</span></span></div>
     </div>
     <div class="h-play" id="hPlay">
-     <div class="hp-top"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 17.5V5.5l10-2v11.5" fill="none" stroke="#5ce1e6" stroke-width="2.2"/><circle cx="6.8" cy="17.6" r="2.7" fill="#5ce1e6"/><circle cx="16.8" cy="15.4" r="2.7" fill="#5ce1e6"/></svg><span><b>PLAY</b><small>Select Music App &gt;</small></span></div>
+     <div class="hp-top"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 17.5V5.5l10-2v11.5" fill="none" style="stroke:var(--cyan)" stroke-width="2.2"/><circle cx="6.8" cy="17.6" r="2.7" style="fill:var(--cyan)"/><circle cx="16.8" cy="15.4" r="2.7" style="fill:var(--cyan)"/></svg><span><b>PLAY</b><small>Select Music App &gt;</small></span></div>
      <div class="hp-row">
       <button data-media="music" aria-label="Open Apple Music"><img src="/os/icons/music.jpg" alt=""></button>
       <button data-media="spotify" aria-label="Open Spotify"><img src="/os/icons/spotify.jpg" alt=""></button>
       <button data-media="ytmusic" aria-label="Open YouTube Music"><img src="/os/icons/ytmusic.jpg" alt=""></button>
-      <button data-media="more" aria-label="More music apps"><svg viewBox="0 0 24 24"><g fill="#6b7896"><circle cx="5.5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18.5" cy="12" r="2"/></g></svg></button>
+      <button data-media="more" aria-label="More music apps"><svg viewBox="0 0 24 24"><g style="fill:var(--dim)"><circle cx="5.5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18.5" cy="12" r="2"/></g></svg></button>
      </div>
     </div>
    </div>
@@ -57,7 +59,7 @@
     <canvas class="fx" id="fxHud" aria-hidden="true"></canvas>
     <span class="hw-in">
      <span class="hw-r1"><span class="hw-ic" id="hwIc" aria-hidden="true">·</span><b id="hwNow">WEATHER LOADING…</b><span class="hw-hl" id="hwHL"></span></span>
-     <span class="hw-r2"><span id="hwFeels">FEELS --</span><span class="hw-rain"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 0 1 18 0z" fill="#ff4fd8"/><path d="M12 12v6.5a2 2 0 0 1-4 0" fill="none" stroke="#ff4fd8" stroke-width="2" stroke-linecap="round"/></svg><span id="hwRain">RAIN --</span></span><span class="hw-upd" id="hwUpd">UPD --</span></span>
+     <span class="hw-r2"><span id="hwFeels">FEELS --</span><span class="hw-rain"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 0 1 18 0z" style="fill:var(--magenta)"/><path d="M12 12v6.5a2 2 0 0 1-4 0" fill="none" style="stroke:var(--magenta)" stroke-width="2" stroke-linecap="round"/></svg><span id="hwRain">RAIN --</span></span><span class="hw-upd" id="hwUpd">UPD --</span></span>
      <span class="hw-hrs" id="hwHrs"></span>
     </span>
    </button>
@@ -79,19 +81,13 @@
    </div>
 
    <div class="h-dock" id="hDock">
-    <button class="d-edit" id="dEdit"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7zm8.4 5l-1.7-.4a6.9 6.9 0 0 1-.6 1.5l1 1.5-1.8 1.8-1.5-1a6.9 6.9 0 0 1-1.5.6l-.4 1.7h-2.6l-.4-1.7a6.9 6.9 0 0 1-1.5-.6l-1.5 1-1.8-1.8 1-1.5a6.9 6.9 0 0 1-.6-1.5l-1.7-.4v-2.6l1.7-.4a6.9 6.9 0 0 1 .6-1.5l-1-1.5 1.8-1.8 1.5 1a6.9 6.9 0 0 1 1.5-.6l.4-1.7h2.6l.4 1.7a6.9 6.9 0 0 1 1.5.6l1.5-1 1.8 1.8-1 1.5c.3.5.5 1 .6 1.5l1.7.4z" fill="#5ce1e6"/></svg>EDIT APPS</button>
+    <button class="d-edit" id="dEdit"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7zm8.4 5l-1.7-.4a6.9 6.9 0 0 1-.6 1.5l1 1.5-1.8 1.8-1.5-1a6.9 6.9 0 0 1-1.5.6l-.4 1.7h-2.6l-.4-1.7a6.9 6.9 0 0 1-1.5-.6l-1.5 1-1.8-1.8 1-1.5a6.9 6.9 0 0 1-.6-1.5l-1.7-.4v-2.6l1.7-.4a6.9 6.9 0 0 1 .6-1.5l-1-1.5 1.8-1.8 1.5 1a6.9 6.9 0 0 1 1.5-.6l.4-1.7h2.6l.4 1.7a6.9 6.9 0 0 1 1.5.6l1.5-1 1.8 1.8-1 1.5c.3.5.5 1 .6 1.5l1.7.4z" style="fill:var(--cyan)"/></svg>EDIT APPS</button>
     <span class="d-tiles" id="dTiles"></span>
    </div>
   </div>
 
   <div class="below">
-   <div class="sec-h"><span id="greet">&gt; HELLO</span><small>SHORTCUTS</small></div>
-   <div class="actions" id="actions">
-    <a class="act" id="actRecap" href="#" data-act="recap"><span class="ai" aria-hidden="true">⚡</span><b>RECAP DAY</b><small>3 questions → recap</small></a>
-    <a class="act" id="actPlan" href="#" data-act="plan"><span class="ai" aria-hidden="true">☀</span><b>PLAN TODAY</b><small>time-blocked plan</small></a>
-    <a class="act" href="#" data-act="build"><span class="ai" aria-hidden="true">✚</span><b>BUILD</b><small>prompt builder</small></a>
-   </div>
-   <div class="apps-head" id="appsHead"><span>MORE APPS</span><small>EDIT THEM WITH ⚙ EDIT APPS ABOVE</small></div>
+   <div class="sec-h" id="appsHead"><span id="greet">&gt; HELLO</span><small>MORE APPS</small></div>
    <div class="apps" id="apps" role="list"></div>
   </div>
  </section>
@@ -148,6 +144,6 @@
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/os/app.js?v=2.0.1"></script>
+<script src="/os/app.js?v=2.0.2"></script>
 </body>
 </html>
