@@ -44,9 +44,16 @@ main{padding:0 var(--padr) 8px var(--pad)}
 
 /* Cards */
 .card{position:relative;border-radius:var(--r);border:1px solid var(--line);background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02)),var(--panel);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 10px 28px rgba(0,0,0,.28);overflow:hidden;text-align:left;color:inherit;width:100%}
-.br:before,.br:after{content:"";position:absolute;width:10px;height:10px;border-color:var(--amber);border-style:solid;opacity:.85;pointer-events:none;z-index:2}
-.br:before{top:8px;left:8px;border-width:2px 0 0 2px}
-.br:after{right:8px;bottom:8px;border-width:0 2px 2px 0}
+.br{--br:var(--amber)}
+.br:before,.br:after{content:"";position:absolute;width:14px;height:14px;border-color:var(--br);border-style:solid;opacity:.95;pointer-events:none;z-index:3}
+.br:before{top:7px;left:7px;border-width:2px 0 0 2px;box-shadow:-1px -1px 0 rgba(240,162,2,.15)}
+.br:after{right:7px;bottom:7px;border-width:0 2px 2px 0}
+/* extra two corners via hud-panel ticks layer */
+.hud-panel{position:relative}
+.hud-panel > .hud-ticks,.card.br.hud-panel::before{ }
+.hud-panel .hud-corner{position:absolute;width:14px;height:14px;border-color:var(--amber);border-style:solid;pointer-events:none;z-index:3;opacity:.95;filter:drop-shadow(0 0 4px rgba(240,162,2,.55))}
+.hud-panel .hud-corner.tr{top:7px;right:7px;border-width:2px 2px 0 0}
+.hud-panel .hud-corner.bl{bottom:7px;left:7px;border-width:0 0 2px 2px}
 .card button,.card a{position:relative;z-index:1}
 
 /* Search */
@@ -379,7 +386,7 @@ html.light .hw-in{background:linear-gradient(180deg,rgba(255,255,255,.2),rgba(24
 @keyframes bootBar{to{width:100%}}
 .boot .boot-msg{font-family:var(--mono);font-size:11px;color:var(--cyan);letter-spacing:.08em;min-height:1.2em}
 .brand .decode{display:inline-block;min-width:1.6em;font-family:var(--mono);font-size:10px;color:var(--cyan);opacity:.7}
-@media (max-width:400px){.brand .decode{display:none}.sync{display:none}}
+@media (max-width:400px){.brand .decode{display:none}.hud-chip.bat{display:none}}
 .mode-chip.on{background:rgba(92,225,230,.18);box-shadow:0 0 16px rgba(92,225,230,.25)}
 .sync{animation:syncGlow 3s ease-in-out infinite}
 @keyframes syncGlow{0%,100%{box-shadow:none}50%{box-shadow:0 0 14px rgba(61,220,151,.25)}}
@@ -802,3 +809,91 @@ html.fx-paused #mapV.map-neon .map-dot{animation-play-state:paused!important}
   linear-gradient(180deg,rgba(5,6,14,.15),rgba(5,6,14,.45));
   mix-blend-mode:screen}
 #mapV.map-neon .place-pin,#mapV.map-neon .map-pin{filter:drop-shadow(0 0 6px rgba(255,140,60,.85))}
+
+/* v3.11 full HUD — amber brackets, cyan ticks, ring clock, status chips, hex orb */
+.hud-top{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px}
+.hud-status{display:inline-flex;align-items:center;gap:6px;flex:1;min-width:0;flex-wrap:wrap}
+.hud-chip{display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:800;letter-spacing:.12em;padding:5px 8px;border-radius:4px;border:1px solid rgba(92,225,230,.35);background:rgba(92,225,230,.06);color:var(--cyan);font-family:var(--mono);white-space:nowrap}
+.hud-chip i{width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:0 0 6px currentColor}
+.hud-chip.sync{color:var(--ok);border-color:rgba(61,220,151,.35);background:rgba(61,220,151,.08)}
+.hud-chip.sync.off{color:var(--bad);border-color:rgba(255,79,120,.35);background:rgba(255,79,120,.08)}
+.hud-chip.gps[data-lock="1"]{color:var(--cyan);border-color:rgba(92,225,230,.55);box-shadow:0 0 10px rgba(92,225,230,.15)}
+.hud-chip.gps[data-lock="0"]{opacity:.55}
+.hud-chip.bat{gap:6px;padding-right:7px}
+.bat-meter{display:inline-flex;gap:2px;align-items:center;height:10px}
+.bat-meter i{width:4px;height:8px;border-radius:1px;background:rgba(92,225,230,.18);transform-origin:bottom center}
+.bat-meter i.on{background:var(--cyan);box-shadow:0 0 4px rgba(92,225,230,.6)}
+.bat-meter.low i.on{background:var(--bad);box-shadow:0 0 4px rgba(255,79,120,.5)}
+.hud-h{font-family:var(--mono);letter-spacing:.14em;font-size:11px;color:var(--cyan)!important}
+.hud-h b,.hud-h span{letter-spacing:.14em}
+
+/* cyan HUD ticks along panel edges */
+.hud-ticks{position:absolute;inset:0;pointer-events:none;z-index:2;border-radius:inherit;overflow:hidden;
+  background:
+    repeating-linear-gradient(90deg,transparent 0 9px,rgba(92,225,230,.22) 9px 10px) top 0 left 18px / calc(100% - 36px) 2px no-repeat,
+    repeating-linear-gradient(90deg,transparent 0 9px,rgba(92,225,230,.18) 9px 10px) bottom 0 left 18px / calc(100% - 36px) 2px no-repeat,
+    repeating-linear-gradient(180deg,transparent 0 9px,rgba(92,225,230,.16) 9px 10px) top 18px left 0 / 2px calc(100% - 36px) no-repeat,
+    repeating-linear-gradient(180deg,transparent 0 9px,rgba(92,225,230,.16) 9px 10px) top 18px right 0 / 2px calc(100% - 36px) no-repeat;
+  opacity:.55}
+.hud-panel.card.br:before{ /* keep TL */ }
+/* inject TR/BL via JS or CSS shadows on .br */
+.card.br.hud-panel{
+  box-shadow:
+    inset 14px 0 0 -12px transparent,
+    0 10px 28px rgba(0,0,0,.28);
+}
+.card.br.hud-panel:after{ /* BR already */ }
+/* paint TR + BL with outline via linear-gradients on the card */
+.card.br.hud-panel{
+  background-image:
+    linear-gradient(var(--amber),var(--amber)),
+    linear-gradient(var(--amber),var(--amber)),
+    linear-gradient(var(--amber),var(--amber)),
+    linear-gradient(var(--amber),var(--amber));
+  background-size:14px 2px, 2px 14px, 14px 2px, 2px 14px;
+  background-position: top 7px right 7px, top 7px right 7px, bottom 7px left 7px, bottom 7px left 7px;
+  background-repeat:no-repeat;
+}
+
+/* ring clock over skyline */
+.clock-wrap{position:relative;z-index:2;display:grid;place-items:center;margin:4px auto 2px;width:min(168px,46vw);aspect-ratio:1;isolation:isolate}
+.clock-ring{position:absolute;inset:0;color:var(--cyan);pointer-events:none;opacity:.9}
+.clock-svg{width:100%;height:100%;filter:drop-shadow(0 0 6px rgba(92,225,230,.35))}
+.clock-ticks line{opacity:.55}
+.clock-ticks line.major{opacity:.95;stroke-width:2}
+.clock-wrap .h-clock{position:relative;z-index:1;font-size:clamp(28px,7.5vw,36px);text-align:center;text-shadow:0 0 18px rgba(92,225,230,.25)}
+.hero .h-date{position:relative;z-index:2;text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:.16em;color:var(--dim)}
+.hero .hero-bot{justify-content:center}
+.hero .greet{font-size:11px}
+
+/* map traffic honesty */
+.map-traffic-note{position:absolute;left:8px;bottom:6px;z-index:4;font-size:8px;letter-spacing:.06em;color:var(--dim);font-family:var(--mono);pointer-events:none;opacity:.75}
+
+/* hex ZAP orb + waveform */
+.zap-fab.zap-orb{width:64px;height:64px;border-radius:50%;padding:0;display:grid;place-items:center;overflow:visible;border:0;background:transparent;box-shadow:none}
+.zap-hex{position:absolute;inset:0;border-radius:50%;
+  background:
+    radial-gradient(circle at 50% 45%,rgba(92,225,230,.25),transparent 55%),
+    conic-gradient(from 0deg,rgba(92,225,230,.55),rgba(255,79,216,.35),rgba(240,162,2,.45),rgba(92,225,230,.55));
+  -webkit-mask:radial-gradient(circle at 50% 50%,transparent 38%,#000 40% 58%,transparent 60%);
+  mask:radial-gradient(circle at 50% 50%,transparent 38%,#000 40% 58%,transparent 60%);
+  animation:zapSpin 14s linear infinite;opacity:.9}
+.zap-fab.zap-orb:before{content:"";position:absolute;inset:6px;border-radius:50%;border:1px solid rgba(92,225,230,.45);box-shadow:0 0 18px rgba(92,225,230,.25),inset 0 0 12px rgba(5,6,14,.65);background:rgba(5,6,14,.82)}
+.zap-wave{position:relative;z-index:2;width:42px;height:16px;color:var(--cyan);opacity:.9;margin-top:-2px}
+.zap-lab{position:relative;z-index:2;font-size:10px;font-weight:900;letter-spacing:.16em;color:var(--cream);margin-top:1px;text-shadow:0 0 8px rgba(92,225,230,.4)}
+.zap-fab.zap-orb:active{transform:scale(.94)}
+@keyframes zapSpin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){
+  .zap-hex,.clock-svg{animation:none!important}
+  .hud-ticks{opacity:.35}
+}
+html.fx-paused .zap-hex{animation-play-state:paused!important}
+
+/* smart mode row */
+.zap-smart{display:flex;flex-direction:column;gap:4px;padding:0 0 8px;border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:8px}
+.zap-smart-lab{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--cream);cursor:pointer}
+.zap-smart-lab input{accent-color:var(--cyan);width:16px;height:16px}
+.zap-smart-note{font-size:10px;line-height:1.35;color:var(--dim)}
+
+/* segmented meters polish */
+.seg button{border-radius:4px;font-family:var(--mono);letter-spacing:.08em;font-size:11px}

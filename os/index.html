@@ -7,10 +7,10 @@
 <meta name="robots" content="noindex,follow">
 <meta name="description" content="ZAPWISE//OS: one full-screen home for your clock, weather, markets, map and apps.">
 <meta name="theme-color" content="#070814">
-<meta name="zapos-version" content="3.10.0">
+<meta name="zapos-version" content="3.11.0">
 <script>
 /* Early update probe — runs even before app.js. Reloads once if /os/version.json is newer. */
-(function(){var V="3.10.0",k="zapos.bootReload";try{if(sessionStorage.getItem(k)===V)return;}catch(e){}
+(function(){var V="3.11.0",k="zapos.bootReload";try{if(sessionStorage.getItem(k)===V)return;}catch(e){}
 fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.ok?r.json():null}).then(function(j){
   if(!j||!j.version||j.version===V)return;
   try{sessionStorage.setItem(k,j.version);sessionStorage.setItem("zapos.pendingToast","Updated to v"+j.version);}catch(e){}
@@ -22,7 +22,7 @@ fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){retu
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ZAP//OS">
 <meta name="format-detection" content="telephone=no">
-<link rel="manifest" href="/os/manifest.webmanifest?v=3.10.0">
+<link rel="manifest" href="/os/manifest.webmanifest?v=3.11.0">
 <link rel="apple-touch-icon" href="/os/icon-180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/os/icon-192.png">
 <link rel="preconnect" href="https://api.open-meteo.com" crossorigin>
@@ -30,7 +30,7 @@ fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){retu
 <link rel="preconnect" href="https://tile.openstreetmap.org" crossorigin>
 <link rel="dns-prefetch" href="https://a.tile.openstreetmap.org">
 <link rel="preconnect" href="https://nominatim.openstreetmap.org" crossorigin>
-<link rel="stylesheet" href="/os/app.css?v=3.10.0">
+<link rel="stylesheet" href="/os/app.css?v=3.11.0">
 <script>try{var z=JSON.parse(localStorage.getItem("zapos.device")||"{}").themeCss;if(z&&z.css){var s=document.createElement("style");s.textContent=z.css;document.head.appendChild(s);if(z.light)document.documentElement.classList.add("light");var m=document.querySelector('meta[name="theme-color"]');if(m&&z.meta)m.setAttribute("content",z.meta);}}catch(e){}</script>
 </head>
 <body class="cyber">
@@ -47,10 +47,14 @@ fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){retu
 <div class="grid-bg" aria-hidden="true"></div>
 <div id="app">
 
- <header class="top sticky" id="top">
-  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver">v3.10.0</span></div>
+ <header class="top sticky hud-top" id="top">
+  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver">v3.11.0</span></div>
+  <div class="hud-status" id="hudStatus" aria-label="System status">
+   <span class="hud-chip sync" id="hSync"><i aria-hidden="true"></i>SYNCED</span>
+   <span class="hud-chip gps" id="hGpsLock" data-lock="0"><i aria-hidden="true"></i>GPS —</span>
+   <span class="hud-chip bat" id="hBat" hidden title="Battery"><span class="bat-meter" id="hBatMeter" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span><span id="hBatPct"></span></span>
+  </div>
   <div class="top-r">
-   <span class="sync" id="hSync"><i aria-hidden="true"></i>SYNCED</span>
    <button class="h-theme" data-theme-btn aria-label="Change theme" title="Change theme"><i aria-hidden="true"></i>THEME</button>
    <button class="avatar" id="menuBtn" aria-label="Open menu" title="Menu">☰</button>
   </div>
@@ -67,21 +71,29 @@ fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){retu
   </form>
 
   <div class="row2">
-   <div class="card br hero" id="heroCard">
+   <div class="card br hero hud-panel" id="heroCard">
+    <div class="hud-ticks" aria-hidden="true"></div>
     <div class="skyline" id="skyline" aria-hidden="true" data-period="night" data-wx="">
      <div class="sky-wash"></div>
      <div class="sky-buildings"></div>
      <div class="sky-wx" id="skyWx"></div>
     </div>
-    <div class="h-clock" id="hClock" aria-live="off">--:--<em id="hAmpm"></em></div>
+    <div class="clock-wrap">
+     <div class="clock-ring" aria-hidden="true">
+      <svg viewBox="0 0 120 120" class="clock-svg"><circle cx="60" cy="60" r="54" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".35"/>
+       <g class="clock-ticks" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"></g>
+      </svg>
+     </div>
+     <div class="h-clock" id="hClock" aria-live="off">--:--<em id="hAmpm"></em></div>
+    </div>
     <div class="h-date" id="hDate">—</div>
     <div class="hero-bot">
-     <span class="greet" id="greet">Good evening</span>
+     <span class="greet" id="greet">Systems online</span>
     </div>
    </div>
 
-   <div class="card br play" id="hPlay">
-    <div class="np-top">
+   <div class="card br play hud-panel" id="hPlay">
+    <div class="np-top hud-h">
      <span>MUSIC</span>
      <button type="button" class="np-live" id="npLive" data-media-act="pick" aria-label="Choose music app">SWITCH ▾</button>
     </div>
@@ -95,7 +107,7 @@ fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){retu
    </div>
   </div>
 
-  <button class="card br h-wx" id="hWx" type="button" aria-label="Show more weather" aria-expanded="false" aria-controls="xpWx">
+  <button class="card br h-wx hud-panel" id="hWx" type="button" aria-label="Show more weather" aria-expanded="false" aria-controls="xpWx">
    <canvas class="fx" id="fxHud" aria-hidden="true"></canvas>
    <span class="hw-in">
     <span class="hw-top">
@@ -136,8 +148,8 @@ fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){retu
    <p class="note" id="xpNote"></p>
   </div>
 
-  <div class="card br h-map" id="hMap">
-   <div class="map-h">
+  <div class="card br h-map hud-panel" id="hMap">
+   <div class="map-h hud-h">
     <b id="hPlace">&gt; LOCATING…</b>
     <span class="map-h-r"><span id="hGps">GPS --</span>
      <button type="button" class="map-open" id="mapOpen" aria-label="Open in Maps">OPEN</button>
@@ -161,17 +173,18 @@ fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){retu
      <button type="button" class="map-tool map-rec" id="mapRec" aria-label="Recenter on me" hidden>◎</button>
     </div>
     <a class="map-attr" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap</a>
+    <span class="map-traffic-note" id="mapTrafficNote" title="No free live jam tiles for most regions">ETA via OSRM · no live jam colors</span>
    </div>
   </div>
-  <div class="places-row card br" id="placesRow">
-   <div class="places-h"><b>PLACES</b><button type="button" class="chip" id="placeAdd" aria-label="Add a saved place">＋ ADD</button></div>
+  <div class="places-row card br hud-panel" id="placesRow">
+   <div class="places-h hud-h"><b>PLACES</b><button type="button" class="chip" id="placeAdd" aria-label="Add a saved place">＋ ADD</button></div>
    <div class="places-scroller" id="placesList" role="list"></div>
    <p class="note places-note" id="placesNote">Save Home, Work, School or a custom spot. Tap a place for directions.</p>
   </div>
 
   <div class="row2">
-   <div class="card br h-mk" id="hMk" role="button" tabindex="0" aria-label="Show markets" aria-expanded="false" aria-controls="xpMk">
-    <div class="mk-h">MARKETS<span class="mk-t" id="hMkT">Updated --</span>
+   <div class="card br h-mk hud-panel" id="hMk" role="button" tabindex="0" aria-label="Show markets" aria-expanded="false" aria-controls="xpMk">
+    <div class="mk-h hud-h">MARKETS<span class="mk-t" id="hMkT">Updated --</span>
      <button type="button" class="hmk-act" id="hMkAct" aria-label="Add or change account">＋</button>
     </div>
     <div class="hmk-body" id="hMkBody">
@@ -271,7 +284,13 @@ fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){retu
  <div class="sheet-b" id="sheetBody"></div>
 </div>
 
-<button type="button" class="zap-fab" id="zapFab" aria-label="Open ZAP assistant" title="ZAP assistant">ZAP</button>
+<button type="button" class="zap-fab zap-orb" id="zapFab" aria-label="Open ZAP assistant" title="ZAP assistant">
+ <span class="zap-hex" aria-hidden="true"></span>
+ <svg class="zap-wave" id="zapWave" viewBox="0 0 64 24" aria-hidden="true" preserveAspectRatio="none">
+  <polyline id="zapWaveLine" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" points="0,12 64,12"/>
+ </svg>
+ <span class="zap-lab">ZAP</span>
+</button>
 <div class="zap-sheet" id="zapSheet" hidden role="dialog" aria-modal="false" aria-labelledby="zapTitle">
  <div class="zap-h">
   <b id="zapTitle">ZAP</b>
@@ -287,8 +306,12 @@ fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){retu
   <button type="submit" class="zap-send" aria-label="Send">GO</button>
  </form>
  <div class="zap-ai" id="zapAiBar" hidden>
+  <div class="zap-smart" id="zapSmartRow">
+   <label class="zap-smart-lab"><input type="checkbox" id="zapSmart" checked> Smart mode</label>
+   <small class="zap-smart-note" id="zapSmartNote">Free-form questions go to Pollinations (no key). Actions stay on-device. Off = offline commands only.</small>
+  </div>
   <div class="zap-ai-row">
-   <small id="zapAiStatus">On-device AI off</small>
+   <small id="zapAiStatus">Private AI off</small>
    <button type="button" class="chip" id="zapAiBtn">Enable private AI (~1 GB)</button>
    <button type="button" class="chip danger" id="zapAiDel" hidden title="Delete cached model">Delete AI</button>
   </div>
@@ -299,8 +322,8 @@ fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){retu
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/os/catalog.js?v=3.10.0"></script>
-<script src="/os/sky.js?v=3.10.0"></script>
-<script src="/os/app.js?v=3.10.0"></script>
+<script src="/os/catalog.js?v=3.11.0"></script>
+<script src="/os/sky.js?v=3.11.0"></script>
+<script src="/os/app.js?v=3.11.0"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-/* ZAPWISE//OS web app v3.10.0 (Nov 5, 2026). Finish t625u: cyberpunk polish + voice assistant commands + real opt-in WebLLM. Static, no build step, no API keys.
+/* ZAPWISE//OS web app v3.11.0 (Nov 5, 2026). Full HUD look; honest traffic (OSRM ETA, no fake jams); Smart mode via Pollinations + private WebLLM. Static, no build step, no API keys.
    Data: Open-Meteo (weather + city search), api-bdc.io (city name for weather), CoinGecko (crypto + PAX Gold),
    mempool.space (BTC balance), ethereum.publicnode.com (ETH balance), solana.publicnode.com (SOL balance),
    OSM standard tiles (keyless, CSS dark filter) + Nominatim reverse geocoding (road + city, cached, re-queried only after moving > 40 m).
@@ -18,7 +18,7 @@
    Store.applyRemote below. */
 (function () {
 "use strict";
-var VERSION = "3.10.0";
+var VERSION = "3.11.0";
 var APP_VERSION = VERSION;
 var STATUS_MSGS = ["> SHORTCUTS ARMED", "> NET SECURE", "> AI LINK STABLE", "> SIGNAL CLEAN", "> APPS READY"];
 var FOCUS_MS = 25 * 60000;
@@ -435,7 +435,96 @@ function renderFocus() {
     Store.setLocal("focus", FOC); renderFocus();
   });
 })();
-function renderNet() { var on = navigator.onLine !== false; var el = $("#hSync"); if (el) { el.classList.toggle("off", !on); if (!on) el.innerHTML = "<i aria-hidden=\"true\"></i>OFFLINE"; } }
+
+function updateGpsLockChip() {
+  var el = $("#hGpsLock"); if (!el) return;
+  var live = !!(GPS && GPS.lat != null && !GEO_OFF);
+  el.setAttribute("data-lock", live ? "1" : "0");
+  el.innerHTML = live ? '<i aria-hidden="true"></i>GPS LOCK' : '<i aria-hidden="true"></i>GPS —';
+}
+function initBatteryHud() {
+  var chip = $("#hBat"); if (!chip || !navigator.getBattery) return;
+  navigator.getBattery().then(function (b) {
+    chip.hidden = false;
+    function paint() {
+      var pct = Math.round((b.level || 0) * 100);
+      var n = Math.max(0, Math.min(5, Math.ceil(pct / 20)));
+      var meter = $("#hBatMeter");
+      if (meter) {
+        meter.classList.toggle("low", pct <= 20 && !b.charging);
+        var cells = meter.querySelectorAll("i");
+        for (var i = 0; i < cells.length; i++) cells[i].classList.toggle("on", i < n);
+      }
+      var lbl = $("#hBatPct"); if (lbl) lbl.textContent = (b.charging ? "⚡" : "") + pct + "%";
+      chip.title = "Battery " + pct + "%" + (b.charging ? " charging" : "");
+    }
+    paint();
+    b.addEventListener("levelchange", paint);
+    b.addEventListener("chargingchange", paint);
+  }).catch(function () {});
+}
+function buildClockTicks() {
+  var g = document.querySelector(".clock-ticks"); if (!g || g.childNodes.length) return;
+  var ns = "http://www.w3.org/2000/svg";
+  for (var i = 0; i < 60; i++) {
+    var major = i % 5 === 0;
+    var ang = (i / 60) * Math.PI * 2 - Math.PI / 2;
+    var r1 = major ? 46 : 50, r2 = 54;
+    var line = document.createElementNS(ns, "line");
+    line.setAttribute("x1", (60 + Math.cos(ang) * r1).toFixed(2));
+    line.setAttribute("y1", (60 + Math.sin(ang) * r1).toFixed(2));
+    line.setAttribute("x2", (60 + Math.cos(ang) * r2).toFixed(2));
+    line.setAttribute("y2", (60 + Math.sin(ang) * r2).toFixed(2));
+    if (major) line.setAttribute("class", "major");
+    g.appendChild(line);
+  }
+}
+function ensureHudTicks() {
+  $$(".card.br.hud-panel").forEach(function (card) {
+    var kids = card.children;
+    var has = false;
+    for (var i = 0; i < kids.length; i++) { if (kids[i].classList && kids[i].classList.contains("hud-ticks")) { has = true; break; } }
+    if (!has) {
+      var d = document.createElement("div");
+      d.className = "hud-ticks";
+      d.setAttribute("aria-hidden", "true");
+      card.insertBefore(d, card.firstChild);
+    }
+  });
+}
+function startZapWave() {
+  var poly = $("#zapWaveLine"); if (!poly || poly._zapWave) return;
+  poly._zapWave = true;
+  var pts = [], N = 32;
+  for (var i = 0; i < N; i++) pts.push(0);
+  var t0 = 0;
+  function frame(now) {
+    if (document.hidden || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches)) {
+      requestAnimationFrame(frame); return;
+    }
+    t0 = now * 0.004;
+    var listening = !!_zapListening;
+    var s = "";
+    for (var i = 0; i < N; i++) {
+      var x = (i / (N - 1)) * 64;
+      var amp = listening ? 8 : 3.2;
+      var y = 12 + Math.sin(t0 + i * 0.55) * amp * (0.4 + 0.6 * Math.sin(t0 * 0.7 + i * 0.2));
+      s += (i ? " " : "") + x.toFixed(1) + "," + y.toFixed(1);
+    }
+    poly.setAttribute("points", s);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+function renderNet() {
+  var on = navigator.onLine !== false;
+  var el = $("#hSync");
+  if (el) {
+    el.classList.toggle("off", !on);
+    el.innerHTML = on ? "<i aria-hidden=\"true\"></i>SYNCED" : "<i aria-hidden=\"true\"></i>OFFLINE";
+  }
+}
 
 // NOW PLAYING hub: honest music-app launcher (no fake track audio in a browser)
 var _savedMedia = Store.getLocal("mediaKey", null);
@@ -1469,6 +1558,7 @@ function setGPS(lat, lon, meta) {
   };
   Store.setLocal("gps", { lat: GPS.lat, lon: GPS.lon, at: GPS.at, acc: GPS.acc });
   GEO_OFF = false;
+  try { updateGpsLockChip(); } catch (e) {}
   renderMap(true);
   updateStamps();
   geocode();
@@ -3218,7 +3308,7 @@ function runSearch(q) {
   });
   document.addEventListener("click", function (e) { if (!f.contains(e.target)) hideDrop(); });
 })();
-window.ZAPOS = { store: Store, version: VERSION, catalog: CATALOG.length, accounts: ACCOUNT_CATALOG.length, openDirectionsTo: openDirectionsTo, placeLL: placeLL, showMapPlaceCard: showMapPlaceCard, loadAccounts: loadAccounts, loadPlaces: loadPlaces, setGPS: function (g) { GPS = g; Store.setLocal("gps", GPS); }, mapFollow: function (on) { MAP.follow = !!on; }, updateSkyline: updateSkyline, setUiSounds: setUiSounds, sunPeriodNow: sunPeriodNow }; // for the stage 2 sync add-on + QA
+window.ZAPOS = { store: Store, version: VERSION, catalog: CATALOG.length, accounts: ACCOUNT_CATALOG.length, openDirectionsTo: openDirectionsTo, placeLL: placeLL, showMapPlaceCard: showMapPlaceCard, loadAccounts: loadAccounts, loadPlaces: loadPlaces, setGPS: function (g) { GPS = g; Store.setLocal("gps", GPS); try { updateGpsLockChip(); } catch (e) {} }, mapFollow: function (on) { MAP.follow = !!on; }, updateSkyline: updateSkyline, setUiSounds: setUiSounds, sunPeriodNow: sunPeriodNow }; // for the stage 2 sync add-on + QA
 
 // ========== v3.1 concept chrome: menu, today ==========
 var menuBtn = $("#menuBtn"); if (menuBtn) menuBtn.addEventListener("click", openMenu);
@@ -3374,7 +3464,7 @@ function placeNeonRing(v, dx, dy) {
       try { sessionStorage.setItem("zapos.skipBoot", day); } catch (e) {}
     }
   }
-  try { bindChargeUp(); updateSkyline(); } catch (e) {}
+  try { bindChargeUp(); updateSkyline(); buildClockTicks(); ensureHudTicks(); initBatteryHud(); updateGpsLockChip(); startZapWave(); } catch (e) {}
   // decode / typing effect on brand
   var dec = $("#brandDecode");
   if (dec && !RM) {
@@ -3549,7 +3639,8 @@ function scheduleUpdateChecks() {
 var ZAP_LLM = { engine: null, loading: false, modelId: "Qwen2.5-0.5B-Instruct-q4f16_1-MLC", progress: 0 };
 function loadAssistantPrefs() {
   var a = Store.get("assistant", null);
-  if (!a || typeof a !== "object") a = { enabled: true, webllm: false, suggest: true, voiceOut: false, modelCached: false };
+  if (!a || typeof a !== "object") a = { enabled: true, webllm: false, suggest: true, voiceOut: false, modelCached: false, smartMode: true };
+  if (a.smartMode == null) a.smartMode = true;
   return a;
 }
 function saveAssistantPrefs(a) { Store.set("assistant", a); }
@@ -3787,7 +3878,7 @@ function routeZapIntent(raw) {
   }
   return { skill: "unknown", text: "Not sure. Try help, or enable private AI on a WebGPU device." };
 }
-var HELP_TEXT = "Commands: call <favorite>, directions to <place>, add holding, switch theme, search web <q>, time, date, weather, net worth, open <app>, focus, help. All on-device.";
+var HELP_TEXT = "Commands (on-device): call <favorite>, directions to <place>, add holding, switch theme, search web <q>, time, date, weather, net worth, open <app>, focus, help. Smart mode answers free-form via Pollinations (toggle in ZAP). Private AI stays on-device.";
 
 function refreshZapAiBar() {
   var bar = $("#zapAiBar"); if (!bar) return;
@@ -3886,6 +3977,32 @@ async function zapAskLLM(q) {
   return String(text || "").trim() || "Got it.";
 }
 
+async function zapAskSmart(q) {
+  // Pollinations Classic Text API — free, no key, CORS open. Rate-limited ~30s/IP.
+  var sys = "You are ZAP for ZAPWISE//OS. Reply in under 50 words, plain text, helpful. No markdown. Do not invent account balances.";
+  var url = "https://text.pollinations.ai/" + encodeURIComponent(String(q).slice(0, 320)) +
+    "?system=" + encodeURIComponent(sys) + "&temperature=0.5";
+  var ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
+  var to = setTimeout(function () { try { ctrl && ctrl.abort(); } catch (e) {} }, 20000);
+  try {
+    var res = await fetch(url, { method: "GET", signal: ctrl ? ctrl.signal : undefined });
+    clearTimeout(to);
+    if (!res.ok) {
+      var retry = res.headers && res.headers.get && res.headers.get("Retry-After");
+      throw new Error(res.status === 402 || res.status === 429
+        ? ("Smart mode rate-limited" + (retry ? (" — retry in " + retry + "s") : ". Try again shortly."))
+        : ("Smart mode HTTP " + res.status));
+    }
+    var txt = (await res.text()).trim();
+    // strip accidental HTML wrappers
+    if (txt.charAt(0) === "<") txt = txt.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+    return txt.slice(0, 600) || "No answer.";
+  } catch (e) {
+    clearTimeout(to);
+    throw e;
+  }
+}
+
 function zapHandle(raw) {
   var q = String(raw || "").trim();
   if (!q) return;
@@ -3898,9 +4015,11 @@ function zapHandle(raw) {
     return;
   }
   var a = loadAssistantPrefs();
-  if (a.webllm && hasWebGPU()) {
+  // Private on-device model first when enabled + ready
+  if (a.webllm && hasWebGPU() && (ZAP_LLM.engine || a.modelCached)) {
     zapAppend("bot", "Thinking on-device…");
-    zapAskLLM(q).then(function (txt) {
+    var p = ZAP_LLM.engine ? zapAskLLM(q) : loadWebLLMEngine().then(function () { return zapAskLLM(q); });
+    p.then(function (txt) {
       var log = $("#zapLog");
       if (log && log.lastChild && log.lastChild.classList.contains("bot")) log.removeChild(log.lastChild);
       zapAppend("bot", txt);
@@ -3908,7 +4027,38 @@ function zapHandle(raw) {
     }).catch(function (err) {
       var log = $("#zapLog");
       if (log && log.lastChild && log.lastChild.classList.contains("bot")) log.removeChild(log.lastChild);
-      zapAppend("bot", "On-device AI failed (" + (err && err.message ? err.message : "error") + "). Using commands only — try help.");
+      if (a.smartMode) {
+        zapAppend("bot", "Private AI failed — trying Smart mode…");
+        zapAskSmart(q).then(function (txt) {
+          var log2 = $("#zapLog");
+          if (log2 && log2.lastChild && log2.lastChild.classList.contains("bot")) log2.removeChild(log2.lastChild);
+          zapAppend("bot", txt);
+          updateZapBadge();
+        }).catch(function (e2) {
+          var log3 = $("#zapLog");
+          if (log3 && log3.lastChild && log3.lastChild.classList.contains("bot")) log3.removeChild(log3.lastChild);
+          zapAppend("bot", "Couldn't reach AI. " + (e2 && e2.message ? e2.message : "Try help for offline commands."));
+          updateZapBadge();
+        });
+      } else {
+        zapAppend("bot", "On-device AI failed. Try help for offline commands.");
+        updateZapBadge();
+      }
+    });
+    return;
+  }
+  // Default Smart mode (Pollinations) for free-form help
+  if (a.smartMode) {
+    zapAppend("bot", "Smart mode…");
+    zapAskSmart(q).then(function (txt) {
+      var log = $("#zapLog");
+      if (log && log.lastChild && log.lastChild.classList.contains("bot")) log.removeChild(log.lastChild);
+      zapAppend("bot", txt);
+      updateZapBadge();
+    }).catch(function (err) {
+      var log = $("#zapLog");
+      if (log && log.lastChild && log.lastChild.classList.contains("bot")) log.removeChild(log.lastChild);
+      zapAppend("bot", (err && err.message ? err.message : "Smart mode unavailable.") + " Offline commands still work — try help.");
       updateZapBadge();
     });
     return;
@@ -3959,6 +4109,16 @@ function zapHandle(raw) {
     if (!confirm("Delete the on-device AI model from this device?")) return;
     deleteWebLLMCache();
   });
+  var smart = $("#zapSmart");
+  if (smart) {
+    try { smart.checked = !!loadAssistantPrefs().smartMode; } catch (e) { smart.checked = true; }
+    smart.addEventListener("change", function () {
+      var a = loadAssistantPrefs();
+      a.smartMode = !!smart.checked;
+      saveAssistantPrefs(a);
+      toast(a.smartMode ? "Smart mode on — free-form goes to Pollinations" : "Smart mode off — offline commands only");
+    });
+  }
   try {
     var pref = loadAssistantPrefs();
     if (mute) { mute.textContent = pref.voiceOut ? "🔊" : "🔇"; mute.setAttribute("aria-pressed", pref.voiceOut ? "true" : "false"); }
