@@ -1,7 +1,7 @@
-/* ZAPWISE//OS web app v4.11.1 (Nov 5, 2026). Premium card holograms (foil/sweep/glow/tilt). Live TomTom traffic. Bank Plaid Worker client. Motion toggle. No tabs. Voice only from ZAP AI. Source: edit app.js → build.sh → app.min.js. */
+/* ZAPWISE//OS web app v4.12.1 (Nov 5, 2026). Premium holograms (foil/sweep/glow/tilt). Plaid bank OAuth return. Motion toggle. No tabs. Source: edit app.js → build.sh → app.min.js. */
 (function () {
 "use strict";
-var VERSION = '4.11.1';
+var VERSION = '4.12.1';
 var APP_VERSION = VERSION;
 
 // v4.5: default Lite on coarse/mobile unless user already chose

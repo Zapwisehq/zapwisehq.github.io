@@ -1,6 +1,6 @@
 {
-  "version": "4.12.0",
+  "version": "4.12.1",
   "built": "2026-11-05",
   "channel": "stable",
-  "notes": "v4.12.0: Site+OS funnel \u2014 product page, demo mode, access client (gate OFF). Keeps premium holograms + Plaid bank."
+  "notes": "v4.12.1: Plaid OAuth return fix (redirect_uri + receivedRedirectUri, Safari tip for in-app browsers). Link bank opens /os/link/."
 }
