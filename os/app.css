@@ -1674,35 +1674,164 @@ html.motion-on .tour-spot{transition:top .25s ease,left .25s ease,width .25s eas
 .map-attr a:hover{color:rgba(244,239,228,.85)}
 .h-map.map-fs .map-traf-ui{z-index:12;top:max(8px,env(safe-area-inset-top))}
 
-/* ===== v4.9.7: soft hologram sweep on every card (Motion + reduced-motion safe) ===== */
+/* ===== v4.9.8 LAYOUT: fewer boxes — Today / Navigate / Money groups ===== */
+.panel-group{display:flex;flex-direction:column;gap:0;padding:12px 12px 14px;margin:0;position:relative;overflow:hidden}
+.panel-h{display:flex;align-items:center;gap:8px;margin:0 0 10px;position:relative;z-index:2}
+.panel-h b,.panel-sec-lab,.places-h b,.mk-h,.fz-h,.sec-h{
+  font:700 11px/1 "Rajdhani",var(--mono);letter-spacing:.16em;color:#ff2a6d;text-transform:uppercase
+}
+.panel-h b{color:#05d9e8}
+.panel-h.money-h{justify-content:space-between}
+.panel-h .bk-eye{
+  margin-left:auto;flex:none;width:36px;height:36px;border-radius:10px;
+  border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.05);
+  color:#f4efe4;font-size:16px;cursor:pointer;display:grid;place-items:center
+}
+.panel-h .bk-eye[aria-pressed="true"]{border-color:rgba(255,42,109,.55);color:#ff2aa3;opacity:.85}
+.panel-div{height:1px;margin:10px 0;background:linear-gradient(90deg,transparent,rgba(5,217,232,.35),rgba(255,42,109,.35),transparent);opacity:.7}
+.panel-sec-lab{margin:2px 0 8px;padding:0 2px;position:relative;z-index:2}
+.panel-inner{position:relative;z-index:1;margin:0!important;padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important}
+.panel-inner::before,.panel-inner::after{display:none!important}
+.panel-today .hero-row{margin:0 0 2px;gap:10px}
+.panel-today .hero,.panel-today .play{min-width:0}
+.panel-today .today{display:grid;grid-template-columns:auto 1fr 1fr;gap:8px;align-items:stretch;padding:4px 0 0!important}
+.panel-today .td-item{min-width:0}
+.panel-nav .h-map{margin:0!important}
+.panel-nav .map-v{margin:0;border-radius:14px;overflow:hidden}
+.panel-nav .places-row{padding:4px 0 0!important}
+.panel-nav .places-h{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.panel-money .mk-ticker{margin:0!important;padding:8px 0!important;border:0!important;border-radius:0!important;background:transparent!important}
+.panel-money .h-bk,.panel-money .h-mk{padding:0!important}
+.panel-money #hMk{cursor:pointer}
+.panel-money.bk-private .hmk-total,
+.panel-money.bk-private .bk-bal,
+.panel-money.bk-private .bk-last4-digits{letter-spacing:.08em}
+.panel-tools{align-items:flex-start;margin:0}
+.panel-tools > .card{width:100%;min-width:0}
+#mFocus.fz{max-height:none;align-self:flex-start}
+/* strip old bank-card chrome when nested */
+#panelMoney #hBk.h-bk{
+  border:0!important;border-radius:0!important;background:transparent!important;
+  box-shadow:none!important;margin:0!important;padding:0!important
+}
+#panelMoney #hBk.h-bk::after{display:none!important}
+#mkTicker.mk-ticker{border:0!important;background:transparent!important;box-shadow:none!important}
+
+/* Traffic chip + legend: one compact row */
+.map-traf-ui{
+  display:flex!important;flex-direction:row!important;align-items:center;flex-wrap:wrap;
+  gap:6px;padding:6px 8px;left:8px;right:auto;top:8px;max-width:calc(100% - 56px)
+}
+.map-traf-leg{display:inline-flex!important;flex-direction:row;gap:6px;align-items:center;
+  padding:3px 6px;background:rgba(7,8,20,.72);border:1px solid rgba(255,255,255,.12);border-radius:8px;
+  font-size:9px;font-weight:700;letter-spacing:.04em;color:rgba(244,239,228,.85)
+}
+
+/* Home pin label above the pin so it never covers the GPS dot */
+.map-place-pin{
+  flex-direction:column-reverse!important;
+  transform:translate(-50%,calc(-100% - 10px))!important;
+  gap:4px
+}
+.map-place-pin .pin-lab{margin-top:0;margin-bottom:0;order:0}
+
+/* Safari bottom bar clearance */
+#app{padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))!important}
+.os-page{padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))!important}
+
+/* ===== v4.9.8: LIVE hologram — !important to beat STILL MODE animation:none ===== */
 .card-holo{display:none}
-html.motion-on .card.br,
-html.motion-on .places-row.card,
-html.motion-on .mk-ticker.card{
+html.motion-on .card.br{
   position:relative;
   overflow:hidden;
   contain:paint;
   isolation:isolate;
 }
 html.motion-on .card-holo{
-  display:block;position:absolute;inset:0;z-index:-1;pointer-events:none;
-  background:linear-gradient(135deg,rgba(92,225,230,.07),transparent 45%,rgba(255,42,163,.045));
+  display:block!important;position:absolute;inset:0;z-index:0;pointer-events:none;
   overflow:hidden;contain:paint;
 }
-html.motion-on .card-holo::after{
-  content:"";position:absolute;inset:-25% -55%;
-  background:linear-gradient(105deg,transparent 42%,rgba(92,225,230,.12) 50%,rgba(255,255,255,.06) 52%,transparent 60%);
-  animation:hcSweep 8.8s linear infinite;
-  will-change:transform;pointer-events:none;
+html.motion-on .card-holo .card-holo-tint{
+  position:absolute;inset:-8%;
+  background:linear-gradient(125deg,
+    rgba(92,225,230,.16) 0%, transparent 32%,
+    rgba(255,42,163,.12) 58%, transparent 78%,
+    rgba(92,225,230,.1) 100%);
+  background-size:220% 220%;
+  background-position:0% 40%;
+  opacity:.55;
+  pointer-events:none;
+}
+html.motion-on .card-holo .card-holo-sweep{
+  position:absolute;top:-30%;bottom:-30%;left:-40%;width:42%;
+  background:linear-gradient(100deg,
+    transparent 0%,
+    rgba(92,225,230,.22) 32%,
+    rgba(255,255,255,.14) 48%,
+    rgba(255,42,163,.2) 64%,
+    transparent 100%);
+  opacity:0;
+  pointer-events:none;
+  transform:translate3d(-120%,0,0) skewX(-12deg);
+}
+/* content above hologram layer */
+html.motion-on .card.br > *:not(.card-holo){position:relative;z-index:1}
+html.motion-on .card.br.is-live > .card-holo .card-holo-tint{
+  animation:holoTintDrift 8.5s ease-in-out infinite !important;
+  animation-delay:var(--holo-delay,0s) !important;
+  will-change:background-position,opacity !important;
+}
+html.motion-on .card.br.is-live > .card-holo .card-holo-sweep{
+  animation:holoSweepDiag 5.4s linear infinite !important;
+  animation-delay:var(--holo-delay,0s) !important;
+  will-change:transform,opacity !important;
+}
+html.motion-on .card.br.is-live::before,
+html.motion-on .card.br.is-live::after{
+  animation:holoBracketBreath 4.4s ease-in-out infinite !important;
+  animation-delay:var(--holo-delay,0s) !important;
+}
+@keyframes holoSweepDiag{
+  0%{transform:translate3d(-130%,8%,0) skewX(-12deg);opacity:0}
+  8%{opacity:.85}
+  50%{transform:translate3d(160%,-6%,0) skewX(-12deg);opacity:.9}
+  92%{transform:translate3d(210%,-10%,0) skewX(-12deg);opacity:0}
+  100%{transform:translate3d(-130%,8%,0) skewX(-12deg);opacity:0}
+}
+@keyframes holoTintDrift{
+  0%,100%{background-position:0% 40%;opacity:.45}
+  35%{background-position:70% 20%;opacity:.7}
+  65%{background-position:30% 80%;opacity:.55}
+}
+@keyframes holoBracketBreath{
+  0%,100%{opacity:.55;filter:drop-shadow(0 0 2px rgba(240,162,2,.35))}
+  50%{opacity:1;filter:drop-shadow(0 0 7px rgba(92,225,230,.65))}
 }
 @media (prefers-reduced-motion:reduce){
-  .card-holo,.card-holo::after{animation:none!important;opacity:0!important;display:none!important}
+  .card-holo,.card-holo .card-holo-tint,.card-holo .card-holo-sweep{animation:none!important;opacity:0!important;display:none!important}
+  html.motion-on .card.br.is-live::before,
+  html.motion-on .card.br.is-live::after{animation:none!important}
 }
 
-html.motion-on #hBk.h-bk::after{z-index:-1}
-html.motion-on #hBk > .card-holo{z-index:0}
-/* weather canvas stays above soft tint */
-html.motion-on .h-wx > .card-holo{z-index:0}
-html.motion-on .h-wx .fx{z-index:0}
-html.motion-on .h-wx .hw-in{z-index:1;position:relative}
+html.motion-on #hWx > .card-holo{z-index:0}
+html.motion-on #hWx .fx{z-index:0}
+html.motion-on #hWx .hw-in{z-index:1;position:relative}
+html.motion-on .panel-group > .panel-h,
+html.motion-on .panel-group > .panel-div,
+html.motion-on .panel-group > .panel-sec-lab,
+html.motion-on .panel-group > .panel-inner{z-index:2}
+
+/* quick Update balance sheet */
+.bk-upd-bank{font-size:13px;font-weight:700;color:var(--mut,#9aa3b2);margin:0 0 10px;letter-spacing:.02em}
+.bk-bal-input,#bkBalQuick{
+  font-size:28px!important;font-weight:900!important;letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums;text-align:center;
+  color:#f4f6fb!important;background:#0b1020!important;
+  border:1px solid rgba(92,225,230,.5)!important;caret-color:#05d9e8;
+  padding:14px 12px!important;min-height:56px;
+}
+.bk-upd-actions{display:flex;gap:10px;margin-top:14px}
+.bk-upd-actions .btn{flex:1;margin:0!important}
+#hBk .bk-bal[data-bk-bal]{cursor:pointer;-webkit-tap-highlight-color:transparent}
+#hBk .bk-bal[data-bk-bal]:active{opacity:.75}
 

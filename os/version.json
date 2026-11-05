@@ -1,6 +1,6 @@
 {
-  "version": "4.9.7",
+  "version": "4.9.8",
   "built": "2026-11-05",
   "channel": "stable",
-  "notes": "v4.9.7: Live TomTom traffic colors on the map (toggle + legend, no client API key). Bank cards redesigned like a real bank app (full-width account rows, As of time, no bare dashes). Soft hologram sweep on every card (Motion-aware). ETA stays an honest estimate."
+  "notes": "v4.9.8: Layout cleanup — Today (clock+music+calendar), Navigate (map+places), Money (ticker+bank+markets) as grouped panels. Live hologram motion (pauses offscreen). Quick Update balance sheet. Weather sun/moon ghosts removed. Traffic chip+legend compact. Safari safe-area bottom padding. Still no Plaid."
 }

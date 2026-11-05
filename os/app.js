@@ -1,7 +1,7 @@
-/* ZAPWISE//OS web app v4.9.7 (Nov 5, 2026). Live TomTom traffic colors on the map (proxy tiles, no client API key). Bank bar under ticker (v4.9.6). Back closes one layer per press. Help tour, marquee ticker, hologram motion, compass cone, map tile cache + backup server, search cache. Source: edit app.js, run os/build.sh → app.min.js. No tabs. Voice only from ZAP AI. */
+/* ZAPWISE//OS web app v4.9.8 (Nov 5, 2026). Live TomTom traffic colors on the map (proxy tiles, no client API key). Bank bar under ticker (v4.9.6). Back closes one layer per press. Help tour, marquee ticker, hologram motion, compass cone, map tile cache + backup server, search cache. Source: edit app.js, run os/build.sh → app.min.js. No tabs. Voice only from ZAP AI. */
 (function () {
 "use strict";
-var VERSION = "4.9.5";
+var VERSION = "4.9.8";
 var APP_VERSION = VERSION;
 
 // v4.5: default Lite on coarse/mobile unless user already chose
@@ -1079,6 +1079,7 @@ function loop() {
 function fxPaintSoon() { clearTimeout(_fxPaintT); _fxPaintT = setTimeout(loop, 40); }
 window.addEventListener("resize", fxPaintSoon);
 var fxHud = new FX($("#fxHud")), fxMain = new FX($("#fxMain"));
+try { fxHud._noBodies = true; } catch (eNB) {}
 function fxKind(code, day) {
   if (code === 0 || code === 1) return day ? "sun" : "night";
   if (code <= 3) return "cloud";
@@ -1163,6 +1164,9 @@ function paintCelestialSky(fx, c, W, H, t, kind) {
       c.fillText(lb.name, lb.x, Math.min(lb.y, labelMaxY - 2));
     });
   }
+
+  // Weather HUD: no sun/moon bodies (they overlapped temperature text). Soft wash only.
+  if (fx && fx._noBodies) return;
 
   // ONE sun
   if (sky.sun && sky.sun.on && sun.alt > -3) {
@@ -2242,13 +2246,25 @@ function applyMotion() {
   try { document.documentElement.classList.toggle("motion-on", motionWanted()); } catch (e) {}
   try { ensureCardHolos(); } catch (eH) {}
 }
+var HOLO_IO = null;
 function ensureCardHolos() {
-  var nodes = document.querySelectorAll(".card.br, .places-row.card, .mk-ticker.card");
+  var sel = ".card.br, .panel-group.card";
+  var nodes = document.querySelectorAll(sel);
   if (!motionWanted()) {
+    if (HOLO_IO) { try { HOLO_IO.disconnect(); } catch (e) {} HOLO_IO = null; }
     Array.prototype.forEach.call(nodes, function (el) {
-      var h = el.querySelector(".card-holo"); if (h) try { h.remove(); } catch (e) {}
+      el.classList.remove("is-live");
+      var h = null; for (var c = el.firstChild; c; c = c.nextSibling) { if (c.nodeType === 1 && c.classList && c.classList.contains("card-holo")) { h = c; break; } } if (h) try { h.remove(); } catch (e2) {}
     });
     return;
+  }
+  if (!HOLO_IO && typeof IntersectionObserver === "function") {
+    HOLO_IO = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (en.isIntersecting) en.target.classList.add("is-live");
+        else en.target.classList.remove("is-live");
+      });
+    }, { root: null, rootMargin: "40px 0px", threshold: 0.08 });
   }
   Array.prototype.forEach.call(nodes, function (el, i) {
     var h = null;
@@ -2259,9 +2275,16 @@ function ensureCardHolos() {
       h = document.createElement("i");
       h.className = "card-holo";
       h.setAttribute("aria-hidden", "true");
+      h.innerHTML = '<i class="card-holo-tint"></i><i class="card-holo-sweep"></i>';
       el.insertBefore(h, el.firstChild);
+    } else if (!h.querySelector(".card-holo-sweep")) {
+      h.innerHTML = '<i class="card-holo-tint"></i><i class="card-holo-sweep"></i>';
     }
-    h.style.animationDelay = (-(i % 10) * 0.9) + "s";
+    var delay = (-(i % 11) * 0.55) + "s";
+    el.style.setProperty("--holo-delay", delay);
+    h.style.setProperty("--holo-delay", delay);
+    if (HOLO_IO) { try { HOLO_IO.observe(el); } catch (e3) {} }
+    else el.classList.add("is-live");
   });
 }
 applyMotion();
@@ -7033,7 +7056,7 @@ try {
   window.ZAPOS.logCall = logCall;
   window.ZAPOS.zapHandle = zapHandle;
   /* v4.9.4: read-only QA hooks */
-  window.ZAPOS.qa = { map: function () { return { follow: MAP.follow, offX: MAP.offX, offY: MAP.offY, z: MAP.z, gps: GPS ? { lat: GPS.lat, lon: GPS.lon } : null, geoOff: GEO_OFF, traffic: trafficWanted(), trafficDead: !!TRAFFIC.dead, trafTiles: (document.getElementById("mapTraffic") && !document.getElementById("mapTraffic").hidden) ? document.querySelectorAll("#mapTraffic img").length : 0 }; }, savePlaces: savePlaces, refreshPlaceEtas: refreshPlaceEtas, renderMap: renderMap, loadPlaces: loadPlaces, setTraffic: setTrafficWanted, trafficWanted: trafficWanted };
+  window.ZAPOS.qa = { map: function () { return { follow: MAP.follow, offX: MAP.offX, offY: MAP.offY, z: MAP.z, gps: GPS ? { lat: GPS.lat, lon: GPS.lon } : null, geoOff: GEO_OFF, traffic: trafficWanted(), trafficDead: !!TRAFFIC.dead, trafTiles: (document.getElementById("mapTraffic") && !document.getElementById("mapTraffic").hidden) ? document.querySelectorAll("#mapTraffic img").length : 0 , ensureCardHolos: ensureCardHolos, openUpdateBalance: openUpdateBalance, bankAsOfStr: bankAsOfStr }; }, savePlaces: savePlaces, refreshPlaceEtas: refreshPlaceEtas, renderMap: renderMap, loadPlaces: loadPlaces, setTraffic: setTrafficWanted, trafficWanted: trafficWanted };
 } catch (e) {}
 
 
@@ -7053,10 +7076,26 @@ function bankDateStr(t) {
   if (!t) return "";
   try { return new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric" }); } catch (e) { return ""; }
 }
+function bankRelAgo(t) {
+  if (!t) return "";
+  var s = Math.max(0, Math.floor((Date.now() - (+t)) / 1000));
+  if (s < 45) return "just now";
+  if (s < 3600) {
+    var m = Math.max(1, Math.floor(s / 60));
+    return m + " min ago";
+  }
+  if (s < 86400) {
+    var h = Math.floor(s / 3600);
+    return h + " hr" + (h === 1 ? "" : "s") + " ago";
+  }
+  return bankDateStr(t);
+}
 function bankAsOfStr(t) {
   if (!t) return "";
   try {
-    return "As of " + new Date(t).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+    var clock = new Date(t).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+    var rel = bankRelAgo(t);
+    return "As of " + clock + (rel ? (" · " + rel) : "");
   } catch (e) { return ""; }
 }
 function bankAcctLabel(a) {
@@ -7081,6 +7120,7 @@ function bankPrivacyOn() {
 function setBankPrivacy(on) {
   try { Store.setLocal("bankPrivacy", !!on); } catch (e) {}
   var host = $("#hBk"); if (host) host.classList.toggle("bk-private", !!on);
+  var pm = $("#panelMoney"); if (pm) pm.classList.toggle("bk-private", !!on);
   var eye = $("#hBkEye");
   if (eye) {
     eye.setAttribute("aria-pressed", on ? "true" : "false");
@@ -7229,6 +7269,44 @@ function openAddBank(c) {
       });
     });
 }
+function openUpdateBalance(a) {
+  if (!a) return;
+  var cur = (a.bal != null && !isNaN(a.bal)) ? String(a.bal) : "";
+  var openLab = "Open " + (a.name || "bank");
+  sheet("UPDATE BALANCE",
+    '<p class="bk-upd-bank">' + esc(a.name || "Bank") + " · " + esc(bankAcctLabel(a)) + "</p>" +
+    '<label class="field">BALANCE<input id="bkBalQuick" class="bk-bal-input" type="text" inputmode="decimal" autocomplete="off" autocorrect="off" spellcheck="false" data-form-type="other" data-lpignore="true" placeholder="0.00" value="' + esc(cur) + '"></label>' +
+    '<p class="note">You type the amount — we never log into your bank. No Plaid, no scraping.</p>' +
+    '<div class="bk-upd-actions">' +
+      '<button class="btn" id="bkBalSave" type="button">SAVE</button>' +
+      '<button class="btn alt" id="bkBalOpen" type="button">' + esc(openLab) + "</button>" +
+    "</div>",
+    function (b) {
+      var inp = b.querySelector("#bkBalQuick");
+      setTimeout(function () {
+        if (!inp) return;
+        try { inp.focus({ preventScroll: true }); } catch (e) { try { inp.focus(); } catch (e2) {} }
+        try { inp.select && inp.select(); } catch (e3) {}
+      }, 80);
+      b.querySelector("#bkBalSave").addEventListener("click", function () {
+        var raw = (inp && inp.value || "").trim();
+        var bal = parseMoneyInput(raw);
+        if (raw && (bal == null || isNaN(bal))) { toast("Type a dollar amount"); return; }
+        if (bal != null && isNaN(bal)) bal = null;
+        var next = loadAccounts().map(function (x) {
+          if (x.id !== a.id) return x;
+          return Object.assign({}, x, { bal: bal, balAt: bal != null ? Date.now() : null });
+        });
+        saveAccounts(next); closeSheet();
+        try { renderBanks(); } catch (e4) {}
+        try { renderAccounts(); renderHoldings(); } catch (e5) {}
+        toast(bal != null ? ("Balance " + bankMoney(bal)) : "Balance cleared");
+      });
+      b.querySelector("#bkBalOpen").addEventListener("click", function () {
+        openAccountApp(a); /* leave sheet open so user can return and Save */
+      });
+    });
+}
 function openEditBank(a) {
   var custom = a.catalogId === "bank-custom";
   sheet("✎ " + (a.name || "BANK").toUpperCase(), bankFormHtml(a, custom) +
@@ -7262,13 +7340,14 @@ function renderBanks() {
   if (!host) return;
   var priv = bankPrivacyOn();
   if (card) card.classList.toggle("bk-private", priv);
+  var pm2 = $("#panelMoney"); if (pm2) pm2.classList.toggle("bk-private", priv);
   setBankPrivacy(priv); /* sync eye */
   var banks = loadAccounts().filter(function (a) { return a.kind === "bank"; });
   var st = bankStats();
   if (totalEl) totalEl.textContent = priv ? "••••••" : bankMoney(st.priced ? st.total : 0);
   if (subEl) {
     if (!banks.length) subEl.textContent = "Add a bank · balances stay on this phone";
-    else subEl.textContent = st.n + " account" + (st.n === 1 ? "" : "s") + (priv ? " · privacy on" : "") + (st.priced < st.n && !priv ? " · tap ✎ to add balance" : "");
+    else subEl.textContent = st.n + " account" + (st.n === 1 ? "" : "s") + (priv ? " · privacy on" : "") + (!priv ? " · tap balance to update" : "");
   }
   if (!banks.length) {
     host.innerHTML = '<div class="bk-card empty" data-bk-add="1" role="listitem" tabindex="0" aria-label="Add bank"><span>＋ Add Bank</span></div>';
@@ -7280,19 +7359,19 @@ function renderBanks() {
     var balCls = (!hasBal && !priv) ? "bk-bal muted" : "bk-bal";
     var l4 = formatLast4(a.last4, !priv);
     var l4html = l4 ? ('<span class="bk-last4"><span class="bk-last4-digits">' + esc(l4) + "</span></span>") : "";
-    var asof = bankAsOfStr(a.balAt) || (hasBal ? "" : "");
-    var asofHtml = asof ? ('<span class="bk-asof">' + esc(asof) + "</span>") : '<span class="bk-asof bk-asof-muted">Tap ✎ to update</span>';
-    var hint = (!hasBal && !priv) ? '<span class="bk-bal-hint">Tap ✎ to add balance</span>' : "";
+    var asof = bankAsOfStr(a.balAt);
+    var asofHtml = asof ? ('<span class="bk-asof">' + esc(asof) + "</span>") : '<span class="bk-asof bk-asof-muted">Tap balance to update</span>';
+    var hint = (!hasBal && !priv) ? '<span class="bk-bal-hint">Tap to set balance</span>' : (!priv ? '<span class="bk-bal-hint">Tap to update</span>' : "");
     var leftOut = a.inTotal === false ? '<span class="bk-leftout">Not in total</span>' : "";
     return '<article class="bk-card" data-bk="' + esc(a.id) + '" role="listitem" tabindex="0" aria-label="' + esc(a.name) + ", " + esc(bankMoney(hasBal ? +a.bal : 0)) + '">' +
-      '<header class="bk-card-h">' +
+      '<header class="bk-card-h" data-bk-open="' + esc(a.id) + '">' +
         '<span class="bk-badge" aria-hidden="true">' + accountIconHTML(a) + "</span>" +
         '<div class="bk-card-meta"><b class="bk-bank-name">' + esc(a.name) + "</b>" + asofHtml + leftOut + "</div>" +
         '<span class="bk-edit" role="button" tabindex="0" data-bk-edit="' + esc(a.id) + '" aria-label="Edit ' + esc(a.name) + '" title="Edit">✎</span>' +
       "</header>" +
       '<div class="bk-acct-row">' +
-        '<div class="bk-acct-l"><span class="bk-acct-name">' + esc(bankAcctLabel(a)) + "</span>" + l4html + "</div>" +
-        '<div class="bk-acct-r"><span class="' + balCls + '">' + esc(balTxt) + "</span>" + hint + "</div>" +
+        '<div class="bk-acct-l" data-bk-open="' + esc(a.id) + '"><span class="bk-acct-name">' + esc(bankAcctLabel(a)) + "</span>" + l4html + "</div>" +
+        '<div class="bk-acct-r"><span class="' + balCls + '" data-bk-bal="' + esc(a.id) + '" role="button" tabindex="0" aria-label="Update ' + esc(a.name) + ' balance">' + esc(balTxt) + "</span>" + hint + "</div>" +
       "</div></article>";
   }).join("");
 }
@@ -7337,6 +7416,14 @@ function renderBanks() {
       if (a0) openEditBank(a0);
       return;
     }
+    var balHit = e.target.closest("[data-bk-bal]");
+    if (balHit) {
+      e.preventDefault(); e.stopPropagation();
+      if (held) { held = false; return; }
+      var aB = loadAccounts().filter(function (x) { return x.id === balHit.getAttribute("data-bk-bal"); })[0];
+      if (aB) openUpdateBalance(aB);
+      return;
+    }
     if (e.target.closest("[data-bk-add]")) { openAddBankPicker(); return; }
     var tile = e.target.closest("[data-bk]"); if (!tile) return;
     if (held) { held = false; return; }
@@ -7346,18 +7433,24 @@ function renderBanks() {
 })();
 try { renderBanks(); } catch (eInitBk) {}
 try { ensureCardHolos(); } catch (eHolo) {}
+/* refresh relative "As of … min ago" while Bank is on screen */
+setInterval(function () {
+  try {
+    var el = document.getElementById("hBk");
+    if (!el) return;
+    var r = el.getBoundingClientRect();
+    if (r.bottom < 0 || r.top > (window.innerHeight || 800)) return;
+    renderBanks();
+  } catch (eAs) {}
+}, 60000);
 
 /* ========== v4.9.5 page tour ("?" in the top bar) + one-time welcome card ========== */
 function tourSteps() {
   var S = [
-    ["#heroCard", "Time", "Your clock and date. Your greeting shows under it."],
-    ["#today", "Today", "Today's calendar and notes live here. Tap to add or open them."],
+    ["#panelToday", "Today", "Clock, music, calendar and notes in one panel. Tap Calendar or Note to open them."],
     ["#hWx", "Weather", "Current weather. Tap the card for hourly, days ahead and Feels Like."],
-    ["#hMap", "Map", "Where you are. Tap OPEN for the big map, search a place, tap a pin for GO."],
-    ["#placesRow", "Places", "Saved spots like Home and Work. Tap for directions, hold to edit."],
-    ["#mkTicker", "Ticker", "Live crypto and gold prices. Touch it to pause."],
-    ["#hBk", "Bank", "Your banks under the tape. Add a bank, type a balance, optional last 4. Eye hides balances and last 4."],
-    ["#hMk", "Markets", "Your portfolio total, wallets and holdings. Tap it, then ＋ Add for wallets or brokers."],
+    ["#panelNav", "Navigate", "Live map plus your saved places. Tap OPEN for turn-by-turn, tap a place chip for directions."],
+    ["#panelMoney", "Money", "Ticker, banks and markets together. Tap a balance to update it. Eye hides bank balances."],
     ["#mFocus", "Focus", "A focus timer. Pick minutes and start."],
     ["#phoneMount", "Phone", "Dial pad and favorite people. Tap to call."],
     ["#appsSection", "Apps", "Your app tiles. Use Edit to move or remove, ＋ to add."],

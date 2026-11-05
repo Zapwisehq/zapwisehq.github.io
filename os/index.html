@@ -7,7 +7,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="description" content="ZAPWISE//OS: calm glass HUD — clock, weather, map, markets, focus, apps.">
 <meta name="theme-color" content="#070814">
-<meta name="zapos-version" content="4.9.7">
+<meta name="zapos-version" content="4.9.8">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="/os/manifest.webmanifest">
@@ -26,7 +26,7 @@
 <link rel="apple-touch-startup-image" media="(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/os/splash/splash-1206x2622.png">
 <link rel="apple-touch-startup-image" media="(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/os/splash/splash-1320x2868.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/os/icon-192.png">
-<link rel="stylesheet" href="/os/app.css?v=4.9.7">
+<link rel="stylesheet" href="/os/app.css?v=4.9.8">
 <style>
 @font-face{font-family:"Rajdhani";font-style:normal;font-weight:600;font-display:swap;src:url("/os/fonts/Rajdhani-SemiBold.woff2") format("woff2"),url("/os/fonts/Rajdhani-SemiBold.ttf") format("truetype")}
 @font-face{font-family:"Rajdhani";font-style:normal;font-weight:700;font-display:swap;src:url("/os/fonts/Rajdhani-Bold.woff2") format("woff2"),url("/os/fonts/Rajdhani-Bold.ttf") format("truetype")}
@@ -45,7 +45,7 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
 <div id="app">
 
  <header class="top sticky" id="top">
-  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver" data-app-ver>v4.9.7</span></div>
+  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver" data-app-ver>v4.9.8</span></div>
   <div class="top-r">
    <span class="sync" id="hSync"><i aria-hidden="true"></i>LIVE</span>
    <span class="hud-chip gps" id="hGpsLock" data-lock="0" hidden><i aria-hidden="true"></i>GPS —</span>
@@ -61,47 +61,51 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
 
  <main class="os-page" id="osPage">
 
-  <div class="row2 hero-row">
-   <div class="card br hero" id="heroCard">
-    <div class="h-clock hud-clock" id="hClock" data-hud="1" aria-live="off">
-     <i class="holo-sheen" aria-hidden="true"></i>
-     <div class="hc-sweep" aria-hidden="true"></div>
-     <div class="hc-time"><span class="hc-hm" id="hcHm">--:--</span><span class="hc-ampm" id="hAmpm">--</span></div>
-     <div class="hc-sec" id="hcSec" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-     <div class="hc-tags" id="hDate">
-      <span class="hc-tag" id="hcDow">---</span>
-      <span class="hc-tag" id="hcMon">---</span>
-      <span class="hc-tag" id="hcDom">--</span>
+  <!-- TOP: Clock + Music + Today (one panel) -->
+  <section class="card br panel-group panel-today" id="panelToday" aria-label="Today">
+   <div class="panel-h"><b>&gt; TODAY</b></div>
+   <div class="row2 hero-row">
+    <div class="hero panel-inner" id="heroCard">
+     <div class="h-clock hud-clock" id="hClock" data-hud="1" aria-live="off">
+      <i class="holo-sheen" aria-hidden="true"></i>
+      <div class="hc-sweep" aria-hidden="true"></div>
+      <div class="hc-time"><span class="hc-hm" id="hcHm">--:--</span><span class="hc-ampm" id="hAmpm">--</span></div>
+      <div class="hc-sec" id="hcSec" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="hc-tags" id="hDate">
+       <span class="hc-tag" id="hcDow">---</span>
+       <span class="hc-tag" id="hcMon">---</span>
+       <span class="hc-tag" id="hcDom">--</span>
+      </div>
+      <div class="hc-bar" aria-hidden="true"><i></i></div>
      </div>
-     <div class="hc-bar" aria-hidden="true"><i></i></div>
+     <div class="hero-bot"><span class="greet" id="greet"></span></div>
     </div>
-    <div class="hero-bot"><span class="greet" id="greet"></span></div>
+    <div class="play panel-inner" id="hPlay">
+     <div class="np-top"><span>MUSIC</span>
+      <button type="button" class="np-live" id="npLive" data-media-act="pick" aria-label="Choose music app">SWITCH ▾</button>
+     </div>
+     <div class="np-body">
+      <button type="button" class="np-pick" data-media-act="play" aria-label="Open music app">
+       <img class="np-art" id="npArt" src="/os/icons/music.jpg" alt="">
+       <span class="np-meta"><b id="npTitle">Choose a music app</b><small id="npArtist">Tap ▶ to open</small></span>
+      </button>
+      <button type="button" class="np-play" data-media-act="play" aria-label="Open music app">▶</button>
+     </div>
+    </div>
    </div>
-   <div class="card br play" id="hPlay">
-    <div class="np-top"><span>MUSIC</span>
-     <button type="button" class="np-live" id="npLive" data-media-act="pick" aria-label="Choose music app">SWITCH ▾</button>
-    </div>
-    <div class="np-body">
-     <button type="button" class="np-pick" data-media-act="play" aria-label="Open music app">
-      <img class="np-art" id="npArt" src="/os/icons/music.jpg" alt="">
-      <span class="np-meta"><b id="npTitle">Choose a music app</b><small id="npArtist">Tap ▶ to open</small></span>
-     </button>
-     <button type="button" class="np-play" data-media-act="play" aria-label="Open music app">▶</button>
-    </div>
+   <div class="panel-div" aria-hidden="true"></div>
+   <div class="today panel-inner" id="today">
+    <div class="td-ico" aria-hidden="true"><small>TODAY</small><b id="tdDay">—</b></div>
+    <button type="button" class="td-item" id="tdCal" aria-label="Open Calendar">
+     <span class="td-k">Calendar</span>
+     <span class="td-v" id="tdCalV">Open today’s schedule</span>
+    </button>
+    <button type="button" class="td-item" id="tdNote" aria-label="Open Notes">
+     <span class="td-k">Note</span>
+     <span class="td-v" id="tdNoteV">Open Notes</span>
+    </button>
    </div>
-  </div>
-
-  <div class="card br today" id="today">
-   <div class="td-ico" aria-hidden="true"><small>TODAY</small><b id="tdDay">—</b></div>
-   <button type="button" class="td-item" id="tdCal" aria-label="Open Calendar">
-    <span class="td-k">Calendar</span>
-    <span class="td-v" id="tdCalV">Open today’s schedule</span>
-   </button>
-   <button type="button" class="td-item" id="tdNote" aria-label="Open Notes">
-    <span class="td-k">Note</span>
-    <span class="td-v" id="tdNoteV">Open Notes</span>
-   </button>
-  </div>
+  </section>
 
   <button class="card br h-wx" id="hWx" type="button" aria-label="Open weather detail" aria-expanded="false" aria-controls="xpWx">
    <canvas class="fx" id="fxHud" aria-hidden="true"></canvas>
@@ -147,70 +151,80 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
    <p class="note" id="xpNote"></p>
   </div>
 
-  <div class="card br h-map" id="hMap">
-   <div class="map-h">
-    <b id="hPlace">&gt; LOCATING…</b>
-    <span class="map-h-r"><span id="hGps">GPS --</span>
-     <button type="button" class="map-open" id="mapOpen" aria-label="Open in Maps">OPEN</button>
-    </span>
-   </div>
-   <div class="map-v" id="mapV" aria-label="Live map">
-    <div class="map-gl" id="mapGl" hidden aria-hidden="true"></div>
-    <div class="map-stage" id="mapStage">
-     <div class="map-tiles" id="mapTiles"></div>
-     <div class="map-traffic" id="mapTraffic" aria-hidden="true" hidden></div>
-     <div class="map-markers" id="mapMarkers" aria-hidden="true">
-      <i class="map-acc" aria-hidden="true"></i>
-      <i class="map-radar" aria-hidden="true"></i>
-      <i class="map-heading" aria-hidden="true" hidden></i>
-      <i class="map-dot" id="mapDot" hidden></i>
+  <!-- NAVIGATE: Map + Places (one panel) -->
+  <section class="card br panel-group panel-nav" id="panelNav" aria-label="Navigate">
+   <div class="panel-h"><b>&gt; NAVIGATE</b></div>
+   <div class="h-map panel-inner" id="hMap">
+    <div class="map-h">
+     <b id="hPlace">&gt; LOCATING…</b>
+     <span class="map-h-r"><span id="hGps">GPS --</span>
+      <button type="button" class="map-open" id="mapOpen" aria-label="Open in Maps">OPEN</button>
+     </span>
+    </div>
+    <div class="map-v" id="mapV" aria-label="Live map">
+     <div class="map-gl" id="mapGl" hidden aria-hidden="true"></div>
+     <div class="map-stage" id="mapStage">
+      <div class="map-tiles" id="mapTiles"></div>
+      <div class="map-traffic" id="mapTraffic" aria-hidden="true" hidden></div>
+      <div class="map-markers" id="mapMarkers" aria-hidden="true">
+       <i class="map-acc" aria-hidden="true"></i>
+       <i class="map-radar" aria-hidden="true"></i>
+       <i class="map-heading" aria-hidden="true" hidden></i>
+       <i class="map-dot" id="mapDot" hidden></i>
+      </div>
+     </div>
+     <i class="map-shade" aria-hidden="true"></i>
+     <span class="map-msg" id="mapMsg">LOCATING…</span>
+     <div class="map-traf-ui" id="mapTrafUi">
+      <button type="button" class="map-traf-chip on" id="mapTrafChip" aria-pressed="true" aria-label="Toggle live traffic" title="Live traffic">TRAFFIC</button>
+      <div class="map-traf-leg" id="mapTrafLeg" aria-hidden="false">
+       <span class="tl g" title="Clear"><i></i>clear</span>
+       <span class="tl y" title="Slow"><i></i>slow</span>
+       <span class="tl r" title="Jammed"><i></i>jammed</span>
+      </div>
+     </div>
+     <div class="map-tools" aria-hidden="false">
+      <button type="button" class="map-tool" id="mapIn" aria-label="Zoom in">+</button>
+      <button type="button" class="map-tool" id="mapOut" aria-label="Zoom out">−</button>
+      <button type="button" class="map-tool map-rec" id="mapRec" aria-label="Recenter on me">◎</button>
+     </div>
+     <div class="map-attr" id="mapAttr">
+      <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap</a>
+      <a href="https://www.tomtom.com" target="_blank" rel="noopener">© TomTom</a>
      </div>
     </div>
-    <i class="map-shade" aria-hidden="true"></i>
-    <span class="map-msg" id="mapMsg">LOCATING…</span>
-    <div class="map-traf-ui" id="mapTrafUi">
-     <button type="button" class="map-traf-chip on" id="mapTrafChip" aria-pressed="true" aria-label="Toggle live traffic" title="Live traffic">TRAFFIC</button>
-     <div class="map-traf-leg" id="mapTrafLeg" aria-hidden="false">
-      <span class="tl g" title="Clear"><i></i>clear</span>
-      <span class="tl y" title="Slow"><i></i>slow</span>
-      <span class="tl r" title="Jammed"><i></i>jammed</span>
-     </div>
-    </div>
-    <div class="map-tools" aria-hidden="false">
-     <button type="button" class="map-tool" id="mapIn" aria-label="Zoom in">+</button>
-     <button type="button" class="map-tool" id="mapOut" aria-label="Zoom out">−</button>
-     <button type="button" class="map-tool map-rec" id="mapRec" aria-label="Recenter on me">◎</button>
-    </div>
-    <div class="map-attr" id="mapAttr">
-     <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap</a>
-     <a href="https://www.tomtom.com" target="_blank" rel="noopener">© TomTom</a>
-    </div>
    </div>
-  </div>
-  <div class="places-row card br" id="placesRow">
-   <div class="places-h"><b>PLACES</b><button type="button" class="chip" id="placeAdd" aria-label="Add a saved place">＋ ADD</button></div>
-   <small class="places-note">Tap for directions · hold to edit · Traffic colors live from TomTom; ETA is an estimate.</small>
-   <div class="places-scroller" id="placesList" role="list"></div>
-  </div>
-
-  <div class="mk-ticker card br" id="mkTicker" aria-label="Market ticker" hidden>
-   <div class="track" id="mkTickerTrack"></div>
-  </div>
-
-  <div class="card br h-bk" id="hBk" role="region" aria-label="Banks">
-   <div class="mk-h">BANK<span class="mk-t" id="hBkT"></span><button type="button" class="bk-eye" id="hBkEye" aria-label="Hide balances and last 4" aria-pressed="false" title="Privacy: hide balances and last 4">👁</button></div>
-   <div class="bk-hero" id="hBkPort">
-    <b class="hmk-total" id="hBkTotal">$0.00</b>
-    <span class="hmk-day" id="hBkSub">Balances you type · this phone only</span>
+   <div class="panel-div" aria-hidden="true"></div>
+   <div class="places-row panel-inner" id="placesRow">
+    <div class="places-h"><b>&gt; PLACES</b><button type="button" class="chip" id="placeAdd" aria-label="Add a saved place">＋ ADD</button></div>
+    <small class="places-note">Tap for directions · hold to edit · Traffic colors live from TomTom; ETA is an estimate.</small>
+    <div class="places-scroller" id="placesList" role="list"></div>
    </div>
-   <div class="bk-grid" id="hBkGrid" role="list"></div>
-   <button type="button" class="mk-add" id="hBkAdd" aria-label="Add bank">＋ Add Bank</button>
-   <p class="note bk-foot">Tap a bank to open it · ✎ to edit · eye hides balances + last 4 · only last 4 digits, never full numbers</p>
-  </div>
+  </section>
 
-  <div class="row2">
-   <div class="card br h-mk" id="hMk" role="button" tabindex="0" aria-label="Open markets detail" aria-expanded="false" aria-controls="xpMk">
-    <div class="mk-h">MARKETS<span class="mk-t" id="hMkT">--</span></div>
+  <!-- MONEY: ticker + Bank + Markets (one panel, one eye) -->
+  <section class="card br panel-group panel-money" id="panelMoney" aria-label="Money">
+   <div class="panel-h money-h">
+    <b>&gt; MONEY</b>
+    <button type="button" class="bk-eye" id="hBkEye" aria-label="Hide balances and last 4" aria-pressed="false" title="Privacy: hide balances and last 4">👁</button>
+   </div>
+   <div class="mk-ticker panel-inner" id="mkTicker" aria-label="Market ticker" hidden>
+    <div class="track" id="mkTickerTrack"></div>
+   </div>
+   <div class="panel-div" aria-hidden="true"></div>
+   <div class="panel-sec-lab">BANK</div>
+   <div class="h-bk panel-inner" id="hBk" role="region" aria-label="Banks">
+    <div class="bk-hero" id="hBkPort">
+     <b class="hmk-total" id="hBkTotal">$0.00</b>
+     <span class="hmk-day" id="hBkSub">Balances you type · this phone only</span>
+    </div>
+    <div class="bk-grid" id="hBkGrid" role="list"></div>
+    <button type="button" class="mk-add" id="hBkAdd" aria-label="Add bank">＋ Add Bank</button>
+    <p class="note bk-foot">Tap balance to update · header opens bank · ✎ to edit · eye hides balances + last 4 · only last 4 digits, never full numbers</p>
+   </div>
+   <div class="panel-div" aria-hidden="true"></div>
+   <div class="panel-sec-lab">MARKETS <span class="mk-t" id="hMkT"></span></div>
+   <div class="h-mk panel-inner" id="hMk" role="button" tabindex="0" aria-label="Open markets detail" aria-expanded="false" aria-controls="xpMk">
     <div class="mk-hero" id="hMkPort">
       <b class="hmk-total" data-hmk-port="1" id="hMkTotal">—</b>
       <span class="hmk-day" id="hMkDay">—</span>
@@ -219,8 +233,12 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
     <div class="mk-items" id="hMkList"><span class="dim">Markets loading…</span></div>
     <button type="button" class="mk-add" data-hmk-add="1" id="hMkAct" aria-label="Add wallet, broker or holding">＋ Add</button>
    </div>
+  </section>
+
+  <!-- TOOLS: Focus + Phone -->
+  <div class="row2 panel-tools">
    <div class="card br focus-card fz" id="mFocus" role="group" aria-label="Focus timer">
-    <div class="mk-h fz-h">FOCUS <span class="foc-sess" id="focSess">0 TODAY</span></div>
+    <div class="mk-h fz-h">&gt; FOCUS <span class="foc-sess" id="focSess">0 TODAY</span></div>
     <div class="fz-presets" id="focPresets" role="group" aria-label="Focus length">
      <button type="button" class="fz-p" data-foc-min="15">15m</button>
      <button type="button" class="fz-p on" data-foc-min="25">25m</button>
@@ -238,6 +256,7 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
      <button type="button" class="fz-btn alt" id="focReset">RESET</button>
     </div>
    </div>
+   <div class="card br" id="phoneMount" aria-label="Dial pad and favorites"></div>
   </div>
 
 
@@ -254,7 +273,7 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
    </div>
    <div class="xp-h"><b>BROKERS &amp; WALLETS</b><button class="chip accent" id="xpAcctAdd" type="button">＋ ACCOUNT</button></div>
    <div class="acct-grid" id="acctGrid" role="list"></div>
-   <p class="note acct-note">Tap to open · hold to edit. Banks live in the Bank bar under the ticker.</p>
+   <p class="note acct-note">Tap to open · hold to edit. Banks live in the Money panel above.</p>
    <div class="xp-h" style="margin-top:12px"><b>HOLDINGS</b><button class="chip" id="xpHoldAdd" type="button">＋ Add holding</button></div>
    <div class="quick-add" id="quickAdd" hidden>
     <div class="qa-h">ONE-TAP ADD</div>
@@ -269,7 +288,6 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
    <div class="stamp" id="xpMkStamp">UPDATED --</div>
   </div>
 
-  <div class="card br" id="phoneMount" aria-label="Dial pad and favorites"></div>
 
   <div class="card br apps-card apps-wrap" id="appsSection">
    <div class="sec-h">APPS <span class="sec-actions"><button class="chip" id="dEdit" type="button">✎ EDIT</button></span></div>
@@ -338,8 +356,8 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/os/catalog.js?v=4.9.7"></script>
-<script src="/os/sky.js?v=4.9.7"></script>
-<script src="/os/app.min.js?v=4.9.7"></script>
+<script src="/os/catalog.js?v=4.9.8"></script>
+<script src="/os/sky.js?v=4.9.8"></script>
+<script src="/os/app.min.js?v=4.9.8"></script>
 </body>
 </html>
