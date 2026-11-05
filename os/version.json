@@ -1,6 +1,6 @@
 {
-  "version": "4.7.0",
+  "version": "4.7.1",
   "released": "2026-11-05",
   "name": "ZAPWISE//OS",
-  "notes": "LAST CALLS HUD; markets total+spark+BTC/GOLD; focus presets/ring/sessions; ZAP AI (router+Pollinations+WebLLM+voice). Get shells at /os/get/."
+  "notes": "ZAP AI: local smalltalk/FAQ first; sanitize replies (no markdown/context dump). QA-hardened after 4.7.0 visual pass."
 }

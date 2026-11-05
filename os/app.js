@@ -1,7 +1,7 @@
-/* ZAPWISE//OS web app v4.7.0 (Nov 5, 2026). LAST CALLS, markets/focus HUD upgrades, ZAP AI (router+Pollinations+WebLLM+voice). No tabs. Rest of app stays silent. */
+/* ZAPWISE//OS web app v4.7.1 (Nov 5, 2026). LAST CALLS, markets/focus HUD upgrades, ZAP AI (router+Pollinations+WebLLM+voice). No tabs. Rest of app stays silent. */
 (function () {
 "use strict";
-var VERSION = "4.7.0";
+var VERSION = "4.7.1";
 var APP_VERSION = VERSION;
 
 // v4.5: default Lite on coarse/mobile unless user already chose
@@ -5065,8 +5065,22 @@ function updateZapBadge() {
   b.textContent = offline ? (brain ? "OFFLINE AI" : "OFFLINE") : (brain ? "ZAP AI" : "LIVE");
   b.classList.toggle("live", !offline);
 }
+function zapSanitize(text) {
+  var s = String(text == null ? "" : text);
+  s = s.replace(/\r/g, "");
+  // strip common markdown chrome the free model sometimes adds
+  s = s.replace(/\*\*([^*]+)\*\*/g, "$1").replace(/\*([^*]+)\*/g, "$1");
+  s = s.replace(/`([^`]+)`/g, "$1").replace(/^#{1,6}\s+/gm, "");
+  s = s.replace(/^\s*[-•]\s+/gm, "");
+  // drop regurgitated dashboard / powered-by footers
+  s = s.replace(/\n{0,2}\*?\s*Powered by open models\.?\s*\*?/ig, "");
+  s = s.replace(/\n{0,2}(Local time:|App: ZAPWISE|Focus sessions today:|BTC \$|GOLD \$)[^\n]*/ig, "");
+  s = s.replace(/\n{3,}/g, "\n\n").trim();
+  return s;
+}
 function zapAppend(role, text, action, opts) {
   opts = opts || {};
+  if (role !== "user" && text && !opts.streaming) text = zapSanitize(text);
   var log = $("#zapLog"); if (!log) return null;
   var d = document.createElement("div");
   d.className = "zap-msg " + role + (opts.streaming ? " streaming" : "");
@@ -5091,6 +5105,7 @@ function zapAppend(role, text, action, opts) {
 }
 function zapStreamInto(el, full, done) {
   if (!el) { if (done) done(); return; }
+  full = zapSanitize(full);
   var i = 0, step = Math.max(1, Math.floor(String(full).length / 40));
   el.classList.add("streaming");
   function tick() {
@@ -5390,11 +5405,19 @@ function routeZapIntent(raw) {
   if (/\bnote|notes\b/.test(q)) {
     return { skill: "notes.open", text: "Open Notes?", action: { label: "Notes", run: function () { closeZapAssistant(); try { $("#tdNote").click(); } catch (e) {} } } };
   }
+  // Local smalltalk / FAQ — always answer, skip network
+  if (/^(hi|hello|hey|yo|sup|good (morning|afternoon|evening))\b/.test(q) ||
+      /^(thanks|thank you|thx|ty)\b/.test(q) ||
+      /who are you|what are you|your name|what can you|help\b|commands/.test(q) ||
+      /how (do i|to)\b/.test(q) ||
+      /^(joke|tell me a joke)\b/.test(q)) {
+    return { skill: "chat.local", text: zapOfflineFaq(q) };
+  }
   // Not an action — hand off to online/offline AI (never hard-fail)
   return { skill: "chat", text: "" };
 }
 var HELP_TEXT = "I'm ZAP AI. Try: call <favorite>, directions to home, weather, markets, start focus, open <app>, add holding, switch theme, time. Ask anything else — I'll answer. Runs on open models when online.";
-var ZAP_SYS = "You are ZAP AI inside ZAPWISE//OS. Short, helpful, simple words. Never claim you are a proprietary model. A footer may say you run on open models. Do not invent balances or secrets. Prefer under 60 words. Plain text, no markdown.";
+var ZAP_SYS = "You are ZAP AI inside ZAPWISE//OS. Short, helpful, simple words. Never claim you are a proprietary model. Do not invent balances or secrets. Prefer under 40 words. Plain text only — no markdown, no bullets, no asterisks. Dashboard context is for you only: never paste or list it unless the user asks for weather, markets, time, or portfolio.";
 
 function refreshZapAiBar() {
   var bar = $("#zapAiBar"); if (!bar) return;
