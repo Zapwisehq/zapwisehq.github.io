@@ -17,9 +17,10 @@
 <link rel="icon" type="image/png" sizes="192x192" href="/os/icon-192.png">
 <link rel="preconnect" href="https://api.open-meteo.com" crossorigin>
 <link rel="preconnect" href="https://api.coingecko.com" crossorigin>
-<link rel="preconnect" href="https://basemaps.cartocdn.com" crossorigin>
+<link rel="preconnect" href="https://tile.openstreetmap.org" crossorigin>
+<link rel="dns-prefetch" href="https://a.tile.openstreetmap.org">
 <link rel="preconnect" href="https://nominatim.openstreetmap.org" crossorigin>
-<link rel="stylesheet" href="/os/app.css?v=3.2.0">
+<link rel="stylesheet" href="/os/app.css?v=3.3.0">
 <script>try{var z=JSON.parse(localStorage.getItem("zapos.device")||"{}").themeCss;if(z&&z.css){var s=document.createElement("style");s.textContent=z.css;document.head.appendChild(s);if(z.light)document.documentElement.classList.add("light");var m=document.querySelector('meta[name="theme-color"]');if(m&&z.meta)m.setAttribute("content",z.meta);}}catch(e){}</script>
 </head>
 <body class="cyber">
@@ -35,8 +36,8 @@
 <div class="grid-bg" aria-hidden="true"></div>
 <div id="app">
 
- <header class="top" id="top">
-  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver">v3.2</span></div>
+ <header class="top sticky" id="top">
+  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver">v3.3</span></div>
   <div class="top-r">
    <span class="sync" id="hSync"><i aria-hidden="true"></i>SYNCED</span>
    <button class="h-theme" data-theme-btn aria-label="Change theme" title="Change theme"><i aria-hidden="true"></i>THEME</button>
@@ -106,15 +107,27 @@
    <p class="note" id="xpNote"></p>
   </div>
 
-  <div class="card br h-map" id="hMap" role="button" tabindex="0" aria-label="Open Maps at my location">
-   <div class="map-h"><b id="hPlace">&gt; LOCATING…</b><span id="hGps">GPS --</span></div>
-   <div class="map-v" id="mapV">
-    <div class="map-tiles" id="mapTiles"></div>
-    <i class="map-shade"></i>
+  <div class="card br h-map" id="hMap">
+   <div class="map-h">
+    <b id="hPlace">&gt; LOCATING…</b>
+    <span class="map-h-r"><span id="hGps">GPS --</span>
+     <button type="button" class="map-open" id="mapOpen" aria-label="Open in Maps">OPEN</button>
+    </span>
+   </div>
+   <div class="map-v" id="mapV" aria-label="Live map">
+    <div class="map-stage" id="mapStage">
+     <div class="map-tiles" id="mapTiles"></div>
+    </div>
+    <i class="map-shade" aria-hidden="true"></i>
     <i class="map-radar" aria-hidden="true"></i>
     <i class="map-dot" id="mapDot" hidden></i>
     <span class="map-msg" id="mapMsg">LOCATING…</span>
-    <a class="map-attr" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap · © CARTO</a>
+    <div class="map-tools" aria-hidden="false">
+     <button type="button" class="map-tool" id="mapIn" aria-label="Zoom in">+</button>
+     <button type="button" class="map-tool" id="mapOut" aria-label="Zoom out">−</button>
+     <button type="button" class="map-tool" id="mapRec" aria-label="Recenter on me">◎</button>
+    </div>
+    <a class="map-attr" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap</a>
    </div>
   </div>
 
@@ -165,7 +178,7 @@
   </div>
 
   <div class="card br apps-card">
-   <div class="sec-h">APPS <button class="chip" id="dEdit" type="button">✎ EDIT</button></div>
+   <div class="sec-h">APPS <span class="sec-actions"><button class="chip accent" id="findApp" type="button">⌕ FIND</button><button class="chip" id="dEdit" type="button">✎ EDIT</button></span></div>
    <div class="apps" id="apps" role="list"></div>
   </div>
 
@@ -198,7 +211,7 @@
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/os/catalog.js?v=3.2.0"></script>
-<script src="/os/app.js?v=3.2.0"></script>
+<script src="/os/catalog.js?v=3.3.0"></script>
+<script src="/os/app.js?v=3.3.0"></script>
 </body>
 </html>

@@ -1,6 +1,6 @@
-/* ZAPWISE//OS web app v3.1.0 (Nov 4, 2026). Concept layout + live map. Static, no build step, no API keys.
+/* ZAPWISE//OS web app v3.3.0 (Nov 4, 2026). Concept layout + live map. Static, no build step, no API keys.
    Data: Open-Meteo (weather + city search), api-bdc.io (city name for weather), CoinGecko (crypto + PAX Gold),
-   OpenStreetMap tiles + Nominatim reverse geocoding (road + city, cached, re-queried only after moving > 40 m).
+   OSM standard tiles (keyless, CSS dark filter) + Nominatim reverse geocoding (road + city, cached, re-queried only after moving > 40 m).
 
    SECTIONS
      1  config + DOM helpers        6  clock, meters, focus timer   11  sheets: menu, edit apps, add app,
@@ -17,7 +17,7 @@
    Store.applyRemote below. */
 (function () {
 "use strict";
-var VERSION = "3.2.0";
+var VERSION = "3.3.0";
 var STATUS_MSGS = ["> SHORTCUTS ARMED", "> NET SECURE", "> AI LINK STABLE", "> SIGNAL CLEAN", "> APPS READY"];
 var FOCUS_MS = 25 * 60000, DOCK_N = 5;
 var DAY_START = 7, DAY_END = 23;
@@ -31,7 +31,7 @@ function clone(o) { return o == null ? o : JSON.parse(JSON.stringify(o)); }
 var Store = (function () {
   var STATE_KEY = "zapos.state", DEVICE_KEY = "zapos.device", VER = 1;
   var PREF_KEYS = ["settings", "theme", "apps", "coins", "loc", "favs"];                     // shared state (sync-ready)
-  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss", "mediaKey", "workMode", "skipBoot"]; // this device only
+  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss", "mediaKey", "workMode", "skipBoot", "recentPins"]; // this device only
   function read(k) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
   function write(k, v) { if (dead) return false; try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
   var state = read(STATE_KEY), dev = read(DEVICE_KEY), subs = [], uiT = null, dead = false; // dead: after a reset, write nothing more
@@ -328,9 +328,9 @@ function renderApps() {
   var box = $("#apps"); box.innerHTML = "";
   rest.forEach(function (a) { box.appendChild(mkTile(a, false)); });
   var ad = document.createElement("button");
-  ad.className = "tile add"; ad.type = "button"; ad.id = "addApp"; ad.setAttribute("role", "listitem"); ad.setAttribute("aria-label", "Add an app");
-  ad.innerHTML = '<span class="ic" aria-hidden="true">+</span><span class="lb">ADD</span>';
-  ad.addEventListener("click", function () { openAddApp(); });
+  ad.className = "tile add"; ad.type = "button"; ad.id = "addApp"; ad.setAttribute("role", "listitem"); ad.setAttribute("aria-label", "Find and add an app");
+  ad.innerHTML = '<span class="ic" aria-hidden="true">⌕</span><span class="lb">Find an app</span>';
+  ad.addEventListener("click", function () { openAddApp({ focusSearch: true }); });
   box.appendChild(ad);
   if (!dock.length) dt.innerHTML = '<span class="dim" style="grid-column:1/-1;text-align:center;font-size:11px">NO APPS ON · TAP EDIT</span>';
 }
@@ -567,7 +567,7 @@ function getJSON(url, ms) {
 function getPos() {
   return new Promise(function (res, rej) {
     if (!navigator.geolocation) return rej(new Error("no geo"));
-    navigator.geolocation.getCurrentPosition(function (p) { setGPS(p.coords.latitude, p.coords.longitude); res({ lat: +p.coords.latitude.toFixed(3), lon: +p.coords.longitude.toFixed(3) }); }, function (e) { GEO_OFF = !!(e && e.code === 1); renderMap(); rej(e); }, { timeout: 15000, maximumAge: 120000, enableHighAccuracy: true });
+    navigator.geolocation.getCurrentPosition(function (p) { setGPS(p.coords.latitude, p.coords.longitude); res({ lat: +p.coords.latitude.toFixed(3), lon: +p.coords.longitude.toFixed(3) }); }, function (e) { GEO_OFF = !!(e && e.code === 1); renderMap(true); rej(e); }, { timeout: 15000, maximumAge: 120000, enableHighAccuracy: true });
   });
 }
 function placeName(lat, lon) {
@@ -746,15 +746,16 @@ function updateStamps() {
 }
 function short12(at) { return t12(new Date(at)).replace(/ ?([AP])M$/, "$1"); }
 
-// ========== 10. map (OpenStreetMap tiles + Nominatim road · city) and tabs ==========
-// The street and city always come from your live location; nothing is hard-coded. Nominatim is only asked again after you move > 40 m.
-var GPS = Store.getLocal("gps", null), PLACE = Store.getLocal("place", null), GEO_OFF = false, mapDrawn = null, nomBusy = false, nomLast = 0;
+// ========== 10. map — OSM standard tiles (keyless) + dark filter, pan/zoom/recenter ==========
+// Attribution: © OpenStreetMap contributors. No API key. CARTO basemaps removed (watermarked).
+var GPS = Store.getLocal("gps", null), PLACE = Store.getLocal("place", null), GEO_OFF = false, nomBusy = false, nomLast = 0;
+var MAP = { z: 16, offX: 0, offY: 0, dragging: false, moved: false, last: null };
 function meters(a, b) { var R = 6371000, r = Math.PI / 180, dLa = (b.lat - a.lat) * r, dLo = (b.lon - a.lon) * r; var h = Math.sin(dLa / 2) * Math.sin(dLa / 2) + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLo / 2) * Math.sin(dLo / 2); return 2 * R * Math.asin(Math.sqrt(h)); }
-function setGPS(lat, lon) { GPS = { lat: lat, lon: lon, at: Date.now() }; Store.setLocal("gps", GPS); GEO_OFF = false; renderMap(); updateStamps(); geocode(); }
+function setGPS(lat, lon) { GPS = { lat: lat, lon: lon, at: Date.now() }; Store.setLocal("gps", GPS); GEO_OFF = false; renderMap(true); updateStamps(); geocode(); }
 function geocode() {
   if (!GPS || nomBusy || navigator.onLine === false) return;
   if (PLACE && meters(PLACE, GPS) <= 40) return;
-  if (Date.now() - nomLast < 60000) return; // never more than one request a minute (policy allows 1/s)
+  if (Date.now() - nomLast < 60000) return;
   nomBusy = true; nomLast = Date.now();
   getJSON("https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=18&addressdetails=1&accept-language=en&lat=" + GPS.lat.toFixed(5) + "&lon=" + GPS.lon.toFixed(5), 10000)
     .then(function (j) {
@@ -766,41 +767,125 @@ function geocode() {
 }
 function renderPlace() {
   var t = "> " + (GEO_OFF && !GPS ? "LOCATION OFF" : PLACE && (PLACE.road || PLACE.city) ? [PLACE.road, PLACE.city].filter(Boolean).join(" · ") : "LOCATING…");
-  $("#hPlace").textContent = t;
+  var el = $("#hPlace"); if (el) el.textContent = t;
 }
-function renderMap() {
+function lonLatToWorld(lon, lat, z) {
+  var n = Math.pow(2, z), la = lat * Math.PI / 180;
+  return { x: (lon + 180) / 360 * n * 256, y: (1 - Math.log(Math.tan(la) + 1 / Math.cos(la)) / Math.PI) / 2 * n * 256, n: n };
+}
+function tileUrl(z, x, y) {
+  // OSM standard raster tiles — free, no key. Subdomains a/b/c for parallel fetch.
+  var s = ["a", "b", "c"][(x + y) % 3];
+  return "https://" + s + ".tile.openstreetmap.org/" + z + "/" + x + "/" + y + ".png";
+}
+function renderMap(force) {
   renderPlace();
-  var v = $("#mapV"), tl = $("#mapTiles"), msg = $("#mapMsg");
-  if (!GPS) { tl.innerHTML = ""; $("#mapDot").hidden = true; msg.hidden = false; msg.textContent = GEO_OFF ? "LOCATION OFF · ALLOW IT IN SETTINGS TO SEE THE MAP" : "LOCATING…"; mapDrawn = null; return; }
-  var W = v.clientWidth, H = v.clientHeight; if (!W || !H) return;
-  if (mapDrawn && mapDrawn.w === W && mapDrawn.h === H && meters(mapDrawn, GPS) <= 40) return;
-  var z = 17, n = Math.pow(2, z), la = GPS.lat * Math.PI / 180;
-  var px = (GPS.lon + 180) / 360 * n * 256, py = (1 - Math.log(Math.tan(la) + 1 / Math.cos(la)) / Math.PI) / 2 * n * 256;
-  var ox = px - W / 2, oy = py - H / 2, html = "";
-  for (var tx = Math.floor(ox / 256); tx <= Math.floor((ox + W) / 256); tx++) for (var ty = Math.floor(oy / 256); ty <= Math.floor((oy + H) / 256); ty++) {
-    if (ty < 0 || ty >= n) continue;
-    html += '<img alt="" draggable="false" src="https://basemaps.cartocdn.com/dark_all/' + z + "/" + ((tx % n + n) % n) + "/" + ty + '.png" style="left:' + Math.round(tx * 256 - ox) + "px;top:" + Math.round(ty * 256 - oy) + 'px" onerror="this.style.visibility=\'hidden\'">';
+  var v = $("#mapV"), tl = $("#mapTiles"), msg = $("#mapMsg"), stage = $("#mapStage");
+  if (!v || !tl) return;
+  if (!GPS) {
+    tl.innerHTML = ""; if ($("#mapDot")) $("#mapDot").hidden = true;
+    if (msg) { msg.hidden = false; msg.textContent = GEO_OFF ? "LOCATION OFF · ALLOW IT IN SETTINGS TO SEE THE MAP" : "LOCATING…"; }
+    return;
   }
-  tl.innerHTML = html; $("#mapDot").hidden = false; msg.hidden = true;
-  mapDrawn = { lat: GPS.lat, lon: GPS.lon, w: W, h: H };
+  var W = v.clientWidth, H = v.clientHeight; if (!W || !H) return;
+  var z = Math.max(3, Math.min(19, MAP.z | 0));
+  var world = lonLatToWorld(GPS.lon, GPS.lat, z);
+  var cx = world.x + MAP.offX, cy = world.y + MAP.offY;
+  var ox = cx - W / 2, oy = cy - H / 2;
+  var key = z + ":" + Math.round(ox) + ":" + Math.round(oy) + ":" + W + "x" + H;
+  if (!force && MAP._key === key) return;
+  MAP._key = key;
+  var n = world.n, html = "";
+  var x0 = Math.floor(ox / 256) - 1, x1 = Math.floor((ox + W) / 256) + 1;
+  var y0 = Math.floor(oy / 256) - 1, y1 = Math.floor((oy + H) / 256) + 1;
+  for (var ty = y0; ty <= y1; ty++) {
+    if (ty < 0 || ty >= n) continue;
+    for (var tx = x0; tx <= x1; tx++) {
+      var xx = ((tx % n) + n) % n;
+      html += '<img alt="" decoding="async" draggable="false" src="' + tileUrl(z, xx, ty) + '" style="transform:translate(' + Math.round(tx * 256 - ox) + "px," + Math.round(ty * 256 - oy) + 'px)" loading="eager" onerror="this.style.opacity=0">';
+    }
+  }
+  tl.innerHTML = html;
+  if ($("#mapDot")) $("#mapDot").hidden = false;
+  if (msg) msg.hidden = true;
+  // keep user dot centered relative to GPS vs pan offset
+  var dot = $("#mapDot");
+  if (dot) {
+    var dx = W / 2 - MAP.offX, dy = H / 2 - MAP.offY;
+    dot.style.left = dx + "px";
+    dot.style.top = dy + "px";
+    dot.style.marginLeft = "-7px";
+    dot.style.marginTop = "-7px";
+  }
 }
-// every tile failed (offline / tile server down): say so instead of an empty dark box, and redraw next time
-$("#mapTiles").addEventListener("error", function (e) {
-  if (e.target && e.target.tagName === "IMG") e.target.style.visibility = "hidden";
-  var im = $("#mapTiles").querySelectorAll("img"), bad = 0;
-  for (var i = 0; i < im.length; i++) if (im[i].style.visibility === "hidden") bad++;
-  if (im.length && bad === im.length) { var m = $("#mapMsg"); m.textContent = "MAP OFFLINE · RETRYING SOON"; m.hidden = false; mapDrawn = null; }
-}, true);
-window.addEventListener("online", function () { mapDrawn = null; renderMap(); });
+function mapRecenter() { MAP.offX = 0; MAP.offY = 0; MAP.z = 16; renderMap(true); toast("Centered on you"); }
+function mapZoom(d) {
+  var next = Math.max(3, Math.min(19, (MAP.z | 0) + d));
+  if (next === MAP.z) return;
+  // scale offset when zooming so focal point stays
+  var f = Math.pow(2, next - MAP.z);
+  MAP.offX *= f; MAP.offY *= f; MAP.z = next; renderMap(true);
+}
+(function bindMapGestures() {
+  var v = $("#mapV"); if (!v) return;
+  var startX = 0, startY = 0, baseOffX = 0, baseOffY = 0, pin0 = null;
+  function pt(e) { var t = e.touches ? e.touches[0] : e; return { x: t.clientX, y: t.clientY }; }
+  function onDown(e) {
+    if (e.target.closest(".map-tool,.map-attr,.map-open")) return;
+    MAP.dragging = true; MAP.moved = false;
+    var p = pt(e); startX = p.x; startY = p.y; baseOffX = MAP.offX; baseOffY = MAP.offY;
+    if (e.touches && e.touches.length === 2) {
+      var a = e.touches[0], b = e.touches[1];
+      pin0 = { dist: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY), z: MAP.z };
+    } else pin0 = null;
+  }
+  function onMove(e) {
+    if (!MAP.dragging) return;
+    if (e.touches && e.touches.length === 2 && pin0) {
+      e.preventDefault();
+      var a = e.touches[0], b = e.touches[1];
+      var dist = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+      var dz = Math.round(Math.log2(dist / pin0.dist));
+      var nz = Math.max(3, Math.min(19, pin0.z + dz));
+      if (nz !== MAP.z) { var f = Math.pow(2, nz - MAP.z); MAP.offX *= f; MAP.offY *= f; MAP.z = nz; pin0.dist = dist; pin0.z = nz; renderMap(true); }
+      MAP.moved = true; return;
+    }
+    var p = pt(e);
+    var dx = p.x - startX, dy = p.y - startY;
+    if (Math.abs(dx) + Math.abs(dy) > 6) MAP.moved = true;
+    if (MAP.moved) {
+      if (e.cancelable) e.preventDefault();
+      MAP.offX = baseOffX - dx; MAP.offY = baseOffY - dy; renderMap(true);
+    }
+  }
+  function onUp() { MAP.dragging = false; pin0 = null; }
+  v.addEventListener("pointerdown", onDown);
+  window.addEventListener("pointermove", onMove, { passive: false });
+  window.addEventListener("pointerup", onUp);
+  v.addEventListener("touchstart", onDown, { passive: true });
+  v.addEventListener("touchmove", onMove, { passive: false });
+  v.addEventListener("touchend", onUp);
+  v.addEventListener("wheel", function (e) {
+    e.preventDefault();
+    mapZoom(e.deltaY < 0 ? 1 : -1);
+  }, { passive: false });
+})();
+window.addEventListener("online", function () { MAP._key = null; renderMap(true); });
 function refreshGPS() { getPos().catch(function () {}); }
-$("#hMap").addEventListener("click", function (e) {
-  if (e.target.closest(".map-attr")) return;
+function openMapsHere() {
   if (!GPS) { toast(GEO_OFF ? "Turn on Location for this app to see where you are" : "Still finding you…"); return; }
   var ll = GPS.lat.toFixed(6) + "," + GPS.lon.toFixed(6);
   openApp({ id: "maps", mapsHere: true, ll: ll, name: "Maps" });
+}
+var mapOpen = $("#mapOpen"); if (mapOpen) mapOpen.addEventListener("click", function (e) { e.stopPropagation(); openMapsHere(); });
+var mapIn = $("#mapIn"); if (mapIn) mapIn.addEventListener("click", function (e) { e.stopPropagation(); mapZoom(1); });
+var mapOut = $("#mapOut"); if (mapOut) mapOut.addEventListener("click", function (e) { e.stopPropagation(); mapZoom(-1); });
+var mapRec = $("#mapRec"); if (mapRec) mapRec.addEventListener("click", function (e) { e.stopPropagation(); mapRecenter(); });
+// avoid opening Maps when the user just panned
+$("#hMap").addEventListener("click", function (e) {
+  if (e.target.closest(".map-tool,.map-attr,.map-open,.map-v")) return;
 });
-$("#hMap").addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("#hMap").click(); } });
-window.addEventListener("resize", function () { clearTimeout(renderMap.t); renderMap.t = setTimeout(renderMap, 150); });
+window.addEventListener("resize", function () { clearTimeout(renderMap.t); renderMap.t = setTimeout(function () { MAP._key = null; renderMap(true); }, 150); });
 
 // ----- tabs -----
 var VIEWS = ["home", "weather", "markets"], VIEW = "home";
@@ -812,7 +897,7 @@ function show(tab) {
   VIEWS.forEach(function (t) { $("#v-" + t).hidden = t !== tab; });
   document.body.classList.toggle("on-home", tab === "home");
   Store.setUI({ view: tab }); restoreScroll();
-  if (tab === "home") setTimeout(renderMap, 0);
+  if (tab === "home") setTimeout(function () { renderMap(true); }, 0);
   $$(".tab").forEach(function (b) { b.classList.toggle("on", b.getAttribute("data-tab") === tab); });
 }
 $$(".tab").forEach(function (b) { b.addEventListener("click", function () { show(b.getAttribute("data-tab")); }); });
@@ -822,7 +907,7 @@ function toggleXp(k) {
   var el = $(k === "wx" ? "#xpWx" : "#xpMk"), btn = $(k === "wx" ? "#hWx" : "#hMk"), open = el.hidden;
   el.hidden = !open; btn.setAttribute("aria-expanded", String(open));
   if (open) { if (k === "wx") renderWeather(); else renderMarkets(); setTimeout(function () { try { el.scrollIntoView({ block: "nearest", behavior: "smooth" }); } catch (e) {} }, 30); }
-  setTimeout(renderMap, 0);
+  setTimeout(function () { renderMap(true); }, 0);
 }
 $("#xpCity").addEventListener("click", function () { openCity(); });
 $("#xpMkEdit").addEventListener("click", function () { openEditCoins(); });
@@ -895,10 +980,30 @@ function openEditApps() {
   });
 }
 
-// ----- + add app: popular apps (one tap) + custom name and link -----
-function openAddApp() {
-  var html = '<p class="note" style="margin-bottom:10px">Tap an app to add it. It opens the app on your phone (or its website if the app isn\'t installed) and the website on a computer. Remove or move apps in ⚙ EDIT APPS.</p>' +
-    '<label class="field">FILTER<input id="pkFilter" placeholder="Type to filter…" autocomplete="off" autocapitalize="off" spellcheck="false"></label>' +
+// ----- + add app: categories + search (v3.3) -----
+var APP_CATS = [
+  { id: "social", name: "Social", match: /instagram|tiktok|facebook|snapchat|threads|reddit|linkedin|pinterest|bluesky|mastodon|tumblr|lemon8|bereal|beReal|vsco/i },
+  { id: "msg", name: "Chat", match: /whatsapp|messenger|telegram|discord|signal|slack|teams|skype|line|wechat|viber|groupme|messages/i },
+  { id: "music", name: "Music", match: /spotify|music|pandora|soundcloud|deezer|tidal|shazam|bandcamp|audible|podcast/i },
+  { id: "video", name: "Video", match: /youtube|netflix|twitch|hulu|disney|max|peacock|paramount|primevideo|tubi|crunchyroll|vimeo|roku|appletv|plex/i },
+  { id: "money", name: "Money", match: /venmo|cash|paypal|zelle|coinbase|binance|robinhood|chase|bank|amex|capital|chime|stripe|mint|creditkarma|wells|quickbooks|applepay|googlepay|1password|bitwarden|lastpass/i },
+  { id: "work", name: "Work", match: /gmail|outlook|drive|docs|sheets|slides|notion|trello|asana|todoist|evernote|dropbox|onedrive|github|gitlab|figma|word|excel|powerpoint|calendar|mail|zoom|meet/i },
+  { id: "ai", name: "AI", match: /chatgpt|claude|gemini|grok|perplexity|copilot|character|midjourney|runway|eleven|poe|openai/i },
+  { id: "travel", name: "Travel", match: /uber|lyft|maps|waze|airbnb|booking|expedia|kayak|tripadvisor|delta|united|southwest|american|flightradar|citymapper|tesla|gasbuddy/i },
+  { id: "food", name: "Food", match: /doordash|ubereats|grubhub|instacart|starbucks|mcdonald|chipotle|opentable|resy|yelp|toast/i },
+  { id: "shop", name: "Shop", match: /amazon|ebay|etsy|walmart|target|costco|shein|temu|poshmark|bestbuy|shopify|aliexpress/i },
+  { id: "games", name: "Games", match: /fortnite|roblox|minecraft|steam|xbox|playstation|twitchigdb/i }
+];
+function catOf(c) {
+  var hay = (c.id || "") + " " + (c.name || "");
+  for (var i = 0; i < APP_CATS.length; i++) if (APP_CATS[i].match.test(hay)) return APP_CATS[i].id;
+  return "more";
+}
+function openAddApp(opt) {
+  opt = opt || {};
+  var html = '<label class="field find-field"><span class="find-label">FIND AN APP</span><input id="pkFilter" placeholder="Find an app…" autocomplete="off" autocapitalize="off" spellcheck="false"></label>' +
+    '<div class="cat-chips" id="pkCats" role="tablist"></div>' +
+    '<div class="pick-hint" id="pkHint">Suggested</div>' +
     '<div class="pick" id="pkGrid"></div>' +
     '<h3>CUSTOM APP</h3>' +
     '<label class="field">NAME<input id="caName" maxlength="14" placeholder="e.g. Instagram" autocomplete="off"></label>' +
@@ -907,27 +1012,61 @@ function openAddApp() {
     '<div class="field">COLOR</div><div class="colors" id="caC"></div>' +
     '<button class="btn" id="caAdd">＋ ADD CUSTOM APP</button>';
   sheet("＋ ADD APP", html, function (b) {
-    var gSel = "letter", cSel = CUSTOM_COLORS[0];
-    function has(c) { return APPS.some(function (a) { return a.id === "p-" + c.id || (a.custom && a.name === c.name); }); }
+    var gSel = "letter", cSel = CUSTOM_COLORS[0], cat = "all", recent = [];
+    try { recent = Store.getLocal("recentPins", []) || []; } catch (e) { recent = []; }
+    function has(c) { return APPS.some(function (a) { return a.id === "p-" + c.id || a.id === c.id || (a.name && a.name === c.name); }); }
+    function saveRecent(id) {
+      recent = [id].concat(recent.filter(function (x) { return x !== id; })).slice(0, 12);
+      try { Store.setLocal("recentPins", recent); } catch (e) {}
+    }
+    function drawCats() {
+      var chips = [{ id: "all", name: "All" }].concat(APP_CATS).concat([{ id: "more", name: "More" }]);
+      b.querySelector("#pkCats").innerHTML = chips.map(function (c) {
+        return '<button type="button" class="cat-chip' + (c.id === cat ? " on" : "") + '" data-cat="' + c.id + '" role="tab" aria-selected="' + (c.id === cat) + '">' + esc(c.name) + "</button>";
+      }).join("");
+    }
     function drawGrid() {
       var fq = ((b.querySelector("#pkFilter") || {}).value || "").trim().toLowerCase();
-      var list = !fq ? CATALOG : CATALOG.filter(function (c) {
-        if ((c.name || "").toLowerCase().indexOf(fq) >= 0) return true;
-        return (c.aliases || []).some(function (al) { return String(al).toLowerCase().indexOf(fq) >= 0; });
-      });
-      b.querySelector("#pkGrid").innerHTML = list.slice(0, 120).map(function (c) {
+      var list;
+      if (fq) {
+        list = CATALOG.filter(function (c) {
+          if ((c.name || "").toLowerCase().indexOf(fq) >= 0) return true;
+          return (c.aliases || []).some(function (al) { return String(al).toLowerCase().indexOf(fq) >= 0; });
+        });
+        b.querySelector("#pkHint").textContent = list.length ? (list.length + " match" + (list.length === 1 ? "" : "es")) : "No matches — try another name";
+      } else if (cat === "all") {
+        var sug = recent.map(function (id) { return CATALOG.filter(function (c) { return c.id === id; })[0]; }).filter(Boolean);
+        var rest = CATALOG.filter(function (c) { return recent.indexOf(c.id) < 0; });
+        list = sug.concat(rest);
+        b.querySelector("#pkHint").textContent = sug.length ? "Recent & suggested" : "Popular apps — tap to pin";
+      } else {
+        list = CATALOG.filter(function (c) { return catOf(c) === cat; });
+        b.querySelector("#pkHint").textContent = list.length + " in " + (APP_CATS.concat([{ id: "more", name: "More" }]).filter(function (x) { return x.id === cat; })[0] || {}).name;
+      }
+      b.querySelector("#pkGrid").innerHTML = list.slice(0, 96).map(function (c) {
         var on = has(c);
-        return '<button class="pk' + (on ? " added" : "") + '" data-pk="' + c.id + '" aria-label="' + (on ? "Added: " : "Add ") + esc(c.name) + '"><img src="' + c.icon + '" alt="" loading="lazy" decoding="async"><span>' + esc(c.name) + "</span></button>";
+        return '<button class="pk' + (on ? " added" : "") + '" data-pk="' + c.id + '" aria-label="' + (on ? "Added: " : "Add ") + esc(c.name) + '"><img src="' + c.icon + '" alt="" loading="lazy" decoding="async"><span>' + esc(c.name) + "</span>" + (on ? '<i class="pk-check">✓</i>' : "") + "</button>";
       }).join("") || '<p class="note">No matches.</p>';
     }
-    var pkF = b.querySelector("#pkFilter"); if (pkF) pkF.addEventListener("input", drawGrid);
+    b.querySelector("#pkCats").addEventListener("click", function (e) {
+      var x = e.target.closest("[data-cat]"); if (!x) return;
+      cat = x.getAttribute("data-cat"); drawCats(); drawGrid();
+    });
+    var pkF = b.querySelector("#pkFilter");
+    if (pkF) {
+      pkF.addEventListener("input", function () { cat = "all"; drawCats(); drawGrid(); });
+      if (opt.focusSearch) setTimeout(function () { pkF.focus(); }, 60);
+      if (opt.query) { pkF.value = opt.query; }
+    }
     b.querySelector("#pkGrid").addEventListener("click", function (e) {
       var x = e.target.closest("[data-pk]"); if (!x) return;
       var c = CATALOG.filter(function (q) { return q.id === x.getAttribute("data-pk"); })[0];
-      if (has(c)) { toast(c.name + " is already in your apps"); return; }
+      if (!c) return;
+      if (has(c)) { toast(c.name + " is already on your grid"); return; }
       var a = { id: "p-" + c.id, name: c.name, url: c.url, icon: c.icon, glyph: "letter", letter: c.name, bg: "#111827", on: true, custom: true, pick: true };
       if (c.web) a.web = c.web; if (c.pkg) a.pkg = c.pkg;
-      APPS.push(a); saveApps(); renderApps(); drawGrid(); toast(c.name + " added to your apps");
+      APPS.push(a); saveApps(); renderApps(); saveRecent(c.id); drawGrid();
+      x.classList.add("pop"); toast(c.name + " pinned");
     });
     function drawPick() {
       b.querySelector("#caG").innerHTML = CUSTOM_GLYPHS.map(function (g) {
@@ -949,7 +1088,7 @@ function openAddApp() {
       b.querySelector("#caName").value = ""; b.querySelector("#caUrl").value = ""; drawPick();
       toast(nm + " added to your apps");
     });
-    drawGrid(); drawPick();
+    drawCats(); drawGrid(); drawPick();
   });
 }
 
@@ -1075,7 +1214,7 @@ function openHelp() {
     '<ol class="steps"><li><b>iPhone:</b> open <b>zapwiseai.com/os</b> in Safari → Share → Add to Home Screen.</li>' +
     '<li><b>Android:</b> open it in Chrome → menu ⋮ → Install app / Add to Home screen.</li>' +
     '<li><b>Computer:</b> bookmark the page or Install from the browser menu. It works in Chrome, Edge, Firefox and Safari.</li></ol>' +
-    '<h3>GOOD TO KNOW</h3><p class="note">One tap opens an app if it\'s installed. If it isn\'t, its website opens after about a second. On a computer the website opens in a new tab. The live map shows your area from your location (OpenStreetMap / CARTO tiles); tap it to open Maps. Weather asks for location once; tap Allow, or set a city in the menu. Your choices stay on this device only.</p>',
+    '<h3>GOOD TO KNOW</h3><p class="note">One tap opens an app if it\'s installed. If it isn\'t, its website opens after about a second. On a computer the website opens in a new tab. The live map shows your area from your location (OpenStreetMap tiles); tap it to open Maps. Weather asks for location once; tap Allow, or set a city in the menu. Your choices stay on this device only.</p>',
     null);
 }
 
@@ -1362,6 +1501,36 @@ function paintTicker(rows) {
   track.innerHTML = line;
 }
 
+
+// v3.3 find app CTA
+(function () {
+  var b = $("#findApp");
+  if (b) b.addEventListener("click", function () { openAddApp({ focusSearch: true }); });
+  // mark standalone for CSS dock/safe-area
+  var st = window.navigator.standalone === true || (window.matchMedia && matchMedia("(display-mode: standalone)").matches);
+  document.documentElement.classList.toggle("standalone", !!st);
+  document.documentElement.classList.toggle("in-browser", !st);
+})();
+
+
+(function scrollReveal() {
+  var RM = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (RM || !("IntersectionObserver" in window)) {
+    $$(".card").forEach(function (el) { el.classList.add("in"); });
+    return;
+  }
+  $$(".card").forEach(function (el) { el.classList.add("reveal"); });
+  var io = new IntersectionObserver(function (ents) {
+    ents.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add("in"); io.unobserve(en.target); } });
+  }, { rootMargin: "0px 0px -8% 0px", threshold: 0.08 });
+  $$(".card.reveal").forEach(function (el) { io.observe(el); });
+})();
+
+(function stickyTop() {
+  var top = $("#top"); if (!top) return;
+  var onScroll = function () { top.classList.toggle("scrolled", (window.scrollY || document.documentElement.scrollTop) > 8); };
+  window.addEventListener("scroll", onScroll, { passive: true }); onScroll();
+})();
 // ========== 13. boot ==========
 document.body.classList.add("on-home"); applyTheme(THEME.id);
 renderApps(); renderNowPlaying(); try { renderNet(); } catch (e) {}
