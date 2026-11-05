@@ -1,6 +1,6 @@
 {
-  "version": "4.9.0",
+  "version": "4.9.1",
   "built": "2026-11-05",
   "channel": "stable",
-  "notes": "v4.9.0: iOS touch root-causes \u2014 (1) ghost click after open landed on ADD ACCOUNT .pk / holdChart or scrim and instantly closed/committed (overlay guard + sheet/detail capture); (2) nested #hMkAct was inside <button #hMk> + click-only listeners; (3) full-screen #tapShield ate taps; (4) stale OVERLAY.hist after dismiss raced popstate and closed Markets detail; (5) Lite hid wallpaper \u2014 now animates under lite. WebKit/iPhone+Pixel touch QA (page.tap, standalone, SW 4.7\u21924.9). Angular HUD site-wide; 4 themes default ZAPWISE NEON PINK; brighter live wallpaper; version in header+THEME; cache-bust."
+  "notes": "v4.9.1: Video fixes \u2014 (1) wallpaper cyan blocks steady soft-pulse \u22658s no on/off blink; (2) entire Weather card opens detail (9-grid touch; hourly tap unless >10px horiz); (3) ticker own row/height \u2014 no overlap Markets/Focus; (4) Markets +Add stopPropagation \u2014 one sheet only, audit inner card buttons; (5) Weather local date + Open-Meteo day0=today timezone=auto; one feels source current.apparent_temperature. Readable see-through glass (rgba(7,8,20,.72) inner + neon edge). Regression tests included."
 }

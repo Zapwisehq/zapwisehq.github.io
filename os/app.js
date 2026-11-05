@@ -1,7 +1,7 @@
-/* ZAPWISE//OS web app v4.9.0 (Nov 5, 2026). iOS touch fixes, WebKit-grade QA, angular HUD site-wide, neon-pink themes, brighter live wallpaper. No tabs. Voice only from ZAP AI. */
+/* ZAPWISE//OS web app v4.9.1 (Nov 5, 2026). iOS touch fixes, WebKit-grade QA, angular HUD site-wide, neon-pink themes, brighter live wallpaper. No tabs. Voice only from ZAP AI. */
 (function () {
 "use strict";
-var VERSION = "4.9.0";
+var VERSION = "4.9.1";
 var APP_VERSION = VERSION;
 
 // v4.5: default Lite on coarse/mobile unless user already chose
@@ -1161,6 +1161,31 @@ var WX_DAY = 0, WX_MODE = "actual";
 try { WX_DAY = +Store.getLocal("wxDay", 0) || 0; } catch (e) {}
 try { WX_MODE = Store.getLocal("wxMode", "feels") || "actual"; } catch (e) {}
 
+/* Local calendar helpers — avoid UTC shift from date-only / T12 strings across TZ */
+function parseLocalYMD(s) {
+  var p = String(s || "").slice(0, 10).split("-");
+  var y = +p[0], m = +p[1], d = +p[2];
+  if (!y || !m || !d) return new Date();
+  return new Date(y, m - 1, d, 12, 0, 0);
+}
+function localYMD(dt) {
+  dt = dt || new Date();
+  var m = dt.getMonth() + 1, d = dt.getDate();
+  return dt.getFullYear() + "-" + (m < 10 ? "0" : "") + m + "-" + (d < 10 ? "0" : "") + d;
+}
+/** Open-Meteo daily[0] = today (timezone=auto). Clamp stale stored day. */
+function syncWxDayIndex(j) {
+  if (!j || !j.daily || !j.daily.time || !j.daily.time.length) { WX_DAY = 0; return 0; }
+  WX_DAY = Math.max(0, Math.min(+WX_DAY || 0, j.daily.time.length - 1));
+  return WX_DAY;
+}
+function currentFeels(j) {
+  if (j && j.current && j.current.apparent_temperature != null && !isNaN(+j.current.apparent_temperature)) {
+    return +j.current.apparent_temperature;
+  }
+  return null;
+}
+
 function hoursForDay(j, dayIdx) {
   var day = j.daily.time[dayIdx];
   if (!day) return [];
@@ -1346,7 +1371,11 @@ function renderWxDetails(hourIdx) {
   if (sum) {
     var tip = rainTiming(j, WX_DAY);
     var sun = "Sunrise " + (rise ? isoT12(rise) : "—") + " · Sunset " + (set ? isoT12(set) : "—") + " · Daylight " + daylightStr(rise, set);
-    var feel = v.feels != null ? ("Feels " + Math.round(v.feels) + "°. ") : "";
+    /* One source of truth: current.apparent_temperature for live "now"; never daily max */
+    var feelN = null;
+    if (hourIdx == null && WX_DAY === 0) feelN = currentFeels(j);
+    if (feelN == null) feelN = v.feels;
+    var feel = feelN != null && !isNaN(+feelN) ? ("Feels " + Math.round(+feelN) + "°. ") : "";
     var cond = v.code != null ? (wxText(v.code).replace(/_/g, " ") + ". ") : "";
     sum.textContent = cond + feel + tip + ". " + sun;
   }
@@ -1377,14 +1406,15 @@ function renderConditions() {
   var letters = ["S", "M", "T", "W", "T", "F", "S"];
   var html = "";
   for (var d = 0; d < j.daily.time.length; d++) {
-    var dt = new Date(j.daily.time[d] + "T12:00:00");
+    var dt = parseLocalYMD(j.daily.time[d]);
     var wd = letters[dt.getDay()], dom = dt.getDate();
     var isToday = d === 0;
     html += '<button type="button" class="wx-day' + (d === WX_DAY ? " on" : "") + (isToday ? " today" : "") + '" data-d="' + d + '" role="tab" aria-selected="' + (d === WX_DAY) + '"><span class="wd">' + wd + '</span><span class="wn">' + dom + "</span></button>";
   }
   pick.innerHTML = html;
-  var sel = new Date(j.daily.time[WX_DAY] + "T12:00:00");
-  var lab = sel.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+  syncWxDayIndex(j);
+  var sel = parseLocalYMD(j.daily.time[WX_DAY]);
+  var lab = sel.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
   var dl = $("#wxDayLabel"); if (dl) dl.textContent = lab;
   var idxs = hoursForDay(j, WX_DAY);
   var at = j.hourly.apparent_temperature || [], t2 = j.hourly.temperature_2m || [];
@@ -1395,7 +1425,15 @@ function renderConditions() {
   });
   var hi = Math.round(Math.max.apply(null, series)), lo = Math.round(Math.min.apply(null, series));
   var hl = $("#wxChartHL"); if (hl) hl.textContent = hi + "°  " + lo + "°";
-  var ul = $("#wxUnitLbl"); if (ul) ul.textContent = (WX_MODE === "feels" ? "Feels like · " : "") + (S.units === "C" ? "Celsius (°C)" : "Fahrenheit (°F)");
+  var ul = $("#wxUnitLbl");
+  if (ul) {
+    if (WX_MODE === "feels" && WX_DAY === 0) {
+      var cf = currentFeels(j);
+      ul.textContent = (cf != null ? ("Feels like " + Math.round(cf) + "° · ") : "Feels like · ") + (S.units === "C" ? "Celsius (°C)" : "Fahrenheit (°F)");
+    } else {
+      ul.textContent = (WX_MODE === "feels" ? "Feels like · " : "") + (S.units === "C" ? "Celsius (°C)" : "Fahrenheit (°F)");
+    }
+  }
   var icons = $("#wxHourIcons");
   if (icons) {
     var step = Math.max(1, Math.floor(idxs.length / 8));
@@ -1417,7 +1455,7 @@ function renderConditions() {
     drawTempChart(tc, j, WX_DAY, WX_MODE);
     drawPrecipChart(pc, j, WX_DAY);
   }
-  if (anim && tc) { tc.style.opacity = "0.35"; setTimeout(function () { drawAll(); tc.style.transition = "opacity .28s ease"; tc.style.opacity = "1"; if (pc) { pc.style.transition = "opacity .28s ease"; pc.style.opacity = "1"; } }, 40); }
+  if (anim && tc) { /* v4.9.1: no opacity dip — redrawing at 0.35 looked like a flash over wallpaper */ drawAll(); if (pc) { pc.style.opacity = "1"; } }
   else drawAll();
   WX_SCRUB = -1;
   var scrub = $("#wxScrub"); if (scrub) scrub.hidden = true;
@@ -1486,7 +1524,7 @@ function refreshWeather(force) {
       "&hourly=temperature_2m,apparent_temperature,weather_code,is_day,precipitation_probability,precipitation,wind_speed_10m,wind_direction_10m,wind_gusts_10m,relative_humidity_2m,uv_index,visibility,pressure_msl,dew_point_2m,cloud_cover" +
       "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,sunrise,sunset,uv_index_max" +
       unitQ() + "&timezone=auto&forecast_days=7";
-    return getJSON(url).then(function (j) { WX = { at: Date.now(), units: S.units, key: locKey(), place: L.name || "MY LOCATION", j: j }; Store.setLocal("wx", WX); $("#wxNote").textContent = ""; });
+    return getJSON(url).then(function (j) { WX = { at: Date.now(), units: S.units, key: locKey(), place: L.name || "MY LOCATION", j: j }; syncWxDayIndex(j); Store.setLocal("wx", WX); try { Store.setLocal("wxDay", WX_DAY); } catch (eD) {} $("#wxNote").textContent = ""; });
   }).catch(function (e) {
     if (e && e.geo) $("#wxNote").innerHTML = "Location is off for this app. Tap <b>◎ CHANGE</b> above to type your city instead.";
     else $("#wxNote").textContent = navigator.onLine === false ? "You're offline. Showing the last weather we saved." : "Weather service didn't answer. We'll retry in a few minutes.";
@@ -1556,7 +1594,7 @@ function renderWeather() {
   var _wxH=$("#wxHours"); if(_wxH) _wxH.innerHTML = hs;
   var ds = "";
   for (var d = 0; d < 5 && d < j.daily.time.length; d++) {
-    var dt = new Date(j.daily.time[d] + "T12:00:00"), nm = d === 0 ? "TODAY" : dt.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase();
+    var dt = parseLocalYMD(j.daily.time[d]), nm = d === 0 ? "TODAY" : dt.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase();
     var dc = j.daily.weather_code[d];
     ds += '<div class="day"><span class="d">' + nm + '</span><span>' + wxEmoji(dc, true) + '</span><span class="c">' + wxText(dc) + '</span><span class="r">' + (j.daily.precipitation_probability_max[d] || 0) + '%</span><span class="t">' + Math.round(j.daily.temperature_2m_max[d]) + '° <span>/ ' + Math.round(j.daily.temperature_2m_min[d]) + '°</span></span></div>';
   }
@@ -2885,28 +2923,156 @@ function show(tab) {
 }
 $$(".tab").forEach(function (b) { b.addEventListener("click", function () { show(b.getAttribute("data-tab")); }); });
 (function bindHomeWeatherCard() {
-  var wx = $("#hWx"); if (!wx) return;
-  bindUserTap(wx, function () { openCardDetail("wx", { fromUser: true }); });
+  /* Entire card surface opens detail. Hourly row: tap unless real horizontal move >10px. */
+  var wx = $("#hWx"); if (!wx || wx._wxTapFull) return; wx._wxTapFull = true;
+  var sx = 0, sy = 0, active = false, openedAt = 0;
+  function pt(e) {
+    if (e.changedTouches && e.changedTouches[0]) return { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
+    if (e.touches && e.touches[0]) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    return { x: e.clientX, y: e.clientY };
+  }
+  function openWx(e) {
+    if (Date.now() - openedAt < 420) {
+      try { if (e) { e.preventDefault(); e.stopPropagation(); } } catch (err) {}
+      return;
+    }
+    openedAt = Date.now();
+    clearTapShieldNow();
+    try { if (e) { e.preventDefault(); e.stopPropagation(); if (e.stopImmediatePropagation) e.stopImmediatePropagation(); } } catch (err2) {}
+    /* Always land on today (daily index 0) when opening from the home card */
+    WX_DAY = 0;
+    try { Store.setLocal("wxDay", 0); } catch (e3) {}
+    openCardDetail("wx", { fromUser: true });
+  }
+  function onDown(e) {
+    if (e.pointerType === "mouse" && e.button != null && e.button !== 0) return;
+    active = true;
+    var p = pt(e); sx = p.x; sy = p.y;
+  }
+  function onUp(e) {
+    if (!active) return;
+    active = false;
+    var p = pt(e);
+    var dx = Math.abs(p.x - sx), dy = Math.abs(p.y - sy);
+    /* Real horizontal scroll on hourly strip — do not open */
+    if (dx > 10 || dy > 10) return;
+    openWx(e);
+  }
+  wx.addEventListener("pointerdown", onDown, { capture: true, passive: true });
+  wx.addEventListener("pointerup", function (e) {
+    if (e.pointerType === "mouse") return; /* mouse uses click */
+    onUp(e);
+    if (e.pointerType === "touch" || e.pointerType === "pen") wx._zapPtrWx = Date.now();
+  }, { capture: true, passive: false });
+  wx.addEventListener("touchstart", onDown, { capture: true, passive: true });
+  wx.addEventListener("touchend", function (e) {
+    if (wx._zapPtrWx && Date.now() - wx._zapPtrWx < 400) return;
+    onUp(e);
+  }, { capture: true, passive: false });
+  wx.addEventListener("click", function (e) {
+    if (Date.now() - openedAt < 420) { try { e.preventDefault(); e.stopPropagation(); } catch (err) {} return; }
+    /* click / keyboard activation — still open whole card */
+    openWx(e);
+  }, { capture: true });
+  wx.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openWx(e); }
+  });
 })();
 (function bindHomeMarketsCard() {
   var card = $("#hMk"); if (!card) return;
-  function openPort() { openCardDetail("mk", { fromUser: true }); }
-  function openAdd() {
+  var suppressUntil = 0, addLast = 0;
+  function openPort() {
+    if (Date.now() < suppressUntil) return;
+    openCardDetail("mk", { fromUser: true });
+  }
+  function isAddTarget(e) {
+    if (!e) return false;
+    try {
+      var t = e.target;
+      if (t && t.nodeType === 3) t = t.parentElement; /* text node inside + Add */
+      if (t && t.closest && t.closest("#hMkAct,[data-hmk-add]")) return true;
+      if (e.composedPath) {
+        var path = e.composedPath();
+        for (var i = 0; i < path.length; i++) {
+          var n = path[i];
+          if (!n || !n.getAttribute) continue;
+          if (n.id === "hMkAct" || (n.getAttribute && n.getAttribute("data-hmk-add"))) return true;
+        }
+      }
+    } catch (err) {}
+    return false;
+  }
+  function openAdd(e) {
+    var now = Date.now();
+    if (now - addLast < 420) {
+      try { if (e) { e.preventDefault(); e.stopPropagation(); if (e.stopImmediatePropagation) e.stopImmediatePropagation(); } } catch (err0) {}
+      return;
+    }
+    addLast = now;
+    suppressUntil = now + 700; /* card open-detail must not also fire */
     clearTapShieldNow();
-    try { openAddAccount(); } catch (err) { openPort(); }
+    try { if (e) { e.preventDefault(); e.stopPropagation(); if (e.stopImmediatePropagation) e.stopImmediatePropagation(); } } catch (err1) {}
+    try { openAddAccount(); } catch (err) { suppressUntil = 0; openPort(); }
   }
-  /* + Add is a real <button> sibling-safe control — bind FIRST so it wins over card */
+  /* Capture-phase on + Add so card bubble / sibling pointer+touch never stacks PORTFOLIO under ADD ACCOUNT */
   var act = $("#hMkAct");
-  if (act) {
-    bindUserTap(act, function () { openAdd(); });
+  function bindAddEl(el) {
+    if (!el || el._mkAddBound) return; el._mkAddBound = true;
+    ["pointerdown", "touchstart"].forEach(function (ev) {
+      el.addEventListener(ev, function (e) {
+        try { e.stopPropagation(); if (e.stopImmediatePropagation) e.stopImmediatePropagation(); } catch (err) {}
+      }, { capture: true, passive: false });
+    });
+    ["pointerup", "touchend", "click"].forEach(function (ev) {
+      el.addEventListener(ev, function (e) {
+        if (ev === "pointerup" && e.pointerType === "mouse") return;
+        if (ev === "touchend" && el._zapPtrAdd && Date.now() - el._zapPtrAdd < 400) return;
+        if (ev === "pointerup" && (e.pointerType === "touch" || e.pointerType === "pen")) el._zapPtrAdd = Date.now();
+        openAdd(e);
+      }, { capture: true, passive: false });
+    });
   }
+  bindAddEl(act);
+  /* Dynamic empty-state CTA [data-hmk-add] inside card */
+  card.addEventListener("pointerdown", function (e) {
+    if (isAddTarget(e)) {
+      try { e.stopPropagation(); if (e.stopImmediatePropagation) e.stopImmediatePropagation(); } catch (err) {}
+    }
+  }, { capture: true, passive: false });
+  card.addEventListener("click", function (e) {
+    if (!isAddTarget(e)) return;
+    /* only fire openAdd here if the dedicated act binding didn't (e.g. span.hmk-cta) */
+    if (e.target && e.target.closest && e.target.closest("#hMkAct")) return;
+    openAdd(e);
+  }, true);
   bindUserTap(card, function (e) {
-    var t = e && e.target;
-    if (t && t.closest && t.closest("#hMkAct,[data-hmk-add]")) { openAdd(); return; }
+    if (Date.now() < suppressUntil || isAddTarget(e)) return;
     openPort();
   }, { ignore: function (e) {
-    return !!(e && e.target && e.target.closest && e.target.closest("#hMkAct,[data-hmk-add]"));
+    return Date.now() < suppressUntil || isAddTarget(e);
   }});
+})();
+
+/* Audit: inner card controls stop bubble to parent open-detail (bubble phase so their own handlers still run) */
+(function auditCardInnerControls() {
+  function stopBubble(e) {
+    try { e.stopPropagation(); } catch (err) {}
+  }
+  function bindStop(sel) {
+    var el = $(sel); if (!el || el._innerStopBound) return; el._innerStopBound = true;
+    ["pointerup", "touchend", "click"].forEach(function (ev) {
+      el.addEventListener(ev, stopBubble, false);
+    });
+  }
+  ["#placeAdd", "#mapOpen", "#focToggle", "#focReset", "#focTap", "#mapIn", "#mapOut", "#mapRec"].forEach(bindStop);
+  /* Focus presets live inside #mFocus — stop bubble after their click handler via delegation */
+  var foc = $("#mFocus");
+  if (foc && !foc._focBubbleStop) {
+    foc._focBubbleStop = true;
+    foc.addEventListener("click", function (e) {
+      if (e.target && e.target.closest && e.target.closest("[data-foc-min],#focToggle,#focReset,#focTap")) stopBubble(e);
+    }, false);
+  }
 })();
 /* Clear shield as soon as the user touches any home card (prevents ghost-block) */
 document.addEventListener("pointerdown", function (e) {
@@ -3257,7 +3423,7 @@ document.addEventListener("click", function (e) {
 
 /* v4.6.1: block tap-through for a beat after any overlay closes */
 
-/* v4.9.0: real touch taps for iOS Safari / standalone PWA.
+/* v4.9.1: real touch taps for iOS Safari / standalone PWA.
    Nested <button> controls and click-only listeners miss touches; also clear tap-shield. */
 function clearTapShieldNow() {
   try {
@@ -5171,7 +5337,7 @@ renderApps(); renderNowPlaying(); try { renderNet(); } catch (e) {}
 tick(); setInterval(tick, 1000);
 renderWeather(); renderMarkets(); renderMap(); try { renderPlacesRow(); } catch (e) {}
 window.addEventListener("offline", renderNet);
-setInterval(function () { if (COINS.length > 2) { mkPage++; renderMarkets(); } }, 8000);
+setInterval(function () { if (COINS.length > 2 && document.visibilityState === "visible" && !document.documentElement.classList.contains("detail-open") && !document.documentElement.classList.contains("sheet-open")) { mkPage++; renderMarkets(); } }, 12000);
 requestAnimationFrame(loop);
 show(Q.get("tab") || Store.ui().view || "home");
 requestAnimationFrame(restoreScroll); setTimeout(restoreScroll, 400); // again after late content (weather, icons) settles
@@ -6205,10 +6371,16 @@ try {
   window.ZAPOS.openZap = openZapAssistant;
   window.ZAPOS.closeZap = closeZapAssistant;
   window.ZAPOS.closeSheet = closeSheet;
+  window.ZAPOS.openAddAccount = openAddAccount;
+  window.ZAPOS.openCardDetail = openCardDetail;
   window.ZAPOS.dismissOverlay = function () { dismissTopOverlay(false); };
+  window.ZAPOS.parseLocalYMD = parseLocalYMD;
+  window.ZAPOS.localYMD = localYMD;
+  window.ZAPOS.currentFeels = currentFeels;
+  window.ZAPOS.getWxDay = function () { return WX_DAY; };
   window.ZAPOS.routeZap = routeZapIntent;
   window.ZAPOS.setFavs = function (arr) { FAVS = Array.isArray(arr) ? arr : []; saveFavs(); return FAVS; };
-  window.ZAPOS.seedWx = function (wx) { try { WX = wx; Store.setLocal("wx", wx); } catch (e) {} };
+  window.ZAPOS.seedWx = function (wx) { try { WX = wx; Store.setLocal("wx", wx); syncWxDayIndex(wx && wx.j); try { renderWeather(); } catch (eR) {} } catch (e) {} };
   window.ZAPOS.detectChain = detectChain;
   window.ZAPOS.applyWallpaper = applyWallpaper;
   window.ZAPOS.wallpaperMode = wallpaperMode;
