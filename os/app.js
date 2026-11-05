@@ -17,7 +17,7 @@
    Store.applyRemote below. */
 (function () {
 "use strict";
-var VERSION = "2.1.1";
+var VERSION = "3.0.1";
 var STATUS_MSGS = ["> SHORTCUTS ARMED", "> NET SECURE", "> AI LINK STABLE", "> SIGNAL CLEAN", "> APPS READY"];
 var FOCUS_MS = 25 * 60000, DOCK_N = 5;
 var DAY_START = 7, DAY_END = 23;
@@ -30,7 +30,7 @@ function clone(o) { return o == null ? o : JSON.parse(JSON.stringify(o)); }
 // ========== 2. STATE: one versioned object + one save/load layer ==========
 var Store = (function () {
   var STATE_KEY = "zapos.state", DEVICE_KEY = "zapos.device", VER = 1;
-  var PREF_KEYS = ["settings", "theme", "apps", "coins", "loc"];                     // shared state (sync-ready)
+  var PREF_KEYS = ["settings", "theme", "apps", "coins", "loc", "favs"];                     // shared state (sync-ready)
   var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss"]; // this device only
   function read(k) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
   function write(k, v) { if (dead) return false; try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
@@ -145,7 +145,7 @@ var DEFAULT_APPS = [
   { id: "gemini", name: "Gemini", url: "googlegemini://", icon: "/os/icons/gemini.jpg", web: "https://gemini.google.com", glyph: "gem", bg: "linear-gradient(135deg,#4f7cff,#a25cff)", accent: "#8b9dff" },
   { id: "maps", name: "Maps", url: "maps://", icon: "/os/icons/maps.jpg", web: "https://maps.apple.com/", glyph: "map", bg: "linear-gradient(135deg,#3ddc84,#2a9df4)", accent: "#3ddc84" },
   { id: "messages", name: "Messages", url: "sms:", icon: "/os/icons/messages.jpg", mac: "sms:", desk: "https://messages.google.com/web", glyph: "bubble", bg: "linear-gradient(180deg,#5af575,#16c13c)", accent: "#3ddc84" },
-  { id: "phone", name: "Phone", url: "tel:", icon: "/os/icons/phone.jpg", ios: "mobilephone://", mac: "facetime://", desk: "https://voice.google.com", glyph: "phone", bg: "linear-gradient(180deg,#5af575,#16c13c)", accent: "#3ddc84" },
+  { id: "phone", name: "Phone", url: "tel:", icon: "/os/icons/phone.jpg", dial: true, glyph: "phone", bg: "linear-gradient(180deg,#5af575,#16c13c)", accent: "#3ddc84" },
   { id: "mail", name: "Mail", url: "mailto:", icon: "/os/icons/mail.jpg", web: "https://www.icloud.com/mail", glyph: "mail", bg: "linear-gradient(180deg,#1ea1ff,#1166dd)", accent: "#1ea1ff" },
   { id: "calendar", name: "Calendar", url: "calshow://", icon: "/os/icons/calendar.jpg", web: "https://www.icloud.com/calendar", glyph: "cal", bg: "#fff", accent: "#ff4d5e" },
   { id: "notes", name: "Notes", url: "mobilenotes://", icon: "/os/icons/notes.jpg", web: "https://www.icloud.com/notes", glyph: "notes", bg: "linear-gradient(180deg,#fff6c2 0 28%,#ffd23f 28%)", accent: "#ffd23f" }
@@ -190,7 +190,7 @@ var CATALOG = [
   { id: "capcut", name: "CapCut", url: "capcut://", web: "https://www.capcut.com" },
   { id: "canva", name: "Canva", url: "canva://", web: "https://www.canva.com" },
   { id: "venmo", name: "Venmo", url: "venmo://", web: "https://venmo.com" },
-  { id: "cashapp", name: "Cash App", url: "https://cash.app" }
+  { id: "cashapp", name: "Cash App", url: "cashme://", web: "https://cash.app" }
 ];
 CATALOG.forEach(function (c) { c.icon = "/os/icons/" + c.id + ".jpg"; });
 var DEFAULT_COINS = [{ id: "bitcoin", sym: "BTC", name: "Bitcoin" }, { id: "pax-gold", sym: "GOLD", name: "Gold (PAX Gold)" }];
@@ -203,7 +203,7 @@ function migrateApps() {
   if (!APPS || !APPS.length) { APPS = clone(DEFAULT_APPS); return; }
   var OLD_ORDER = "x,youtube,chatgpt,grok,gemini,maps,messages,phone,mail,calendar,notes,web";
   APPS = APPS.filter(function (a) { return a.custom || (a.id !== "music" && a.id !== "spotify"); }); // now in the PLAY hub
-  APPS.forEach(function (a) { var d = DEFAULT_APPS.filter(function (x) { return x.id === a.id; })[0]; if (d && !a.custom) { var on = a.on; Object.keys(d).forEach(function (k) { a[k] = d[k]; }); delete a.fb; delete a.store; a.on = on; } });
+  APPS.forEach(function (a) { var d = DEFAULT_APPS.filter(function (x) { return x.id === a.id; })[0]; if (d && !a.custom) { var on = a.on; delete a.ios; delete a.mac; delete a.desk; Object.keys(d).forEach(function (k) { a[k] = d[k]; }); delete a.fb; delete a.store; a.on = on; } });
   if (APPS.map(function (a) { return a.id; }).join(",") === OLD_ORDER) APPS.sort(function (p, q) { return DEFAULT_APPS.findIndex(function (d) { return d.id === p.id; }) - DEFAULT_APPS.findIndex(function (d) { return d.id === q.id; }); });
   // picked apps follow the catalog's current links (v2.1.1: TikTok / Cash App went website-only: their app links
   // aren't officially documented for opening, and an unknown link makes iPhone say "invalid address")
@@ -243,6 +243,7 @@ var MAC = !MOBILE && /Mac/i.test(navigator.platform || navigator.userAgent);
 // new tab for websites. (window.open with "noopener" always returns null, which used to ALSO send this page away.)
 function go(u) { var w = null; try { w = window.open(u, "_blank"); } catch (e) {} if (w) { try { w.opener = null; } catch (e) {} } else location.href = u; }
 function openApp(a) {
+  if (a.dial || a.id === "phone") { openDial(); return; }
   var url = a.url || "";
   if (/^https?:/i.test(url)) { go(url); return; }
   if (!MOBILE) {
@@ -538,6 +539,7 @@ function refreshWeather(force) {
   }).catch(function (e) {
     if (e && e.geo) $("#wxNote").innerHTML = "Location is off for this app. Tap <b>◎ CHANGE</b> above to type your city instead.";
     else $("#wxNote").textContent = navigator.onLine === false ? "You're offline. Showing the last weather we saved." : "Weather service didn't answer. We'll retry in a few minutes.";
+    var xn = $("#xpNote"); if (xn) xn.textContent = $("#wxNote").textContent;
     if (e && e.geo && !WX) { $("#wxPlace").textContent = "LOCATION OFF"; $("#hwNow").textContent = "LOCATION OFF · TAP TO SET A CITY"; $("#wxCond").textContent = "SET YOUR CITY"; }
     else if (!WX) $("#hwNow").textContent = navigator.onLine === false ? "OFFLINE · NO WEATHER SAVED YET" : "WEATHER BUSY · RETRYING SOON";
   }).then(function () { wxBusy = false; renderWeather(); });
@@ -589,6 +591,9 @@ function renderWeather() {
     ds += '<div class="day"><span class="d">' + nm + '</span><span>' + wxEmoji(dc, true) + '</span><span class="c">' + wxText(dc) + '</span><span class="r">' + (j.daily.precipitation_probability_max[d] || 0) + '%</span><span class="t">' + Math.round(j.daily.temperature_2m_max[d]) + '° <span>/ ' + Math.round(j.daily.temperature_2m_min[d]) + '°</span></span></div>';
   }
   $("#wxDays").innerHTML = ds;
+  $("#xpHours").innerHTML = hs; $("#xpDays").innerHTML = ds;
+  $("#xpPlace").textContent = "➤ " + WX.place.toUpperCase();
+  $("#xpNote").textContent = $("#wxNote").textContent;
   updateStamps();
 }
 
@@ -620,12 +625,12 @@ function renderMarkets() {
   if (!COINS.length) { list = '<p class="offline">Your watchlist is empty. Tap ✎ EDIT to add a coin.</p>'; mini = '<span class="mki dim">WATCHLIST EMPTY · TAP TO ADD</span>'; }
   if (mkErr && !(MK && MK.at)) { list = '<p class="offline">Markets offline. We\'ll retry in 2 minutes.</p>'; mini = '<span class="mki dim">MARKETS OFFLINE · RETRYING</span>'; }
   else if (mkErr) list += '<p class="offline">Couldn\'t refresh. Showing the last prices we saved.</p>';
-  $("#mkList").innerHTML = list; $("#hMkList").innerHTML = mini;
+  $("#mkList").innerHTML = list; $("#hMkList").innerHTML = mini; $("#xpMkList").innerHTML = list;
   updateStamps();
 }
 function updateStamps() {
   var st = function (el, at) { if (!el) return; if (!at) { el.textContent = "UPDATED --"; el.classList.add("old"); return; } el.textContent = "UPDATED " + t12(new Date(at)); el.classList.toggle("old", Date.now() - at > 30 * 60000); };
-  st($("#wxStamp"), WX && WX.at); st($("#mkStamp"), MK && MK.at);
+  st($("#wxStamp"), WX && WX.at); st($("#mkStamp"), MK && MK.at); st($("#xpMkStamp"), MK && MK.at);
   var sh = function (el, at, pre) { el.textContent = pre + (at ? short12(at) : "--"); el.classList.toggle("old", !at || Date.now() - at > 30 * 60000); };
   sh($("#hwUpd"), WX && WX.at, "UPD "); sh($("#hMkT"), MK && MK.at, "");
   var last = Math.max(WX && WX.at || 0, MK && MK.at || 0); $("#hSync").textContent = "SYNC " + (last ? short12(last) : "--");
@@ -693,6 +698,7 @@ window.addEventListener("resize", function () { clearTimeout(renderMap.t); rende
 var VIEWS = ["home", "weather", "markets"], VIEW = "home";
 function show(tab) {
   if (tab === "menu") { openMenu(); return; }
+  if (tab === "weather" && !Q.get("fx")) tab = "home"; if (tab === "markets") tab = "home"; // v3: cards expand on the main screen
   if (VIEWS.indexOf(tab) < 0) tab = "home";
   VIEW = tab;
   VIEWS.forEach(function (t) { $("#v-" + t).hidden = t !== tab; });
@@ -702,8 +708,17 @@ function show(tab) {
   $$(".tab").forEach(function (b) { b.classList.toggle("on", b.getAttribute("data-tab") === tab); });
 }
 $$(".tab").forEach(function (b) { b.addEventListener("click", function () { show(b.getAttribute("data-tab")); }); });
-$("#hWx").addEventListener("click", function () { show("weather"); });
-$("#hMk").addEventListener("click", function () { openEditCoins(); });
+$("#hWx").addEventListener("click", function () { toggleXp("wx"); });
+$("#hMk").addEventListener("click", function () { toggleXp("mk"); });
+function toggleXp(k) {
+  var el = $(k === "wx" ? "#xpWx" : "#xpMk"), btn = $(k === "wx" ? "#hWx" : "#hMk"), open = el.hidden;
+  el.hidden = !open; btn.setAttribute("aria-expanded", String(open));
+  $("#hud").classList.toggle("xp", !$("#xpWx").hidden || !$("#xpMk").hidden);
+  if (open) { if (k === "wx") renderWeather(); else renderMarkets(); setTimeout(function () { try { el.scrollIntoView({ block: "nearest", behavior: "smooth" }); } catch (e) {} }, 30); }
+  setTimeout(renderMap, 0);
+}
+$("#xpCity").addEventListener("click", function () { openCity(); });
+$("#xpMkEdit").addEventListener("click", function () { openEditCoins(); });
 
 // ========== 11. sheets ==========
 function sheet(title, html, bind) {
@@ -981,6 +996,68 @@ function rehydrate() {
 }
 Store.onChange(function (k, v, src) { if (src === "remote") rehydrate(); });
 window.addEventListener("storage", function (e) { if (e.key === "zapos.state" && e.newValue) { try { Store.applyRemote(JSON.parse(e.newValue)); } catch (x) {} } });
+// ========== v3.0 phase 0: Phone = dial pad + favorites inside the dashboard (tel: works every time on iPhone) ==========
+var FAVS = Store.get("favs", []);
+function saveFavs() { Store.set("favs", FAVS); }
+function cleanNum(n) { return String(n || "").replace(/[^0-9+*#]/g, ""); }
+function fmtNum(n) { var d = n.replace(/\D/g, ""); if (/^\+/.test(n) || d.length !== 10) return n; return "(" + d.slice(0, 3) + ") " + d.slice(3, 6) + "-" + d.slice(6); }
+function callNum(n) { n = cleanNum(n); if (!n) { toast("Type a number first"); return; } location.href = "tel:" + n; }
+function textNum(n) { n = cleanNum(n); location.href = n ? "sms:" + n : "sms:"; }
+function openDial() {
+  var num = "";
+  var keys = [["1", ""], ["2", "ABC"], ["3", "DEF"], ["4", "GHI"], ["5", "JKL"], ["6", "MNO"], ["7", "PQRS"], ["8", "TUV"], ["9", "WXYZ"], ["*", ""], ["0", "+"], ["#", ""]];
+  var html = '<div class="dl-num" id="dlNum" aria-live="polite">&nbsp;</div>' +
+    '<div class="dl-pad" id="dlPad">' + keys.map(function (k) { return '<button class="dl-k" data-k="' + k[0] + '" aria-label="' + k[0] + '"><b>' + k[0] + "</b><small>" + k[1] + "</small></button>"; }).join("") + "</div>" +
+    '<div class="dl-act"><button class="dl-sv" id="dlSave" aria-label="Save as favorite">☆</button><button class="dl-call" id="dlCall" aria-label="Call">📞 CALL</button><button class="dl-sv" id="dlDel" aria-label="Delete last digit">⌫</button></div>' +
+    '<h3>FAVORITES</h3><div id="dlFavs"></div>' +
+    '<p class="note" style="margin-top:10px">Call opens your phone\'s call screen with the number ready. Favorites are saved on this device.</p>';
+  sheet("📞 PHONE", html, function (b) {
+    function draw() { b.querySelector("#dlNum").textContent = num ? fmtNum(num) : "\u00a0"; }
+    function drawFavs() {
+      b.querySelector("#dlFavs").innerHTML = FAVS.length ? FAVS.map(function (f, i) {
+        return '<div class="dl-fav"><span class="grow"><b>' + esc(f.name) + "</b><small>" + esc(fmtNum(f.num)) + '</small></span>' +
+          '<button class="sq" data-f="text" data-i="' + i + '" aria-label="Text ' + esc(f.name) + '">💬</button>' +
+          '<button class="sq" data-f="call" data-i="' + i + '" aria-label="Call ' + esc(f.name) + '" style="color:var(--green)">📞</button>' +
+          '<button class="sq" data-f="del" data-i="' + i + '" aria-label="Remove ' + esc(f.name) + '" style="color:var(--red)">✕</button></div>';
+      }).join("") : '<p class="note">No favorites yet. Type a number and tap ☆ to save it.</p>';
+    }
+    b.querySelector("#dlPad").addEventListener("click", function (e) { var k = e.target.closest("[data-k]"); if (!k || num.length >= 20) return; num += k.getAttribute("data-k"); draw(); });
+    b.querySelector("#dlDel").addEventListener("click", function () { num = num.slice(0, -1); draw(); });
+    b.querySelector("#dlCall").addEventListener("click", function () { callNum(num); });
+    b.querySelector("#dlSave").addEventListener("click", function () {
+      if (!cleanNum(num)) { toast("Type a number first"); return; }
+      var nm = (prompt("Name for this favorite?") || "").trim().slice(0, 24); if (!nm) return;
+      FAVS.push({ name: nm, num: cleanNum(num) }); saveFavs(); drawFavs(); toast(nm + " saved to favorites");
+    });
+    b.querySelector("#dlFavs").addEventListener("click", function (e) {
+      var x = e.target.closest("[data-f]"); if (!x) return; var f = FAVS[+x.getAttribute("data-i")], m = x.getAttribute("data-f"); if (!f) return;
+      if (m === "call") callNum(f.num); else if (m === "text") textNum(f.num);
+      else if (confirm("Remove " + f.name + " from favorites?")) { FAVS.splice(+x.getAttribute("data-i"), 1); saveFavs(); drawFavs(); }
+    });
+    b.addEventListener("keydown", function (e) { if (/^[0-9*#+]$/.test(e.key)) { num += e.key; draw(); } else if (e.key === "Backspace") { num = num.slice(0, -1); draw(); } else if (e.key === "Enter") callNum(num); });
+    draw(); drawFavs();
+  });
+}
+
+// ========== v3.0 phase 1: search bar. App name -> opens the app; anything else -> Google search ==========
+function findApp(q) {
+  q = q.trim().toLowerCase(); if (!q) return null;
+  var pool = APPS.concat(Object.keys(MEDIA).map(function (k) { return Object.assign({ id: k }, MEDIA[k]); }), CATALOG);
+  var hit = pool.filter(function (a) { return (a.name || "").toLowerCase() === q; })[0];
+  if (!hit && q.length >= 2) hit = pool.filter(function (a) { return (a.name || "").toLowerCase().indexOf(q) === 0; })[0];
+  return hit || null;
+}
+function runSearch(q) {
+  q = (q || "").trim(); if (!q) return;
+  var a = findApp(q);
+  if (a) { openApp(a); return; }
+  go("https://www.google.com/search?q=" + encodeURIComponent(q));
+}
+(function () {
+  var f = $("#srch"), inp = $("#srchQ"), hint = $("#srchHint");
+  f.addEventListener("submit", function (e) { e.preventDefault(); var v = inp.value; inp.blur(); runSearch(v); inp.value = ""; hint.textContent = ""; });
+  inp.addEventListener("input", function () { var a = findApp(inp.value); hint.textContent = inp.value.trim() ? (a ? "↵ OPEN " + a.name.toUpperCase() : "↵ GOOGLE") : ""; });
+})();
 window.ZAPOS = { store: Store, version: VERSION }; // for the stage 2 sync add-on
 
 // ========== 13. boot ==========

@@ -18,7 +18,7 @@
 <link rel="preconnect" href="https://api.open-meteo.com" crossorigin>
 <link rel="preconnect" href="https://api.coingecko.com" crossorigin>
 <link rel="preconnect" href="https://tile.openstreetmap.org" crossorigin>
-<link rel="stylesheet" href="/os/app.css?v=2.1.1">
+<link rel="stylesheet" href="/os/app.css?v=3.0.1">
 <script>/* paint the saved theme on the first frame */try{var z=JSON.parse(localStorage.getItem("zapos.device")||"{}").themeCss;if(z&&z.css){var s=document.createElement("style");s.textContent=z.css;document.head.appendChild(s);if(z.light)document.documentElement.classList.add("light");var m=document.querySelector('meta[name="theme-color"]');if(m&&z.meta)m.setAttribute("content",z.meta);}}catch(e){}</script>
 </head>
 <body>
@@ -41,6 +41,12 @@
     <span class="h-net" id="hNet"><i></i><b>ONLINE</b></span>
    </div>
 
+   <form class="h-srch" id="srch" role="search" autocomplete="off">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" style="stroke:var(--cyan)" stroke-width="2.2"/><path d="M15.5 15.5L21 21" style="stroke:var(--cyan)" stroke-width="2.4" stroke-linecap="round"/></svg>
+    <input id="srchQ" type="search" enterkeyhint="go" placeholder="Search apps or Google" aria-label="Search apps or Google" autocapitalize="off" spellcheck="false">
+    <span class="srch-h" id="srchHint" aria-hidden="true"></span>
+   </form>
+
    <div class="h-main">
     <div class="h-left">
      <div class="h-clock" id="hClock" aria-live="off">--:--<em id="hAmpm"></em></div>
@@ -59,7 +65,7 @@
     </div>
    </div>
 
-   <button class="h-panel h-wx" id="hWx" aria-label="Open weather">
+   <button class="h-panel h-wx" id="hWx" aria-label="Show more weather" aria-expanded="false" aria-controls="xpWx">
     <canvas class="fx" id="fxHud" aria-hidden="true"></canvas>
     <span class="hw-in">
      <span class="hw-r1"><span class="hw-ic" id="hwIc" aria-hidden="true">·</span><b id="hwNow">WEATHER LOADING…</b><span class="hw-hl" id="hwHL"></span></span>
@@ -68,6 +74,13 @@
     </span>
    </button>
 
+   <div class="xp" id="xpWx" hidden>
+    <div class="xp-h"><b id="xpPlace">WEATHER</b><button class="chip" id="xpCity">◎ CHANGE CITY</button></div>
+    <div class="hours" id="xpHours"></div>
+    <div class="days" id="xpDays"></div>
+    <p class="note" id="xpNote"></p>
+   </div>
+
    <div class="h-meters">
     <div class="meter" aria-label="Day progress"><span class="m-l">DAY</span><span class="segs" id="mDay"></span><span class="m-v c-cyan" id="mDayV">--%</span></div>
     <div class="m-line" id="mDayL">—</div>
@@ -75,7 +88,13 @@
     <div class="m-line" id="mFocL">TAP FOCUS TO START A 25-MIN SPRINT</div>
    </div>
 
-   <button class="h-mk" id="hMk" aria-label="Edit markets watchlist"><span class="mk-items" id="hMkList"><span class="dim">MARKETS LOADING…</span></span><span class="mk-t" id="hMkT">--</span></button>
+   <button class="h-mk" id="hMk" aria-label="Show markets" aria-expanded="false" aria-controls="xpMk"><span class="mk-items" id="hMkList"><span class="dim">MARKETS LOADING…</span></span><span class="mk-t" id="hMkT">--</span></button>
+
+   <div class="xp" id="xpMk" hidden>
+    <div class="xp-h"><b>WATCHLIST</b><button class="chip" id="xpMkEdit">✎ EDIT</button></div>
+    <div class="mk" id="xpMkList"></div>
+    <div class="stamp" id="xpMkStamp">UPDATED --</div>
+   </div>
 
    <div class="h-panel h-map" id="hMap" role="button" tabindex="0" aria-label="Open Maps at my location">
     <div class="map-h"><b id="hPlace">&gt; LOCATING…</b><span id="hGps">GPS --</span></div>
@@ -133,8 +152,6 @@
 
  <nav class="tabs" aria-label="Sections">
   <button class="tab on" data-tab="home"><span aria-hidden="true">⌂</span>HOME</button>
-  <button class="tab" data-tab="weather"><span aria-hidden="true">☁</span>WEATHER</button>
-  <button class="tab" data-tab="markets"><span aria-hidden="true">₿</span>MARKETS</button>
   <button class="tab" data-tab="menu"><span aria-hidden="true">☰</span>MENU</button>
  </nav>
  <footer class="motto">No face. No hours. Just the shortcut.</footer>
@@ -148,6 +165,6 @@
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/os/app.js?v=2.1.1"></script>
+<script src="/os/app.js?v=3.0.1"></script>
 </body>
 </html>
