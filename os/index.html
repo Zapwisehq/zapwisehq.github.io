@@ -7,7 +7,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="description" content="ZAPWISE//OS: calm glass HUD — clock, weather, map, markets, focus, apps.">
 <meta name="theme-color" content="#070814">
-<meta name="zapos-version" content="4.12.1">
+<meta name="zapos-version" content="4.13.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="/os/manifest.webmanifest">
@@ -26,7 +26,7 @@
 <link rel="apple-touch-startup-image" media="(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/os/splash/splash-1206x2622.png">
 <link rel="apple-touch-startup-image" media="(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/os/splash/splash-1320x2868.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/os/icon-192.png">
-<link rel="stylesheet" href="/os/app.css?v=4.12.1">
+<link rel="stylesheet" href="/os/app.css?v=4.13.0">
 <style>
 @font-face{font-family:"Rajdhani";font-style:normal;font-weight:600;font-display:swap;src:url("/os/fonts/Rajdhani-SemiBold.woff2") format("woff2"),url("/os/fonts/Rajdhani-SemiBold.ttf") format("truetype")}
 @font-face{font-family:"Rajdhani";font-style:normal;font-weight:700;font-display:swap;src:url("/os/fonts/Rajdhani-Bold.woff2") format("woff2"),url("/os/fonts/Rajdhani-Bold.ttf") format("truetype")}
@@ -45,7 +45,7 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
 <div id="app">
 
  <header class="top sticky" id="top">
-  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver" data-app-ver>v4.12.1</span></div>
+  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver" data-app-ver>v4.13.0</span></div>
   <div class="top-r">
    <span class="sync" id="hSync"><i aria-hidden="true"></i>LIVE</span>
    <span class="hud-chip gps" id="hGpsLock" data-lock="0" hidden><i aria-hidden="true"></i>GPS —</span>
@@ -80,14 +80,14 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
      </div>
      <div class="hero-bot"><span class="greet" id="greet"></span></div>
     </div>
-    <div class="play panel-inner" id="hPlay">
-     <div class="np-top"><span>MUSIC</span>
+    <div class="play panel-inner play-panel" id="hPlay">
+     <div class="np-top"><span class="np-lab">&gt; MUSIC</span>
       <button type="button" class="np-live" id="npLive" data-media-act="pick" aria-label="Choose music app">SWITCH ▾</button>
      </div>
      <div class="np-body">
       <button type="button" class="np-pick" data-media-act="play" aria-label="Open music app">
        <img class="np-art" id="npArt" src="/os/icons/music.jpg" alt="">
-       <span class="np-meta"><b id="npTitle">Choose a music app</b><small id="npArtist">Tap ▶ to open</small></span>
+       <span class="np-meta"><b id="npTitle">Choose a music app</b><small id="npArtist">Tap ▶ to play</small></span>
       </button>
       <button type="button" class="np-play" data-media-act="play" aria-label="Open music app">▶</button>
      </div>
@@ -216,11 +216,10 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
    <div class="h-bk panel-inner" id="hBk" role="region" aria-label="Banks">
     <div class="bk-hero" id="hBkPort">
      <b class="hmk-total" id="hBkTotal">$0.00</b>
-     <span class="hmk-day" id="hBkSub">Balances you type · this phone only</span>
+     <span class="hmk-day" id="hBkSub">Link your bank · balances stay on this phone</span>
     </div>
     <div class="bk-grid" id="hBkGrid" role="list"></div>
-    <button type="button" class="mk-add" id="hBkAdd" aria-label="Add bank">＋ Add Bank</button>
-    <p class="note bk-foot">Tap balance to update · header opens bank · ✎ to edit · eye hides balances + last 4 · only last 4 digits, never full numbers</p>
+    <p class="note bk-foot" id="hBkFoot">Only last 4 digits · never full account numbers</p>
    </div>
    <div class="panel-div" aria-hidden="true"></div>
    <div class="panel-sec-lab">MARKETS <span class="mk-t" id="hMkT"></span></div>
@@ -356,9 +355,9 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/os/catalog.js?v=4.12.1"></script>
-<script src="/os/sky.js?v=4.12.1"></script>
-<script src="/os/bank-plaid.js?v=4.12.1"></script>
-<script src="/os/app.min.js?v=4.12.1"></script>
+<script src="/os/catalog.js?v=4.13.0"></script>
+<script src="/os/sky.js?v=4.13.0"></script>
+<script src="/os/bank-plaid.js?v=4.13.0"></script>
+<script src="/os/app.min.js?v=4.13.0"></script>
 </body>
 </html>

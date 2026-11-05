@@ -1,6 +1,6 @@
 {
-  "version": "4.12.1",
+  "version": "4.13.0",
   "built": "2026-11-05",
   "channel": "stable",
-  "notes": "v4.12.1: Plaid OAuth return fix (redirect_uri + receivedRedirectUri, Safari tip for in-app browsers). Link bank opens /os/link/."
+  "notes": "v4.13.0: Plaid-only Bank (manual removed), Music panel polish, softer holograms, bank auto-refresh every 15 min."
 }

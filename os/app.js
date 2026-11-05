@@ -1,7 +1,7 @@
-/* ZAPWISE//OS web app v4.12.1 (Nov 5, 2026). Premium holograms (foil/sweep/glow/tilt). Plaid bank OAuth return. Motion toggle. No tabs. Source: edit app.js → build.sh → app.min.js. */
+/* ZAPWISE//OS web app v4.13.0 (Nov 5, 2026). Plaid-only Bank UI. Music panel polish. Soft holograms. Auto refresh. Motion toggle. No tabs. Source: edit app.js → build.sh → app.min.js. */
 (function () {
 "use strict";
-var VERSION = '4.12.1';
+var VERSION = '4.13.0';
 var APP_VERSION = VERSION;
 
 // v4.5: default Lite on coarse/mobile unless user already chose
@@ -228,7 +228,7 @@ function clone(o) { return o == null ? o : JSON.parse(JSON.stringify(o)); }
 var Store = (function () {
   var STATE_KEY = "zapos.state", DEVICE_KEY = "zapos.device", VER = 1;
   var PREF_KEYS = ["settings", "theme", "apps", "coins", "loc", "favs", "places", "holdings", "broker", "wallets", "accounts", "assistant"];                     // shared state (sync-ready)
-  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss", "mediaKey", "skipBoot", "bootDay", "uiSounds", "recentPins", "wxDay", "wxMode", "wxMode2", "portHist", "acctMigrated", "liteMode", "tiltCards", "motionTilt", "callLog", "zapChat", "focusStats", "wallpaper", "zapNotes", "zapReminders", "uiMotion", "welcomeSeen", "bankPrivacy", "mapTraffic"]; // this device only
+  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss", "mediaKey", "skipBoot", "bootDay", "uiSounds", "recentPins", "wxDay", "wxMode", "wxMode2", "portHist", "acctMigrated", "liteMode", "tiltCards", "motionTilt", "callLog", "zapChat", "focusStats", "wallpaper", "zapNotes", "zapReminders", "uiMotion", "welcomeSeen", "bankPrivacy", "mapTraffic", "bankManualCleared_v413"]; // this device only
   function read(k) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
   function write(k, v) { if (dead) return false; try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
   var state = read(STATE_KEY), dev = read(DEVICE_KEY), subs = [], uiT = null, dead = false; // dead: after a reset, write nothing more
@@ -936,7 +936,7 @@ function renderNowPlaying() {
   var art = $("#npArt"), title = $("#npTitle"), artist = $("#npArtist"), live = $("#npLive");
   if (art) { var asrc = m.icon || "/os/icons/music.jpg"; if (art.getAttribute("src") !== asrc) art.src = asrc; art.alt = m.name; }
   if (title) title.textContent = m.name;
-  if (artist) artist.textContent = "Tap ▶ to open";
+  if (artist) artist.textContent = "Tap ▶ to play";
   if (live) { live.textContent = "SWITCH ▾"; live.setAttribute("aria-label", "Choose music app"); }
 }
 function setMediaKey(k, open) {
@@ -4803,7 +4803,7 @@ function openEditAccount(acctId) {
   var list = loadAccounts();
   var a = list.filter(function (x) { return x.id === acctId; })[0];
   if (!a) return;
-  if (a.kind === "bank") { openEditBank(a); return; }
+  if (a.kind === "bank") { try { refreshBankAccountsFromLink({ refresh: true }); } catch (e) {} return; }
   var isWal = a.kind === "wallet";
   sheet("✎ " + (a.name || "ACCOUNT").toUpperCase(),
     '<label class="field">NAME<input id="acName" maxlength="28" value="' + esc(a.name || "") + '"></label>' +
@@ -4880,7 +4880,7 @@ function openAddAccount() {
       if (!c) return;
       closeSheet();
       if (c.kind === "wallet") openAddWalletAccount(c);
-      else if (c.kind === "bank") openAddBank(c);
+      else if (c.kind === "bank") openLinkBankStub();
       else commitAccountFromCatalog(c);
     });
     b.querySelector("#acCustom").addEventListener("click", function () { closeSheet(); openCustomAccount(); });
@@ -5409,6 +5409,7 @@ function onReturn() {
   if (Date.now() - lastLive < 20000) return; lastLive = Date.now(); // refresh live data, at most every 20 s
   refreshWeather(); refreshGPS();
   if (!MK || Date.now() - MK.at > 120000) refreshMarkets();
+  try { refreshBankAccountsFromLink(); } catch (eBk) {}
 }
 function onLeave() { saveScroll(true); }
 document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible") onReturn(); else onLeave(); });
@@ -7122,34 +7123,55 @@ try {
 } catch (e) {}
 
 
-/* ========== v4.9.6 Banks — own bar under ticker; manual balance + last-4 only; no logins, no full account/routing ========== */
-var BANK_NOTE = "Balance you type in · saved only on this phone · we never ask for your bank login.";
-function parseMoneyInput(v) {
-  v = String(v == null ? "" : v).replace(/[$,\s]/g, "");
-  if (!v) return null;
-  var n = parseFloat(v); return isNaN(n) ? NaN : Math.round(n * 100) / 100;
-}
-/* ========== v4.9.8 Bank adapter (Plaid-ready) ==========
-   All bank UI reads through getBankAccounts(). Today: local/manual Store.
-   Later: set BANK_LINK.endpoint to a Worker that returns
-   [{name, balance, asOf, last4}] — never full account/routing, never Plaid secrets in the client. */
+/* ========== v4.13.0 Banks — Plaid auto only (no manual entry) ========== */
+var BANK_NOTE = "Balances via Plaid · last 4 only · stay on this phone.";
 var BANK_LINK = {
-  mode: "manual", /* flips to auto when device token + Worker respond */
+  mode: "auto",
   endpoint: "https://zapwise-bank.zapwisehq.workers.dev",
   balancesPath: "/balances",
-  labelManual: "Manual",
   labelAuto: "Auto · Plaid"
 };
+var _bankRows = []; /* in-memory auto rows for UI */
+var _bankAsOf = null;
+var _bankLastRefresh = 0;
 function bankLinkConfigured() {
   return !!(BANK_LINK.endpoint && /^https:\/\//i.test(BANK_LINK.endpoint));
 }
 function bankDeviceReady() {
   try { return !!(window.ZAP_BANK_PLAID && ZAP_BANK_PLAID.hasToken && ZAP_BANK_PLAID.hasToken()); } catch (e) { return false; }
 }
+function sanitizeLast4(v) {
+  var d = String(v == null ? "" : v).replace(/\D/g, "");
+  if (d.length > 4) d = d.slice(-4);
+  return d.length === 4 ? d : (d || "");
+}
+function formatLast4(last4, show) {
+  var d = sanitizeLast4(last4);
+  if (!d || d.length !== 4) return "";
+  return show ? ("••" + d) : "••••";
+}
+function parseMoneyInput(v) {
+  v = String(v == null ? "" : v).replace(/[$,\s]/g, "");
+  if (!v) return null;
+  var n = parseFloat(v); return isNaN(n) ? NaN : Math.round(n * 100) / 100;
+}
+function migrateManualBanksOut() {
+  /* one-time: drop any typed/manual bank rows so they never show beside Plaid */
+  try {
+    if (Store.getLocal("bankManualCleared_v413", false)) return;
+    var list = loadAccounts();
+    var next = list.filter(function (a) { return !(a && a.kind === "bank" && (a.source || "manual") !== "auto"); });
+    /* also drop stale auto rows — Plaid last_good / fetch rehydrates them */
+    next = next.filter(function (a) { return !(a && a.kind === "bank"); });
+    if (next.length !== list.length) saveAccounts(next);
+    Store.setLocal("bankManualCleared_v413", true);
+  } catch (e) {}
+}
 function normalizeBankRow(a, source) {
   if (!a) return null;
   var last4 = sanitizeLast4(a.last4 || a.mask || "");
   var bal = (a.bal != null && !isNaN(+a.bal)) ? +a.bal : ((a.balance != null && !isNaN(+a.balance)) ? +a.balance : null);
+  var avail = (a.available != null && !isNaN(+a.available)) ? +a.available : ((a.avail != null && !isNaN(+a.avail)) ? +a.avail : null);
   var asOf = a.balAt || a.asOf || null;
   if (asOf && typeof asOf === "string") {
     var parsed = Date.parse(asOf); asOf = isNaN(parsed) ? null : parsed;
@@ -7161,6 +7183,7 @@ function normalizeBankRow(a, source) {
     name: a.name || "Bank",
     acctName: a.acctName || "Checking",
     bal: bal,
+    available: avail,
     balAt: asOf,
     last4: last4.length === 4 ? last4 : null,
     inTotal: a.inTotal !== false,
@@ -7169,65 +7192,70 @@ function normalizeBankRow(a, source) {
     letter: a.letter || (a.name || "B").charAt(0),
     url: a.url || "",
     web: a.web || a.url || "",
-    source: source || a.source || "manual",
-    /* never pass through full account/routing if a Worker ever sent them */
+    source: "auto",
     _raw: null
   };
 }
-function getBankAccountsLocal() {
-  try { migrateBankLast4Fields(); } catch (eM) {}
-  return loadAccounts().filter(function (a) { return a.kind === "bank"; }).map(function (a) {
-    return normalizeBankRow(a, "manual");
-  }).filter(Boolean);
-}
-/** Single read path for Bank UI. Sync today; async refresh may update later when endpoint is set. */
-function getBankAccounts() {
-  return getBankAccountsLocal();
-}
-/** Pull masked balances from Worker when this device has a token. Falls back to manual/cache. */
 function mergePlaidRowsIntoStore(rows) {
   if (!Array.isArray(rows)) return;
-  var local = loadAccounts();
-  var byKey = {};
-  local.forEach(function (a) {
-    if (a.kind === "bank") byKey[(a.name || "") + "|" + sanitizeLast4(a.last4)] = a;
-  });
+  var mapped = [];
   rows.forEach(function (row) {
-    var mapped = {
+    var n = normalizeBankRow({
       name: row.institution || row.name || "Bank",
       acctName: row.officialName || row.subtype || row.type || "Account",
       balance: row.balance,
+      available: row.available,
       asOf: row.asOf,
       last4: row.last4,
-      inTotal: true
-    };
-    var n = normalizeBankRow(mapped, "auto");
-    if (!n) return;
-    var k = (n.name || "") + "|" + (n.last4 || "");
-    var cur = byKey[k];
-    if (cur) {
-      cur.bal = n.bal; cur.balAt = n.balAt; cur.last4 = n.last4 || cur.last4;
-      cur.acctName = n.acctName || cur.acctName; cur.source = "auto";
-    } else {
-      local.push(Object.assign({}, n, { source: "auto" }));
-      byKey[k] = local[local.length - 1];
-    }
+      inTotal: true,
+      id: row.account_id ? ("plaid_" + String(row.account_id).slice(-12)) : undefined
+    }, "auto");
+    if (n) mapped.push(n);
   });
-  saveAccounts(local);
+  _bankRows = mapped;
+  if (mapped.length) {
+    var newest = null;
+    mapped.forEach(function (r) { if (r.balAt && (!newest || r.balAt > newest)) newest = r.balAt; });
+    _bankAsOf = newest || Date.now();
+  }
+  /* keep accounts store free of bank rows (Plaid-only memory + last_good) */
+  try {
+    var local = loadAccounts();
+    var cleaned = local.filter(function (a) { return !(a && a.kind === "bank"); });
+    if (cleaned.length !== local.length) saveAccounts(cleaned);
+  } catch (eC) {}
+}
+function getBankAccounts() {
+  try { migrateManualBanksOut(); } catch (eM) {}
+  if (_bankRows && _bankRows.length) return _bankRows.slice();
+  try {
+    var lg = window.ZAP_BANK_PLAID && ZAP_BANK_PLAID.loadLastGood && ZAP_BANK_PLAID.loadLastGood();
+    if (lg && lg.rows && lg.rows.length) {
+      mergePlaidRowsIntoStore(lg.rows);
+      if (lg.at) _bankAsOf = lg.at;
+      return _bankRows.slice();
+    }
+  } catch (e0) {}
+  return [];
 }
 function refreshBankAccountsFromLink(opts) {
   opts = opts || {};
   if (!bankLinkConfigured() || !bankDeviceReady()) {
-    /* offline / no token: keep last good auto rows if any were cached by bank-plaid */
     try {
       var lg = window.ZAP_BANK_PLAID && ZAP_BANK_PLAID.loadLastGood && ZAP_BANK_PLAID.loadLastGood();
-      if (lg && lg.rows && lg.rows.length) mergePlaidRowsIntoStore(lg.rows);
+      if (lg && lg.rows && lg.rows.length) {
+        mergePlaidRowsIntoStore(lg.rows);
+        if (lg.at) _bankAsOf = lg.at;
+      }
     } catch (e0) {}
+    try { renderBanks(); } catch (e) {}
     return Promise.resolve(getBankAccounts());
   }
   return ZAP_BANK_PLAID.fetchBalances(!!opts.refresh).then(function (data) {
     var rows = (data && data.accounts) || [];
     mergePlaidRowsIntoStore(rows);
+    _bankLastRefresh = Date.now();
+    if (!_bankAsOf) _bankAsOf = Date.now();
     try { renderBanks(); } catch (e) {}
     try { renderAccounts(); } catch (e2) {}
     try { renderHoldings(); } catch (e3) {}
@@ -7235,27 +7263,28 @@ function refreshBankAccountsFromLink(opts) {
   }).catch(function () {
     try {
       var lg2 = ZAP_BANK_PLAID.loadLastGood && ZAP_BANK_PLAID.loadLastGood();
-      if (lg2 && lg2.rows) mergePlaidRowsIntoStore(lg2.rows);
+      if (lg2 && lg2.rows) {
+        mergePlaidRowsIntoStore(lg2.rows);
+        if (lg2.at) _bankAsOf = lg2.at;
+      }
     } catch (e4) {}
+    try { renderBanks(); } catch (e5) {}
     return getBankAccounts();
   });
 }
-function bankSourceLabel(a) {
-  var src = (a && a.source) || "manual";
-  return src === "auto" ? BANK_LINK.labelAuto : BANK_LINK.labelManual;
-}
+function bankSourceLabel() { return BANK_LINK.labelAuto; }
 function openBankSettings() {
   var ready = bankDeviceReady();
   var html = '<p class="note">Auto-link uses Plaid. Your bank password stays on their screen. Only balances and last 4 digits are stored on this device.</p>' +
     '<div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">' +
-    '<button class="btn" type="button" id="bkGoLink">' + (ready ? "Link another bank" : "Link bank (auto)") + "</button>" +
+    '<button class="btn" type="button" id="bkGoLink">' + (ready ? "Link another bank" : "Link bank") + "</button>" +
     '<button class="btn" type="button" id="bkShowPair"' + (ready ? "" : " disabled") + ">Show pair code</button>" +
     '<button class="btn" type="button" id="bkAddDevice">Add this device</button>' +
     '<button class="btn" type="button" id="bkRefreshAuto"' + (ready ? "" : " disabled") + ">Refresh balances</button>" +
     '<button class="btn warn" type="button" id="bkUnlink"' + (ready ? "" : " disabled") + ">Unlink bank</button>" +
     "</div>" +
     '<p class="note" id="bkSetStatus" style="margin-top:10px"></p>';
-  sheet("Bank auto-link", html, function (b) {
+  sheet("Bank link", html, function (b) {
     function st(msg) { var el = b.querySelector("#bkSetStatus"); if (el) el.textContent = msg || ""; }
     b.querySelector("#bkGoLink").addEventListener("click", function () {
       closeSheet();
@@ -7292,14 +7321,12 @@ function openBankSettings() {
       if (!confirm("Unlink your bank from Zapwise on all devices?")) return;
       st("Unlinking…");
       ZAP_BANK_PLAID.unlink().then(function () {
-        /* demote auto rows back to manual so quick-update still works */
-        var next = loadAccounts().map(function (a) {
-          if (a.kind === "bank" && a.source === "auto") {
-            var c = Object.assign({}, a); c.source = "manual"; return c;
-          }
-          return a;
-        });
-        saveAccounts(next);
+        _bankRows = [];
+        _bankAsOf = null;
+        try {
+          var next = loadAccounts().filter(function (a) { return !(a && a.kind === "bank"); });
+          saveAccounts(next);
+        } catch (eU) {}
         try { renderBanks(); } catch (e) {}
         toast("Bank unlinked");
         closeSheet();
@@ -7309,19 +7336,16 @@ function openBankSettings() {
 }
 function openLinkBankStub() {
   if (!bankLinkConfigured()) {
-    toast("Bank auto-link isn’t set up — balances stay manual on this phone.");
+    toast("Bank link isn’t set up yet.");
     return;
   }
-  /* Primary CTA: go straight to Plaid Link page. Settings (pair/unlink) when already linked. */
   if (!bankDeviceReady()) {
     location.href = (window.ZAP_BANK_PLAID && ZAP_BANK_PLAID.linkPage) || "/os/link/";
     return;
   }
   openBankSettings();
 }
-
 function bankMoney(n) {
-  /* never bare "—" — empty reads as $0.00 */
   var v = (n == null || isNaN(+n)) ? 0 : +n;
   return "$" + v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
@@ -7329,43 +7353,21 @@ function bankDateStr(t) {
   if (!t) return "";
   try { return new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric" }); } catch (e) { return ""; }
 }
-function bankRelAgo(t) {
+function bankClockStr(t) {
   if (!t) return "";
-  var s = Math.max(0, Math.floor((Date.now() - (+t)) / 1000));
-  if (s < 45) return "just now";
-  if (s < 3600) {
-    var m = Math.max(1, Math.floor(s / 60));
-    return m + " min ago";
-  }
-  if (s < 86400) {
-    var h = Math.floor(s / 3600);
-    return h + " hr" + (h === 1 ? "" : "s") + " ago";
-  }
-  return bankDateStr(t);
+  try { return new Date(t).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }); } catch (e) { return ""; }
 }
 function bankAsOfStr(t) {
   if (!t) return "";
   try {
-    var clock = new Date(t).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
-    var rel = bankRelAgo(t);
-    return "As of " + clock + (rel ? (" · " + rel) : "");
+    return "Auto · Plaid · updated " + bankClockStr(t);
   } catch (e) { return ""; }
 }
 function bankAcctLabel(a) {
   var bank = (a && a.name) || "Bank";
   var acct = (a && a.acctName) ? String(a.acctName).trim() : "Checking";
   if (!acct) acct = "Checking";
-  return (bank + " " + acct).toUpperCase();
-}
-function sanitizeLast4(v) {
-  var d = String(v == null ? "" : v).replace(/\D/g, "");
-  if (d.length > 4) d = d.slice(-4);
-  return d.length === 4 ? d : (d || "");
-}
-function formatLast4(last4, show) {
-  var d = sanitizeLast4(last4);
-  if (!d || d.length !== 4) return "";
-  return show ? ("••••" + d) : "••••";
+  return bank + " · " + acct;
 }
 function bankPrivacyOn() {
   try { return !!Store.getLocal("bankPrivacy", false); } catch (e) { return false; }
@@ -7381,31 +7383,6 @@ function setBankPrivacy(on) {
     eye.textContent = on ? "🙈" : "👁";
   }
 }
-function migrateBankLast4Fields() {
-  /* strip any accidental full account-like fields down to last 4; drop routing-like keys */
-  var list = loadAccounts(), changed = false;
-  var next = list.map(function (a) {
-    if (a.kind !== "bank") return a;
-    var r = a, touch = false;
-    ["accountNumber", "acctNumber", "acctNo", "accountNo", "routing", "routingNumber", "fullAccount"].forEach(function (k) {
-      if (r[k] != null && r[k] !== "") {
-        if (!touch) { r = Object.assign({}, r); touch = true; }
-        var digits = String(r[k]).replace(/\D/g, "");
-        if ((!r.last4 || String(r.last4).length !== 4) && digits.length >= 4) r.last4 = digits.slice(-4);
-        delete r[k]; changed = true;
-      }
-    });
-    if (r.last4 != null) {
-      var s = sanitizeLast4(r.last4);
-      if (s !== r.last4) {
-        if (!touch) { r = Object.assign({}, r); touch = true; }
-        r.last4 = s || null; changed = true;
-      }
-    }
-    return r;
-  });
-  if (changed) saveAccounts(next);
-}
 function bankStats() {
   var total = 0, n = 0, priced = 0;
   getBankAccounts().forEach(function (a) {
@@ -7414,229 +7391,60 @@ function bankStats() {
   });
   return { total: total, n: n, priced: priced };
 }
-function bankFormHtml(a, custom) {
-  var bal = (a && a.bal != null && !isNaN(a.bal)) ? String(a.bal) : "";
-  var inc = !(a && a.inTotal === false);
-  var last4 = sanitizeLast4(a && a.last4);
-  var acctName = (a && a.acctName) ? String(a.acctName) : "Checking";
-  return (custom ? ('<label class="field">BANK NAME<input id="bkName" maxlength="28" placeholder="e.g. Local Credit Union" value="' + esc((a && a.name) || "") + '" autocomplete="off"></label>' +
-      '<label class="field">WEBSITE OR APP LINK<input id="bkUrl" placeholder="mybank.com" autocomplete="off" autocapitalize="off" spellcheck="false" value="' + esc((a && (a.web || a.url)) || "") + '"></label>') :
-      ('<label class="field">NAME<input id="bkName" maxlength="28" value="' + esc((a && a.name) || "") + '" autocomplete="off"></label>')) +
-    '<label class="field">ACCOUNT NAME<input id="bkAcctName" maxlength="32" placeholder="Checking" value="' + esc(acctName) + '" autocomplete="off"></label>' +
-    '<label class="field">BALANCE (OPTIONAL)<input id="bkBal" type="text" inputmode="decimal" autocomplete="off" autocorrect="off" spellcheck="false" data-form-type="other" data-lpignore="true" placeholder="$0.00" value="' + esc(bal) + '"></label>' +
-    '<label class="field">LAST 4 DIGITS (OPTIONAL)<div class="bank-last4-row"><input id="bkLast4" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" autocorrect="off" spellcheck="false" data-form-type="other" data-lpignore="true" placeholder="1234" value="' + esc(last4) + '"></div><p class="note bank-last4-note">Only the last 4 — never your full number.</p></label>' +
-    '<div class="field">INCLUDE IN BANK TOTAL</div><div class="seg" id="bkInc"><button type="button" data-v="1" class="' + (inc ? "on" : "") + '">Include</button><button type="button" data-v="0" class="' + (inc ? "" : "on") + '">Leave out</button></div>' +
-    '<p class="note bank-note">' + BANK_NOTE + "</p>";
-}
-function readBankForm(b) {
-  var raw = (b.querySelector("#bkBal").value || "").trim();
-  var bal = parseMoneyInput(raw);
-  if (bal !== null && isNaN(bal)) { toast("Balance: numbers only, like 1250.50"); return null; }
-  var incBtn = b.querySelector("#bkInc .on");
-  var last4 = sanitizeLast4((b.querySelector("#bkLast4") || {}).value);
-  if ((b.querySelector("#bkLast4") || {}).value && String((b.querySelector("#bkLast4") || {}).value).replace(/\D/g, "").length && last4.length !== 4) {
-    /* allow partial clear; if they typed anything non-empty that isn't 4 digits after sanitize of leftover, force digits-only field */
-  }
-  var acctEl = b.querySelector("#bkAcctName");
-  var acctName = acctEl ? (acctEl.value || "").trim().slice(0, 32) : "Checking";
-  if (!acctName) acctName = "Checking";
-  return { bal: bal, inTotal: !incBtn || incBtn.getAttribute("data-v") === "1", name: (b.querySelector("#bkName").value || "").trim().slice(0, 28),
-    url: b.querySelector("#bkUrl") ? (b.querySelector("#bkUrl").value || "").trim() : null,
-    last4: last4.length === 4 ? last4 : null, acctName: acctName };
-}
-function bindBankForm(b) {
-  b.querySelector("#bkInc").addEventListener("click", function (e) {
-    var x = e.target.closest("[data-v]"); if (!x) return;
-    $$("#bkInc button", b).forEach(function (y) { y.classList.toggle("on", y === x); });
-  });
-  try { b.querySelector("#bkBal").style.fontSize = "16px"; } catch (e) {}
-  var l4 = b.querySelector("#bkLast4");
-  if (l4) {
-    l4.addEventListener("input", function () {
-      var cur = l4.value, digits = String(cur).replace(/\D/g, "").slice(0, 4);
-      if (cur !== digits) l4.value = digits;
-    });
-    l4.addEventListener("paste", function (e) {
-      try {
-        var txt = (e.clipboardData || window.clipboardData).getData("text") || "";
-        e.preventDefault();
-        var digits = String(txt).replace(/\D/g, "").slice(-4).slice(0, 4);
-        l4.value = digits;
-      } catch (err) {}
-    });
-  }
-}
-function normBankUrl(u) {
-  u = (u || "").trim(); if (!u) return "";
-  if (/^javascript:/i.test(u)) return "";
-  if (!/^[a-z][a-z0-9+.-]*:/i.test(u)) u = "https://" + u.replace(/^\/+/, "");
-  return u;
-}
-function openAddBankPicker() {
-  var html = '<label class="field find-field"><span class="find-label">FIND A BANK</span><input id="bkFilter" placeholder="Chase, Chime, SoFi…" autocomplete="off" autocapitalize="off" spellcheck="false"></label>' +
-    '<div class="pick-hint" id="bkHint">Tap to add — type a balance if you like (this phone only)</div>' +
-    '<div class="pick" id="bkGrid"></div>' +
-    '<div class="custom-fold"><button type="button" class="btn alt" id="bkCustom">＋ Custom bank</button></div>';
-  sheet("＋ ADD BANK", html, function (b) {
-    try { $("#sheet").classList.add("finder-sheet"); } catch (e) {}
-    function drawGrid() {
-      var fq = ((b.querySelector("#bkFilter") || {}).value || "").trim().toLowerCase();
-      var list = ACCOUNT_CATALOG.filter(function (c) {
-        if (c.kind !== "bank") return false;
-        if (!fq) return true;
-        return (c.name || "").toLowerCase().indexOf(fq) >= 0 || c.id.indexOf(fq) >= 0;
-      });
-      b.querySelector("#bkHint").textContent = list.length ? (list.length + " bank" + (list.length === 1 ? "" : "s")) : "No matches — try Custom";
-      b.querySelector("#bkGrid").innerHTML = list.map(function (c) {
-        var ic = c.icon ? '<img src="' + esc(c.icon) + '" alt="" loading="lazy">' : '<span class="mi" style="background:' + esc(c.bg || "#111") + ';display:grid;place-items:center;width:40px;height:40px;border-radius:12px;font-weight:900;color:#fff">' + esc(c.letter || c.name.charAt(0)) + "</span>";
-        return '<button class="pk" data-bk="' + c.id + '" type="button">' + ic + "<span>" + esc(c.name) + "</span></button>";
-      }).join("") || '<p class="note">No matches.</p>';
-    }
-    b.querySelector("#bkFilter").addEventListener("input", drawGrid);
-    b.querySelector("#bkGrid").addEventListener("click", function (e) {
-      var x = e.target.closest("[data-bk]"); if (!x) return;
-      var c = ACCOUNT_CATALOG.filter(function (q) { return q.id === x.getAttribute("data-bk"); })[0];
-      if (!c) return;
-      closeSheet(); openAddBank(c);
-    });
-    b.querySelector("#bkCustom").addEventListener("click", function () { closeSheet(); openAddBank({ id: "bank-custom", name: "Custom bank", kind: "bank" }); });
-    drawGrid();
-    setTimeout(function () { var i = b.querySelector("#bkFilter"); i && i.focus && i.focus({ preventScroll: true }); }, 40);
-  });
-}
-function openAddBank(c) {
-  var custom = !c || c.id === "bank-custom";
-  sheet("＋ " + (custom ? "CUSTOM BANK" : (c.name || "BANK").toUpperCase()), bankFormHtml(custom ? null : { name: c.name }, custom) +
-    '<button class="btn" id="bkSave" type="button" style="margin-top:12px">ADD BANK</button>',
-    function (b) {
-      bindBankForm(b);
-      b.querySelector("#bkSave").addEventListener("click", function () {
-        var f = readBankForm(b); if (!f) return;
-        if (custom && !f.name) { toast("Type the bank's name"); return; }
-        var cat = custom ? { id: "bank-custom", name: f.name, kind: "bank", icon: "", bg: "#334155", letter: f.name.charAt(0).toUpperCase() } : c;
-        var u = custom ? normBankUrl(f.url) : "";
-        closeSheet();
-        commitAccountFromCatalog(cat, Object.assign({ kind: "bank", name: f.name || cat.name, acctName: f.acctName || "Checking", bal: f.bal, balAt: f.bal != null ? Date.now() : null, inTotal: f.inTotal, last4: f.last4 },
-          custom ? { url: u, web: /^https?:/i.test(u) ? u : "" } : {}));
-      });
-    });
-}
-function openUpdateBalance(a) {
-  if (!a) return;
-  var cur = (a.bal != null && !isNaN(a.bal)) ? String(a.bal) : "";
-  var openLab = "Open " + (a.name || "bank");
-  sheet("UPDATE BALANCE",
-    '<p class="bk-upd-bank">' + esc(a.name || "Bank") + " · " + esc(bankAcctLabel(a)) + "</p>" +
-    '<label class="field">BALANCE<input id="bkBalQuick" class="bk-bal-input" type="text" inputmode="decimal" autocomplete="off" autocorrect="off" spellcheck="false" data-form-type="other" data-lpignore="true" placeholder="0.00" value="' + esc(cur) + '"></label>' +
-    '<p class="note">You type the amount — we never log into your bank. No Plaid, no scraping.</p>' +
-    '<div class="bk-upd-actions">' +
-      '<button class="btn" id="bkBalSave" type="button">SAVE</button>' +
-      '<button class="btn alt" id="bkBalOpen" type="button">' + esc(openLab) + "</button>" +
-    "</div>",
-    function (b) {
-      var inp = b.querySelector("#bkBalQuick");
-      setTimeout(function () {
-        if (!inp) return;
-        try { inp.focus({ preventScroll: true }); } catch (e) { try { inp.focus(); } catch (e2) {} }
-        try { inp.select && inp.select(); } catch (e3) {}
-      }, 80);
-      b.querySelector("#bkBalSave").addEventListener("click", function () {
-        var raw = (inp && inp.value || "").trim();
-        var bal = parseMoneyInput(raw);
-        if (raw && (bal == null || isNaN(bal))) { toast("Type a dollar amount"); return; }
-        if (bal != null && isNaN(bal)) bal = null;
-        var next = loadAccounts().map(function (x) {
-          if (x.id !== a.id) return x;
-          return Object.assign({}, x, { bal: bal, balAt: bal != null ? Date.now() : null });
-        });
-        saveAccounts(next); closeSheet();
-        try { renderBanks(); } catch (e4) {}
-        try { renderAccounts(); renderHoldings(); } catch (e5) {}
-        toast(bal != null ? ("Balance " + bankMoney(bal)) : "Balance cleared");
-      });
-      b.querySelector("#bkBalOpen").addEventListener("click", function () {
-        openAccountApp(a); /* leave sheet open so user can return and Save */
-      });
-    });
-}
-function openEditBank(a) {
-  var custom = a.catalogId === "bank-custom";
-  sheet("✎ " + (a.name || "BANK").toUpperCase(), bankFormHtml(a, custom) +
-    '<p class="note">' + (a.balAt ? "Last updated " + esc(bankDateStr(a.balAt)) + "." : "No balance yet.") + " Tap the tile to open the bank's app or site.</p>" +
-    '<button class="btn" id="bkSave" type="button" style="margin-top:12px">SAVE</button>' +
-    '<button class="btn warn" id="bkDel" type="button" style="margin-top:8px">Remove bank</button>',
-    function (b) {
-      bindBankForm(b);
-      setTimeout(function () { var i = b.querySelector("#bkBal"); if (i && i.focus) try { i.focus({ preventScroll: true }); } catch (e) {} }, 60);
-      b.querySelector("#bkSave").addEventListener("click", function () {
-        var f = readBankForm(b); if (!f) return;
-        var next = loadAccounts().map(function (x) {
-          if (x.id !== a.id) return x;
-          var r = Object.assign({}, x, { name: f.name || x.name, acctName: f.acctName || "Checking", inTotal: f.inTotal, last4: f.last4 });
-          if (f.bal !== x.bal) { r.bal = f.bal; r.balAt = f.bal != null ? Date.now() : null; }
-          if (custom) { var u = normBankUrl(f.url); r.url = u; r.web = /^https?:/i.test(u) ? u : ""; }
-          return r;
-        });
-        saveAccounts(next); closeSheet(); renderAccounts(); renderHoldings(); try { renderBanks(); } catch (e2) {} toast("Bank saved");
-      });
-      b.querySelector("#bkDel").addEventListener("click", function () {
-        if (!confirm("Remove " + (a.name || "this bank") + "?")) return;
-        saveAccounts(loadAccounts().filter(function (x) { return x.id !== a.id; }));
-        closeSheet(); renderAccounts(); renderHoldings(); try { renderBanks(); } catch (e2) {} toast("Bank removed");
-      });
-    });
-}
+/* stubs — manual bank UI removed in v4.13.0 */
+function openAddBankPicker() { openLinkBankStub(); }
+function openAddBank() { openLinkBankStub(); }
+function openEditBank() { /* no-op */ }
+function openUpdateBalance() { /* no-op */ }
 function renderBanks() {
   var host = $("#hBkGrid"), totalEl = $("#hBkTotal"), subEl = $("#hBkSub"), card = $("#hBk");
   if (!host) return;
+  try { migrateManualBanksOut(); } catch (eM) {}
   var priv = bankPrivacyOn();
   if (card) card.classList.toggle("bk-private", priv);
   var pm2 = $("#panelMoney"); if (pm2) pm2.classList.toggle("bk-private", priv);
-  setBankPrivacy(priv); /* sync eye */
+  setBankPrivacy(priv);
   var banks = getBankAccounts();
   var st = bankStats();
+  var ready = bankDeviceReady();
+  var linked = ready && banks.length > 0;
   if (totalEl) totalEl.textContent = priv ? "••••••" : bankMoney(st.priced ? st.total : 0);
   if (subEl) {
-    if (!banks.length) subEl.textContent = "Add a bank · balances stay on this phone";
-    else subEl.textContent = st.n + " account" + (st.n === 1 ? "" : "s") + (priv ? " · privacy on" : "") + (!priv ? " · tap balance to update" : "");
+    if (!ready && !banks.length) subEl.textContent = "Link your bank · balances stay on this phone";
+    else if (!banks.length) subEl.textContent = "Pulling balances…";
+    else subEl.textContent = st.n + " account" + (st.n === 1 ? "" : "s") + (priv ? " · privacy on" : "");
   }
-  var linkCfg = bankLinkConfigured();
-  var devReady = bankDeviceReady();
-  var linkLabel = devReady ? "Bank auto-link" : "Link bank (auto)";
-  var linkHtml = '<button type="button" class="bk-link-auto' + (linkCfg ? "" : " is-unset") + '" id="bkLinkAuto" ' +
-    'aria-disabled="' + (linkCfg ? "false" : "true") + '" title="' + (linkCfg ? "Bank auto-link settings" : "Not set up yet") + '">' +
-    linkLabel + "</button>" +
-    (linkCfg ? (devReady ? '<span class="bk-link-note">Source: Auto · Plaid</span>' : '<span class="bk-link-note">Tap to link on this device</span>') : '<span class="bk-link-note">Not set up yet</span>');
+  var asLine = bankAsOfStr(_bankAsOf || (banks[0] && banks[0].balAt));
+  var foot = $("#hBkFoot");
+  if (foot) {
+    if (linked) foot.textContent = "Tap a card to refresh · eye hides balances + last 4";
+    else foot.textContent = "Only last 4 digits · never full account numbers";
+  }
   if (!banks.length) {
-    host.innerHTML = '<div class="bk-card empty" data-bk-add="1" role="listitem" tabindex="0" aria-label="Add bank"><span>＋ Add Bank</span></div>' + linkHtml;
+    var cta = ready
+      ? '<button type="button" class="bk-link-auto" id="bkLinkAuto">Refresh / manage link</button><span class="bk-link-note">Source: Auto · Plaid</span>'
+      : '<button type="button" class="bk-link-auto" id="bkLinkAuto">Link bank</button><span class="bk-link-note">Plaid · read-only balances</span>';
+    host.innerHTML = cta;
     return;
   }
   host.innerHTML = banks.map(function (a) {
     var hasBal = a.bal != null && !isNaN(a.bal);
     var balTxt = priv ? "••••••" : bankMoney(hasBal ? +a.bal : 0);
-    var balCls = (!hasBal && !priv) ? "bk-bal muted" : "bk-bal";
+    var showAvail = !priv && a.available != null && !isNaN(+a.available) && hasBal && Math.abs(+a.available - +a.bal) >= 0.01;
+    var availHtml = showAvail ? ('<span class="bk-avail">Avail ' + esc(bankMoney(+a.available)) + "</span>") : "";
     var l4 = formatLast4(a.last4, !priv);
     var l4html = l4 ? ('<span class="bk-last4"><span class="bk-last4-digits">' + esc(l4) + "</span></span>") : "";
-    var asof = bankAsOfStr(a.balAt);
-    var asofHtml = asof ? ('<span class="bk-asof">' + esc(asof) + "</span>") : '<span class="bk-asof bk-asof-muted">Tap balance to update</span>';
-    var srcHtml = '<span class="bk-source">' + esc(bankSourceLabel(a)) + "</span>";
-    var hint = (!hasBal && !priv) ? '<span class="bk-bal-hint">Tap to set balance</span>' : (!priv ? '<span class="bk-bal-hint">Tap to update</span>' : "");
-    var leftOut = a.inTotal === false ? '<span class="bk-leftout">Not in total</span>' : "";
-    var canQuick = (a.source || "manual") === "manual";
-    return '<article class="bk-card" data-bk="' + esc(a.id) + '" role="listitem" tabindex="0" aria-label="' + esc(a.name) + ", " + esc(bankMoney(hasBal ? +a.bal : 0)) + '">' +
-      '<header class="bk-card-h" data-bk-open="' + esc(a.id) + '">' +
-        '<span class="bk-badge" aria-hidden="true">' + accountIconHTML(a) + "</span>" +
-        '<div class="bk-card-meta"><b class="bk-bank-name">' + esc(a.name) + "</b>" + asofHtml + srcHtml + leftOut + "</div>" +
-        '<span class="bk-edit" role="button" tabindex="0" data-bk-edit="' + esc(a.id) + '" aria-label="Edit ' + esc(a.name) + '" title="Edit">✎</span>' +
-      "</header>" +
-      '<div class="bk-acct-row">' +
-        '<div class="bk-acct-l" data-bk-open="' + esc(a.id) + '"><span class="bk-acct-name">' + esc(bankAcctLabel(a)) + "</span>" + l4html + "</div>" +
-        '<div class="bk-acct-r"><span class="' + balCls + '"' + (canQuick ? (' data-bk-bal="' + esc(a.id) + '" role="button" tabindex="0" aria-label="Update ' + esc(a.name) + ' balance"') : "") + ">" + esc(balTxt) + "</span>" + hint + "</div>" +
-      "</div></article>";
-  }).join("") + linkHtml;
+    return '<article class="bk-card bk-card-auto" data-bk="' + esc(a.id) + '" role="listitem" tabindex="0" aria-label="' + esc(bankAcctLabel(a)) + '">' +
+      '<div class="bk-card-top"><b class="bk-bank-name">' + esc(a.name) + "</b>" + l4html + "</div>" +
+      '<div class="bk-card-mid"><span class="bk-acct-name">' + esc(a.acctName || "Account") + '</span><span class="bk-bal">' + esc(balTxt) + "</span></div>" +
+      (availHtml ? ('<div class="bk-card-bot">' + availHtml + "</div>") : "") +
+      "</article>";
+  }).join("") +
+    (asLine ? ('<p class="bk-asof-line">' + esc(asLine) + "</p>") : "") +
+    '<button type="button" class="bk-link-manage" id="bkLinkAuto" aria-label="Bank link settings">Manage link</button>';
 }
 (function bindBankCard() {
-  var grid = $("#hBkGrid"), add = $("#hBkAdd"), eye = $("#hBkEye");
+  var grid = $("#hBkGrid"), eye = $("#hBkEye");
   if (eye) eye.addEventListener("click", function (e) {
     e.preventDefault(); e.stopPropagation();
     setBankPrivacy(!bankPrivacyOn());
@@ -7648,68 +7456,36 @@ function renderBanks() {
     e.preventDefault(); e.stopPropagation();
     openLinkBankStub();
   }, true);
-  if (add) bindUserTap(add, function () { openAddBankPicker(); });
   if (!grid) return;
-  var holdT = null, held = false, heldId = null;
-  function clearHold() { clearTimeout(holdT); holdT = null; }
-  grid.addEventListener("pointerdown", function (e) {
-    if (e.target.closest("[data-bk-edit],[data-bk-add]")) return;
-    var tile = e.target.closest("[data-bk]"); if (!tile) return;
-    held = false; heldId = tile.getAttribute("data-bk"); clearHold();
-    holdT = setTimeout(function () {
-      held = true;
-      var a = loadAccounts().filter(function (x) { return x.id === heldId; })[0];
-      if (a) openEditBank(a);
-      try { navigator.vibrate && navigator.vibrate(30); } catch (err) {}
-    }, 550);
-  });
-  grid.addEventListener("pointerup", clearHold);
-  grid.addEventListener("pointerleave", clearHold);
-  grid.addEventListener("pointercancel", clearHold);
-  grid.addEventListener("contextmenu", function (e) {
-    var tile = e.target.closest("[data-bk]");
-    if (tile) {
-      e.preventDefault();
-      var a = loadAccounts().filter(function (x) { return x.id === tile.getAttribute("data-bk"); })[0];
-      if (a) openEditBank(a);
-    }
-  });
   grid.addEventListener("click", function (e) {
-    var ed = e.target.closest("[data-bk-edit]");
-    if (ed) {
-      e.preventDefault(); e.stopPropagation();
-      var a0 = loadAccounts().filter(function (x) { return x.id === ed.getAttribute("data-bk-edit"); })[0];
-      if (a0) openEditBank(a0);
-      return;
-    }
-    var balHit = e.target.closest("[data-bk-bal]");
-    if (balHit) {
-      e.preventDefault(); e.stopPropagation();
-      if (held) { held = false; return; }
-      var aB = loadAccounts().filter(function (x) { return x.id === balHit.getAttribute("data-bk-bal"); })[0];
-      if (aB) openUpdateBalance(aB);
-      return;
-    }
-    if (e.target.closest("[data-bk-add]")) { openAddBankPicker(); return; }
     var tile = e.target.closest("[data-bk]"); if (!tile) return;
-    if (held) { held = false; return; }
-    var a = loadAccounts().filter(function (x) { return x.id === tile.getAttribute("data-bk"); })[0];
-    if (a) openAccountApp(a);
+    e.preventDefault();
+    toast("Refreshing…");
+    refreshBankAccountsFromLink({ refresh: true }).then(function () {
+      toast("Balances updated");
+    }).catch(function () { toast("Couldn’t refresh"); });
   });
 })();
+try { migrateManualBanksOut(); } catch (eMig) {}
 try { renderBanks(); } catch (eInitBk) {}
 try {
   if (bankDeviceReady()) {
     refreshBankAccountsFromLink().then(function () { try { renderBanks(); } catch (eR) {} });
   } else if (location.search.indexOf("bank=linked") >= 0) {
-    /* returned from /os/link/ — token should exist now */
     setTimeout(function () {
       refreshBankAccountsFromLink({ refresh: true }).then(function () { try { renderBanks(); } catch (eR2) {} toast("Bank linked"); });
     }, 200);
   }
 } catch (eAutoBk) {}
+/* bank auto-refresh: every 15 min while visible + on focus via onReturn */
+setInterval(function () {
+  try {
+    if (document.visibilityState !== "visible") return;
+    if (!bankDeviceReady()) return;
+    refreshBankAccountsFromLink({ refresh: true });
+  } catch (eBr) {}
+}, 15 * 60 * 1000);
 try { ensureCardHolos(); } catch (eHolo) {}
-/* refresh relative "As of … min ago" while Bank is on screen */
 setInterval(function () {
   try {
     var el = document.getElementById("hBk");
@@ -7726,7 +7502,7 @@ function tourSteps() {
     ["#panelToday", "Today", "Clock, music, calendar and notes in one panel. Tap Calendar or Note to open them."],
     ["#hWx", "Weather", "Current weather. Tap the card for hourly, days ahead and Feels Like."],
     ["#panelNav", "Navigate", "Live map plus your saved places. Tap OPEN for turn-by-turn, tap a place chip for directions."],
-    ["#panelMoney", "Money", "Ticker, banks and markets together. Tap a balance to update it. Eye hides bank balances."],
+    ["#panelMoney", "Money", "Ticker, banks and markets together. Bank balances come from Plaid. Eye hides bank balances."],
     ["#mFocus", "Focus", "A focus timer. Pick minutes and start."],
     ["#phoneMount", "Phone", "Dial pad and favorite people. Tap to call."],
     ["#appsSection", "Apps", "Your app tiles. Use Edit to move or remove, ＋ to add."],
@@ -7848,7 +7624,7 @@ function showWelcomeOnce() {
 }
 
 try { startCompass(false); } catch (e) {}
-try { window.ZAPOS.startTour = startTour; window.ZAPOS.endTour = endTour; window.ZAPOS.renderBanks = renderBanks; window.ZAPOS.openAddBankPicker = openAddBankPicker; window.ZAPOS.sanitizeLast4 = sanitizeLast4; window.ZAPOS.bankPrivacyOn = bankPrivacyOn; window.ZAPOS.setBankPrivacy = setBankPrivacy; window.ZAPOS.qa.compass = function () { return { c: COMPASS, gps: GPS && GPS.lat, hd: currentHeading() }; }; window.ZAPOS.qa.hist = function () { return { depth: HIST.depth, expect: HIST.expect, layers: overlayLayers(), state: history.state, len: history.length }; }; window.ZAPOS.qa.banks = function () { return { n: loadAccounts().filter(function (a) { return a.kind === "bank"; }).length, privacy: bankPrivacyOn(), total: bankStats().total, last4s: loadAccounts().filter(function (a) { return a.kind === "bank"; }).map(function (a) { return a.last4 || null; }) }; }; window.ZAPOS.qa.holo = function () { return { motion: motionWanted(), live: document.querySelectorAll(".card.br.is-live .card-holo-foil").length, foil: !!document.querySelector(".card-holo-foil"), glow: !!document.querySelector(".card-holo-glow") }; }; } catch (eQ) {}
+try { window.ZAPOS.startTour = startTour; window.ZAPOS.endTour = endTour; window.ZAPOS.renderBanks = renderBanks; window.ZAPOS.openAddBankPicker = openLinkBankStub; window.ZAPOS.sanitizeLast4 = sanitizeLast4; window.ZAPOS.bankPrivacyOn = bankPrivacyOn; window.ZAPOS.setBankPrivacy = setBankPrivacy; window.ZAPOS.qa.compass = function () { return { c: COMPASS, gps: GPS && GPS.lat, hd: currentHeading() }; }; window.ZAPOS.qa.hist = function () { return { depth: HIST.depth, expect: HIST.expect, layers: overlayLayers(), state: history.state, len: history.length }; }; window.ZAPOS.qa.banks = function () { var rows = getBankAccounts(); return { n: rows.length, privacy: bankPrivacyOn(), total: bankStats().total, last4s: rows.map(function (a) { return a.last4 || null; }), source: "auto" }; }; window.ZAPOS.qa.holo = function () { return { motion: motionWanted(), live: document.querySelectorAll(".card.br.is-live .card-holo-foil").length, foil: !!document.querySelector(".card-holo-foil"), glow: !!document.querySelector(".card-holo-glow") }; }; } catch (eQ) {}
 setTimeout(showWelcomeOnce, 1400);
 if (!Store.getLocal("seenHelp", false)) { var _sa = false; try { _sa = window.navigator.standalone === true || (window.matchMedia && matchMedia("(display-mode: standalone)").matches); } catch (eTip) {} if (!_sa) { Store.setLocal("seenHelp", true); } else { Store.setLocal("seenHelp", true); } }
 })();
