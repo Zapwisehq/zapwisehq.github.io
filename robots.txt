@@ -1,3 +1,8 @@
 User-agent: *
 Allow: /
 Sitemap: https://zapwiseai.com/sitemap.xml
+
+# Get / install hub — noindex
+User-agent: *
+Disallow: /os/get/
+Disallow: /os/get

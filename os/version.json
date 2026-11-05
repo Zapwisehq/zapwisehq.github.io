@@ -1,6 +1,6 @@
 {
-  "version": "4.6.3",
+  "version": "4.7.0",
   "released": "2026-11-05",
   "name": "ZAPWISE//OS",
-  "notes": "Fix blank ~100vh above header on PWA launch: zw-stage now position:fixed; closed overlays display:none; scroll-lock cleared on boot/pageshow; header boot guard"
+  "notes": "LAST CALLS HUD; markets total+spark+BTC/GOLD; focus presets/ring/sessions; ZAP AI (router+Pollinations+WebLLM+voice). Get shells at /os/get/."
 }

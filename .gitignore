@@ -1,2 +1,15 @@
 preview_*.png
 *.bak
+
+# Signing keys — never commit
+/keys/
+*.keystore
+*.jks
+
+# Local build tooling / keys (not part of Pages deploy)
+/keys/
+*.keystore
+*.jks
+os/firebase-config.js
+os/sync.js
+os/qa_*/

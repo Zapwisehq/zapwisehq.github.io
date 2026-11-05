@@ -7,14 +7,14 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="description" content="ZAPWISE//OS: calm glass HUD — clock, weather, map, markets, focus, apps.">
 <meta name="theme-color" content="#070814">
-<meta name="zapos-version" content="4.6.3">
+<meta name="zapos-version" content="4.7.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="/os/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/os/icon-180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/os/icon-192.png">
-<link rel="stylesheet" href="/os/app.css?v=4.6.3">
-<link rel="stylesheet" href="/os/cinematic.css?v=4.6.3">
+<link rel="stylesheet" href="/os/app.css?v=4.7.0">
+<link rel="stylesheet" href="/os/cinematic.css?v=4.7.0">
 <script>
 (function(){try{var raw=localStorage.getItem("zapos.device");var j=raw?JSON.parse(raw):{};if(!j||typeof j!=="object")j={};if(!Object.prototype.hasOwnProperty.call(j,"liteMode")){var m=false;try{m=(window.matchMedia&&(matchMedia("(pointer: coarse)").matches||matchMedia("(max-width: 900px)").matches))||/iPhone|iPad|iPod|Android/i.test(navigator.userAgent||"")||navigator.standalone===true;}catch(e0){}if(m){j.liteMode=true;localStorage.setItem("zapos.device",JSON.stringify(j));}}if(j.liteMode)document.documentElement.classList.add("fx-lite");}catch(e){}
 try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.themeCss){var s=document.createElement("style");s.id="themeBoot";s.textContent=p.themeCss;document.head.appendChild(s);}}}catch(e){}})();
@@ -30,7 +30,7 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
 <div id="app">
 
  <header class="top sticky" id="top">
-  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver">v4.6.3</span></div>
+  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver">v4.7.0</span></div>
   <div class="top-r">
    <span class="sync" id="hSync"><i aria-hidden="true"></i>LIVE</span>
    <span class="hud-chip gps" id="hGpsLock" data-lock="0" hidden><i aria-hidden="true"></i>GPS —</span>
@@ -141,13 +141,18 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
 
   <div class="row2">
    <button class="card br h-mk" id="hMk" type="button" aria-label="Open markets detail" aria-expanded="false" aria-controls="xpMk">
-    <div class="mk-h">MARKETS<span class="mk-t" id="hMkT">Updated --</span></div>
+    <div class="mk-h">MARKETS<span class="mk-t" id="hMkT">--</span></div>
+    <div class="mk-hero" id="hMkPort">
+      <b class="hmk-total" data-hmk-port="1" id="hMkTotal">—</b>
+      <span class="hmk-day" id="hMkDay">—</span>
+    </div>
+    <canvas class="mk-mini-spark" id="hMkSpark" width="280" height="40" aria-hidden="true"></canvas>
     <div class="mk-items" id="hMkList"><span class="dim">Markets loading…</span></div>
-    <div class="mk-port" id="hMkPort" hidden></div>
-       </button>
-   <button class="card br focus-card" id="mFocus" type="button" aria-label="Focus timer: tap to start or pause">
-    <div class="mk-h">FOCUS</div>
-    <div class="foc-wrap">
+    <span class="mk-add" data-hmk-add="1" id="hMkAct" role="button" tabindex="0">＋ Add</span>
+   </button>
+   <div class="card br focus-card" id="mFocus" role="group" aria-label="Focus timer">
+    <div class="mk-h">FOCUS <span class="foc-sess" id="focSess">0 TODAY</span></div>
+    <div class="foc-wrap" id="focTap" role="button" tabindex="0" aria-label="Start or pause focus">
      <svg class="foc-svg" viewBox="0 0 120 120" aria-hidden="true">
       <circle class="foc-track" cx="60" cy="60" r="52"/>
       <circle class="foc-ring" id="focRing" cx="60" cy="60" r="52"/>
@@ -157,11 +162,20 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
       <span class="foc-status" id="mFocL">TAP TO START</span>
      </div>
     </div>
+    <div class="foc-presets" id="focPresets" role="group" aria-label="Focus length">
+     <button type="button" class="foc-p" data-foc-min="15">15</button>
+     <button type="button" class="foc-p on" data-foc-min="25">25</button>
+     <button type="button" class="foc-p" data-foc-min="50">50</button>
+    </div>
+    <div class="foc-acts">
+     <button type="button" class="foc-btn" id="focToggle">START</button>
+     <button type="button" class="foc-btn alt" id="focReset">RESET</button>
+    </div>
     <span class="segs" id="mFoc" hidden></span>
     <span class="segs" id="mDay" hidden></span>
     <span id="mDayV" hidden></span>
     <span id="mDayL" hidden></span>
-   </button>
+   </div>
   </div>
 
   <div class="xp" id="xpMk" hidden>
@@ -225,7 +239,7 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
    <div id="wxSun"></div><div id="wxStamp"></div><div id="wxHours"></div><div id="wxDays"></div><div id="wxNote"></div>
    <div id="mkList"></div><div id="mkStamp"></div><div id="editMkBtn"></div><div id="cityBtn"></div>
    <div id="hSunset"></div><div id="hWind"></div><div id="hStatus"></div>
-   <div id="v-home"></div><div id="hMkAct"></div><button id="findApp" type="button" hidden aria-label="Find an app" tabindex="-1"></button>
+   <div id="v-home"></div><div id="hMkActStub"></div><button id="findApp" type="button" hidden aria-label="Find an app" tabindex="-1"></button>
    <span id="srchHint" hidden></span><div id="skyline"></div><div id="skyWx"></div>
    <div id="hudStatus"></div>
   </div>
@@ -240,42 +254,45 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
 </div>
 
 <div class="asst-dock" id="asstDock">
- <button type="button" class="zap-fab asst-mic" id="zapFab" aria-label="Open Assistant" title="Assistant">
+ <button type="button" class="zap-fab asst-mic" id="zapFab" aria-label="Open ZAP AI" title="ZAP AI">
   <svg class="zap-mic-ico" viewBox="0 0 24 24" aria-hidden="true" width="22" height="22"><path fill="currentColor" d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-3.1A7 7 0 0 0 19 11h-2z"/></svg>
  </button>
 </div>
-<div class="zap-sheet" id="zapSheet" hidden role="dialog" aria-modal="false" aria-labelledby="zapTitle">
+<div class="zap-sheet" id="zapSheet" hidden role="dialog" aria-modal="true" aria-labelledby="zapTitle">
  <div class="zap-h">
-  <b id="zapTitle">Assistant</b>
-  <span class="zap-badge" id="zapBadge">OFFLINE</span>
+  <b id="zapTitle">ZAP AI</b>
+  <span class="zap-badge" id="zapBadge">LIVE</span>
+  <button type="button" class="chip" id="zapMute" aria-label="Mute voice replies" aria-pressed="true" title="Voice replies">🔊</button>
   <button type="button" class="chip" id="zapClose" aria-label="Close">✕</button>
  </div>
  <div class="zap-log" id="zapLog" aria-live="polite"></div>
  <div class="zap-chips" id="zapChips" hidden></div>
+ <p class="zap-mic-tip" id="zapMicTip" hidden></p>
  <form class="zap-form" id="zapForm" autocomplete="off">
-  <button type="button" class="zap-mic" id="zapMic" aria-label="Speak">🎤</button>
-  <input id="zapIn" type="text" enterkeyhint="send" placeholder="Ask… call, directions, theme, search…" aria-label="Message Assistant" maxlength="240">
+  <button type="button" class="zap-mic" id="zapMic" aria-label="Talk to ZAP AI">🎤</button>
+  <input id="zapIn" type="text" enterkeyhint="send" placeholder="Ask ZAP AI anything…" aria-label="Message ZAP AI" maxlength="400">
   <button type="submit" class="zap-send" aria-label="Send">GO</button>
  </form>
- <div class="zap-ai" id="zapAiBar" hidden aria-hidden="true">
+ <div class="zap-ai" id="zapAiBar">
   <div class="zap-smart" id="zapSmartRow">
-   <label class="zap-smart-lab"><input type="checkbox" id="zapSmart" checked> Smart mode</label>
-   <small class="zap-smart-note" id="zapSmartNote">Free-form via Pollinations. Actions stay on-device.</small>
+   <label class="zap-smart-lab"><input type="checkbox" id="zapSmart" checked> Online answers</label>
+   <small class="zap-smart-note" id="zapSmartNote">Actions stay on-device. Runs on open models.</small>
   </div>
   <div class="zap-ai-row">
-   <small id="zapAiStatus">Private AI off</small>
-   <button type="button" class="chip" id="zapAiBtn">Enable private AI (~1 GB)</button>
-   <button type="button" class="chip danger" id="zapAiDel" hidden title="Delete cached model">Delete AI</button>
+   <small id="zapAiStatus">Optional offline brain</small>
+   <button type="button" class="chip" id="zapAiBtn">Download offline brain (~1 GB)</button>
+   <button type="button" class="chip danger" id="zapAiDel" hidden title="Delete cached model">Delete</button>
   </div>
   <progress id="zapAiProg" class="zap-ai-prog" max="1" value="0" hidden></progress>
   <small class="zap-ai-note" id="zapAiNote" hidden></small>
+  <small class="zap-foot">ZAP AI · runs on open models</small>
  </div>
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/os/catalog.js?v=4.6.3"></script>
-<script src="/os/sky.js?v=4.6.3"></script>
-<script src="/os/app.js?v=4.6.3"></script>
+<script src="/os/catalog.js?v=4.7.0"></script>
+<script src="/os/sky.js?v=4.7.0"></script>
+<script src="/os/app.js?v=4.7.0"></script>
 </body>
 </html>

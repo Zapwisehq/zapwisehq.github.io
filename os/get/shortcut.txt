@@ -1,0 +1,11 @@
+ZAP//OS — iPhone Shortcut (free)
+================================
+1. Open the Shortcuts app → tap +
+2. Add Action → search “Open URLs”
+3. URL: https://zapwiseai.com/os/?src=ios-shortcut
+4. Name the shortcut: ZAP//OS
+5. Assign it:
+   • Action Button (iPhone 15 Pro+): Settings → Action Button → Shortcut → ZAP//OS
+   • Back Tap: Settings → Accessibility → Touch → Back Tap → Double/Triple Tap → ZAP//OS
+
+Opens the LIVE OS. No install fees. Updates automatically when the site updates.

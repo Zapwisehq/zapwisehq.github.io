@@ -1,7 +1,7 @@
-/* ZAPWISE//OS web app v4.6.3 (Nov 5, 2026). Fix blank ~100vh above header (zw-stage in-flow); harden closed overlays + scroll-lock clear + boot guard. No sound, no tabs. */
+/* ZAPWISE//OS web app v4.7.0 (Nov 5, 2026). LAST CALLS, markets/focus HUD upgrades, ZAP AI (router+Pollinations+WebLLM+voice). No tabs. Rest of app stays silent. */
 (function () {
 "use strict";
-var VERSION = "4.6.3";
+var VERSION = "4.7.0";
 var APP_VERSION = VERSION;
 
 // v4.5: default Lite on coarse/mobile unless user already chose
@@ -192,6 +192,28 @@ function initFx3dLayer() {
 
 var STATUS_MSGS = ["> SHORTCUTS ARMED", "> NET SECURE", "> AI LINK STABLE", "> SIGNAL CLEAN", "> APPS READY"];
 var FOCUS_MS = 25 * 60000;
+function focusMs() {
+  var m = (FOC && FOC.mins) ? +FOC.mins : 25;
+  if (!(m > 0)) m = 25;
+  return m * 60000;
+}
+function focusDayKey() {
+  var d = new Date();
+  return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+}
+function focusSessionsToday() {
+  var s = Store.getLocal("focusStats", null) || {};
+  if (s.day !== focusDayKey()) return 0;
+  return +s.count || 0;
+}
+function bumpFocusSession() {
+  var day = focusDayKey();
+  var s = Store.getLocal("focusStats", null) || {};
+  if (s.day !== day) s = { day: day, count: 0 };
+  s.count = (+s.count || 0) + 1;
+  Store.setLocal("focusStats", s);
+  return s.count;
+}
 var DAY_START = 7, DAY_END = 23;
 var $ = function (s, r) { return (r || document).querySelector(s); };
 var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
@@ -203,7 +225,7 @@ function clone(o) { return o == null ? o : JSON.parse(JSON.stringify(o)); }
 var Store = (function () {
   var STATE_KEY = "zapos.state", DEVICE_KEY = "zapos.device", VER = 1;
   var PREF_KEYS = ["settings", "theme", "apps", "coins", "loc", "favs", "places", "holdings", "broker", "wallets", "accounts", "assistant"];                     // shared state (sync-ready)
-  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss", "mediaKey", "skipBoot", "bootDay", "uiSounds", "recentPins", "wxDay", "wxMode", "portHist", "acctMigrated", "liteMode", "tiltCards", "motionTilt"]; // this device only
+  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss", "mediaKey", "skipBoot", "bootDay", "uiSounds", "recentPins", "wxDay", "wxMode", "portHist", "acctMigrated", "liteMode", "tiltCards", "motionTilt", "callLog", "zapChat", "focusStats"]; // this device only
   function read(k) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
   function write(k, v) { if (dead) return false; try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
   var state = read(STATE_KEY), dev = read(DEVICE_KEY), subs = [], uiT = null, dead = false; // dead: after a reset, write nothing more
@@ -644,15 +666,28 @@ function minute(d) {
   renderNowPlaying();
 }
 // FOCUS: a 25-minute sprint timer (the web can't read battery on iPhone, so this replaces the widget's PWR meter)
-var FOC = Store.getLocal("focus", { st: "idle" });
+var FOC = Store.getLocal("focus", { st: "idle", mins: 25 });
+if (!FOC || typeof FOC !== "object") FOC = { st: "idle", mins: 25 };
+if (!FOC.mins) FOC.mins = 25;
 function renderFocus() {
-  var now = Date.now(), left = FOCUS_MS, line;
-  if (FOC.st === "run") { left = FOC.end - now; if (left <= 0) { FOC = { st: "idle" }; Store.setLocal("focus", FOC); left = FOCUS_MS; toast("Focus sprint done. Take 5."); try { navigator.vibrate && navigator.vibrate([200, 100, 200]); } catch (e) {} } }
-  else if (FOC.st === "pause") left = FOC.left;
-  else if (FOC.st === "done") { FOC = { st: "idle" }; Store.setLocal("focus", FOC); left = FOCUS_MS; }
-  else left = FOCUS_MS;
-  var pct = FOC.st === "idle" ? 0 : (1 - left / FOCUS_MS), s = Math.ceil(left / 1000);
-  var C = 2 * Math.PI * 52; // r=52
+  var now = Date.now(), total = focusMs(), left = total, line;
+  if (FOC.st === "run") {
+    left = FOC.end - now;
+    if (left <= 0) {
+      var minsKeep = FOC.mins || 25;
+      FOC = { st: "idle", mins: minsKeep };
+      Store.setLocal("focus", FOC);
+      left = focusMs();
+      try { bumpFocusSession(); } catch (e0) {}
+      toast("Focus done. Take 5.");
+      try { navigator.vibrate && navigator.vibrate([180, 80, 180]); } catch (e) {}
+    }
+  } else if (FOC.st === "pause") left = Math.max(0, FOC.left || 0);
+  else if (FOC.st === "done") { FOC = { st: "idle", mins: FOC.mins || 25 }; Store.setLocal("focus", FOC); left = focusMs(); }
+  else left = total;
+  var pct = FOC.st === "idle" ? 0 : Math.max(0, Math.min(1, 1 - left / total));
+  var s = Math.max(0, Math.ceil(left / 1000));
+  var C = 2 * Math.PI * 52;
   var ring = $("#focRing");
   if (ring) {
     ring.style.strokeDasharray = String(C);
@@ -660,25 +695,50 @@ function renderFocus() {
     ring.style.stroke = FOC.st === "pause" ? "var(--amber)" : FOC.st === "run" ? "var(--cyan)" : "var(--amber)";
   }
   var tv = $("#mFocV"); if (tv) tv.textContent = Math.floor(s / 60) + ":" + pad2(s % 60);
-  line = FOC.st === "run" ? "FOCUSING" : FOC.st === "pause" ? "PAUSED" : "TAP TO START";
+  line = FOC.st === "run" ? "FOCUSING" : FOC.st === "pause" ? "PAUSED" : "READY";
   var fl = $("#mFocL"); if (fl && fl.textContent !== line) fl.textContent = line;
   var card = $("#mFocus");
-  if (card) { card.classList.toggle("running", FOC.st === "run"); card.classList.remove("done"); }
+  if (card) { card.classList.toggle("running", FOC.st === "run"); card.classList.toggle("paused", FOC.st === "pause"); card.classList.remove("done"); }
+  var sess = $("#focSess"); if (sess) sess.textContent = focusSessionsToday() + " TODAY";
+  var tog = $("#focToggle"); if (tog) tog.textContent = FOC.st === "run" ? "PAUSE" : (FOC.st === "pause" ? "RESUME" : "START");
+  $$("#focPresets .foc-p").forEach(function (b) {
+    b.classList.toggle("on", +b.getAttribute("data-foc-min") === +(FOC.mins || 25));
+    b.disabled = FOC.st === "run" || FOC.st === "pause";
+  });
+}
+function focusToggle() {
+  var now = Date.now();
+  if (FOC.st === "run") FOC = { st: "pause", left: Math.max(0, FOC.end - now), mins: FOC.mins || 25 };
+  else if (FOC.st === "pause") FOC = { st: "run", end: now + Math.max(0, FOC.left || 0), mins: FOC.mins || 25 };
+  else FOC = { st: "run", end: now + focusMs(), mins: FOC.mins || 25 };
+  Store.setLocal("focus", FOC); renderFocus();
+}
+function focusReset() {
+  FOC = { st: "idle", mins: FOC.mins || 25 };
+  Store.setLocal("focus", FOC); renderFocus(); toast("Focus reset");
+}
+function focusSetMins(m) {
+  m = +m; if (!(m > 0)) return;
+  if (FOC.st === "run" || FOC.st === "pause") { toast("Pause or reset first"); return; }
+  FOC = { st: "idle", mins: m }; Store.setLocal("focus", FOC); renderFocus();
 }
 (function bindFocus() {
-  var b = $("#mFocus"), hold = null, held = false;
-  function down() { held = false; clearTimeout(hold); hold = setTimeout(function () { held = true; FOC = { st: "idle" }; Store.setLocal("focus", FOC); renderFocus(); toast("Focus timer reset"); }, 650); }
-  function up() { clearTimeout(hold); }
-  b.addEventListener("pointerdown", down); b.addEventListener("pointerup", up); b.addEventListener("pointerleave", up); b.addEventListener("pointercancel", up);
-  b.addEventListener("contextmenu", function (e) { e.preventDefault(); });
-  b.addEventListener("click", function () {
-    if (held) { held = false; return; }
-    var now = Date.now();
-    if (FOC.st === "run") FOC = { st: "pause", left: Math.max(0, FOC.end - now) };
-    else if (FOC.st === "pause") FOC = { st: "run", end: now + FOC.left };
-    else FOC = { st: "run", end: now + FOCUS_MS };
-    Store.setLocal("focus", FOC); renderFocus();
+  var card = $("#mFocus"); if (!card) return;
+  var tap = $("#focTap");
+  if (tap) {
+    tap.addEventListener("click", function (e) { e.stopPropagation(); focusToggle(); });
+    tap.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); focusToggle(); } });
+  }
+  var tog = $("#focToggle"); if (tog) tog.addEventListener("click", function (e) { e.stopPropagation(); focusToggle(); });
+  var rst = $("#focReset"); if (rst) rst.addEventListener("click", function (e) { e.stopPropagation(); focusReset(); });
+  var presets = $("#focPresets");
+  if (presets) presets.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-foc-min]"); if (!b) return;
+    e.stopPropagation(); focusSetMins(+b.getAttribute("data-foc-min"));
   });
+  // Keep ticking correctly when backgrounded (timestamp-based end)
+  document.addEventListener("visibilitychange", function () { try { renderFocus(); } catch (e) {} });
+  renderFocus();
 })();
 
 function updateGpsLockChip() {
@@ -1712,23 +1772,70 @@ function quickAddHolding(pick) {
     });
 }
 
+function drawMkMiniSpark(cv, stats) {
+  if (!cv) return;
+  try {
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var W = cv.clientWidth || 240, H = cv.clientHeight || 36;
+    cv.width = Math.max(1, W * dpr); cv.height = Math.max(1, H * dpr);
+    var c = cv.getContext("2d"); c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    c.clearRect(0, 0, W, H);
+    var hist = Store.getLocal("portHist", null);
+    var vals = Array.isArray(hist) ? hist.map(function (x) { return +x.v; }).filter(function (v) { return !isNaN(v); }) : [];
+    if (vals.length < 2) {
+      var up0 = !(stats && stats.day < 0);
+      var col0 = up0 ? "#3ddc97" : "#ff5c7a";
+      c.beginPath();
+      for (var i = 0; i < 24; i++) {
+        var x = 2 + i / 23 * (W - 4);
+        var y = H * 0.55 - Math.sin(i / 23 * Math.PI) * H * 0.28 * (up0 ? 1 : -1);
+        if (i) c.lineTo(x, y); else c.moveTo(x, y);
+      }
+      c.strokeStyle = col0; c.lineWidth = 1.6; c.stroke();
+      return;
+    }
+    var min = Math.min.apply(null, vals), max = Math.max.apply(null, vals);
+    if (max === min) { max = min + 1; min = min - 1; }
+    var up = vals[vals.length - 1] >= vals[0];
+    var col = up ? "#3ddc97" : "#ff5c7a";
+    c.beginPath();
+    vals.forEach(function (v, i) {
+      var x = 2 + i / (vals.length - 1) * (W - 4);
+      var y = H - 3 - ((v - min) / (max - min)) * (H - 6);
+      if (i) c.lineTo(x, y); else c.moveTo(x, y);
+    });
+    c.strokeStyle = col; c.lineWidth = 1.7; c.stroke();
+  } catch (e) {}
+}
 function renderHomeMarkets(stats, accts) {
   stats = stats || portfolioStats();
   accts = accts || loadAccounts();
   var port = $("#hMkPort"), quotes = $("#hMkQuotes"), body = $("#hMkBody");
   var hasAcct = (accts && accts.length) || loadHoldings().length;
-  if (port) {
-    if (!hasAcct) {
-      port.innerHTML = '<span class="hmk-cta" data-hmk-add="1">Add your first account</span>';
-    } else {
+  var totalEl = $("#hMkTotal"), dayEl = $("#hMkDay");
+  if (port) port.hidden = false;
+  if (!hasAcct) {
+    if (totalEl) totalEl.textContent = "—";
+    if (dayEl) { dayEl.textContent = "＋ Add portfolio"; dayEl.className = "hmk-day dim"; }
+    if (port && !totalEl) port.innerHTML = '<span class="hmk-cta" data-hmk-add="1">＋ Add</span>';
+  } else {
+    if (totalEl) totalEl.textContent = money(stats.total);
+    else if (port) {
       var dayHtml = stats.priced
         ? ('<span class="hmk-day ' + (stats.day >= 0 ? "up" : "dn") + '">' + signedMoney(stats.day) + (stats.dayPct != null ? " · " + ((stats.dayPct >= 0 ? "+" : "") + stats.dayPct.toFixed(2) + "%") : "") + "</span>")
         : '<span class="hmk-day">—</span>';
-      port.innerHTML = '<span class="hmk-total" data-hmk-port="1">' + money(stats.total) + "</span>" + dayHtml;
+      port.innerHTML = '<b class="hmk-total" data-hmk-port="1">' + money(stats.total) + "</b>" + dayHtml;
+    }
+    if (dayEl) {
+      if (!stats.priced) { dayEl.textContent = "—"; dayEl.className = "hmk-day"; }
+      else {
+        dayEl.textContent = signedMoney(stats.day) + (stats.dayPct != null ? " · " + ((stats.dayPct >= 0 ? "+" : "") + stats.dayPct.toFixed(2) + "%") : "");
+        dayEl.className = "hmk-day " + (stats.day >= 0 ? "up" : "dn");
+      }
     }
   }
+  drawMkMiniSpark($("#hMkSpark"), stats);
   if (quotes) quotes.innerHTML = "";
-  // v4.4.1: BTC/GOLD already render in #hMkList — keep #hMkBody hidden to avoid the squished duplicate block
   if (body) body.hidden = true;
 }
 
@@ -1797,21 +1904,26 @@ function renderMkTicker() {
 
 function renderMarkets() {
   var d = MK && MK.d || {}, list = "", mini = "";
-  COINS.forEach(function (c, i) {
+  var seen = {};
+  COINS.forEach(function (c) {
+    if (!c || !c.id || seen[c.id]) return; seen[c.id] = 1;
     var q = d[c.id];
     list += '<div class="row"><span class="sym">' + esc(c.sym) + '</span><span class="grow">' + esc(c.name) + '</span><span class="px">' + (q ? money(q.usd) : "--") + '</span><span class="ch">' + (q ? chHTML(q.usd_24h_change) : "") + "</span></div>";
   });
-  var pages = Math.max(1, Math.ceil(COINS.length / 2) || 1), pg = mkPage % pages;
-  COINS.slice(pg * 2, pg * 2 + 2).forEach(function (c, i) {
+  // Compact home rows: unique BTC + GOLD only (no duplicates / no paging flicker)
+  var homePairs = [
+    { id: "bitcoin", sym: "BTC", name: "Bitcoin" },
+    { id: "pax-gold", sym: "GOLD", name: "Gold" }
+  ];
+  homePairs.forEach(function (c, i) {
     var q = d[c.id], ch = q ? q.usd_24h_change : null;
-    mini += '<div class="mk-row"><span class="sym">' + esc(c.sym) + '</span><span>' + sparkSVG(ch, (c.id || "").length + i) +
+    mini += '<div class="mk-row" data-hmk-port="1"><span class="sym">' + esc(c.sym) + '</span><span>' + sparkSVG(ch, (c.id || "").length + i) +
       '<div class="px">' + (q ? money(q.usd) : "--") + '</div></span><span class="ch ' + ((ch == null || isNaN(ch)) ? "" : (ch >= 0 ? "up" : "dn")) + '">' +
       ((ch == null || isNaN(ch)) ? "--" : ((ch >= 0 ? "+" : "") + ch.toFixed(2) + "%")) + "</span></div>";
   });
-  if (!COINS.length) { list = '<p class="offline">Your watchlist is empty. Tap ✎ WATCHLIST to add a coin.</p>'; if (!loadHoldings().length) mini = '<span class="dim">WATCHLIST EMPTY · TAP TO ADD</span>'; }
-  /* v4.4: quiet retry — never show error copy on the watchlist */
+  if (!COINS.length) { list = '<p class="offline">Your watchlist is empty. Tap ✎ WATCHLIST to add a coin.</p>'; }
   var mk = $("#mkList"); if (mk) mk.innerHTML = list;
-  if ($("#hMkList")) $("#hMkList").innerHTML = mini || $("#hMkList").innerHTML;
+  if ($("#hMkList")) $("#hMkList").innerHTML = mini;
   if ($("#xpMkList")) $("#xpMkList").innerHTML = list;
   try { renderHoldings(); } catch (e) {}
   try { renderHomeMarkets(); } catch (e) {}
@@ -4185,15 +4297,101 @@ var FAVS = Store.get("favs", []);
 function saveFavs() { Store.set("favs", FAVS); }
 function cleanNum(n) { return String(n || "").replace(/[^0-9+*#]/g, ""); }
 function fmtNum(n) { var d = n.replace(/\D/g, ""); if (/^\+/.test(n) || d.length !== 10) return n; return "(" + d.slice(0, 3) + ") " + d.slice(3, 6) + "-" + d.slice(6); }
-function callNum(n) { n = cleanNum(n); if (!n) { toast("Type a number first"); return; } location.href = "tel:" + n; }
+function loadCallLog() {
+  var log = Store.getLocal("callLog", null);
+  return Array.isArray(log) ? log : [];
+}
+function saveCallLog(log) { Store.setLocal("callLog", log.slice(0, 40)); }
+function favNameFor(num) {
+  num = cleanNum(num);
+  var hit = (FAVS || []).filter(function (f) { return cleanNum(f.num) === num; })[0];
+  return hit ? hit.name : "";
+}
+function relCallTime(at) {
+  var s = Math.max(0, Math.floor((Date.now() - at) / 1000));
+  if (s < 60) return s + "s";
+  if (s < 3600) return Math.floor(s / 60) + "m";
+  if (s < 86400) return Math.floor(s / 3600) + "h";
+  return Math.floor(s / 86400) + "d";
+}
+function logCall(n, name) {
+  n = cleanNum(n); if (!n) return;
+  var log = loadCallLog();
+  log.unshift({ n: n, name: name || favNameFor(n) || "", at: Date.now() });
+  saveCallLog(log);
+  try { renderLastCalls(); } catch (e) {}
+}
+function callNum(n) {
+  n = cleanNum(n);
+  if (!n) { toast("Type a number first"); return; }
+  logCall(n);
+  location.href = "tel:" + n;
+}
 function textNum(n) { n = cleanNum(n); location.href = n ? "sms:" + n : "sms:"; }
+function renderLastCalls(host) {
+  host = host || document.getElementById("dlLast");
+  if (!host) return;
+  var log = loadCallLog();
+  var sig = Math.min(5, Math.max(1, Math.round((navigator.onLine === false ? 1 : 4))));
+  var bars = "";
+  for (var i = 0; i < 5; i++) bars += "<i class=\"" + (i < sig ? "on" : "") + "\"></i>";
+  var head = '<div class="lc-h"><span class="lc-brack">[</span> LAST CALLS <span class="lc-brack">]</span>' +
+    '<span class="lc-sig" title="signal readout">' + bars + '</span>' +
+    '<span class="lc-clock">' + ((new Date().getHours() % 12) || 12) + ":" + pad2(new Date().getMinutes()) + '</span>' +
+    (log.length ? '<button type="button" class="lc-clear" id="lcClear">CLEAR</button>' : "") + "</div>";
+  if (!log.length) {
+    host.innerHTML = head + '<div class="lc-empty">No dials from ZAP//OS yet</div>';
+    return;
+  }
+  host.innerHTML = head + '<div class="lc-list">' + log.slice(0, 12).map(function (c, i) {
+    var label = c.name ? esc(c.name) : esc(fmtNum(c.n));
+    var sub = c.name ? esc(fmtNum(c.n)) : "REDIAL";
+    return '<button type="button" class="lc-row" data-lc="' + i + '" title="Tap to redial · long-press to remove">' +
+      '<span class="lc-main"><b>' + label + '</b><small>' + sub + '</small></span>' +
+      '<span class="lc-meta"><span class="lc-ago">' + relCallTime(c.at) + '</span><span class="lc-go">↺</span></span></button>';
+  }).join("") + "</div>";
+}
+function bindLastCalls(host) {
+  if (!host || host.dataset.bound === "1") return;
+  host.dataset.bound = "1";
+  var holdT = null, held = false;
+  host.addEventListener("pointerdown", function (e) {
+    var row = e.target.closest("[data-lc]"); if (!row) return;
+    held = false; clearTimeout(holdT);
+    holdT = setTimeout(function () {
+      held = true;
+      var i = +row.getAttribute("data-lc");
+      var log = loadCallLog();
+      if (!log[i]) return;
+      log.splice(i, 1); saveCallLog(log); renderLastCalls(host); toast("Removed from LAST CALLS");
+    }, 550);
+  });
+  host.addEventListener("pointerup", function () { clearTimeout(holdT); });
+  host.addEventListener("pointerleave", function () { clearTimeout(holdT); });
+  host.addEventListener("pointercancel", function () { clearTimeout(holdT); });
+  host.addEventListener("click", function (e) {
+    if (e.target.closest("#lcClear")) {
+      e.preventDefault();
+      if (!confirm("Clear LAST CALLS on this device?")) return;
+      saveCallLog([]); renderLastCalls(host); toast("LAST CALLS cleared");
+      return;
+    }
+    var row = e.target.closest("[data-lc]"); if (!row) return;
+    if (held) { held = false; return; }
+    var i = +row.getAttribute("data-lc");
+    var log = loadCallLog();
+    if (log[i]) callNum(log[i].n);
+  });
+  host.addEventListener("contextmenu", function (e) { if (e.target.closest("[data-lc]")) e.preventDefault(); });
+}
 function dialerHtml() {
   var keys = [["1", ""], ["2", "ABC"], ["3", "DEF"], ["4", "GHI"], ["5", "JKL"], ["6", "MNO"], ["7", "PQRS"], ["8", "TUV"], ["9", "WXYZ"], ["*", ""], ["0", "+"], ["#", ""]];
   return '<div class="dl-num" id="dlNum" aria-live="polite">&nbsp;</div>' +
     '<div class="dl-pad" id="dlPad">' + keys.map(function (k) { return '<button type="button" class="dl-k" data-k="' + k[0] + '" aria-label="' + k[0] + '"><b>' + k[0] + "</b><small>" + k[1] + "</small></button>"; }).join("") + "</div>" +
     '<div class="dl-act"><button type="button" class="dl-sv" id="dlSave" aria-label="Save as favorite">☆</button><button type="button" class="dl-call" id="dlCall" aria-label="Call">CALL</button><button type="button" class="dl-sv" id="dlDel" aria-label="Delete last digit">⌫</button></div>' +
+    '<div class="lc-strip" id="dlLast" aria-label="Last calls from ZAP//OS"></div>' +
     '<h3>FAVORITES</h3><div id="dlFavs"></div>' +
-    '<p class="note" style="margin-top:10px">Call opens your phone\'s call screen with the number ready. Favorites are saved on this device.</p>';
+    '<p class="note" style="margin-top:10px">Call opens your phone\'s dialer. LAST CALLS & favorites stay on this device only.</p>';
 }
 function bindDialer(b) {
   var num = "";
@@ -4231,6 +4429,7 @@ function bindDialer(b) {
   });
   b.addEventListener("keydown", function (e) { if (/^[0-9*#+]$/.test(e.key)) { num += e.key; draw(); } else if (e.key === "Backspace") { num = num.slice(0, -1); draw(); } else if (e.key === "Enter") callNum(num); });
   draw(); drawFavs();
+  try { var lc = b.querySelector("#dlLast"); renderLastCalls(lc); bindLastCalls(lc); } catch (eLc) {}
 }
 function mountPhoneScreen() {
   var host = document.getElementById("phoneMount");
@@ -4787,12 +4986,15 @@ function scheduleUpdateChecks() {
   }, 5 * 60 * 1000);
 }
 
-// ========== v3.10 ZAP assistant (intents + voice + opt-in WebLLM) ==========
+// ========== v4.7.0 ZAP AI (intent router → Pollinations / WebLLM / FAQ fallback + voice) ==========
 var ZAP_LLM = { engine: null, loading: false, modelId: "Qwen2.5-0.5B-Instruct-q4f16_1-MLC", progress: 0 };
+var ZAP_QUEUE = { busy: false, q: [], lastAt: 0, backoffMs: 0 };
+var ZAP_HIST_KEY = "zapChat";
 function loadAssistantPrefs() {
   var a = Store.get("assistant", null);
-  if (!a || typeof a !== "object") a = { enabled: true, webllm: false, suggest: true, voiceOut: false, modelCached: false, smartMode: true };
+  if (!a || typeof a !== "object") a = { enabled: true, webllm: false, suggest: true, voiceOut: true, modelCached: false, smartMode: true };
   if (a.smartMode == null) a.smartMode = true;
+  if (a.voiceOut == null) a.voiceOut = true; // assistant speaks; rest of app stays silent
   return a;
 }
 function saveAssistantPrefs(a) { Store.set("assistant", a); }
@@ -4801,6 +5003,25 @@ function hasWebGPU() {
 }
 function hasSpeechIn() {
   return !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+}
+function loadZapHist() {
+  var h = Store.getLocal(ZAP_HIST_KEY, null);
+  return Array.isArray(h) ? h : [];
+}
+function saveZapHist(h) {
+  Store.setLocal(ZAP_HIST_KEY, (h || []).slice(-80));
+}
+function paintZapHist() {
+  var log = $("#zapLog"); if (!log) return;
+  log.innerHTML = "";
+  loadZapHist().forEach(function (m) {
+    if (!m || !m.t) return;
+    var d = document.createElement("div");
+    d.className = "zap-msg " + (m.role === "user" ? "user" : "bot");
+    d.textContent = m.t;
+    log.appendChild(d);
+  });
+  log.scrollTop = log.scrollHeight;
 }
 function openZapAssistant() {
   var sheet = $("#zapSheet"); if (!sheet) return;
@@ -4812,28 +5033,44 @@ function openZapAssistant() {
   lockPageScroll();
   showScrim("zap");
   overlayPushHistory();
-  try { updateZapBadge(); renderZapChips(); refreshZapAiBar(); } catch (e) {}
-  /* no 3D orb — flat mic button only */
+  try {
+    paintZapHist();
+    updateZapBadge();
+    renderZapChips();
+    refreshZapAiBar();
+    var mute = $("#zapMute");
+    var pref = loadAssistantPrefs();
+    if (mute) { mute.textContent = pref.voiceOut ? "🔊" : "🔇"; mute.setAttribute("aria-pressed", pref.voiceOut ? "true" : "false"); }
+    var mic = $("#zapMic"), tip = $("#zapMicTip");
+    if (!hasSpeechIn()) {
+      if (mic) { mic.classList.add("fallback"); mic.setAttribute("aria-label", "Type instead — voice not supported"); }
+      if (tip) { tip.hidden = false; tip.textContent = "Voice not supported here — type below"; }
+    } else if (tip) tip.hidden = true;
+  } catch (e) {}
   setTimeout(function () { try { $("#zapIn").focus(); } catch (e) {} }, 40);
 }
 function closeZapAssistant(skipHist) {
   var sheet = $("#zapSheet"); if (sheet) { sheet.hidden = true; sheet.style.transform = ""; }
   try { stopZapListen(); } catch (e) {}
+  try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e2) {}
   hideScrimIfIdle();
   if (!skipHist && !anyOverlayOpen()) overlayClearHistory();
   try { unlockPageScroll(); } catch (eU) {}
 }
 function updateZapBadge() {
   var b = $("#zapBadge"); if (!b) return;
-  var stale = !(WX && WX.at && Date.now() - WX.at < 45 * 60000) || !(MK && MK.at && Date.now() - MK.at < 45 * 60000);
-  b.textContent = navigator.onLine === false ? "OFFLINE" : (stale ? "CACHED" : "LIVE");
-  b.classList.toggle("live", !stale && navigator.onLine !== false);
+  var offline = navigator.onLine === false;
+  var a = loadAssistantPrefs();
+  var brain = !!(ZAP_LLM.engine || a.modelCached);
+  b.textContent = offline ? (brain ? "OFFLINE AI" : "OFFLINE") : (brain ? "ZAP AI" : "LIVE");
+  b.classList.toggle("live", !offline);
 }
-function zapAppend(role, text, action) {
-  var log = $("#zapLog"); if (!log) return;
+function zapAppend(role, text, action, opts) {
+  opts = opts || {};
+  var log = $("#zapLog"); if (!log) return null;
   var d = document.createElement("div");
-  d.className = "zap-msg " + role;
-  d.textContent = text;
+  d.className = "zap-msg " + role + (opts.streaming ? " streaming" : "");
+  d.textContent = text || "";
   if (action && action.label && action.run) {
     var btn = document.createElement("button");
     btn.type = "button"; btn.className = "zap-act"; btn.textContent = action.label;
@@ -4843,37 +5080,96 @@ function zapAppend(role, text, action) {
   }
   log.appendChild(d);
   log.scrollTop = log.scrollHeight;
-  try { if (role === "bot" && loadAssistantPrefs().voiceOut) zapSpeak(text); } catch (e) {}
+  if (!opts.skipHist && text) {
+    var h = loadZapHist();
+    h.push({ role: role === "user" ? "user" : "bot", t: String(text).slice(0, 800), at: Date.now() });
+    saveZapHist(h);
+  }
+  try { if (role === "bot" && !opts.streaming && loadAssistantPrefs().voiceOut) zapSpeak(text); } catch (e) {}
+  try { if (role === "bot") renderZapChipsFromReply(text); } catch (e2) {}
+  return d;
+}
+function zapStreamInto(el, full, done) {
+  if (!el) { if (done) done(); return; }
+  var i = 0, step = Math.max(1, Math.floor(String(full).length / 40));
+  el.classList.add("streaming");
+  function tick() {
+    i = Math.min(String(full).length, i + step);
+    el.textContent = String(full).slice(0, i);
+    var log = $("#zapLog"); if (log) log.scrollTop = log.scrollHeight;
+    if (i < String(full).length) requestAnimationFrame(tick);
+    else {
+      el.classList.remove("streaming");
+      try {
+        var h = loadZapHist();
+        h.push({ role: "bot", t: String(full).slice(0, 800), at: Date.now() });
+        saveZapHist(h);
+      } catch (e) {}
+      try { if (loadAssistantPrefs().voiceOut) zapSpeak(full); } catch (e2) {}
+      try { renderZapChipsFromReply(full); } catch (e3) {}
+      if (done) done();
+    }
+  }
+  requestAnimationFrame(tick);
 }
 function renderZapChips() {
   var host = $("#zapChips"); if (!host) return;
-  host.hidden = true; host.innerHTML = ""; return; /* v4.5: no prompt tiles */
-  var chips = [
-    { t: "Net worth?", q: "net worth" },
-    { t: "Weather", q: "weather" },
-    { t: "Drive home", q: "directions to home" },
-    { t: "Theme", q: "switch theme" },
-    { t: "Help", q: "help" }
-  ];
+  // Only conversation follow-ups — never static AI prompt tiles on home
+  if (!host.dataset.dyn) { host.hidden = true; host.innerHTML = ""; }
+}
+function renderZapChipsFromReply(text) {
+  var host = $("#zapChips"); if (!host) return;
+  var t = String(text || "").toLowerCase();
+  var chips = [];
+  function add(label, q) {
+    if (chips.length >= 4) return;
+    if (chips.some(function (c) { return c.q === q; })) return;
+    chips.push({ t: label, q: q });
+  }
+  if (/weather|forecast|°|rain/.test(t)) add("Weather detail", "weather");
+  if (/btc|bitcoin|gold|market|portfolio|net worth|holding/.test(t)) add("Markets", "markets");
+  if (/focus|timer|sprint/.test(t)) add("Start focus", "start focus");
+  if (/call|favorite|dial/.test(t)) add("Open phone", "open phone");
+  if (/map|direction|drive|home|work/.test(t)) add("Directions home", "directions to home");
+  if (/theme/.test(t)) add("Themes", "switch theme");
+  if (!chips.length) {
+    add("Net worth", "net worth");
+    add("Weather", "weather");
+  }
+  host.dataset.dyn = "1";
+  host.hidden = false;
   host.innerHTML = "";
   chips.forEach(function (c) {
     var b = document.createElement("button");
-    b.type = "button"; b.textContent = c.t;
+    b.type = "button"; b.className = "zap-chip"; b.textContent = c.t;
     b.addEventListener("click", function () { zapHandle(c.q); });
     host.appendChild(b);
   });
 }
+function pickSpeakVoice() {
+  try {
+    var voices = window.speechSynthesis.getVoices() || [];
+    var prefer = voices.filter(function (v) { return /^en(-|_)/i.test(v.lang) && /google|samantha|daniel|karen|moira|female|natural/i.test(v.name); })[0];
+    if (prefer) return prefer;
+    return voices.filter(function (v) { return /^en(-|_)/i.test(v.lang); })[0] || null;
+  } catch (e) { return null; }
+}
 function zapSpeak(text) {
   try {
     if (!window.speechSynthesis) return;
-    var u = new SpeechSynthesisUtterance(String(text).slice(0, 280));
-    u.rate = 1.05;
+    var clean = String(text || "").replace(/\s+/g, " ").trim().slice(0, 320);
+    if (!clean) return;
+    var u = new SpeechSynthesisUtterance(clean);
+    u.rate = 1.02; u.pitch = 1; u.lang = "en-US";
+    var v = pickSpeakVoice(); if (v) u.voice = v;
     try { if (window.ZAPFX3D) window.ZAPFX3D.setOrbMood("speak"); } catch (e) {}
     u.onend = function () { try { if (window.ZAPFX3D) window.ZAPFX3D.setOrbMood("idle"); } catch (e) {} };
     u.onerror = u.onend;
-    window.speechSynthesis.cancel(); window.speechSynthesis.speak(u);
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
   } catch (e) {}
 }
+try { if (window.speechSynthesis) window.speechSynthesis.onvoiceschanged = function () {}; } catch (eVo) {}
 var _zapRec = null, _zapListening = false;
 function stopZapListen() {
   _zapListening = false;
@@ -4882,7 +5178,11 @@ function stopZapListen() {
 }
 function startZapListen() {
   var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) { toast("Voice input not supported here"); return; }
+  if (!SR) {
+    toast("Voice not supported — type your question");
+    try { $("#zapIn").focus(); } catch (e) {}
+    return;
+  }
   if (_zapListening) { stopZapListen(); return; }
   _zapRec = new SR();
   _zapRec.lang = "en-US";
@@ -4891,11 +5191,11 @@ function startZapListen() {
     var t = ev.results && ev.results[0] && ev.results[0][0] ? ev.results[0][0].transcript : "";
     if (t) { var inp = $("#zapIn"); if (inp) inp.value = t; zapHandle(t); }
   };
-  _zapRec.onerror = function () { stopZapListen(); };
+  _zapRec.onerror = function () { stopZapListen(); toast("Mic unavailable — type instead"); try { $("#zapIn").focus(); } catch (e) {} };
   _zapRec.onend = function () { stopZapListen(); };
   _zapListening = true;
   var mic = $("#zapMic"); if (mic) mic.classList.add("on");
-  try { _zapRec.start(); } catch (e) { stopZapListen(); toast("Mic unavailable"); }
+  try { _zapRec.start(); } catch (e) { stopZapListen(); toast("Mic unavailable — type instead"); }
 }
 function setThemeByQuery(q) {
   var map = [
@@ -4913,44 +5213,93 @@ function setThemeByQuery(q) {
   for (var i = 0; i < map.length; i++) {
     if (map[i].re.test(q)) {
       applyTheme(map[i].id); Store.set("theme", THEME.id);
-      return { skill: "theme.set", text: "Theme: " + THEME.name, action: { label: "Themes", run: function () { closeZapAssistant(); openTheme(); } } };
+      return { skill: "theme.set", text: "Theme set to " + THEME.name + ".", action: { label: "Themes", run: function () { closeZapAssistant(); openTheme(); } } };
     }
   }
-  // cycle next cyber preset
   var order = ["neon-night", "amber-ops", "ghost-white"];
   var cur = THEME && THEME.id, idx = order.indexOf(cur);
   var next = order[(idx + 1) % order.length];
   applyTheme(next); Store.set("theme", THEME.id);
-  return { skill: "theme.set", text: "Switched to " + THEME.name, action: { label: "Themes", run: function () { closeZapAssistant(); openTheme(); } } };
+  return { skill: "theme.set", text: "Switched to " + THEME.name + ".", action: { label: "Themes", run: function () { closeZapAssistant(); openTheme(); } } };
+}
+function zapDashContext() {
+  var bits = [];
+  try {
+    var d = new Date();
+    bits.push("Local time: " + DOW[d.getDay()] + " " + MON[d.getMonth()] + " " + d.getDate() + " " + ((d.getHours() % 12) || 12) + ":" + pad2(d.getMinutes()) + (d.getHours() < 12 ? " AM" : " PM"));
+  } catch (e) {}
+  try {
+    if (WX && WX.j) {
+      var cur = WX.j.current_weather || WX.j.current || {};
+      var t = cur.temperature != null ? cur.temperature : cur.temp;
+      bits.push("Weather: " + (WX.place || "here") + " " + (t != null ? Math.round(+t) + "°" : "--"));
+    }
+  } catch (e2) {}
+  try {
+    var st = portfolioStats();
+    if (st && st.priced) bits.push("Portfolio total " + money(st.total) + " today " + signedMoney(st.day));
+  } catch (e3) {}
+  try {
+    var md = MK && MK.d || {};
+    if (md.bitcoin) bits.push("BTC " + money(md.bitcoin.usd));
+    if (md["pax-gold"]) bits.push("GOLD " + money(md["pax-gold"].usd));
+  } catch (e4) {}
+  bits.push("App: ZAPWISE//OS v" + VERSION + ". Focus sessions today: " + focusSessionsToday() + ".");
+  return bits.join(". ");
+}
+function zapOfflineFaq(raw) {
+  var q = String(raw || "").toLowerCase();
+  var tips = [
+    { re: /hello|hi\b|hey|good (morning|afternoon|evening)/, t: "Hey — I'm ZAP AI. Ask me to call someone, check weather, start focus, open an app, or just chat." },
+    { re: /who are you|what are you|your name/, t: "I'm ZAP AI, your helper inside ZAPWISE//OS. Short answers, simple words. Runs on open models when online." },
+    { re: /thank/, t: "Anytime." },
+    { re: /how (do i|to).*(home screen|install|add to)/, t: "On iPhone: Share → Add to Home Screen. On Android: use the Get ZAP//OS page for the free APK, or Add to Home Screen in Chrome." },
+    { re: /how (do i|to).*(theme|color)/, t: "Tap THEME in the top bar, or say “switch theme”. Themes stay on this device." },
+    { re: /how (do i|to).*(favorite|dial|call|phone)/, t: "Open Phone, type a number, tap ☆ to save. Say “call ” + a favorite name anytime." },
+    { re: /how (do i|to).*(focus|timer|pomodoro)/, t: "On Focus, pick 15 / 25 / 50, then Start. It keeps time even if you leave the app." },
+    { re: /how (do i|to).*(market|holding|portfolio|btc|gold)/, t: "Tap Markets, then ＋ Add. BTC and GOLD quote on the home card. Totals stay on this device." },
+    { re: /how (do i|to).*(map|direction)/, t: "Open the map card, save Home or Work, then ask “directions to home”." },
+    { re: /how (do i|to).*(note|calendar)/, t: "Today’s card opens Calendar and Notes. Pin more apps from the Apps search." },
+    { re: /offline|no internet|airplane/, t: "You're offline. I can still run phone, focus, themes, and saved data. When you're back online I can answer more free-form questions." },
+    { re: /mute|voice|speak|talk/, t: "Tap the speaker in this chat to mute or unmute my voice. The rest of the OS stays silent." },
+    { re: /download|offline brain|webllm|private ai/, t: "On WebGPU devices, tap Download offline brain (~1 GB) once. Then I can chat privately with no network." },
+    { re: /joke|funny/, t: "Why did the HUD go to therapy? Too many unresolved overlays." },
+    { re: /help|what can you|commands/, t: HELP_TEXT }
+  ];
+  for (var i = 0; i < tips.length; i++) {
+    if (tips[i].re.test(q)) return tips[i].t;
+  }
+  // Always answer something useful
+  return "I can help with that once you're online, or try: call a favorite, weather, markets, start focus, open an app, or directions to home. " +
+    (navigator.onLine === false ? "You're offline right now." : "Say it another way and I'll try again.");
 }
 function routeZapIntent(raw) {
   var q = String(raw || "").trim().toLowerCase();
   if (!q) return { skill: "help", text: HELP_TEXT };
-  // help
-  if (/^(help|what can you|commands|\?)$/.test(q) || /\bhelp\b/.test(q) && q.length < 24) {
+  if (/^(help|what can you|commands|\?)$/.test(q) || (/\bhelp\b/.test(q) && q.length < 24)) {
     return { skill: "help", text: HELP_TEXT };
   }
-  // time / date
   if (/\b(what('?s| is)?\s+)?(the\s+)?(time|date|day)\b/.test(q) || /^(time|date)$/.test(q)) {
     var d = new Date();
     var line = DOW[d.getDay()] + " " + MON[d.getMonth()] + " " + d.getDate() + " · " + ((d.getHours() % 12) || 12) + ":" + pad2(d.getMinutes()) + (d.getHours() < 12 ? " AM" : " PM");
     return { skill: "time.now", text: line };
   }
-  // call favorite
-  if (/^call\b|\bdial\b|\bphone\b/.test(q)) {
+  if (/^call\b|\bdial\b/.test(q) || (/\bphone\b/.test(q) && /call|dial|favorite/.test(q))) {
     var want = q.replace(/^(please\s+)?(call|dial|phone)\s+(me\s+)?/, "").trim();
     var favs = FAVS || [];
     var hit = null;
     if (want) hit = favs.filter(function (f) { return (f.name || "").toLowerCase().indexOf(want) >= 0; })[0];
     if (!hit && favs.length === 1) hit = favs[0];
-    if (!hit) return { skill: "call.fav", text: favs.length ? ("Say “call ” + a favorite: " + favs.map(function (f) { return f.name; }).join(", ")) : "No favorites yet. Save one from the Dialer." };
+    if (!hit) return { skill: "call.fav", text: favs.length ? ("Say “call ” + a favorite: " + favs.map(function (f) { return f.name; }).join(", ")) : "No favorites yet. Save one from Phone.", action: { label: "Phone", run: function () { closeZapAssistant(); openDial(); } } };
     return {
       skill: "call.fav",
       text: "Call " + hit.name + "?",
       action: { label: "Call", run: function () { closeZapAssistant(); callNum(hit.num); } }
     };
   }
-  // search web
+  if (/open\s+phone|show\s+(the\s+)?(dialer|keypad)|phone\s+pad/.test(q)) {
+    return { skill: "phone.open", text: "Opening Phone.", action: { label: "Phone", run: function () { closeZapAssistant(); openDial(); } } };
+  }
   if (/^(search|google|look up|web)\b/.test(q) || /\bsearch (the )?web\b/.test(q)) {
     var sq = q.replace(/^(please\s+)?(search( the web)?|google|look up|web)\s+(for\s+)?/, "").trim();
     if (!sq) return { skill: "web.search", text: "Say “search web …” with a query." };
@@ -4960,11 +5309,9 @@ function routeZapIntent(raw) {
       action: { label: "Search", run: function () { closeZapAssistant(); go("https://www.google.com/search?q=" + encodeURIComponent(sq)); } }
     };
   }
-  // switch theme
   if (/\b(switch|change|set)\s+theme\b|\btheme\b.*(neon|amber|ghost|white)|^(neon night|amber ops|ghost white)$/.test(q)) {
     return setThemeByQuery(q);
   }
-  // add holding / account
   if (/\b(add|new)\s+(holding|account|asset|broker)\b|\badd holding\b/.test(q)) {
     return {
       skill: "holdings.add",
@@ -4972,7 +5319,6 @@ function routeZapIntent(raw) {
       action: { label: "Add holding", run: function () { closeZapAssistant(); try { openAddHolding(); } catch (e) { toggleXp("mk"); } } }
     };
   }
-  // portfolio
   if (/net\s*worth|portfolio|balance|how much|holdings/.test(q)) {
     var st = portfolioStats();
     var txt = st.priced
@@ -4980,7 +5326,6 @@ function routeZapIntent(raw) {
       : "No priced holdings yet. Add an account from Markets.";
     return { skill: "portfolio.total", text: txt, action: { label: "Open portfolio", run: function () { closeZapAssistant(); toggleXp("mk"); } } };
   }
-  // weather
   if (/weather|forecast|temperature|temp\b|rain|hot|cold/.test(q)) {
     var line = "Weather unavailable yet.";
     try {
@@ -4993,7 +5338,6 @@ function routeZapIntent(raw) {
     } catch (e) {}
     return { skill: "weather.now", text: line, action: { label: "Open weather", run: function () { closeZapAssistant(); toggleXp("wx"); } } };
   }
-  // directions to <place>
   if (/\b(go|drive|navigate|directions?)\b/.test(q) || /\bhome\b/.test(q) || /\bwork\b/.test(q)) {
     var places = loadPlaces();
     var wantP = null;
@@ -5016,7 +5360,6 @@ function routeZapIntent(raw) {
     var ps = loadPlaces();
     return { skill: "places.list", text: ps.length ? ("Saved: " + ps.map(function (p) { return p.name; }).join(", ")) : "No saved places yet." };
   }
-  // apps
   if (/^open\s+/.test(q) || /\blaunch\b/.test(q)) {
     var name = q.replace(/^(open|launch)\s+/, "").trim();
     var apps = APPS.filter(function (a) { return a.on; });
@@ -5027,54 +5370,59 @@ function routeZapIntent(raw) {
         if (cat) app = { id: cat.id, name: cat.name, url: cat.url, pkg: cat.pkg, web: cat.web };
       } catch (e) {}
     }
-    if (!app) return { skill: "apps.open", text: "Couldn't find \"" + name + "\" in your apps." };
+    if (!app) return { skill: "apps.open", text: "Couldn't find \"" + name + "\" in your apps. Try another name." };
     return { skill: "apps.open", text: "Open " + app.name + "?", action: { label: "Open", run: function () { closeZapAssistant(); openApp(app); } } };
   }
   if (/maps|where am i|locate/.test(q)) {
     return { skill: "maps.here", text: GPS ? ("You are near " + ((PLACE && (PLACE.road || PLACE.city)) || (GPS.lat.toFixed(4) + ", " + GPS.lon.toFixed(4)))) : "Location off or still finding you.", action: { label: "Open Maps", run: function () { closeZapAssistant(); openMapsHere(); } } };
   }
-  if (/focus|pomodoro|timer/.test(q)) {
-    return { skill: "focus.start", text: "Start a 25-minute focus sprint?", action: { label: "Start focus", run: function () { closeZapAssistant(); try { $("#mFocus").click(); } catch (e) {} } } };
+  if (/^(start\s+)?focus\b|pomodoro|timer|start focus/.test(q)) {
+    return { skill: "focus.start", text: "Start a " + ((FOC && FOC.mins) || 25) + "-minute focus sprint?", action: { label: "Start focus", run: function () { closeZapAssistant(); try { focusToggle(); setHudTab("focus", { silent: true }); } catch (e) {} } } };
   }
   if (/btc|bitcoin|gold|paxg|markets?/.test(q)) {
-    var d = MK && MK.d || {};
-    var btc = d.bitcoin, gold = d["pax-gold"];
+    var dmk = MK && MK.d || {};
+    var btc = dmk.bitcoin, gold = dmk["pax-gold"];
     var bits = [];
     if (btc) bits.push("BTC " + money(btc.usd));
     if (gold) bits.push("GOLD " + money(gold.usd));
     return { skill: "markets.quote", text: bits.length ? bits.join(" · ") : "Markets still loading.", action: { label: "Markets", run: function () { closeZapAssistant(); toggleXp("mk"); } } };
   }
-  return { skill: "unknown", text: "Not sure. Try help, or enable private AI on a WebGPU device." };
+  if (/\bnote|notes\b/.test(q)) {
+    return { skill: "notes.open", text: "Open Notes?", action: { label: "Notes", run: function () { closeZapAssistant(); try { $("#tdNote").click(); } catch (e) {} } } };
+  }
+  // Not an action — hand off to online/offline AI (never hard-fail)
+  return { skill: "chat", text: "" };
 }
-var HELP_TEXT = "Commands (on-device): call <favorite>, directions to <place>, add holding, switch theme, search web <q>, time, date, weather, net worth, open <app>, focus, help. Smart mode answers free-form via Pollinations (toggle in Assistant). Private AI stays on-device.";
+var HELP_TEXT = "I'm ZAP AI. Try: call <favorite>, directions to home, weather, markets, start focus, open <app>, add holding, switch theme, time. Ask anything else — I'll answer. Runs on open models when online.";
+var ZAP_SYS = "You are ZAP AI inside ZAPWISE//OS. Short, helpful, simple words. Never claim you are a proprietary model. A footer may say you run on open models. Do not invent balances or secrets. Prefer under 60 words. Plain text, no markdown.";
 
 function refreshZapAiBar() {
   var bar = $("#zapAiBar"); if (!bar) return;
-  /* v4.5: keep AI upsell tiles hidden — mic + on-device commands only */
-  bar.hidden = true; bar.setAttribute("aria-hidden", "true"); return;
-  bar.hidden = false;
   var st = $("#zapAiStatus"), btn = $("#zapAiBtn"), del = $("#zapAiDel"), prog = $("#zapAiProg"), note = $("#zapAiNote");
   var a = loadAssistantPrefs();
   var gpu = hasWebGPU();
+  // Show bar for offline-brain download / status (not home prompt tiles)
+  bar.hidden = false; bar.removeAttribute("aria-hidden");
   if (prog) { prog.hidden = !ZAP_LLM.loading; prog.value = ZAP_LLM.progress || 0; }
   if (del) del.hidden = !(a.modelCached || ZAP_LLM.engine);
+  var smart = $("#zapSmart"); if (smart) smart.checked = !!a.smartMode;
   if (!gpu) {
-    if (st) st.textContent = "Offline commands only";
-    if (btn) { btn.hidden = true; }
-    if (note) { note.hidden = false; note.textContent = "Private AI needs WebGPU. This device keeps the offline command router — nothing is sent to a server."; }
+    if (st) st.textContent = "Offline actions + FAQ ready";
+    if (btn) btn.hidden = true;
+    if (note) { note.hidden = false; note.textContent = "Offline brain needs WebGPU. Online answers still work when connected."; }
     return;
   }
   if (note) note.hidden = true;
   if (btn) btn.hidden = false;
   if (ZAP_LLM.loading) {
-    if (st) st.textContent = "Downloading model… " + Math.round((ZAP_LLM.progress || 0) * 100) + "%";
+    if (st) st.textContent = "Downloading offline brain… " + Math.round((ZAP_LLM.progress || 0) * 100) + "%";
     if (btn) { btn.disabled = true; btn.textContent = "…"; }
   } else if (ZAP_LLM.engine || a.modelCached) {
-    if (st) st.textContent = "Private AI ready (on-device)";
-    if (btn) { btn.disabled = false; btn.textContent = a.webllm ? "AI ON" : "AI OFF"; }
+    if (st) st.textContent = a.webllm ? "Offline brain ready" : "Offline brain paused";
+    if (btn) { btn.disabled = false; btn.textContent = a.webllm ? "BRAIN ON" : "BRAIN OFF"; }
   } else {
-    if (st) st.textContent = "Private AI available";
-    if (btn) { btn.disabled = false; btn.textContent = "Enable private AI (~1 GB)"; }
+    if (st) st.textContent = "Optional offline brain";
+    if (btn) { btn.disabled = false; btn.textContent = "Download offline brain (~1 GB)"; }
   }
 }
 
@@ -5127,50 +5475,89 @@ async function deleteWebLLMCache() {
   } catch (e) {}
   var a = loadAssistantPrefs(); a.webllm = false; a.modelCached = false; saveAssistantPrefs(a);
   refreshZapAiBar();
-  toast("Private AI removed from this device");
+  toast("Offline brain removed");
 }
 
 async function zapAskLLM(q) {
   var engine = ZAP_LLM.engine;
   if (!engine) engine = await loadWebLLMEngine();
-  var sys = "You are ZAP, a local OS assistant. Reply with ONE short helpful sentence under 40 words. Prefer concrete facts. Never invent balances. If the user wants an action (call, directions, theme, search, open app), say you can do it and keep it brief. No markdown.";
+  var sys = ZAP_SYS + " Dashboard context: " + zapDashContext();
   var reply = await engine.chat.completions.create({
     messages: [
       { role: "system", content: sys },
       { role: "user", content: String(q).slice(0, 400) }
     ],
-    temperature: 0.4,
-    max_tokens: 96
+    temperature: 0.45,
+    max_tokens: 120
   });
   var text = "";
   try { text = reply.choices[0].message.content; } catch (e) {}
-  return String(text || "").trim() || "Got it.";
+  return String(text || "").trim() || zapOfflineFaq(q);
 }
 
-async function zapAskSmart(q) {
-  // Pollinations Classic Text API — free, no key, CORS open. Rate-limited ~30s/IP.
-  var sys = "You are ZAP for ZAPWISE//OS. Reply in under 50 words, plain text, helpful. No markdown. Do not invent account balances.";
-  var url = "https://text.pollinations.ai/" + encodeURIComponent(String(q).slice(0, 320)) +
+function zapEnqueueSmart(q) {
+  return new Promise(function (resolve, reject) {
+    ZAP_QUEUE.q.push({ q: q, resolve: resolve, reject: reject });
+    zapPumpQueue();
+  });
+}
+function zapPumpQueue() {
+  if (ZAP_QUEUE.busy) return;
+  var job = ZAP_QUEUE.q.shift();
+  if (!job) return;
+  ZAP_QUEUE.busy = true;
+  var wait = Math.max(0, ZAP_QUEUE.backoffMs - (Date.now() - ZAP_QUEUE.lastAt));
+  setTimeout(function () {
+    zapAskSmartOnce(job.q).then(function (txt) {
+      ZAP_QUEUE.lastAt = Date.now();
+      ZAP_QUEUE.backoffMs = 0;
+      ZAP_QUEUE.busy = false;
+      job.resolve(txt);
+      zapPumpQueue();
+    }).catch(function (err) {
+      ZAP_QUEUE.lastAt = Date.now();
+      var msg = String(err && err.message || err || "");
+      var retry = /rate|429|402|retry/i.test(msg);
+      ZAP_QUEUE.backoffMs = retry ? Math.min(120000, Math.max(15000, (ZAP_QUEUE.backoffMs || 15000) * 1.6)) : 4000;
+      ZAP_QUEUE.busy = false;
+      job.reject(err);
+      zapPumpQueue();
+    });
+  }, wait);
+}
+async function zapAskSmartOnce(q) {
+  var sys = ZAP_SYS + " Live dashboard (no secrets): " + zapDashContext();
+  var url = "https://text.pollinations.ai/" + encodeURIComponent(String(q).slice(0, 400)) +
     "?system=" + encodeURIComponent(sys) + "&temperature=0.5";
   var ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
-  var to = setTimeout(function () { try { ctrl && ctrl.abort(); } catch (e) {} }, 20000);
+  var to = setTimeout(function () { try { ctrl && ctrl.abort(); } catch (e) {} }, 22000);
   try {
-    var res = await fetch(url, { method: "GET", signal: ctrl ? ctrl.signal : undefined });
+    var res = await fetch(url, { method: "GET", signal: ctrl ? ctrl.signal : undefined, cache: "no-store" });
     clearTimeout(to);
     if (!res.ok) {
       var retry = res.headers && res.headers.get && res.headers.get("Retry-After");
       throw new Error(res.status === 402 || res.status === 429
-        ? ("Smart mode rate-limited" + (retry ? (" — retry in " + retry + "s") : ". Try again shortly."))
-        : ("Smart mode HTTP " + res.status));
+        ? ("Rate limited" + (retry ? (" — retry in " + retry + "s") : ". Try again shortly."))
+        : ("Online AI HTTP " + res.status));
     }
     var txt = (await res.text()).trim();
-    // strip accidental HTML wrappers
     if (txt.charAt(0) === "<") txt = txt.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-    return txt.slice(0, 600) || "No answer.";
+    return (txt.slice(0, 700) || zapOfflineFaq(q));
   } catch (e) {
     clearTimeout(to);
     throw e;
   }
+}
+
+function zapFinishBot(elOrNull, text, action) {
+  var log = $("#zapLog");
+  if (elOrNull && elOrNull.parentNode) {
+    try { elOrNull.parentNode.removeChild(elOrNull); } catch (e) {}
+  } else if (log && log.lastChild && log.lastChild.classList.contains("bot") && /…|Thinking|Smart|Rate|Private|Online/.test(log.lastChild.textContent || "")) {
+    try { log.removeChild(log.lastChild); } catch (e2) {}
+  }
+  var el = zapAppend("bot", "", action, { skipHist: true, streaming: true });
+  zapStreamInto(el, text, function () { updateZapBadge(); });
 }
 
 function zapHandle(raw) {
@@ -5179,87 +5566,77 @@ function zapHandle(raw) {
   var inp = $("#zapIn"); if (inp) inp.value = "";
   zapAppend("user", q);
   var intent = routeZapIntent(q);
-  if (intent.skill !== "unknown") {
+  if (intent.skill !== "chat") {
     zapAppend("bot", intent.text, intent.action);
     updateZapBadge();
     return;
   }
   var a = loadAssistantPrefs();
-  // Private on-device model first when enabled + ready
-  if (a.webllm && hasWebGPU() && (ZAP_LLM.engine || a.modelCached)) {
-    zapAppend("bot", "Thinking on-device…");
-    var p = ZAP_LLM.engine ? zapAskLLM(q) : loadWebLLMEngine().then(function () { return zapAskLLM(q); });
-    p.then(function (txt) {
-      var log = $("#zapLog");
-      if (log && log.lastChild && log.lastChild.classList.contains("bot")) log.removeChild(log.lastChild);
-      zapAppend("bot", txt);
-      updateZapBadge();
-    }).catch(function (err) {
-      var log = $("#zapLog");
-      if (log && log.lastChild && log.lastChild.classList.contains("bot")) log.removeChild(log.lastChild);
-      if (a.smartMode) {
-        zapAppend("bot", "Private AI failed — trying Smart mode…");
-        zapAskSmart(q).then(function (txt) {
-          var log2 = $("#zapLog");
-          if (log2 && log2.lastChild && log2.lastChild.classList.contains("bot")) log2.removeChild(log2.lastChild);
-          zapAppend("bot", txt);
-          updateZapBadge();
-        }).catch(function (e2) {
-          var log3 = $("#zapLog");
-          if (log3 && log3.lastChild && log3.lastChild.classList.contains("bot")) log3.removeChild(log3.lastChild);
-          zapAppend("bot", "Couldn't reach AI. " + (e2 && e2.message ? e2.message : "Try help for offline commands."));
-          updateZapBadge();
-        });
-      } else {
-        zapAppend("bot", "On-device AI failed. Try help for offline commands.");
-        updateZapBadge();
-      }
-    });
+  var offline = navigator.onLine === false;
+
+  function useFaq(prefix) {
+    var txt = (prefix ? prefix + " " : "") + zapOfflineFaq(q);
+    zapFinishBot(null, txt);
+  }
+
+  // Offline path: WebLLM if ready, else solid FAQ — always reply
+  if (offline) {
+    if (a.webllm && hasWebGPU() && (ZAP_LLM.engine || a.modelCached)) {
+      var think0 = zapAppend("bot", "Thinking offline…", null, { skipHist: true });
+      var p0 = ZAP_LLM.engine ? zapAskLLM(q) : loadWebLLMEngine().then(function () { return zapAskLLM(q); });
+      p0.then(function (txt) { zapFinishBot(think0, txt); })
+        .catch(function () { zapFinishBot(think0, zapOfflineFaq(q) + " When you're online I can answer more."); });
+      return;
+    }
+    useFaq("You're offline.");
     return;
   }
-  // Default Smart mode (Pollinations) for free-form help
+
+  // Online: prefer actions already handled; free-form → Pollinations queue; WebLLM optional first if enabled
+  if (a.webllm && hasWebGPU() && (ZAP_LLM.engine || a.modelCached)) {
+    var think1 = zapAppend("bot", "Thinking…", null, { skipHist: true });
+    var p1 = ZAP_LLM.engine ? zapAskLLM(q) : loadWebLLMEngine().then(function () { return zapAskLLM(q); });
+    p1.then(function (txt) { zapFinishBot(think1, txt); })
+      .catch(function () {
+        if (a.smartMode) {
+          if (think1) think1.textContent = "Trying online…";
+          zapEnqueueSmart(q).then(function (txt) { zapFinishBot(think1, txt); })
+            .catch(function (e2) { zapFinishBot(think1, zapOfflineFaq(q) + " (" + (e2 && e2.message ? e2.message : "online busy") + ")"); });
+        } else {
+          zapFinishBot(think1, zapOfflineFaq(q));
+        }
+      });
+    return;
+  }
+
   if (a.smartMode) {
     try { if (window.ZAPFX3D) window.ZAPFX3D.setOrbMood("think"); } catch (e) {}
-    zapAppend("bot", "Smart mode…");
-    zapAskSmart(q).then(function (txt) {
+    var think2 = zapAppend("bot", "…", null, { skipHist: true });
+    zapEnqueueSmart(q).then(function (txt) {
       try { if (window.ZAPFX3D) window.ZAPFX3D.setOrbMood("idle"); } catch (e) {}
-      var log = $("#zapLog");
-      if (log && log.lastChild && log.lastChild.classList.contains("bot")) log.removeChild(log.lastChild);
-      zapAppend("bot", txt);
-      updateZapBadge();
+      zapFinishBot(think2, txt);
     }).catch(function (err) {
-      var log = $("#zapLog");
-      if (log && log.lastChild && log.lastChild.classList.contains("bot")) log.removeChild(log.lastChild);
-      zapAppend("bot", (err && err.message ? err.message : "Smart mode unavailable.") + " Offline commands still work — try help.");
-      updateZapBadge();
+      try { if (window.ZAPFX3D) window.ZAPFX3D.setOrbMood("idle"); } catch (e) {}
+      var note = err && err.message ? err.message : "Online AI busy.";
+      zapFinishBot(think2, zapOfflineFaq(q) + " " + note);
     });
     return;
   }
-  zapAppend("bot", intent.text);
-  updateZapBadge();
+
+  useFaq("");
 }
 (function bindZapAssistant() {
   var fab = $("#zapFab"); if (fab) fab.addEventListener("click", openZapAssistant);
   (function bindZapHint() {
     var h = $("#zapHint"); if (!h) return; h.hidden = true; h.classList.remove("on"); return;
-    try {
-      var seen = Store.getLocal("hintGoSeen", false);
-      if (!seen) { h.classList.add("on"); }
-    } catch (e) { h.classList.add("on"); }
-    h.addEventListener("click", function () {
-      try { Store.setLocal("hintGoSeen", true); } catch (e) {}
-      h.classList.remove("on");
-      openZapAssistant();
-      try { zapHandle("directions to home"); } catch (e) {}
-    });
   })();
   var close = $("#zapClose"); if (close) close.addEventListener("click", function () { dismissTopOverlay(false); });
   var form = $("#zapForm");
   if (form) form.addEventListener("submit", function (e) { e.preventDefault(); zapHandle(($("#zapIn") && $("#zapIn").value) || ""); });
   var mic = $("#zapMic");
   if (mic) {
-    if (!hasSpeechIn()) { mic.hidden = true; mic.setAttribute("aria-hidden", "true"); }
-    else mic.addEventListener("click", startZapListen);
+    // Always show mic: unsupported devices fall back to focusing the text field
+    mic.addEventListener("click", startZapListen);
   }
   var mute = $("#zapMute");
   if (mute) mute.addEventListener("click", function () {
@@ -5268,30 +5645,31 @@ function zapHandle(raw) {
     saveAssistantPrefs(a);
     mute.setAttribute("aria-pressed", a.voiceOut ? "true" : "false");
     mute.textContent = a.voiceOut ? "🔊" : "🔇";
-    toast(a.voiceOut ? "Voice replies on" : "Voice replies muted");
+    if (!a.voiceOut) { try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) {} }
+    toast(a.voiceOut ? "ZAP AI voice on" : "ZAP AI voice muted");
   });
   var aiBtn = $("#zapAiBtn");
   if (aiBtn) aiBtn.addEventListener("click", function () {
     var a = loadAssistantPrefs();
     if (!hasWebGPU()) { toast("WebGPU not available on this device"); return; }
     if (ZAP_LLM.engine && a.webllm) {
-      a.webllm = false; saveAssistantPrefs(a); refreshZapAiBar(); toast("Private AI paused — commands still work"); return;
+      a.webllm = false; saveAssistantPrefs(a); refreshZapAiBar(); toast("Offline brain paused"); return;
     }
     if (ZAP_LLM.engine && !a.webllm) {
-      a.webllm = true; saveAssistantPrefs(a); refreshZapAiBar(); toast("Private AI on"); return;
+      a.webllm = true; saveAssistantPrefs(a); refreshZapAiBar(); toast("Offline brain on"); return;
     }
-    if (!confirm("Enable private AI? Downloads ~1 GB once, stays on this device, nothing is sent to any server, no API keys.")) return;
+    if (!confirm("Download offline brain (~1 GB)? Stays on this device. No keys. One-time.")) return;
     loadWebLLMEngine().then(function () {
-      toast("Private AI ready");
+      toast("Offline brain ready");
       refreshZapAiBar();
     }).catch(function (err) {
-      toast("AI download failed: " + (err && err.message ? err.message : "error"));
+      toast("Download failed: " + (err && err.message ? err.message : "error"));
       refreshZapAiBar();
     });
   });
   var del = $("#zapAiDel");
   if (del) del.addEventListener("click", function () {
-    if (!confirm("Delete the on-device AI model from this device?")) return;
+    if (!confirm("Delete the offline brain from this device?")) return;
     deleteWebLLMCache();
   });
   var smart = $("#zapSmart");
@@ -5301,7 +5679,7 @@ function zapHandle(raw) {
       var a = loadAssistantPrefs();
       a.smartMode = !!smart.checked;
       saveAssistantPrefs(a);
-      toast(a.smartMode ? "Smart mode on — free-form goes to Pollinations" : "Smart mode off — offline commands only");
+      toast(a.smartMode ? "Online answers on" : "Online answers off — actions + FAQ only");
     });
   }
   try {
