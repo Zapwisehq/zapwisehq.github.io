@@ -1840,4 +1840,7 @@ html.motion-on .panel-group > .panel-inner{z-index:2}
 .bk-source{display:inline-block;margin-top:2px;font:700 9px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:rgba(92,225,230,.75)}
 .bk-link-auto{display:block;width:100%;margin-top:10px;padding:10px 12px;border:1px dashed rgba(5,217,232,.35);background:rgba(5,217,232,.04);color:rgba(247,240,232,.55);font:700 11px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;cursor:not-allowed;opacity:.7;border-radius:0;clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,8px 100%,0 calc(100% - 8px))}
 .bk-link-auto:not([disabled]){cursor:pointer;opacity:1;color:#05d9e8;border-style:solid}
-.bk-link-auto[disabled]{pointer-events:auto}
+.bk-link-auto[disabled],.bk-link-auto.is-unset{pointer-events:auto;cursor:not-allowed;opacity:.7}
+.bk-link-auto.is-unset{border-style:dashed}
+
+.bk-link-note{display:block;margin-top:6px;font:600 10px/1.2 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:rgba(247,240,232,.4);text-align:center}

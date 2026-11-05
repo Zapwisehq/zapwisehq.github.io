@@ -1,6 +1,6 @@
 {
-  "version": "4.9.8",
+  "version": "4.9.9",
   "built": "2026-11-05",
   "channel": "stable",
-  "notes": "v4.9.8: Today/Navigate/Money panels; live holograms; quick Update balance; Plaid-ready bank adapter (manual now, Source line, Link bank stub disabled); weather ghosts gone; traffic chip+legend; Safari safe-area. No Plaid keys in client."
+  "notes": "v4.9.9: Bank auto-link stub says Not set up yet (no coming-soon copy). Same as 4.9.8 otherwise — Plaid-ready adapter, Manual source, layout groups, live holograms."
 }

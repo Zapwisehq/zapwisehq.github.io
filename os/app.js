@@ -1,7 +1,7 @@
-/* ZAPWISE//OS web app v4.9.8 (Nov 5, 2026). Live TomTom traffic colors on the map (proxy tiles, no client API key). Bank bar under ticker (v4.9.6). Back closes one layer per press. Help tour, marquee ticker, hologram motion, compass cone, map tile cache + backup server, search cache. Source: edit app.js, run os/build.sh → app.min.js. No tabs. Voice only from ZAP AI. */
+/* ZAPWISE//OS web app v4.9.9 (Nov 5, 2026). Live TomTom traffic colors on the map (proxy tiles, no client API key). Bank bar under ticker (v4.9.6). Back closes one layer per press. Help tour, marquee ticker, hologram motion, compass cone, map tile cache + backup server, search cache. Source: edit app.js, run os/build.sh → app.min.js. No tabs. Voice only from ZAP AI. */
 (function () {
 "use strict";
-var VERSION = "4.9.8";
+var VERSION = "4.9.9";
 var APP_VERSION = VERSION;
 
 // v4.5: default Lite on coarse/mobile unless user already chose
@@ -7154,7 +7154,7 @@ function bankSourceLabel(a) {
 }
 function openLinkBankStub() {
   if (!bankLinkConfigured()) {
-    toast("Auto bank link isn’t set up yet — balances stay manual on this phone.");
+    toast("Bank auto-link isn’t set up — balances stay manual on this phone.");
     return;
   }
   toast("Connecting…");
@@ -7442,9 +7442,10 @@ function renderBanks() {
     else subEl.textContent = st.n + " account" + (st.n === 1 ? "" : "s") + (priv ? " · privacy on" : "") + (!priv ? " · tap balance to update" : "");
   }
   var linkCfg = bankLinkConfigured();
-  var linkHtml = '<button type="button" class="bk-link-auto" id="bkLinkAuto" ' + (linkCfg ? "" : "disabled ") +
-    'aria-disabled="' + (linkCfg ? "false" : "true") + '" title="' + (linkCfg ? "Link a bank automatically" : "Auto link not configured yet") + '">' +
-    (linkCfg ? "Link bank (auto)" : "Link bank (auto) · coming soon") + "</button>";
+  var linkHtml = '<button type="button" class="bk-link-auto' + (linkCfg ? "" : " is-unset") + '" id="bkLinkAuto" ' +
+    'aria-disabled="' + (linkCfg ? "false" : "true") + '" title="' + (linkCfg ? "Link a bank automatically" : "Not set up yet") + '">' +
+    "Link bank (auto)" + "</button>" +
+    (linkCfg ? "" : '<span class="bk-link-note">Not set up yet</span>');
   if (!banks.length) {
     host.innerHTML = '<div class="bk-card empty" data-bk-add="1" role="listitem" tabindex="0" aria-label="Add bank"><span>＋ Add Bank</span></div>' + linkHtml;
     return;
