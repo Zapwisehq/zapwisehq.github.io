@@ -1,4 +1,4 @@
-/* ZAPWISE//OS web app v3.5.0 (Nov 4, 2026). Concept layout + live map. Static, no build step, no API keys.
+/* ZAPWISE//OS web app v3.6.0 (Nov 4, 2026). Concept layout + live map. Static, no build step, no API keys.
    Data: Open-Meteo (weather + city search), api-bdc.io (city name for weather), CoinGecko (crypto + PAX Gold),
    OSM standard tiles (keyless, CSS dark filter) + Nominatim reverse geocoding (road + city, cached, re-queried only after moving > 40 m).
 
@@ -17,7 +17,7 @@
    Store.applyRemote below. */
 (function () {
 "use strict";
-var VERSION = "3.5.0";
+var VERSION = "3.6.0";
 var STATUS_MSGS = ["> SHORTCUTS ARMED", "> NET SECURE", "> AI LINK STABLE", "> SIGNAL CLEAN", "> APPS READY"];
 var FOCUS_MS = 25 * 60000;
 var DAY_START = 7, DAY_END = 23;
@@ -30,7 +30,7 @@ function clone(o) { return o == null ? o : JSON.parse(JSON.stringify(o)); }
 // ========== 2. STATE: one versioned object + one save/load layer ==========
 var Store = (function () {
   var STATE_KEY = "zapos.state", DEVICE_KEY = "zapos.device", VER = 1;
-  var PREF_KEYS = ["settings", "theme", "apps", "coins", "loc", "favs", "places"];                     // shared state (sync-ready)
+  var PREF_KEYS = ["settings", "theme", "apps", "coins", "loc", "favs", "places", "holdings", "broker"];                     // shared state (sync-ready)
   var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss", "mediaKey", "skipBoot", "recentPins", "wxDay", "wxMode"]; // this device only
   function read(k) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
   function write(k, v) { if (dead) return false; try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
@@ -255,15 +255,16 @@ function openApp(a) {
   if (a.dial || a.id === "phone") { openDial(); return; }
   var url = a.url || "";
   var ANDROID = /Android/i.test(navigator.userAgent);
-  // Maps: use geo: on Android, maps:// on iOS, Google Maps website everywhere else
+  // Maps: pin exact coords shown (ll + readable q). geo: on Android, maps:// on iOS, Google elsewhere.
   if (a.id === "maps" || a.mapsHere) {
     var ll = a.ll || "";
+    var q = a.q || (ll ? ll : "You are here");
     if (ANDROID) {
-      url = ll ? ("geo:" + ll + "?q=" + ll) : "geo:0,0?q=";
-      a = Object.assign({}, a, { url: url, web: ll ? ("https://www.google.com/maps?q=" + encodeURIComponent(ll)) : "https://www.google.com/maps" });
+      url = ll ? ("geo:" + ll + "?q=" + encodeURIComponent(q)) : "geo:0,0?q=";
+      a = Object.assign({}, a, { url: url, web: ll ? ("https://www.google.com/maps?q=" + encodeURIComponent(ll) + "&query=" + encodeURIComponent(q)) : "https://www.google.com/maps" });
     } else if (IOS) {
-      url = ll ? ("maps://?ll=" + ll + "&q=" + encodeURIComponent("You are here")) : "maps://";
-      a = Object.assign({}, a, { url: url, web: ll ? ("https://maps.apple.com/?ll=" + ll + "&q=" + encodeURIComponent("You are here")) : "https://maps.apple.com/" });
+      url = ll ? ("maps://?ll=" + ll + "&q=" + encodeURIComponent(q)) : "maps://";
+      a = Object.assign({}, a, { url: url, web: ll ? ("https://maps.apple.com/?ll=" + ll + "&q=" + encodeURIComponent(q)) : "https://maps.apple.com/" });
     } else {
       go(ll ? ("https://www.google.com/maps?q=" + encodeURIComponent(ll)) : "https://www.google.com/maps");
       return;
@@ -279,7 +280,7 @@ function openApp(a) {
   if (IOS && a.ios) url = a.ios;
   var fb = a.web;
   if (!fb) { location.href = url; return; }
-  // Android: prefer intent:// (+ package when known) with browser fallback so Chrome doesn't stall
+  // Android intent with browser fallback baked in (no second timer needed)
   if (ANDROID && !/^https?:/i.test(url) && !/^tel:|^sms:|^mailto:/i.test(url)) {
     try {
       var scheme = (url.match(/^([a-z][a-z0-9+.-]*):/i) || [])[1];
@@ -293,25 +294,49 @@ function openApp(a) {
       }
     } catch (e) {}
   }
-  // Android https + package: try market-free package launch via intent, else web
   if (ANDROID && a.pkg && /^https?:/i.test(url)) {
     try {
       location.href = "intent://#Intent;package=" + a.pkg + ";S.browser_fallback_url=" + encodeURIComponent(fb || url) + ";end";
       return;
     } catch (e) {}
   }
-  var left = false;
-  function gone() { left = true; }
-  document.addEventListener("visibilitychange", gone, { once: true });
-  window.addEventListener("pagehide", gone, { once: true });
-  window.addEventListener("blur", gone, { once: true });
-  location.href = url;
-  setTimeout(function () {
-    document.removeEventListener("visibilitychange", gone); window.removeEventListener("pagehide", gone); window.removeEventListener("blur", gone);
-    if (!left && document.visibilityState === "visible") location.href = fb;
-  }, 1200);
+  // Deep-link with cancelable web fallback. Only fall back if we stayed visible ~1.5s
+  // with no blur/hide. Cancel on hide/blur/pagehide; reset on pageshow / visibility return.
+  if (openApp._fbTimer) { clearTimeout(openApp._fbTimer); openApp._fbTimer = null; }
+  if (openApp._cleanup) { try { openApp._cleanup(); } catch (e) {} openApp._cleanup = null; }
+  var left = false, token = (openApp._tok = (openApp._tok || 0) + 1);
+  function markLeft() { left = true; }
+  function onVis() {
+    if (document.visibilityState === "hidden") markLeft();
+  }
+  function onPageHide() { markLeft(); }
+  function onBlur() { markLeft(); }
+  function onPageShow() {
+    // Returning to the page: drop any pending fallback from a prior launch.
+    if (openApp._fbTimer && openApp._tok === token) { clearTimeout(openApp._fbTimer); openApp._fbTimer = null; }
+  }
+  function cleanup() {
+    document.removeEventListener("visibilitychange", onVis);
+    window.removeEventListener("pagehide", onPageHide);
+    window.removeEventListener("blur", onBlur);
+    window.removeEventListener("pageshow", onPageShow);
+  }
+  openApp._cleanup = cleanup;
+  document.addEventListener("visibilitychange", onVis);
+  window.addEventListener("pagehide", onPageHide);
+  window.addEventListener("blur", onBlur);
+  window.addEventListener("pageshow", onPageShow);
+  try { location.href = url; } catch (e) { left = false; }
+  openApp._fbTimer = setTimeout(function () {
+    openApp._fbTimer = null;
+    cleanup(); openApp._cleanup = null;
+    if (openApp._tok !== token) return;
+    // In-app browsers / soft launches: only fall back if still fully visible and never blurred.
+    if (!left && document.visibilityState === "visible" && document.hasFocus && document.hasFocus()) {
+      try { location.href = fb; } catch (e) {}
+    }
+  }, 1500);
 }
-
 function accentOf(a) {
   if (a.accent) return a.accent;
   var m = /#[0-9a-f]{6}/i.exec(a.bg || ""); if (!m) return "#f4efe4";
@@ -409,11 +434,8 @@ function renderNowPlaying() {
   var art = $("#npArt"), title = $("#npTitle"), artist = $("#npArtist"), live = $("#npLive");
   if (art) { art.src = m.icon || "/os/icons/music.jpg"; art.alt = m.name; }
   if (title) title.textContent = m.name;
-  if (artist) artist.textContent = "Tap to switch · ▶ opens app";
-  if (live) live.textContent = "MUSIC ▾";
-  var bar = $("#npBar"); if (bar) bar.style.width = "0%";
-  var cur = $("#npCur"); if (cur) cur.textContent = "0:00";
-  var dur = $("#npDur"); if (dur) dur.textContent = "—";
+  if (artist) artist.textContent = "Tap ▶ to open";
+  if (live) live.textContent = "SWITCH ▾";
 }
 function setMediaKey(k, open) {
   if (!MEDIA[k]) return;
@@ -423,22 +445,15 @@ function setMediaKey(k, open) {
   toast(MEDIA[k].name);
   if (open) openApp(MEDIA[k]);
 }
-function cycleMedia(dir) {
-  var i = HUB.indexOf(MEDIA_KEY); if (i < 0) i = 0;
-  i = (i + dir + HUB.length) % HUB.length;
-  setMediaKey(HUB[i], false);
-}
 $("#hPlay").addEventListener("click", function (e) {
   var b = e.target.closest("[data-media-act]"); if (!b) return;
   e.preventDefault();
   var act = b.getAttribute("data-media-act");
-  if (act === "prev") cycleMedia(-1);
-  else if (act === "next") cycleMedia(1);
-  else if (act === "play") openApp(currentMedia());
+  if (act === "play") openApp(currentMedia());
   else if (act === "pick") openMedia();
 });
 function openMedia() {
-  var html = '<p class="note" style="margin-bottom:10px">Pick your music app. We open the app on your phone if it\'s installed, otherwise its website — never the App Store.</p>' +
+  var html = '<p class="note" style="margin-bottom:10px">Pick your music app</p>' +
     HUB.map(function (k) {
       var on = k === MEDIA_KEY ? " on" : "";
       var mark = k === MEDIA_KEY ? '<span class="mcheck" aria-hidden="true">✓</span>' : '<span aria-hidden="true">↗</span>';
@@ -700,40 +715,54 @@ function drawTempChart(cv, j, dayIdx, mode) {
   var cssW = cv.clientWidth || 360, cssH = Math.round(cssW * 220 / 720);
   cv.width = cssW * dpr; cv.height = cssH * dpr;
   var c = cv.getContext("2d"); c.setTransform(dpr, 0, 0, dpr, 0, 0);
-  var padL = 8, padR = 36, padT = 16, padB = 18;
+  var padL = 8, padR = 36, padT = 18, padB = 18;
   var W = cssW, H = cssH;
-  var vals = idxs.map(function (i) { return mode === "feels" ? j.hourly.apparent_temperature[i] : j.hourly.temperature_2m[i]; });
+  var feels = mode === "feels";
+  var at = j.hourly.apparent_temperature || [];
+  var t2 = j.hourly.temperature_2m || [];
+  var vals = idxs.map(function (i) {
+    var v = feels ? at[i] : t2[i];
+    if (v == null || isNaN(v)) v = t2[i];
+    return +v;
+  });
   var hi = Math.max.apply(null, vals), lo = Math.min.apply(null, vals);
+  if (!isFinite(hi) || !isFinite(lo)) return;
   var yMax = Math.ceil((hi + 4) / 8) * 8, yMin = Math.floor((lo - 4) / 8) * 8;
   if (yMax === yMin) yMax += 8;
   function X(i) { return padL + (i / Math.max(1, idxs.length - 1)) * (W - padL - padR); }
   function Y(v) { return padT + (1 - (v - yMin) / (yMax - yMin)) * (H - padT - padB); }
   c.clearRect(0, 0, W, H);
-  // axis ticks
   c.fillStyle = "rgba(244,239,228,.35)"; c.font = "10px ui-sans-serif,system-ui"; c.textAlign = "left";
   for (var tick = yMin; tick <= yMax; tick += 8) {
     var yy = Y(tick);
     c.strokeStyle = "rgba(244,239,228,.08)"; c.beginPath(); c.moveTo(padL, yy); c.lineTo(W - padR, yy); c.stroke();
     c.fillText(tick + "°", W - padR + 4, yy + 3);
   }
-  // area path
   c.beginPath();
   idxs.forEach(function (_, i) { var x = X(i), y = Y(vals[i]); if (i) c.lineTo(x, y); else c.moveTo(x, y); });
   var lastX = X(idxs.length - 1);
   c.lineTo(lastX, H - padB); c.lineTo(padL, H - padB); c.closePath();
   var ag = c.createLinearGradient(0, padT, 0, H - padB);
-  ag.addColorStop(0, "rgba(240,162,2,.45)"); ag.addColorStop(0.55, "rgba(92,225,230,.2)"); ag.addColorStop(1, "rgba(92,225,230,0)");
+  if (feels) {
+    ag.addColorStop(0, "rgba(196,120,255,.55)"); ag.addColorStop(0.55, "rgba(232,121,249,.22)"); ag.addColorStop(1, "rgba(196,120,255,0)");
+  } else {
+    ag.addColorStop(0, "rgba(240,162,2,.45)"); ag.addColorStop(0.55, "rgba(92,225,230,.2)"); ag.addColorStop(1, "rgba(92,225,230,0)");
+  }
   c.fillStyle = ag; c.fill();
   c.beginPath();
   idxs.forEach(function (_, i) { var x = X(i), y = Y(vals[i]); if (i) c.lineTo(x, y); else c.moveTo(x, y); });
-  c.strokeStyle = "rgba(244,239,228,.9)"; c.lineWidth = 2; c.stroke();
-  // H / L markers
+  c.strokeStyle = feels ? "rgba(232,180,255,.98)" : "rgba(244,239,228,.9)";
+  c.lineWidth = feels ? 2.6 : 2; c.lineJoin = "round"; c.stroke();
+  // H / L markers with degree labels
   var iHi = vals.indexOf(hi), iLo = vals.indexOf(lo);
-  [[iHi, "H", hi], [iLo, "L", lo]].forEach(function (m) {
+  [[iHi, "H", hi, feels ? "#e9c6ff" : "rgba(244,239,228,.95)"], [iLo, "L", lo, feels ? "#c9a0ff" : "rgba(244,239,228,.85)"]].forEach(function (m) {
     var x = X(m[0]), y = Y(m[2]);
-    c.fillStyle = "rgba(244,239,228,.95)"; c.beginPath(); c.arc(x, y, 3.2, 0, 6.283); c.fill();
-    c.font = "700 11px ui-sans-serif,system-ui"; c.fillText(m[1], x - 4, y - 8);
+    c.fillStyle = m[3]; c.beginPath(); c.arc(x, y, 3.6, 0, 6.283); c.fill();
+    c.font = "700 11px ui-sans-serif,system-ui";
+    c.fillText(m[1] + " " + Math.round(m[2]) + "°", Math.max(padL, Math.min(W - padR - 42, x - 18)), y - 9);
   });
+  // store geometry for scrubber
+  cv._wx = { idxs: idxs, vals: vals, X: null, padL: padL, padR: padR, W: W, feels: feels, dayIdx: dayIdx };
 }
 function drawPrecipChart(cv, j, dayIdx) {
   if (!cv || !j) return;
@@ -752,12 +781,131 @@ function drawPrecipChart(cv, j, dayIdx) {
   });
   var bw = Math.max(2, (W - padL - padR) / idxs.length * 0.55);
   idxs.forEach(function (hi, i) {
-    var p = j.hourly.precipitation_probability[hi] || 0;
+    var p = (j.hourly.precipitation_probability && j.hourly.precipitation_probability[hi]) || 0;
     var bh = (p / 100) * (H - padT - padB);
     var x = X(i) - bw / 2, y = H - padB - bh;
     c.fillStyle = p >= 60 ? "rgba(92,225,230,.85)" : "rgba(92,225,230,.4)";
     c.fillRect(x, y, bw, bh);
   });
+}
+function windDirLabel(deg) {
+  if (deg == null || isNaN(deg)) return "—";
+  var dirs = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
+  return dirs[Math.round(((+deg) % 360) / 22.5) % 16];
+}
+function uvBand(u) {
+  if (u == null || isNaN(u)) return { lab: "—", cls: "" };
+  u = +u;
+  if (u < 3) return { lab: "Low", cls: "ok" };
+  if (u < 6) return { lab: "Moderate", cls: "" };
+  if (u < 8) return { lab: "High", cls: "warn" };
+  return { lab: "Very high", cls: "bad" };
+}
+function fmtVis(m, units) {
+  if (m == null || isNaN(m)) return "—";
+  if (units === "C") return (m >= 1000 ? (m / 1000).toFixed(1) + " km" : Math.round(m) + " m");
+  var mi = m / 1609.34;
+  return (mi >= 10 ? Math.round(mi) : mi.toFixed(1)) + " mi";
+}
+function rainTiming(j, dayIdx) {
+  var idxs = hoursForDay(j, dayIdx); if (!idxs.length) return "";
+  var wet = [];
+  idxs.forEach(function (hi) {
+    var p = (j.hourly.precipitation_probability && j.hourly.precipitation_probability[hi]) || 0;
+    var amt = (j.hourly.precipitation && j.hourly.precipitation[hi]) || 0;
+    if (p >= 40 || amt > 0.05) wet.push(j.hourly.time[hi]);
+  });
+  if (!wet.length) return "No rain expected";
+  function h12(iso) {
+    var h = +iso.slice(11, 13), ap = h >= 12 ? "PM" : "AM";
+    h = h % 12; if (!h) h = 12;
+    return h + " " + ap;
+  }
+  var a = h12(wet[0]), b = h12(wet[wet.length - 1]);
+  return a === b ? ("Rain likely around " + a) : ("Rain likely " + a + "–" + b);
+}
+function daylightStr(rise, set) {
+  if (!rise || !set) return "—";
+  var a = new Date(rise).getTime(), b = new Date(set).getTime();
+  if (!isFinite(a) || !isFinite(b) || b <= a) return "—";
+  var m = Math.round((b - a) / 60000), h = Math.floor(m / 60), mm = m % 60;
+  return h + "h " + mm + "m";
+}
+function hourVals(j, hi) {
+  var H = j.hourly || {};
+  function g(k) { return H[k] && H[k][hi] != null ? H[k][hi] : null; }
+  return {
+    t: g("temperature_2m"), feels: g("apparent_temperature"),
+    wind: g("wind_speed_10m"), gust: g("wind_gusts_10m"), dir: g("wind_direction_10m"),
+    hum: g("relative_humidity_2m"), uv: g("uv_index"), vis: g("visibility"),
+    press: g("pressure_msl"), dew: g("dew_point_2m"), cloud: g("cloud_cover"),
+    rain: g("precipitation"), pop: g("precipitation_probability"),
+    code: g("weather_code"), isDay: g("is_day")
+  };
+}
+function wxCell(k, v, s) {
+  return '<div class="wx-cell"><span class="k">' + k + '</span><span class="v">' + v + "</span>" + (s ? '<span class="s">' + s + "</span>" : "") + "</div>";
+}
+var WX_SCRUB = -1;
+function renderWxDetails(hourIdx) {
+  if (!WX || !WX.j) return;
+  var j = WX.j, u = S.units === "C" ? "C" : "F";
+  var wu = u === "C" ? "km/h" : "mph";
+  var pu = u === "C" ? "hPa" : "inHg";
+  var idxs = hoursForDay(j, WX_DAY);
+  var hi;
+  if (hourIdx != null && hourIdx >= 0) hi = hourIdx;
+  else {
+    // default: current hour if today, else noon
+    if (WX_DAY === 0 && j.current && j.current.time) {
+      var key = j.current.time.slice(0, 13);
+      hi = j.hourly.time.findIndex(function (t) { return t.slice(0, 13) === key; });
+    }
+    if (hi == null || hi < 0) hi = idxs[Math.min(12, idxs.length - 1)] || idxs[0];
+  }
+  var v = hourVals(j, hi);
+  var uv = uvBand(v.uv);
+  var rainAmt = v.rain == null ? "—" : (u === "C" ? ((+v.rain).toFixed(1) + " mm") : ((+v.rain / 25.4).toFixed(2) + " in"));
+  var press = v.press == null ? "—" : (u === "C" ? Math.round(v.press) + " hPa" : ((v.press * 0.02953).toFixed(2) + " inHg"));
+  var grid = $("#wxGrid");
+  if (grid) {
+    grid.innerHTML =
+      wxCell("WIND", (v.wind == null ? "—" : Math.round(v.wind) + " " + wu), windDirLabel(v.dir) + (v.gust != null ? " · gusts " + Math.round(v.gust) : "")) +
+      wxCell("HUMIDITY", v.hum == null ? "—" : Math.round(v.hum) + "%", "") +
+      wxCell("UV INDEX", v.uv == null ? "—" : (+v.uv).toFixed(1), uv.lab) +
+      wxCell("VISIBILITY", fmtVis(v.vis, u), "") +
+      wxCell("PRESSURE", press, "") +
+      wxCell("DEW POINT", v.dew == null ? "—" : Math.round(v.dew) + "°", "") +
+      wxCell("CLOUD COVER", v.cloud == null ? "—" : Math.round(v.cloud) + "%", "") +
+      wxCell("RAIN", rainAmt, (v.pop != null ? Math.round(v.pop) + "% chance" : ""));
+  }
+  var rise = j.daily.sunrise && j.daily.sunrise[WX_DAY], set = j.daily.sunset && j.daily.sunset[WX_DAY];
+  var sum = $("#wxSummary");
+  if (sum) {
+    var tip = rainTiming(j, WX_DAY);
+    var sun = "Sunrise " + (rise ? isoT12(rise) : "—") + " · Sunset " + (set ? isoT12(set) : "—") + " · Daylight " + daylightStr(rise, set);
+    var feel = v.feels != null ? ("Feels " + Math.round(v.feels) + "°. ") : "";
+    var cond = v.code != null ? (wxText(v.code).replace(/_/g, " ") + ". ") : "";
+    sum.textContent = cond + feel + tip + ". " + sun;
+  }
+}
+function scrubFromEvent(cv, e) {
+  if (!cv || !cv._wx || !WX || !WX.j) return;
+  var rect = cv.getBoundingClientRect();
+  var clientX = (e.touches && e.touches[0] ? e.touches[0].clientX : e.clientX);
+  var x = clientX - rect.left;
+  var meta = cv._wx;
+  var frac = (x - meta.padL) / Math.max(1, meta.W - meta.padL - meta.padR);
+  frac = Math.max(0, Math.min(1, frac));
+  var i = Math.round(frac * Math.max(0, meta.idxs.length - 1));
+  var hi = meta.idxs[i];
+  WX_SCRUB = hi;
+  var t = WX.j.hourly.time[hi];
+  var val = meta.vals[i];
+  var scrub = $("#wxScrub"); if (scrub) scrub.hidden = false;
+  var st = $("#wxScrubT"); if (st) st.textContent = isoT12(t);
+  var sv = $("#wxScrubV"); if (sv) sv.textContent = (meta.feels ? "Feels " : "") + Math.round(val) + "°";
+  renderWxDetails(hi);
 }
 function renderConditions() {
   if (!WX || !WX.j) return;
@@ -776,10 +924,16 @@ function renderConditions() {
   var sel = new Date(j.daily.time[WX_DAY] + "T12:00:00");
   var lab = sel.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
   var dl = $("#wxDayLabel"); if (dl) dl.textContent = lab;
-  var hi = Math.round(j.daily.temperature_2m_max[WX_DAY]), lo = Math.round(j.daily.temperature_2m_min[WX_DAY]);
-  var hl = $("#wxChartHL"); if (hl) hl.textContent = hi + "°  " + lo + "°";
-  var ul = $("#wxUnitLbl"); if (ul) ul.textContent = S.units === "C" ? "Celsius (°C)" : "Fahrenheit (°F)";
   var idxs = hoursForDay(j, WX_DAY);
+  var at = j.hourly.apparent_temperature || [], t2 = j.hourly.temperature_2m || [];
+  var series = idxs.map(function (i) {
+    var v = WX_MODE === "feels" ? at[i] : t2[i];
+    if (v == null || isNaN(v)) v = t2[i];
+    return +v;
+  });
+  var hi = Math.round(Math.max.apply(null, series)), lo = Math.round(Math.min.apply(null, series));
+  var hl = $("#wxChartHL"); if (hl) hl.textContent = hi + "°  " + lo + "°";
+  var ul = $("#wxUnitLbl"); if (ul) ul.textContent = (WX_MODE === "feels" ? "Feels like · " : "") + (S.units === "C" ? "Celsius (°C)" : "Fahrenheit (°F)");
   var icons = $("#wxHourIcons");
   if (icons) {
     var step = Math.max(1, Math.floor(idxs.length / 8));
@@ -791,16 +945,21 @@ function renderConditions() {
     icons.innerHTML = bits.join("");
   }
   $$(".wx-tog-b").forEach(function (b) { b.classList.toggle("on", b.getAttribute("data-wxmode") === WX_MODE); });
-  var cap = $("#wxModeCap"); if (cap) cap.textContent = WX_MODE === "feels" ? "What it feels like outside." : "The actual temperature.";
+  var cap = $("#wxModeCap"); if (cap) cap.textContent = WX_MODE === "feels" ? "Apparent temperature — violet line · H/L marked." : "The actual temperature.";
   var rain = j.daily.precipitation_probability_max[WX_DAY] || 0;
   var dayName = sel.toLocaleDateString("en-US", { weekday: "long" });
-  var ps = $("#wxPrecipSum"); if (ps) ps.textContent = dayName + "'s chance: " + rain + "%";
+  var ps = $("#wxPrecipSum"); if (ps) ps.textContent = dayName + "'s chance: " + rain + "% · " + rainTiming(j, WX_DAY);
   var anim = !(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
   var tc = $("#wxTempChart"), pc = $("#wxPrecipChart");
-  if (anim && tc) { tc.style.opacity = "0.35"; setTimeout(function () { drawTempChart(tc, j, WX_DAY, WX_MODE); tc.style.transition = "opacity .28s ease"; tc.style.opacity = "1"; }, 40); }
-  else drawTempChart(tc, j, WX_DAY, WX_MODE);
-  if (anim && pc) { pc.style.opacity = "0.35"; setTimeout(function () { drawPrecipChart(pc, j, WX_DAY); pc.style.transition = "opacity .28s ease"; pc.style.opacity = "1"; }, 60); }
-  else drawPrecipChart(pc, j, WX_DAY);
+  function drawAll() {
+    drawTempChart(tc, j, WX_DAY, WX_MODE);
+    drawPrecipChart(pc, j, WX_DAY);
+  }
+  if (anim && tc) { tc.style.opacity = "0.35"; setTimeout(function () { drawAll(); tc.style.transition = "opacity .28s ease"; tc.style.opacity = "1"; if (pc) { pc.style.transition = "opacity .28s ease"; pc.style.opacity = "1"; } }, 40); }
+  else drawAll();
+  WX_SCRUB = -1;
+  var scrub = $("#wxScrub"); if (scrub) scrub.hidden = true;
+  renderWxDetails(null);
 }
 (function bindWxCond() {
   var pick = $("#wxDayPick");
@@ -815,6 +974,15 @@ function renderConditions() {
     renderConditions();
   });
   window.addEventListener("resize", function () { clearTimeout(renderConditions._t); renderConditions._t = setTimeout(function () { if (!$("#xpWx").hidden) renderConditions(); }, 120); });
+  var tc = $("#wxTempChart");
+  if (tc) {
+    var dragging = false;
+    function onPtr(e) { if (e.cancelable) e.preventDefault(); scrubFromEvent(tc, e); }
+    tc.addEventListener("pointerdown", function (e) { dragging = true; try { tc.setPointerCapture(e.pointerId); } catch (err) {} onPtr(e); });
+    tc.addEventListener("pointermove", function (e) { if (dragging) onPtr(e); });
+    tc.addEventListener("pointerup", function () { dragging = false; });
+    tc.addEventListener("pointercancel", function () { dragging = false; });
+  }
 })();
 
 // ========== 8. weather data ==========
@@ -846,9 +1014,9 @@ function refreshWeather(force) {
     }, function (err) { if (LOC.lat != null) return LOC; throw { geo: true, err: err }; });
   p.then(function (L) {
     var url = "https://api.open-meteo.com/v1/forecast?latitude=" + L.lat + "&longitude=" + L.lon +
-      "&current=temperature_2m,apparent_temperature,weather_code,is_day,wind_speed_10m" +
-      "&hourly=temperature_2m,apparent_temperature,weather_code,is_day,precipitation_probability" +
-      "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset" +
+      "&current=temperature_2m,apparent_temperature,weather_code,is_day,wind_speed_10m,wind_direction_10m,wind_gusts_10m,relative_humidity_2m,uv_index,visibility,pressure_msl,dew_point_2m,cloud_cover,precipitation" +
+      "&hourly=temperature_2m,apparent_temperature,weather_code,is_day,precipitation_probability,precipitation,wind_speed_10m,wind_direction_10m,wind_gusts_10m,relative_humidity_2m,uv_index,visibility,pressure_msl,dew_point_2m,cloud_cover" +
+      "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,sunrise,sunset,uv_index_max" +
       unitQ() + "&timezone=auto&forecast_days=7";
     return getJSON(url).then(function (j) { WX = { at: Date.now(), units: S.units, key: locKey(), place: L.name || "MY LOCATION", j: j }; Store.setLocal("wx", WX); $("#wxNote").textContent = ""; });
   }).catch(function (e) {
@@ -940,16 +1108,18 @@ function money(n) {
   return "$" + n.toPrecision(3);
 }
 function refreshMarkets() {
-  if (!COINS.length) { renderMarkets(); return; }
-  var ids = COINS.map(function (c) { return c.id; }).join(",");
-  getJSON("https://api.coingecko.com/api/v3/simple/price?ids=" + encodeURIComponent(ids) + "&vs_currencies=usd&include_24hr_change=true")
+  var ids = {};
+  COINS.forEach(function (c) { if (c.id) ids[c.id] = 1; });
+  loadHoldings().forEach(function (h) { if (h.kind !== "stock" && h.id) ids[h.id] = 1; });
+  var idList = Object.keys(ids);
+  if (!idList.length) { renderMarkets(); return; }
+  getJSON("https://api.coingecko.com/api/v3/simple/price?ids=" + encodeURIComponent(idList.join(",")) + "&vs_currencies=usd&include_24hr_change=true")
     .then(function (j) { MK = { at: Date.now(), d: Object.assign({}, MK && MK.d, j) }; Store.setLocal("mk", MK); mkErr = false; })
     .catch(function () { mkErr = true; })
     .then(renderMarkets);
 }
 function chHTML(ch) { if (ch == null || isNaN(ch)) return '<span class="dim">--</span>'; return '<span class="' + (ch >= 0 ? "up" : "dn") + '">' + (ch >= 0 ? "▲" : "▼") + Math.abs(ch).toFixed(2) + "%</span>"; }
 function sparkSVG(ch, seed) {
-  // Lightweight sparkline from 24h change (no extra API key). Seed keeps shape stable per coin.
   var up = (ch == null || isNaN(ch)) ? true : ch >= 0;
   var col = up ? "#3ddc97" : "#ff5c7a";
   var pts = [], n = 12, base = 14, amp = Math.min(10, 2 + Math.abs(ch || 0) * 0.6);
@@ -963,38 +1133,134 @@ function sparkSVG(ch, seed) {
   }
   return '<svg class="mk-spark" viewBox="0 0 56 22" aria-hidden="true"><path d="M' + pts.join(" L") + '" stroke="' + col + '"/></svg>';
 }
+function loadHoldings() {
+  var h = Store.get("holdings", null);
+  return Array.isArray(h) ? h : [];
+}
+function saveHoldings(list) { Store.set("holdings", list); }
+function holdingPrice(h) {
+  if (h.kind === "stock") return h.manualPrice != null ? +h.manualPrice : null;
+  var q = MK && MK.d && MK.d[h.id];
+  return q && q.usd != null ? +q.usd : null;
+}
+function holdingChange(h) {
+  if (h.kind === "stock") return null;
+  var q = MK && MK.d && MK.d[h.id];
+  return q ? q.usd_24h_change : null;
+}
+function portfolioStats() {
+  var list = loadHoldings(), total = 0, cost = 0, day = 0, priced = 0;
+  list.forEach(function (h) {
+    var px = holdingPrice(h), qty = +h.qty || 0;
+    if (px == null || isNaN(px)) return;
+    priced++;
+    var val = px * qty;
+    total += val;
+    if (h.cost != null && !isNaN(+h.cost)) cost += (+h.cost) * qty;
+    var ch = holdingChange(h);
+    if (ch != null && !isNaN(ch)) day += val * (ch / (100 + ch)); // approx day $ from %
+  });
+  return { total: total, cost: cost, gl: cost > 0 ? total - cost : null, day: day, n: list.length, priced: priced };
+}
+function drawHoldChart(cv, stats) {
+  if (!cv) return;
+  var dpr = Math.min(window.devicePixelRatio || 1, 2);
+  var W = cv.clientWidth || 280, H = 64;
+  cv.width = W * dpr; cv.height = H * dpr;
+  var c = cv.getContext("2d"); c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  c.clearRect(0, 0, W, H);
+  var up = !(stats.gl < 0);
+  var col = up ? "#3ddc97" : "#ff5c7a";
+  var pts = [], n = 24, base = H * 0.55, amp = H * 0.28;
+  var seed = Math.round((stats.total || 1) % 97);
+  for (var i = 0; i < n; i++) {
+    var wave = Math.sin(i / (n - 1) * Math.PI * 1.2 + seed * 0.1) * amp * (up ? 1 : -1);
+    var y = base - wave * (i / (n - 1));
+    pts.push([2 + i / (n - 1) * (W - 4), Math.max(4, Math.min(H - 4, y))]);
+  }
+  c.beginPath();
+  pts.forEach(function (p, i) { if (i) c.lineTo(p[0], p[1]); else c.moveTo(p[0], p[1]); });
+  c.lineTo(pts[pts.length - 1][0], H); c.lineTo(pts[0][0], H); c.closePath();
+  var g = c.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, up ? "rgba(61,220,151,.35)" : "rgba(255,92,122,.35)");
+  g.addColorStop(1, "rgba(0,0,0,0)");
+  c.fillStyle = g; c.fill();
+  c.beginPath();
+  pts.forEach(function (p, i) { if (i) c.lineTo(p[0], p[1]); else c.moveTo(p[0], p[1]); });
+  c.strokeStyle = col; c.lineWidth = 2; c.stroke();
+}
+function renderHoldings() {
+  var list = loadHoldings(), stats = portfolioStats();
+  var tv = $("#holdTotalV"); if (tv) tv.textContent = money(stats.total);
+  var gv = $("#holdGlV");
+  if (gv) {
+    if (stats.gl == null) gv.textContent = "—";
+    else {
+      var sign = stats.gl >= 0 ? "+" : "";
+      gv.textContent = sign + money(Math.abs(stats.gl)).replace("$", (stats.gl < 0 ? "-$" : "$"));
+      // money() always prefixes $ — fix:
+      gv.textContent = (stats.gl >= 0 ? "+" : "-") + money(Math.abs(stats.gl));
+      gv.className = stats.gl >= 0 ? "up" : "dn";
+    }
+  }
+  drawHoldChart($("#holdChart"), stats);
+  var host = $("#holdList");
+  if (host) {
+    if (!list.length) host.innerHTML = '<p class="offline">No holdings yet. Tap ＋ HOLDING to track crypto, gold, or a stock with a manual price.</p>';
+    else host.innerHTML = list.map(function (h, i) {
+      var px = holdingPrice(h), ch = holdingChange(h), qty = +h.qty || 0;
+      var val = px != null ? px * qty : null;
+      var sub = (h.kind === "stock" ? "Stock · manual price" : (h.kind === "gold" ? "Gold" : "Crypto")) + " · qty " + qty;
+      if (h.cost != null) sub += " · basis " + money(+h.cost);
+      return '<div class="hold-row" data-hi="' + i + '"><div><div class="sym">' + esc(h.sym) + '</div><div class="sub">' + esc(h.name || "") + " · " + esc(sub) + '</div></div>' +
+        '<div><div class="px">' + (val != null ? money(val) : "--") + '</div><div class="ch">' + (px != null ? money(px) : "--") + (ch != null ? " · " + ((ch >= 0 ? "+" : "") + ch.toFixed(2) + "%") : "") + '</div></div>' +
+        '<div class="acts"><button type="button" class="chip" data-hold-edit="' + i + '">Edit</button><button type="button" class="chip" data-hold-del="' + i + '">Remove</button></div></div>';
+    }).join("");
+  }
+  var mini = $("#hMkPort");
+  if (mini) {
+    if (!list.length) { mini.hidden = true; mini.innerHTML = ""; }
+    else {
+      mini.hidden = false;
+      var gl = stats.gl == null ? "" : (' · <span class="' + (stats.gl >= 0 ? "up" : "dn") + '">' + (stats.gl >= 0 ? "+" : "-") + money(Math.abs(stats.gl)) + "</span>");
+      mini.innerHTML = "Portfolio <b>" + money(stats.total) + "</b>" + gl;
+    }
+  }
+}
 function renderMarkets() {
   var d = MK && MK.d || {}, list = "", mini = "";
   COINS.forEach(function (c, i) {
     var q = d[c.id];
     list += '<div class="row"><span class="sym">' + esc(c.sym) + '</span><span class="grow">' + esc(c.name) + '</span><span class="px">' + (q ? money(q.usd) : "--") + '</span><span class="ch">' + (q ? chHTML(q.usd_24h_change) : "") + "</span></div>";
   });
-  var pages = Math.max(1, Math.ceil(COINS.length / 2)), pg = mkPage % pages;
+  var pages = Math.max(1, Math.ceil(COINS.length / 2) || 1), pg = mkPage % pages;
   COINS.slice(pg * 2, pg * 2 + 2).forEach(function (c, i) {
     var q = d[c.id], ch = q ? q.usd_24h_change : null;
     mini += '<div class="mk-row"><span class="sym">' + esc(c.sym) + '</span><span>' + sparkSVG(ch, (c.id || "").length + i) +
       '<div class="px">' + (q ? money(q.usd) : "--") + '</div></span><span class="ch ' + ((ch == null || isNaN(ch)) ? "" : (ch >= 0 ? "up" : "dn")) + '">' +
       ((ch == null || isNaN(ch)) ? "--" : ((ch >= 0 ? "+" : "") + ch.toFixed(2) + "%")) + "</span></div>";
   });
-  if (!COINS.length) { list = '<p class="offline">Your watchlist is empty. Tap ✎ EDIT to add a coin.</p>'; mini = '<span class="dim">WATCHLIST EMPTY · TAP TO ADD</span>'; }
+  if (!COINS.length) { list = '<p class="offline">Your watchlist is empty. Tap ✎ WATCHLIST to add a coin.</p>'; if (!loadHoldings().length) mini = '<span class="dim">WATCHLIST EMPTY · TAP TO ADD</span>'; }
   if (mkErr && !(MK && MK.at)) { list = '<p class="offline">Markets offline. We\'ll retry in 2 minutes.</p>'; mini = '<span class="dim">MARKETS OFFLINE · RETRYING</span>'; }
   else if (mkErr) list += '<p class="offline">Couldn\'t refresh. Showing the last prices we saved.</p>';
   var mk = $("#mkList"); if (mk) mk.innerHTML = list;
-  $("#hMkList").innerHTML = mini; $("#xpMkList").innerHTML = list;
-  try {
-    var rows = COINS.map(function (c) {
-      var q = d[c.id];
-      return { sym: c.sym, name: c.name, price: q ? money(q.usd) : "--", chg: q ? q.usd_24h_change : 0 };
-    });
-    if (typeof paintTicker === "function") paintTicker(rows);
-  } catch (e) {}
+  if ($("#hMkList")) $("#hMkList").innerHTML = mini || $("#hMkList").innerHTML;
+  if ($("#xpMkList")) $("#xpMkList").innerHTML = list;
+  try { renderHoldings(); } catch (e) {}
   updateStamps();
 }
+
 function updateStamps() {
   var st = function (el, at) { if (!el) return; if (!at) { el.textContent = "UPDATED --"; el.classList.add("old"); return; } el.textContent = "UPDATED " + t12(new Date(at)); el.classList.toggle("old", Date.now() - at > 30 * 60000); };
   st($("#wxStamp"), WX && WX.at); st($("#mkStamp"), MK && MK.at); st($("#xpMkStamp"), MK && MK.at);
-  var sh = function (el, at, pre) { el.textContent = pre + (at ? short12(at) : "--"); el.classList.toggle("old", !at || Date.now() - at > 30 * 60000); };
-  sh($("#hwUpd"), WX && WX.at, "UPD "); sh($("#hMkT"), MK && MK.at, "");
+  var sh = function (el, at, pre) { if (!el) return; el.textContent = pre + (at ? short12(at) : "--"); el.classList.toggle("old", !at || Date.now() - at > 30 * 60000); };
+  sh($("#hwUpd"), WX && WX.at, "UPD ");
+  var hMkT = $("#hMkT");
+  if (hMkT) {
+    if (MK && MK.at) hMkT.textContent = "Updated " + t12(new Date(MK.at)).replace(/([AP])$/, " $1M");
+    else hMkT.textContent = "Updated --";
+    hMkT.classList.toggle("old", !(MK && MK.at) || Date.now() - MK.at > 30 * 60000);
+  }
   var last = Math.max(WX && WX.at || 0, MK && MK.at || 0);
   var sync = $("#hSync");
   if (sync) {
@@ -1148,10 +1414,24 @@ function mapZoom(d) {
 })();
 window.addEventListener("online", function () { MAP._key = null; renderMap(true); });
 function refreshGPS() { getPos().catch(function () {}); }
+function worldToLonLat(x, y, z) {
+  var n = Math.pow(2, z), lon = x / (n * 256) * 360 - 180;
+  var m = Math.PI - 2 * Math.PI * y / (n * 256);
+  var lat = 180 / Math.PI * Math.atan(0.5 * (Math.exp(m) - Math.exp(-m)));
+  return { lat: lat, lon: lon };
+}
+function mapCenterLL() {
+  if (!GPS) return null;
+  var z = Math.max(3, Math.min(19, MAP.z | 0));
+  var world = lonLatToWorld(GPS.lon, GPS.lat, z);
+  return worldToLonLat(world.x + MAP.offX, world.y + MAP.offY, z);
+}
 function openMapsHere() {
   if (!GPS) { toast(GEO_OFF ? "Turn on Location for this app to see where you are" : "Still finding you…"); return; }
-  var ll = GPS.lat.toFixed(6) + "," + GPS.lon.toFixed(6);
-  openApp({ id: "maps", mapsHere: true, ll: ll, name: "Maps" });
+  var c = mapCenterLL() || GPS;
+  var ll = (+c.lat).toFixed(6) + "," + (+c.lon).toFixed(6);
+  var q = (PLACE && (PLACE.road || PLACE.city)) ? [PLACE.road, PLACE.city].filter(Boolean).join(", ") : ll;
+  openApp({ id: "maps", mapsHere: true, ll: ll, q: q, name: "Maps" });
 }
 var mapOpen = $("#mapOpen"); if (mapOpen) mapOpen.addEventListener("click", function (e) { e.stopPropagation(); openMapsHere(); });
 var mapIn = $("#mapIn"); if (mapIn) mapIn.addEventListener("click", function (e) { e.stopPropagation(); mapZoom(1); });
@@ -1221,6 +1501,7 @@ function refreshPlaceEtas() {
 function renderPlacesRow() {
   var host = $("#placesList"); if (!host) return;
   var list = loadPlaces();
+  var row = $("#placesRow"); if (row) row.classList.toggle("has-places", list.length > 0);
   if (!list.length) {
     host.innerHTML = PLACE_PRESETS.map(function (p) {
       return '<button type="button" class="place-chip" data-place-new="' + p.id + '" role="listitem"><span class="pc-ico" style="background:' + p.color + '">' + p.icon + '</span><span class="pc-name">' + esc(p.name) + '</span><span class="pc-eta">Set up</span></button>';
@@ -1351,6 +1632,18 @@ function toggleXp(k) {
 }
 $("#xpCity").addEventListener("click", function () { openCity(); });
 $("#xpMkEdit").addEventListener("click", function () { openEditCoins(); });
+var _xpHoldAdd = $("#xpHoldAdd"); if (_xpHoldAdd) _xpHoldAdd.addEventListener("click", function () { openAddHolding(); });
+var _xpBroker = $("#xpBroker"); if (_xpBroker) _xpBroker.addEventListener("click", function () { openBrokerPicker(); });
+document.addEventListener("click", function (e) {
+  var ed = e.target.closest("[data-hold-edit]"); if (ed) { e.preventDefault(); openEditHolding(+ed.getAttribute("data-hold-edit")); return; }
+  var del = e.target.closest("[data-hold-del]"); if (del) {
+    e.preventDefault();
+    var list = loadHoldings(), i = +del.getAttribute("data-hold-del");
+    if (!list[i]) return;
+    if (!confirm("Remove " + list[i].sym + " from holdings?")) return;
+    list.splice(i, 1); saveHoldings(list); renderMarkets(); toast("Removed");
+  }
+});
 
 // ========== 11. sheets ==========
 function sheet(title, html, bind) {
@@ -1634,6 +1927,132 @@ function openEditCoins() {
       drawList();
     });
 }
+
+var BROKERS = [
+  { id: "robinhood", name: "Robinhood", url: "robinhood://", pkg: "com.robinhood.android", web: "https://robinhood.com", icon: "/os/icons/robinhood.jpg" },
+  { id: "coinbase", name: "Coinbase", url: "coinbase://", pkg: "com.coinbase.android", web: "https://www.coinbase.com", icon: "/os/icons/coinbase.jpg" },
+  { id: "cashapp", name: "Cash App", url: "cashme://", pkg: "com.square.cash", web: "https://cash.app", icon: "/os/icons/cashapp.jpg" },
+  { id: "binance", name: "Binance", url: "bnc://", pkg: "com.binance.dev", web: "https://www.binance.com", icon: "/os/icons/binance.jpg" },
+  { id: "webull", name: "Webull", url: "webull://", pkg: "com.webull.trade", web: "https://www.webull.com", icon: "" },
+  { id: "fidelity", name: "Fidelity", url: "fidelity://", pkg: "com.fidelity.android", web: "https://www.fidelity.com", icon: "" },
+  { id: "schwab", name: "Schwab", url: "schwabmobile://", web: "https://www.schwab.com", icon: "" },
+  { id: "sofi", name: "SoFi", url: "sofi://", web: "https://www.sofi.com", icon: "" }
+];
+function openBrokerPicker() {
+  var cur = Store.get("broker", null) || "";
+  var html = '<p class="note" style="margin-bottom:10px">Opens your broker app (or its site). We never link accounts — holdings stay on this device only.</p>' +
+    BROKERS.map(function (b) {
+      var on = cur === b.id ? " on" : "";
+      var ic = b.icon ? '<img class="mimg" src="' + esc(b.icon) + '" alt="">' : '<span class="mi" aria-hidden="true">↗</span>';
+      var mark = cur === b.id ? '<span class="mcheck" aria-hidden="true">✓</span>' : '<span aria-hidden="true">↗</span>';
+      return '<button class="mrow' + on + '" data-broker="' + b.id + '" type="button">' + ic + '<span class="grow">' + esc(b.name) + "</span>" + mark + "</button>";
+    }).join("");
+  sheet("↗ OPEN MY BROKER", html, function (body) {
+    body.addEventListener("click", function (e) {
+      var x = e.target.closest("[data-broker]"); if (!x) return;
+      var id = x.getAttribute("data-broker");
+      var b = BROKERS.filter(function (r) { return r.id === id; })[0];
+      if (!b) return;
+      Store.set("broker", id);
+      closeSheet();
+      openApp({ id: b.id, name: b.name, url: b.url, pkg: b.pkg, web: b.web });
+    });
+  });
+}
+function openAddHolding(editIdx) {
+  var editing = editIdx != null ? loadHoldings()[editIdx] : null;
+  var title = editing ? "✎ EDIT HOLDING" : "＋ ADD HOLDING";
+  sheet(title,
+    '<p class="note" style="margin-bottom:8px">Crypto &amp; gold price live via CoinGecko. Stocks: enter a manual price — no free keyless stock feed works from the browser (Yahoo/Stooq CORS blocked).</p>' +
+    (editing ? "" : '<label class="field">SEARCH TICKER<input id="holdQ" placeholder="BTC, ETH, PAXG, AAPL…" autocomplete="off" autocapitalize="characters"></label><div id="holdRes"></div>') +
+    '<div id="holdForm"' + (editing ? "" : ' hidden') + '>' +
+    '<label class="field">SYMBOL<input id="holdSym" maxlength="12" value="' + esc(editing ? editing.sym : "") + '" ' + (editing ? "readonly" : "") + '></label>' +
+    '<label class="field">NAME<input id="holdName" maxlength="40" value="' + esc(editing ? (editing.name || "") : "") + '"></label>' +
+    '<label class="field">QUANTITY<input id="holdQty" type="number" step="any" min="0" value="' + esc(editing ? String(editing.qty) : "") + '" placeholder="e.g. 0.5"></label>' +
+    '<label class="field">COST BASIS / UNIT (OPTIONAL)<input id="holdCost" type="number" step="any" min="0" value="' + esc(editing && editing.cost != null ? String(editing.cost) : "") + '" placeholder="What you paid"></label>' +
+    '<label class="field" id="holdPxWrap"' + ((editing && editing.kind === "stock") || false ? "" : (editing ? " hidden" : " hidden")) + '>MANUAL PRICE (STOCKS)<input id="holdPx" type="number" step="any" min="0" value="' + esc(editing && editing.manualPrice != null ? String(editing.manualPrice) : "") + '" placeholder="Current USD price"></label>' +
+    '<input type="hidden" id="holdKind" value="' + esc(editing ? editing.kind : "crypto") + '">' +
+    '<input type="hidden" id="holdId" value="' + esc(editing ? (editing.id || "") : "") + '">' +
+    '<button class="btn" id="holdSave" style="margin-top:12px">' + (editing ? "SAVE" : "ADD HOLDING") + "</button></div>",
+    function (b) {
+      var picked = editing ? { id: editing.id, sym: editing.sym, name: editing.name, kind: editing.kind } : null;
+      function showForm(p) {
+        picked = p;
+        b.querySelector("#holdForm").hidden = false;
+        b.querySelector("#holdSym").value = p.sym;
+        b.querySelector("#holdName").value = p.name || "";
+        b.querySelector("#holdKind").value = p.kind;
+        b.querySelector("#holdId").value = p.id || "";
+        var wrap = b.querySelector("#holdPxWrap");
+        if (wrap) wrap.hidden = p.kind !== "stock";
+      }
+      function addStockManual(sym) {
+        showForm({ id: "", sym: sym.toUpperCase(), name: sym.toUpperCase(), kind: "stock" });
+      }
+      var tm, qEl = b.querySelector("#holdQ");
+      if (qEl) qEl.addEventListener("input", function (e) {
+        clearTimeout(tm); var q = e.target.value.trim(); if (q.length < 1) { b.querySelector("#holdRes").innerHTML = ""; return; }
+        tm = setTimeout(function () {
+          var uq = q.toUpperCase();
+          // Gold shortcuts
+          var goldHit = /^(PAXG|GOLD|XAU)$/i.test(q);
+          getJSON("https://api.coingecko.com/api/v3/search?query=" + encodeURIComponent(q)).then(function (j) {
+            var R = (j.coins || []).slice(0, 6);
+            if (goldHit && !R.some(function (r) { return r.id === "pax-gold"; })) {
+              R.unshift({ id: "pax-gold", symbol: "PAXG", name: "PAX Gold" });
+            }
+            var html = R.map(function (r, i) {
+              var kind = r.id === "pax-gold" ? "gold" : "crypto";
+              return '<button class="res" data-ci="' + i + '" data-kind="' + kind + '"><b>' + esc(String(r.symbol).toUpperCase()) + '</b> <small>' + esc(r.name) + '</small><span class="add">＋</span></button>';
+            }).join("");
+            html += '<button class="res" data-stock="1"><b>' + esc(uq) + '</b> <small>Stock / ETF · manual price</small><span class="add">＋</span></button>';
+            b.querySelector("#holdRes").innerHTML = html || '<p class="note">No match.</p>';
+            $$("[data-ci]", b.querySelector("#holdRes")).forEach(function (x) {
+              x.addEventListener("click", function () {
+                var r = R[+x.getAttribute("data-ci")];
+                showForm({ id: r.id, sym: String(r.symbol).toUpperCase().slice(0, 10), name: r.name, kind: x.getAttribute("data-kind") || "crypto" });
+              });
+            });
+            var st = b.querySelector("[data-stock]");
+            if (st) st.addEventListener("click", function () { addStockManual(uq); });
+          }).catch(function () {
+            b.querySelector("#holdRes").innerHTML = '<button class="res" data-stock="1"><b>' + esc(uq) + '</b> <small>Stock / ETF · manual price</small><span class="add">＋</span></button><p class="note">Coin search offline — you can still add a stock with a manual price.</p>';
+            var st = b.querySelector("[data-stock]");
+            if (st) st.addEventListener("click", function () { addStockManual(uq); });
+          });
+        }, 400);
+      });
+      b.querySelector("#holdSave").addEventListener("click", function () {
+        var sym = (b.querySelector("#holdSym").value || "").trim().toUpperCase().slice(0, 12);
+        var name = (b.querySelector("#holdName").value || "").trim().slice(0, 40) || sym;
+        var qty = parseFloat(b.querySelector("#holdQty").value);
+        var costRaw = b.querySelector("#holdCost").value;
+        var cost = costRaw === "" ? null : parseFloat(costRaw);
+        var kind = b.querySelector("#holdKind").value || "crypto";
+        var id = b.querySelector("#holdId").value || "";
+        var pxEl = b.querySelector("#holdPx");
+        var manualPrice = pxEl && pxEl.value !== "" ? parseFloat(pxEl.value) : null;
+        if (!sym) { toast("Pick a ticker"); return; }
+        if (!(qty > 0)) { toast("Enter a quantity"); return; }
+        if (kind === "stock" && !(manualPrice > 0)) { toast("Stocks need a manual price"); return; }
+        var list = loadHoldings();
+        var row = { id: id, sym: sym, name: name, kind: kind, qty: qty, cost: cost };
+        if (kind === "stock") row.manualPrice = manualPrice;
+        if (editIdx != null && list[editIdx]) list[editIdx] = row;
+        else {
+          if (list.length >= 20) { toast("Up to 20 holdings"); return; }
+          list.push(row);
+        }
+        saveHoldings(list);
+        closeSheet();
+        renderMarkets();
+        refreshMarkets();
+        toast(sym + (editIdx != null ? " updated" : " added"));
+      });
+      if (editing) showForm({ id: editing.id, sym: editing.sym, name: editing.name, kind: editing.kind });
+    });
+}
+function openEditHolding(i) { openAddHolding(i); }
 
 // ----- settings -----
 function openSettings() {
@@ -1935,17 +2354,6 @@ var menuBtn = $("#menuBtn"); if (menuBtn) menuBtn.addEventListener("click", open
   document.addEventListener("visibilitychange", syncVis); syncVis();
 })();
 
-function paintTicker(rows) {
-  var track = $("#mkTickerTrack"); if (!track) return;
-  var bits = (rows || []).map(function (r) {
-    var cls = (r.chg || 0) >= 0 ? "up" : "dn";
-    var sign = (r.chg || 0) >= 0 ? "+" : "";
-    return "<span><b>" + esc(r.sym || r.name || "?") + "</b> " + esc(r.price || "—") + ' <span class="' + cls + '">' + sign + (r.chg != null ? Number(r.chg).toFixed(2) : "0") + "%</span></span>";
-  });
-  if (!bits.length) bits = ["<span>MARKETS · waiting for feed</span>"];
-  var line = bits.join("") + bits.join("");
-  track.innerHTML = line;
-}
 
 
 // v3.3 find app CTA

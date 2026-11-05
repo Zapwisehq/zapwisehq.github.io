@@ -20,7 +20,7 @@
 <link rel="preconnect" href="https://tile.openstreetmap.org" crossorigin>
 <link rel="dns-prefetch" href="https://a.tile.openstreetmap.org">
 <link rel="preconnect" href="https://nominatim.openstreetmap.org" crossorigin>
-<link rel="stylesheet" href="/os/app.css?v=3.5.0">
+<link rel="stylesheet" href="/os/app.css?v=3.6.0">
 <script>try{var z=JSON.parse(localStorage.getItem("zapos.device")||"{}").themeCss;if(z&&z.css){var s=document.createElement("style");s.textContent=z.css;document.head.appendChild(s);if(z.light)document.documentElement.classList.add("light");var m=document.querySelector('meta[name="theme-color"]');if(m&&z.meta)m.setAttribute("content",z.meta);}}catch(e){}</script>
 </head>
 <body class="cyber">
@@ -66,23 +66,15 @@
 
    <div class="card br play" id="hPlay">
     <div class="np-top">
-     <span>NOW PLAYING</span>
-     <button type="button" class="np-live" id="npLive" data-media-act="pick" aria-label="Choose music app">MUSIC ▾</button>
+     <span>MUSIC</span>
+     <button type="button" class="np-live" id="npLive" data-media-act="pick" aria-label="Choose music app">SWITCH ▾</button>
     </div>
-    <div class="np-body" data-media-act="pick" role="button" tabindex="0" aria-label="Choose music app">
-     <img class="np-art" id="npArt" src="/os/icons/music.jpg" alt="">
-     <div class="np-meta"><b id="npTitle">Choose a music app</b><small id="npArtist">Tap to switch · play opens it</small></div>
-     <button type="button" class="np-switch" id="npSwitch" data-media-act="pick" aria-label="Switch music app">⇄</button>
-    </div>
-    <div class="np-bar" aria-hidden="true"><i id="npBar" style="width:0%"></i></div>
-    <div class="np-ctrl">
-     <span class="np-t" id="npCur">0:00</span>
-     <div class="np-btns">
-      <button type="button" data-media-act="prev" aria-label="Previous music app">⏮</button>
-      <button type="button" class="np-play" data-media-act="play" aria-label="Open music app">▶</button>
-      <button type="button" data-media-act="next" aria-label="Next music app">⏭</button>
-     </div>
-     <span class="np-t" id="npDur">—</span>
+    <div class="np-body">
+     <button type="button" class="np-pick" data-media-act="pick" aria-label="Choose music app">
+      <img class="np-art" id="npArt" src="/os/icons/music.jpg" alt="">
+      <span class="np-meta"><b id="npTitle">Choose a music app</b><small id="npArtist">Tap to switch</small></span>
+     </button>
+     <button type="button" class="np-play" data-media-act="play" aria-label="Open music app">▶</button>
     </div>
    </div>
   </div>
@@ -119,6 +111,12 @@
    <div class="wx-precip-h">Chance of Precipitation</div>
    <div class="wx-precip-sum" id="wxPrecipSum">—</div>
    <canvas class="wx-precip-chart" id="wxPrecipChart" width="720" height="120" aria-label="Precipitation chance chart"></canvas>
+   <div class="wx-scrub" id="wxScrub" hidden>
+    <span class="wx-scrub-t" id="wxScrubT">—</span>
+    <span class="wx-scrub-v" id="wxScrubV">—</span>
+   </div>
+   <p class="wx-summary" id="wxSummary">—</p>
+   <div class="wx-grid" id="wxGrid" aria-label="Weather details"></div>
    <p class="note" id="xpNote"></p>
   </div>
 
@@ -151,13 +149,11 @@
    <p class="note places-note" id="placesNote">Save Home, Work, School or a custom spot. Tap a place for directions.</p>
   </div>
 
-  <div class="mk-ticker" id="mkTicker" aria-hidden="true"><span class="track" id="mkTickerTrack"><span>MARKETS · loading…</span></span></div>
-
   <div class="row2">
    <button class="card br h-mk" id="hMk" type="button" aria-label="Show markets" aria-expanded="false" aria-controls="xpMk">
-    <div class="mk-h">MARKETS</div>
+    <div class="mk-h">MARKETS<span class="mk-t" id="hMkT">Updated --</span></div>
     <div class="mk-items" id="hMkList"><span class="dim">Markets loading…</span></div>
-    <span class="mk-t" id="hMkT">--</span>
+    <div class="mk-port" id="hMkPort" hidden></div>
    </button>
 
    <button class="card br focus-card" id="mFocus" type="button" aria-label="Focus timer: tap to start or pause">
@@ -180,9 +176,21 @@
   </div>
 
   <div class="xp" id="xpMk" hidden>
-   <div class="xp-h"><b>WATCHLIST</b><button class="chip" id="xpMkEdit" type="button">✎ EDIT</button></div>
+   <div class="xp-h"><b>PORTFOLIO</b><button class="chip" id="xpHoldAdd" type="button">＋ HOLDING</button></div>
+   <div class="hold-sum" id="holdSum">
+    <div class="hold-total"><span class="lbl">Total value</span><b id="holdTotalV">$0</b></div>
+    <div class="hold-gl"><span class="lbl">Gain / loss</span><b id="holdGlV">—</b></div>
+    <canvas class="hold-chart" id="holdChart" width="560" height="96" aria-label="Portfolio sparkline"></canvas>
+   </div>
+   <div class="hold-list" id="holdList"></div>
+   <div class="hold-actions">
+    <button type="button" class="chip" id="xpBroker" aria-label="Open my broker">↗ OPEN MY BROKER</button>
+    <button type="button" class="chip" id="xpMkEdit">✎ WATCHLIST</button>
+   </div>
+   <div class="xp-h" style="margin-top:14px"><b>WATCHLIST</b></div>
    <div class="mk" id="xpMkList"></div>
    <div class="stamp" id="xpMkStamp">UPDATED --</div>
+   <p class="note">Holdings stay on this device only. Stocks use a manual price (no free keyless stock feed works in the browser).</p>
   </div>
 
   <div class="card br today" id="today">
@@ -226,8 +234,8 @@
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/os/catalog.js?v=3.5.0"></script>
-<script src="/os/sky.js?v=3.5.0"></script>
-<script src="/os/app.js?v=3.5.0"></script>
+<script src="/os/catalog.js?v=3.6.0"></script>
+<script src="/os/sky.js?v=3.6.0"></script>
+<script src="/os/app.js?v=3.6.0"></script>
 </body>
 </html>

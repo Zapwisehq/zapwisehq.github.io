@@ -1,9 +1,9 @@
-/* ZAPWISE//OS service worker v3.5.0
+/* ZAPWISE//OS service worker v3.6.0
    - install: precaches the app shell + core icons only (catalog icons lazy-cache on first use).
    - pages (/os/, index.html): network first with a 3 s timeout, then the cached copy.
    - versioned assets (?v=), icons, images, manifest, catalog.js: cache first, refreshed in background.
    Live data (weather, markets, map) is never cached here. */
-const VER = "zapos-v3.5.0";
+const VER = "zapos-v3.6.0";
 const ICONS = ["amazon", "calendar", "canva", "capcut", "cashapp", "chatgpt", "claude", "copilot", "discord", "drive", "facebook", "gemini", "gmail", "gphotos", "grok", "instagram", "linkedin", "mail", "maps", "messages", "messenger", "music", "netflix", "notes", "pandora", "perplexity", "phone", "photos", "pinterest", "podcasts", "reddit", "snapchat", "soundcloud", "spotify", "telegram", "threads", "tiktok", "twitch", "uber", "venmo", "web", "whatsapp", "x", "youtube", "ytmusic"];
 const SHELL = ["/os/", "/os/index.html", "/os/app.css?v=3.5.0", "/os/app.js?v=3.5.0", "/os/catalog.js?v=3.5.0", "/os/sky.js?v=3.5.0", "/os/manifest.webmanifest",
   "/os/icon-180.png", "/os/icon-192.png", "/os/icon-512.png"].concat(ICONS.map(k => "/os/icons/" + k + ".jpg"));
