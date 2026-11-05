@@ -1,8 +1,29 @@
-/* ZAPWISE//OS web app v4.4.1 (Nov 5, 2026). One-page cyberpunk HUD matching concept — sound on, no tab bar, desktop command-center. Static, no API keys. */
+/* ZAPWISE//OS web app v4.5.0 (Nov 5, 2026). One-page cyberpunk HUD — no sound, no tab bar, Lite-first on phones. Static, no API keys. */
 (function () {
 "use strict";
-var VERSION = "4.4.1";
+var VERSION = "4.5.0";
 var APP_VERSION = VERSION;
+
+// v4.5: default Lite on coarse/mobile unless user already chose
+(function seedLiteDefault() {
+  try {
+    var raw = localStorage.getItem("zapos.device");
+    var j = raw ? JSON.parse(raw) : {};
+    if (!j || typeof j !== "object") j = {};
+    if (Object.prototype.hasOwnProperty.call(j, "liteMode")) return;
+    var mobile = false;
+    try {
+      mobile = (window.matchMedia && (matchMedia("(pointer: coarse)").matches || matchMedia("(max-width: 900px)").matches))
+        || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent || "")
+        || window.navigator.standalone === true;
+    } catch (e) {}
+    if (mobile) {
+      j.liteMode = true;
+      localStorage.setItem("zapos.device", JSON.stringify(j));
+      try { document.documentElement.classList.add("fx-lite"); } catch (e2) {}
+    }
+  } catch (e) {}
+})();
 
 // ========== v3.12 3D FX (lazy) ==========
 var _fx3dLoading = null;
@@ -697,7 +718,7 @@ function renderNet() {
   var el = $("#hSync");
   if (el) {
     el.classList.toggle("off", !on);
-    el.innerHTML = on ? "<i aria-hidden=\"true\"></i>SYNCED" : "<i aria-hidden=\"true\"></i>OFFLINE";
+    el.innerHTML = on ? "<i aria-hidden=\"true\"></i>LIVE" : "<i aria-hidden=\"true\"></i>OFFLINE";
   }
 }
 
@@ -712,7 +733,7 @@ function renderNowPlaying() {
   if (art) { art.src = m.icon || "/os/icons/music.jpg"; art.alt = m.name; }
   if (title) title.textContent = m.name;
   if (artist) artist.textContent = "Tap ▶ to open";
-  if (live) live.textContent = "SWITCH ▾";
+  if (live) { live.textContent = "SWITCH ▾"; live.setAttribute("aria-label", "Choose music app"); }
 }
 function setMediaKey(k, open) {
   if (!MEDIA[k]) return;
@@ -1757,7 +1778,7 @@ function updateStamps() {
   var sync = $("#hSync");
   if (sync) {
     if (navigator.onLine === false) sync.innerHTML = '<i aria-hidden="true"></i>OFFLINE';
-    else sync.innerHTML = '<i aria-hidden="true"></i>SYNCED';
+    else sync.innerHTML = '<i aria-hidden="true"></i>LIVE';
     sync.title = last ? ("Last live update " + short12(last)) : "Waiting for live data";
   }
   if (GPS) sh($("#hGps"), GPS.at, "GPS "); else { var g = $("#hGps"); if (g) g.textContent = GEO_OFF ? "GPS OFF" : "GPS --"; }
@@ -2253,7 +2274,8 @@ function openMapsExternal() {
   openApp({ id: "maps", mapsHere: true, ll: ll, q: q, name: "Maps" });
 }
 function openMapsHere() {
-  // v4.4.1: in-page large map — never navigate the standalone PWA away
+  // v4.4.1/v4.5: in-page large map — never navigate the standalone PWA away
+  if (document.documentElement.classList.contains("map-fs-open")) { closeMapOverlay(); return; }
   openMapOverlay();
 }
 var mapOpen = $("#mapOpen"); if (mapOpen) mapOpen.addEventListener("click", function (e) { e.preventDefault(); e.stopPropagation(); openMapsHere(); });
@@ -2841,7 +2863,7 @@ function openMenu() {
     "<h3>APPS</h3>" + row("▦", "Edit apps", "Add, remove, show, hide or reorder apps", "apps") +
     "<h3>WEATHER</h3>" + row("☁", "Weather location", LOC.mode === "city" ? "City: " + esc(LOC.name) : "Using my location", "city") +
     "<h3>MARKETS</h3>" + row("₿", "Edit watchlist", COINS.map(function (c) { return esc(c.sym); }).join(" · ") || "Empty", "coins") +
-    "<h3>SETTINGS</h3>" + row("⚙", "Settings", "Name, units, Lite mode, tilt, sounds", "settings") +
+    "<h3>SETTINGS</h3>" + row("⚙", "Settings", "Name, units, Lite mode, card tilt", "settings") +
     row("↻", "Check for updates", "Now running v" + VERSION, "update") +
     "<h3>HELP</h3>" + row("?", "Add to Home Screen", "3 steps to open it like a real app", "help") +
     '<p class="note" style="margin-top:12px">ZAPWISE//OS v' + VERSION + " · Everything you change is saved on this device only.</p>",
@@ -3620,7 +3642,7 @@ function settingsHtml(sndOn, liteOn, tiltOn, motionOn) {
     '<div class="field">CARD TILT</div><div class="seg" id="stTilt"><button type="button" data-v="0">OFF</button><button type="button" data-v="1">ON</button></div>' +
     '<div class="field">MOTION TILT (iOS NEEDS TAP)</div><div class="seg" id="stMotion"><button type="button" data-v="0">OFF</button><button type="button" data-v="1">ENABLE</button></div>' +
     '<p class="note">Motion tilt asks for permission only when you tap Enable — never auto-prompted.</p>' +
-    '<div class="field">ASSISTANT</div><p class="note">On-device commands for weather, net worth, places, and apps. Smart mode uses Pollinations. Optional private WebLLM on-device.</p>' +
+    '<div class="field">ASSISTANT</div><p class="note">Mic opens on-device commands (weather, directions, apps, theme). No cloud account required.</p>' +
     '<button class="btn" id="stSave" type="button">SAVE</button>' +
     '<h3>UPDATES</h3><button class="btn" id="stUpdate" type="button">Check for updates</button>' +
     '<p class="note">Running v' + VERSION + '. Themes: tap THEME in the top bar.</p>' +
@@ -4062,8 +4084,10 @@ function placeNeonRing(v, dx, dy) {
     var day = todayKey(), last = "";
     try { last = Store.getLocal("bootDay", "") || ""; } catch (e) {}
     var sess = false; try { sess = sessionStorage.getItem("zapos.skipBoot") === day; } catch (e) {}
-    // Daily boot only (first open each calendar day). Skippable. Cap ~1.4s.
-    if (RM || last === day || sess || !fx3dWanted()) { finishBoot(); }
+    // v4.5: skip splash in standalone / after first day / Lite / Reduce Motion.
+    var standalone = false;
+    try { standalone = window.navigator.standalone === true || (window.matchMedia && matchMedia("(display-mode: standalone)").matches); } catch (eS) {}
+    if (RM || last === day || sess || standalone || !fx3dWanted()) { finishBoot(); }
     else {
       boot.setAttribute("aria-hidden", "false");
       var nm = ((S && S.name) || "").trim() || "operator";
@@ -4368,6 +4392,7 @@ function zapAppend(role, text, action) {
 }
 function renderZapChips() {
   var host = $("#zapChips"); if (!host) return;
+  host.hidden = true; host.innerHTML = ""; return; /* v4.5: no prompt tiles */
   var chips = [
     { t: "Net worth?", q: "net worth" },
     { t: "Weather", q: "weather" },
@@ -4570,6 +4595,8 @@ var HELP_TEXT = "Commands (on-device): call <favorite>, directions to <place>, a
 
 function refreshZapAiBar() {
   var bar = $("#zapAiBar"); if (!bar) return;
+  /* v4.5: keep AI upsell tiles hidden — mic + on-device commands only */
+  bar.hidden = true; bar.setAttribute("aria-hidden", "true"); return;
   bar.hidden = false;
   var st = $("#zapAiStatus"), btn = $("#zapAiBtn"), del = $("#zapAiDel"), prog = $("#zapAiProg"), note = $("#zapAiNote");
   var a = loadAssistantPrefs();
@@ -4850,5 +4877,5 @@ try {
   window.ZAPOS.dismissOverlay = function () { dismissTopOverlay(false); };
   window.ZAPOS.routeZap = routeZapIntent;
 } catch (e) {}
-if (!Store.getLocal("seenHelp", false) && !(window.navigator.standalone === true)) { Store.setLocal("seenHelp", true); setTimeout(function () { toast("Tip: MENU → Help shows how to add this to your Home Screen"); }, 1500); }
+if (!Store.getLocal("seenHelp", false)) { var _sa = false; try { _sa = window.navigator.standalone === true || (window.matchMedia && matchMedia("(display-mode: standalone)").matches); } catch (eTip) {} if (!_sa) { Store.setLocal("seenHelp", true); setTimeout(function () { toast("Add to Home Screen: MENU → Help"); }, 1800); } else { Store.setLocal("seenHelp", true); } }
 })();

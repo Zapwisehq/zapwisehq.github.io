@@ -7,15 +7,15 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="description" content="ZAPWISE//OS: calm glass HUD — clock, weather, map, markets, focus, apps.">
 <meta name="theme-color" content="#070814">
-<meta name="zapos-version" content="4.4.1">
+<meta name="zapos-version" content="4.5.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="/os/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/os/icon-180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/os/icon-192.png">
-<link rel="stylesheet" href="/os/app.css?v=4.4.1">
+<link rel="stylesheet" href="/os/app.css?v=4.5.0">
 <script>
-(function(){try{var l=localStorage.getItem("zapos.device");if(l){var j=JSON.parse(l);if(j&&j.liteMode)document.documentElement.classList.add("fx-lite");}}catch(e){}
+(function(){try{var raw=localStorage.getItem("zapos.device");var j=raw?JSON.parse(raw):{};if(!j||typeof j!=="object")j={};if(!Object.prototype.hasOwnProperty.call(j,"liteMode")){var m=false;try{m=(window.matchMedia&&(matchMedia("(pointer: coarse)").matches||matchMedia("(max-width: 900px)").matches))||/iPhone|iPad|iPod|Android/i.test(navigator.userAgent||"")||navigator.standalone===true;}catch(e0){}if(m){j.liteMode=true;localStorage.setItem("zapos.device",JSON.stringify(j));}}if(j.liteMode)document.documentElement.classList.add("fx-lite");}catch(e){}
 try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.themeCss){var s=document.createElement("style");s.id="themeBoot";s.textContent=p.themeCss;document.head.appendChild(s);}}}catch(e){}})();
 </script>
 </head>
@@ -29,9 +29,9 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
 <div id="app">
 
  <header class="top sticky" id="top">
-  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver">v4.4.1</span></div>
+  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver">v4.5.0</span></div>
   <div class="top-r">
-   <span class="sync" id="hSync"><i aria-hidden="true"></i>SYNCED</span>
+   <span class="sync" id="hSync"><i aria-hidden="true"></i>LIVE</span>
    <span class="hud-chip gps" id="hGpsLock" data-lock="0" hidden><i aria-hidden="true"></i>GPS —</span>
    <span class="hud-chip bat" id="hBat" hidden title="Battery"><span class="bat-meter" id="hBatMeter" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span><span id="hBatPct"></span></span>
    <button class="h-theme" data-theme-btn aria-label="Change theme" title="Change theme"><i aria-hidden="true"></i>THEME</button>
@@ -143,10 +143,7 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
     <div class="mk-h">MARKETS<span class="mk-t" id="hMkT">Updated --</span></div>
     <div class="mk-items" id="hMkList"><span class="dim">Markets loading…</span></div>
     <div class="mk-port" id="hMkPort" hidden></div>
-    <div class="hmk-body" id="hMkBody" hidden>
-     <div class="hmk-quotes" id="hMkQuotes"></div>
-    </div>
-   </button>
+       </button>
    <button class="card br focus-card" id="mFocus" type="button" aria-label="Focus timer: tap to start or pause">
     <div class="mk-h">FOCUS</div>
     <div class="foc-wrap">
@@ -226,7 +223,7 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
    <div id="wxSun"></div><div id="wxStamp"></div><div id="wxHours"></div><div id="wxDays"></div><div id="wxNote"></div>
    <div id="mkList"></div><div id="mkStamp"></div><div id="editMkBtn"></div><div id="cityBtn"></div>
    <div id="hSunset"></div><div id="hWind"></div><div id="hStatus"></div>
-   <div id="v-home"></div><div id="hMkAct"></div><button id="findApp" type="button" hidden></button>
+   <div id="v-home"></div><div id="hMkAct"></div><button id="findApp" type="button" hidden aria-label="Find an app" tabindex="-1"></button>
    <span id="srchHint" hidden></span><div id="skyline"></div><div id="skyWx"></div>
    <div id="hudStatus"></div>
   </div>
@@ -252,13 +249,13 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
   <button type="button" class="chip" id="zapClose" aria-label="Close">✕</button>
  </div>
  <div class="zap-log" id="zapLog" aria-live="polite"></div>
- <div class="zap-chips" id="zapChips"></div>
+ <div class="zap-chips" id="zapChips" hidden></div>
  <form class="zap-form" id="zapForm" autocomplete="off">
   <button type="button" class="zap-mic" id="zapMic" aria-label="Speak">🎤</button>
   <input id="zapIn" type="text" enterkeyhint="send" placeholder="Ask… call, directions, theme, search…" aria-label="Message Assistant" maxlength="240">
   <button type="submit" class="zap-send" aria-label="Send">GO</button>
  </form>
- <div class="zap-ai" id="zapAiBar" hidden>
+ <div class="zap-ai" id="zapAiBar" hidden aria-hidden="true">
   <div class="zap-smart" id="zapSmartRow">
    <label class="zap-smart-lab"><input type="checkbox" id="zapSmart" checked> Smart mode</label>
    <small class="zap-smart-note" id="zapSmartNote">Free-form via Pollinations. Actions stay on-device.</small>
@@ -275,8 +272,8 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/os/catalog.js?v=4.4.1"></script>
-<script src="/os/sky.js?v=4.4.1"></script>
-<script src="/os/app.js?v=4.4.1"></script>
+<script src="/os/catalog.js?v=4.5.0"></script>
+<script src="/os/sky.js?v=4.5.0"></script>
+<script src="/os/app.js?v=4.5.0"></script>
 </body>
 </html>

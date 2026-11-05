@@ -1,6 +1,6 @@
 {
-  "version": "4.4.1",
+  "version": "4.5.0",
   "released": "2026-11-05",
   "name": "ZAPWISE//OS",
-  "notes": "Weather sky behind hours; music main opens app; map OPEN in-page overlay (no PWA reload); markets no duplicate; follow badge on map; one Find-an-app search; search focus safe + 16px"
+  "notes": "CEO polish: 44px taps, LIVE status, Lite default on phones, skip standalone boot, no AI upsell tiles, copy cleanup, ghost DOM removed"
 }
