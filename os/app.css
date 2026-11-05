@@ -192,8 +192,8 @@ html.light .map-tiles{filter:none}
 .dim{color:var(--dim)}
 
 /* Sheet / toast / dial (Phase 0/1) */
-.scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:80;backdrop-filter:blur(2px)}
-.sheet{position:fixed;left:50%;transform:translateX(-50%);bottom:0;z-index:90;width:min(560px,100%);max-height:min(88dvh,720px);overflow:auto;border-radius:22px 22px 0 0;border:1px solid var(--line2);border-bottom:0;background:var(--panel2);padding:max(14px,env(safe-area-inset-top)) 14px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -20px 60px rgba(0,0,0,.5)}
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:80;backdrop-filter:none;-webkit-backdrop-filter:none}
+.sheet{position:fixed;left:0;right:0;margin:0 auto;bottom:0;top:max(env(safe-area-inset-top),12px);z-index:90;width:min(560px,100%);max-height:none;overflow:auto;border-radius:22px 22px 0 0;border:1px solid var(--line2);border-bottom:0;background:#0b0f1e;padding:14px 14px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -20px 60px rgba(0,0,0,.5);transform:none;backdrop-filter:none;-webkit-backdrop-filter:none;filter:none;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;color:#f4efe4}
 .sheet-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
 .sheet-h b{font-size:13px;letter-spacing:.14em}
 .sheet-b{display:flex;flex-direction:column;gap:8px}
@@ -203,7 +203,7 @@ html.light .map-tiles{filter:none}
 .sheet .opt .ic img{width:100%;height:100%;object-fit:cover}
 .sheet label{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--muted)}
 .sheet input,.sheet select,.sheet textarea{width:100%;padding:12px;border-radius:12px;border:1px solid var(--line);background:rgba(0,0,0,.25);color:var(--ink)}
-.toast{position:fixed;left:50%;transform:translateX(-50%) translateY(20px);bottom:calc(var(--browser-gap, 0px) + 20px + env(safe-area-inset-bottom));z-index:100;padding:10px 16px;border-radius:999px;background:rgba(17,20,36,.92);border:1px solid var(--line2);color:var(--ink);font-size:13px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:min(420px,calc(100% - 24px));text-align:center}
+.toast{position:fixed;left:12px;right:12px;margin:0 auto;bottom:calc(var(--browser-gap, 0px) + 20px + env(safe-area-inset-bottom));z-index:100;padding:10px 16px;border-radius:999px;background:#0b0f1e;border:1px solid var(--line2);color:#f4efe4;font-size:13px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s;max-width:min(420px,calc(100% - 24px));text-align:center;transform:none;backdrop-filter:none;-webkit-backdrop-filter:none;filter:none;width:fit-content}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
 .dial{display:flex;flex-direction:column;gap:12px}
@@ -245,7 +245,7 @@ html.light .hw-in{background:linear-gradient(180deg,rgba(255,255,255,.2),rgba(24
 
 /* ---- Sheet / edit / dial / toast / icons (Phase 0–1 sheets) ---- */
 :root{--green:#3ddc97;--red:#ff5c7a;--on:#070814;--cream:var(--ink);--void:var(--bg);--void-rgb:7,8,20;--panel-rgb:17,20,36;--panel2-rgb:12,14,26;--cyan-rgb:92,225,230;--amber-rgb:240,162,2;--sab:env(safe-area-inset-bottom)}
-.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.on{opacity:1;transform:none}
 .ico{width:58px;height:58px;border-radius:15px;display:grid;place-items:center;box-shadow:0 2px 10px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.14);position:relative;overflow:hidden}
 .ico svg{width:34px;height:34px}
 .ico.img{background:#111}.ico img{width:100%;height:100%;display:block;object-fit:cover}
@@ -675,7 +675,7 @@ html,body{overscroll-behavior-y:none;overscroll-behavior:none;-webkit-overflow-s
 .asst-dock > *{pointer-events:auto}
 .zap-fab.asst-mic{width:48px;height:48px;border-radius:50%;border:1px solid rgba(92,225,230,.5);background:rgba(8,12,28,.88);color:var(--cyan);display:grid;place-items:center;box-shadow:0 8px 24px rgba(0,0,0,.45),0 0 14px rgba(92,225,230,.25);cursor:pointer;padding:0}
 .zap-hint{display:none!important}
-.zap-sheet{position:fixed;left:0;right:0;bottom:0;z-index:86;max-height:min(78vh,640px);display:flex;flex-direction:column;background:rgba(8,10,22,.96);border-top:1px solid rgba(92,225,230,.35);border-radius:18px 18px 0 0;box-shadow:0 -12px 40px rgba(0,0,0,.5);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.zap-sheet{position:fixed;left:0;right:0;bottom:0;top:max(env(safe-area-inset-top),12px);z-index:94;max-height:none;display:flex;flex-direction:column;background:#0b0f1e;border-top:1px solid rgba(92,225,230,.35);border-radius:18px 18px 0 0;box-shadow:0 -12px 40px rgba(0,0,0,.5);backdrop-filter:none;-webkit-backdrop-filter:none;filter:none;transform:none;padding-bottom:env(safe-area-inset-bottom,0px);color:#f4efe4;overflow:hidden}
 .zap-sheet[hidden]{display:none!important}
 .zap-h{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line)}
 .zap-log{flex:1;overflow:auto;padding:12px 14px;display:flex;flex-direction:column;gap:8px;min-height:120px}
@@ -683,9 +683,9 @@ html,body{overscroll-behavior-y:none;overscroll-behavior:none;-webkit-overflow-s
 .zap-form input{flex:1;min-height:44px;border-radius:12px;border:1px solid var(--line);background:rgba(0,0,0,.25);color:var(--ink);padding:0 12px}
 .zap-mic,.zap-send{min-height:44px;min-width:44px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--ink);font-weight:800;cursor:pointer}
 .zap-chips{display:flex;flex-wrap:wrap;gap:6px;padding:0 14px 8px}
-.scrim{position:fixed;inset:0;width:100dvw;min-height:100dvh;background:rgba(0,0,0,.55);z-index:80;backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);touch-action:none}
+.scrim{position:fixed;inset:0;width:100dvw;min-height:100dvh;background:rgba(0,0,0,.45);z-index:80;backdrop-filter:none;-webkit-backdrop-filter:none;filter:none;touch-action:none}
 .scrim[hidden]{display:none!important}
-.scrim.zap-open{z-index:84}
+.scrim.zap-open{z-index:80}
 .sheet{z-index:90;touch-action:pan-y}
 .sheet:not([hidden]){z-index:90}
 /* Places / accounts / map card */
@@ -770,30 +770,37 @@ button:focus-visible,a:focus-visible,input:focus-visible,.chip:focus-visible,.ti
 }
 
 /* v4.5 map overlay chrome above tiles */
-.h-map.map-fs .map-h{position:relative;z-index:12;background:rgba(7,8,20,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.h-map.map-fs .map-h{position:relative;z-index:12;background:#0b0f1e;backdrop-filter:none;-webkit-backdrop-filter:none;filter:none}
 .h-map.map-fs #mapOpen{display:none}
 .h-map.map-fs .map-fs-close,.h-map.map-fs .map-fs-ext{min-height:44px;min-width:72px;z-index:13;position:relative}
 .h-map.map-fs .map-tools{z-index:12;bottom:max(12px,env(safe-area-inset-bottom))}
 .h-map.map-fs .map-v{position:relative;z-index:1}
 
 
-/* ===== v4.6.0 card detail sheets (weather / markets) ===== */
+/* ===== v4.6.2 card detail sheets — crisp opaque fixed viewport panels ===== */
 .xp.as-detail{
-  position:fixed;left:50%;bottom:0;transform:translateX(-50%);
-  z-index:92;width:min(560px,100%);max-height:min(88dvh,760px);
-  margin:0;padding:12px 14px calc(18px + env(safe-area-inset-bottom));
+  position:fixed;left:0;right:0;margin:0 auto;
+  top:max(env(safe-area-inset-top),12px);bottom:0;
+  transform:none;filter:none;will-change:auto;
+  z-index:92;width:min(560px,100%);max-height:none;height:auto;
+  padding:12px 14px calc(18px + env(safe-area-inset-bottom));
   border-radius:22px 22px 0 0;border:1px solid var(--line2);border-bottom:0;
-  background:rgba(8,10,22,.97);box-shadow:0 -20px 60px rgba(0,0,0,.55);
-  overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
-  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  background:#0b0f1e;box-shadow:0 -20px 60px rgba(0,0,0,.55);
+  overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;
+  backdrop-filter:none;-webkit-backdrop-filter:none;
+  color:#f4efe4;
 }
-.xp.as-detail .xp-h{position:sticky;top:0;z-index:2;padding:4px 0 10px;margin:0 0 8px;background:rgba(8,10,22,.96);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.xp.as-detail .xp-h b{flex:1;min-width:0}
-.xp.as-detail .detail-close{margin-left:auto}
+.xp.as-detail .xp-h{position:sticky;top:0;z-index:2;padding:4px 0 10px;margin:0 0 8px;background:#0b0f1e;display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:#f4efe4}
+.xp.as-detail .xp-h b{flex:1;min-width:0;color:#f4efe4}
+.xp.as-detail .detail-close{margin-left:auto;color:#5ce1e6}
 .xp.as-detail .wx-temp-chart,.xp.as-detail .wx-precip-chart,.xp.as-detail .hold-chart{max-width:100%;height:auto}
 .xp.as-detail .wx-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-html.detail-open,html.detail-open body{overflow:hidden}
-#scrim:not([hidden]){z-index:88}
+.xp.as-detail, .xp.as-detail *{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+html.detail-open,html.detail-open body,
+html.sheet-open,html.sheet-open body,
+html.map-fs-open,html.map-fs-open body{overflow:hidden;overscroll-behavior:none}
+body.sheet-open{position:fixed;left:0;right:0;width:100%;overflow:hidden}
+#scrim:not([hidden]){z-index:80}
 
 
 /* ===== v4.6.1: never-blank + tap shield + dark map unload ===== */
@@ -802,3 +809,43 @@ html.detail-open,html.detail-open body{overflow:hidden}
 .card{opacity:1;transform:none}
 html.standalone body,html.standalone{overscroll-behavior-y:none}
 .map-tiles img.map-tile:not(.on){opacity:0}
+
+
+/* ===== v4.6.2: force crisp overlays (no blur bleed, full-contrast text) ===== */
+.h-map.map-fs .map-tool,.h-map.map-fs .map-place-card,.h-map.map-fs .map-follow-badge{
+  backdrop-filter:none!important;-webkit-backdrop-filter:none!important;filter:none!important;
+  background:#0b0f1e!important;
+}
+.h-map.map-fs,.h-map.map-fs *{
+  /* keep map tile filters (dark theme invert) — only kill backdrop on chrome */
+}
+.h-map.map-fs .map-h,.h-map.map-fs .map-tools,.h-map.map-fs .map-tool{
+  backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
+}
+
+.sheet,.zap-sheet,.xp.as-detail,.h-map.map-fs,.toast{
+  backdrop-filter:none!important;-webkit-backdrop-filter:none!important;filter:none!important;
+}
+.sheet:not([hidden]),.zap-sheet:not([hidden]),.xp.as-detail{
+  background:#0b0f1e!important;color:#f4efe4;
+}
+.sheet .sheet-h,.zap-sheet .zap-h,.xp.as-detail .xp-h{
+  background:#0b0f1e!important;color:#f4efe4;position:sticky;top:0;z-index:3;
+}
+.sheet .sheet-h b,.zap-h b,.xp.as-detail .xp-h b{color:#f4efe4}
+.sheet .chip,.zap-sheet .chip,.xp.as-detail .chip,
+.sheet .btn,.xp.as-detail .btn,.detail-close{color:#5ce1e6}
+.scrim,.scrim:not([hidden]){
+  backdrop-filter:none!important;-webkit-backdrop-filter:none!important;filter:none!important;
+  background:rgba(0,0,0,.45)!important;
+}
+.h-map.map-fs{background:#070814!important;filter:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+.sheet .sheet-h{display:flex;align-items:center;gap:8px;padding-bottom:10px;margin-bottom:8px}
+
+/* v4.6.2 stacking: sheets always above scrim */
+.scrim,.scrim:not([hidden]),.scrim.zap-open{z-index:80!important}
+.sheet:not([hidden]),.sheet{z-index:90!important}
+.xp.as-detail{z-index:92!important}
+.zap-sheet:not([hidden]),.zap-sheet{z-index:94!important}
+.h-map.map-fs{z-index:96!important}
+.toast.on,.toast{z-index:100!important}

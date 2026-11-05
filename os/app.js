@@ -1,7 +1,7 @@
-/* ZAPWISE//OS web app v4.6.1 (Nov 5, 2026). Cards always visible; pull-overscroll safe; first-tap sheets; map OPEN only; dark tiles; app cats. No sound, no tabs. */
+/* ZAPWISE//OS web app v4.6.2 (Nov 5, 2026). Crisp opaque fixed sheets in-viewport; no backdrop blur; iOS scroll lock. No sound, no tabs. */
 (function () {
 "use strict";
-var VERSION = "4.6.1";
+var VERSION = "4.6.2";
 var APP_VERSION = VERSION;
 
 // v4.5: default Lite on coarse/mobile unless user already chose
@@ -284,7 +284,15 @@ function pad2(n) { return (n < 10 ? "0" : "") + n; }
 function t12(d) { var h = d.getHours(); return (h % 12 || 12) + ":" + pad2(d.getMinutes()) + (h < 12 ? "A" : "P"); }
 function isoT12(iso) { var h = +iso.slice(11, 13), m = iso.slice(14, 16); return (h % 12 || 12) + ":" + m + (h < 12 ? "A" : "P"); }
 function isoH(iso) { var h = +iso.slice(11, 13); return (h % 12 || 12) + (h < 12 ? "A" : "P"); }
-function toast(msg) { var t = $("#toast"); t.textContent = msg; t.classList.add("on"); clearTimeout(toast.k); toast.k = setTimeout(function () { t.classList.remove("on"); }, 2600); }
+function toast(msg) {
+  var t = $("#toast"); if (!t) return;
+  try { portalToBody(t); } catch (eP) {}
+  t.textContent = msg;
+  t.classList.add("on");
+  try { t.style.backdropFilter = "none"; t.style.webkitBackdropFilter = "none"; t.style.filter = "none"; } catch (e) {}
+  clearTimeout(toast.k);
+  toast.k = setTimeout(function () { t.classList.remove("on"); }, 2600);
+}
 
 // ========== 4. apps: data + migration ==========
 // glyphs (original, simple shapes) for custom apps that have no icon
@@ -2258,12 +2266,17 @@ function closeMapOverlay() {
   var ext = $("#mapFsExt"); if (ext) ext.hidden = true;
   MAP._key = null;
   try { renderMap(true); } catch (e) {}
+  try { portalHome(card); } catch (eP) {}
+  try { unlockPageScroll(); } catch (eU) {}
   try { armTapShield(450); } catch (e2) {}
 }
 function openMapOverlay() {
   var card = $("#hMap"); if (!card) return;
+  try { portalToBody(card); } catch (eP) {}
   card.classList.add("map-fs");
   document.documentElement.classList.add("map-fs-open");
+  lockPageScroll();
+  crispifyOverlay(card);
   var head = card.querySelector(".map-h-r");
   var xb = $("#mapFsClose");
   if (!xb && head) {
@@ -2502,7 +2515,7 @@ function bindPlaceCardSwipe(el) {
   el.addEventListener("touchmove", function (e) {
     if (!active || !e.touches || !e.touches.length) return;
     var dy = e.touches[0].clientY - y0;
-    if (dy > 0) el.style.transform = "translateY(" + Math.min(dy, 160) + "px)";
+    if (dy > 0) el.style.transform = "translateY(" + Math.round(Math.min(dy, 160)) + "px)";
   }, { passive: true });
   el.addEventListener("touchend", function (e) {
     if (!active) return; active = false;
@@ -2735,6 +2748,79 @@ $("#hWx").addEventListener("click", function (e) {
   var act = $("#hMkAct");
   if (act) act.addEventListener("click", openAdd);
 })();
+
+/* ===== v4.6.2: iOS-safe scroll lock + portal sheets into body ===== */
+var SCROLL_LOCK = { y: 0, locked: false };
+function lockPageScroll() {
+  if (SCROLL_LOCK.locked) return;
+  SCROLL_LOCK.y = window.scrollY || document.documentElement.scrollTop || 0;
+  SCROLL_LOCK.locked = true;
+  try {
+    document.documentElement.classList.add("sheet-open");
+    document.body.classList.add("sheet-open");
+    document.body.style.position = "fixed";
+    document.body.style.top = "-" + SCROLL_LOCK.y + "px";
+    document.body.style.left = "0";
+    document.body.style.right = "0";
+    document.body.style.width = "100%";
+    document.body.style.overflow = "hidden";
+  } catch (e) {}
+}
+function unlockPageScroll() {
+  if (!SCROLL_LOCK.locked) return;
+  if (anyOverlayOpen()) return; /* keep locked while another overlay still up */
+  SCROLL_LOCK.locked = false;
+  var y = SCROLL_LOCK.y || 0;
+  try {
+    document.documentElement.classList.remove("sheet-open");
+    document.body.classList.remove("sheet-open");
+    document.body.style.position = "";
+    document.body.style.top = "";
+    document.body.style.left = "";
+    document.body.style.right = "";
+    document.body.style.width = "";
+    document.body.style.overflow = "";
+  } catch (e) {}
+  try { window.scrollTo(0, y); } catch (e2) {}
+}
+function portalToBody(el) {
+  if (!el || !el.parentNode) return;
+  if (el.parentNode === document.body) return;
+  if (!el._zapHome) {
+    el._zapHome = { parent: el.parentNode, next: el.nextSibling };
+  }
+  try { document.body.appendChild(el); } catch (e) {}
+}
+function portalHome(el) {
+  if (!el || !el._zapHome) return;
+  var h = el._zapHome;
+  try {
+    if (h.next && h.next.parentNode === h.parent) h.parent.insertBefore(el, h.next);
+    else h.parent.appendChild(el);
+  } catch (e) {
+    try { h.parent.appendChild(el); } catch (e2) {}
+  }
+}
+function crispifyOverlay(el) {
+  if (!el) return;
+  try {
+    el.style.backdropFilter = "none";
+    el.style.webkitBackdropFilter = "none";
+    el.style.filter = "none";
+    el.style.transform = "none";
+    el.style.willChange = "auto";
+  } catch (e) {}
+  try {
+    el.querySelectorAll("*").forEach(function (n) {
+      var st = n.style; if (!st) return;
+      /* do not wipe intentional inline transforms on map pins etc inside overlays that need them —
+         only strip backdrop filters that blur text */
+      if (st.backdropFilter) st.backdropFilter = "none";
+      if (st.webkitBackdropFilter) st.webkitBackdropFilter = "none";
+    });
+  } catch (e2) {}
+}
+
 /* v4.6: card detail sheets — restore v3.7.1 expand content in a slide-up sheet */
 var CARD_DETAIL = { kind: null, scrollY: 0 };
 function detailPanel(k) { return $(k === "wx" ? "#xpWx" : "#xpMk"); }
@@ -2753,16 +2839,15 @@ function closeCardDetail(skipHist) {
     el.classList.remove("as-detail");
     try { document.documentElement.classList.remove("detail-open"); } catch (eD2) {}
     el.style.transform = "";
+    el.style.top = ""; el.style.bottom = ""; el.style.left = ""; el.style.right = "";
     try { el.removeAttribute("role"); } catch (e0) {}
+    try { portalHome(el); } catch (eP) {}
   }
   if (btn) btn.setAttribute("aria-expanded", "false");
   CARD_DETAIL.kind = null;
   hideScrimIfIdle();
   if (!skipHist && !anyOverlayOpen()) overlayClearHistory();
-  try {
-    var y = CARD_DETAIL.scrollY || 0;
-    requestAnimationFrame(function () { try { window.scrollTo(0, y); } catch (e1) {} });
-  } catch (e2) {}
+  try { unlockPageScroll(); } catch (eU) {}
   try { armTapShield(450); } catch (e3) {}
 }
 function openCardDetail(k) {
@@ -2779,25 +2864,29 @@ function openCardDetail(k) {
   CARD_DETAIL.kind = k;
   CARD_DETAIL.scrollY = window.scrollY || document.documentElement.scrollTop || 0;
   try { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch (eB) {}
-  el.hidden = false;
-  el.classList.add("as-detail");
-  try { document.documentElement.classList.add("detail-open"); } catch (eD) {}
-  el.setAttribute("role", "dialog");
-  el.setAttribute("aria-modal", "true");
-  if (btn) btn.setAttribute("aria-expanded", "true");
   try { closeZapAssistant(true); } catch (eZ) {}
   try { closeSheet(true); } catch (eS) {}
   try { hideMapPlaceCard(); } catch (eM) {}
   try { if (document.documentElement.classList.contains("map-fs-open")) closeMapOverlay(); } catch (eMo) {}
+  try { portalToBody(el); } catch (ePort) {}
+  el.hidden = false;
+  el.classList.add("as-detail");
+  crispifyOverlay(el);
+  try { document.documentElement.classList.add("detail-open"); } catch (eD) {}
+  el.setAttribute("role", "dialog");
+  el.setAttribute("aria-modal", "true");
+  if (btn) btn.setAttribute("aria-expanded", "true");
+  lockPageScroll();
   showScrim("detail");
   overlayPushHistory();
-  /* paint then render so canvas has size — do NOT scrollIntoView (first-tap jump) */
+  /* paint then render so canvas has size — sheet is fixed in viewport; scrollTop 0 shows header+CLOSE */
   requestAnimationFrame(function () {
+    try { el.scrollTop = 0; } catch (eT) {}
     try {
       if (k === "wx") { renderWeather(); renderConditions(); }
       else { renderMarkets(); try { renderHoldings(); } catch (eH) {} try { renderAccounts(); } catch (eA) {} }
     } catch (eR) {}
-    try { el.scrollTop = 0; } catch (eT) {}
+    try { el.scrollTop = 0; } catch (eT2) {}
   });
 }
 function toggleXp(k) {
@@ -2905,8 +2994,14 @@ function anyOverlayOpen() {
 }
 function showScrim(kind) {
   var sc = $("#scrim"); if (!sc) return;
+  try { portalToBody(sc); } catch (eP) {}
   sc.hidden = false;
   sc.classList.toggle("zap-open", kind === "zap");
+  try {
+    sc.style.backdropFilter = "none";
+    sc.style.webkitBackdropFilter = "none";
+    sc.style.filter = "none";
+  } catch (e) {}
 }
 function hideScrimIfIdle() {
   var sc = $("#scrim"); if (!sc) return;
@@ -2953,15 +3048,25 @@ function sheet(title, html, bind) {
   // [data-m] handler used to close Edit Apps when you tapped ↑/↓/toggle, which also use data-m)
   try { closeCardDetail(true); } catch (eCd) {}
   var old = $("#sheetBody"), nb = old.cloneNode(false); old.parentNode.replaceChild(nb, old);
-  $("#sheetTitle").textContent = title; nb.innerHTML = html; $("#sheet").hidden = false;
+  var sh = $("#sheet");
+  $("#sheetTitle").textContent = title; nb.innerHTML = html;
+  if (sh) {
+    try { portalToBody(sh); } catch (eP) {}
+    sh.hidden = false;
+    sh.scrollTop = 0;
+    crispifyOverlay(sh);
+  }
+  lockPageScroll();
   showScrim("sheet");
   overlayPushHistory();
   if (bind) bind($("#sheetBody"));
+  try { if (sh) sh.scrollTop = 0; } catch (eS) {}
 }
 function closeSheet(skipHist) {
   var sh = $("#sheet"); if (sh) { sh.hidden = true; try { sh.classList.remove("finder-sheet"); sh.style.transform = ""; } catch (e) {} }
   hideScrimIfIdle();
   if (!skipHist && !anyOverlayOpen()) overlayClearHistory();
+  try { unlockPageScroll(); } catch (eU) {}
   try { armTapShield(450); } catch (e2) {}
 }
 $("#sheetClose").addEventListener("click", function () { dismissTopOverlay(false); });
@@ -3009,7 +3114,7 @@ window.addEventListener("popstate", function () {
     el.addEventListener("touchmove", function (e) {
       if (!active || !e.touches || !e.touches.length) return;
       var dy = e.touches[0].clientY - y0;
-      if (dy > 0) el.style.transform = "translateY(" + Math.min(dy, 220) + "px)";
+      if (dy > 0) el.style.transform = "translateY(" + Math.round(Math.min(dy, 220)) + "px)";
     }, { passive: true });
     el.addEventListener("touchend", function (e) {
       if (!active) return; active = false;
@@ -4574,8 +4679,12 @@ function hasSpeechIn() {
 }
 function openZapAssistant() {
   var sheet = $("#zapSheet"); if (!sheet) return;
+  try { portalToBody(sheet); } catch (eP) {}
   sheet.hidden = false;
   sheet.style.transform = "";
+  sheet.scrollTop = 0;
+  crispifyOverlay(sheet);
+  lockPageScroll();
   showScrim("zap");
   overlayPushHistory();
   try { updateZapBadge(); renderZapChips(); refreshZapAiBar(); } catch (e) {}
@@ -4587,6 +4696,7 @@ function closeZapAssistant(skipHist) {
   try { stopZapListen(); } catch (e) {}
   hideScrimIfIdle();
   if (!skipHist && !anyOverlayOpen()) overlayClearHistory();
+  try { unlockPageScroll(); } catch (eU) {}
 }
 function updateZapBadge() {
   var b = $("#zapBadge"); if (!b) return;

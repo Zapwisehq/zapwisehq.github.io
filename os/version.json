@@ -1,6 +1,6 @@
 {
-  "version": "4.6.1",
+  "version": "4.6.2",
   "released": "2026-11-05",
   "name": "ZAPWISE//OS",
-  "notes": "Never blank: cards visible by default + watchdog; instant paint; first-tap Weather/Markets; map OPEN only; dark map tiles; app category fixes"
+  "notes": "Crisp opaque detail/sheets (no backdrop blur); fixed full-viewport panels; iOS scroll lock so opened UI never needs a page scroll"
 }
