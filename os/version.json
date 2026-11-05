@@ -1,6 +1,6 @@
 {
-  "version": "4.9.3",
+  "version": "4.9.4",
   "built": "2026-11-05",
   "channel": "stable",
-  "notes": "v4.9.3: Actual | Feels Like is now a big slide switch (tap or swipe) \u2014 Actual is the default, chart line (cyan vs violet), H/L, badge and caption all switch, choice is remembered. Sheet headers are solid (nothing shows through). Wallet add sheet: full-width 52px address field, PASTE under it, dark bold text on cyan buttons. ZAP AI mic moved into the header (never covers tiles). Calendar/Notes row moved to the top."
+  "notes": "v4.9.4: Map fixed \u2014 OPEN works in one tap without jumping the page, search any place, tap a pin for a card with GO (Apple Maps on iPhone, Google elsewhere), hold a pin or place to edit, drive times labeled as estimates (no live traffic), clear offline and location-off states, GPS dot stays locked while you pan. Sheets no longer throw the page to the top. ZAP AI has a welcome with one-tap starters. Removed unused 3D settings and files."
 }

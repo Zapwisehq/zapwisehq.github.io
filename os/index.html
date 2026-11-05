@@ -7,13 +7,13 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="description" content="ZAPWISE//OS: calm glass HUD — clock, weather, map, markets, focus, apps.">
 <meta name="theme-color" content="#070814">
-<meta name="zapos-version" content="4.9.3">
+<meta name="zapos-version" content="4.9.4">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="/os/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/os/icon-180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/os/icon-192.png">
-<link rel="stylesheet" href="/os/app.css?v=4.9.3">
+<link rel="stylesheet" href="/os/app.css?v=4.9.4">
 <style>
 @font-face{font-family:"Rajdhani";font-style:normal;font-weight:600;font-display:swap;src:url("/os/fonts/Rajdhani-SemiBold.ttf") format("truetype")}
 @font-face{font-family:"Rajdhani";font-style:normal;font-weight:700;font-display:swap;src:url("/os/fonts/Rajdhani-Bold.ttf") format("truetype")}
@@ -32,7 +32,7 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
 <div id="app">
 
  <header class="top sticky" id="top">
-  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver" data-app-ver>v4.9.3</span></div>
+  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver" data-app-ver>v4.9.4</span></div>
   <div class="top-r">
    <span class="sync" id="hSync"><i aria-hidden="true"></i>LIVE</span>
    <span class="hud-chip gps" id="hGpsLock" data-lock="0" hidden><i aria-hidden="true"></i>GPS —</span>
@@ -162,6 +162,7 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
   </div>
   <div class="places-row card br" id="placesRow">
    <div class="places-h"><b>PLACES</b><button type="button" class="chip" id="placeAdd" aria-label="Add a saved place">＋ ADD</button></div>
+   <small class="places-note">Tap for directions · hold to edit · drive times are estimates (no live traffic)</small>
    <div class="places-scroller" id="placesList" role="list"></div>
   </div>
 
@@ -298,8 +299,8 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/os/catalog.js?v=4.9.3"></script>
-<script src="/os/sky.js?v=4.9.3"></script>
-<script src="/os/app.js?v=4.9.3"></script>
+<script src="/os/catalog.js?v=4.9.4"></script>
+<script src="/os/sky.js?v=4.9.4"></script>
+<script src="/os/app.js?v=4.9.4"></script>
 </body>
 </html>

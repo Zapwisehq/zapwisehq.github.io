@@ -1,11 +1,11 @@
-/* ZAPWISE//OS service worker v4.9.3
+/* ZAPWISE//OS service worker v4.9.4
    - Network-first for navigations + shell (index, app.js/css, catalog, sky, manifest).
    - Cache-first only for icons / images.
    - version.json is NEVER intercepted (always hits network for update checks).
    - skipWaiting on install; clients.claim + delete old caches on activate.
    Live data (weather, markets, cross-origin tiles) is not handled here. */
-const VER = "zapos-v4.9.3";
-const APP_VER = "4.9.3";
+const VER = "zapos-v4.9.4";
+const APP_VER = "4.9.4";
 const SHELL = [
   "/os/",
   "/os/index.html",
@@ -98,7 +98,6 @@ function isShellPath(path) {
   if (path === "/os/" || path === "/os/index.html") return true;
   if (path === "/os/app.js" || path === "/os/app.css") return true;
   if (path === "/os/catalog.js" || path === "/os/sky.js") return true;
-  if (path === "/os/wallpaper.js" || path === "/os/cinematic.js" || path === "/os/cinematic.css") return true;
   if (path === "/os/manifest.webmanifest") return true;
   return false;
 }

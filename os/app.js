@@ -1,7 +1,7 @@
-/* ZAPWISE//OS web app v4.9.3 (Nov 5, 2026). Actual/Feels slide switch, solid sheet headers, readable wallet add sheet, mic in header, Today row on top. Still mode: no wallpaper, no animation loops, no backdrop blur. Weather NOW sheet, rebuilt Focus, battery chip (where the browser allows). No tabs. Voice only from ZAP AI. */
+/* ZAPWISE//OS web app v4.9.4 (Nov 5, 2026). Map: one-tap OPEN (no jump), place search, pin card + GO, hold-to-edit, honest ETAs, offline/denied states; ZAP AI welcome; dead 3D settings removed. Still mode: no wallpaper, no animation loops, no backdrop blur. Weather NOW sheet, rebuilt Focus, battery chip (where the browser allows). No tabs. Voice only from ZAP AI. */
 (function () {
 "use strict";
-var VERSION = "4.9.3";
+var VERSION = "4.9.4";
 var APP_VERSION = VERSION;
 
 // v4.5: default Lite on coarse/mobile unless user already chose
@@ -36,6 +36,7 @@ function fx3dWanted() {
   return true;
 }
 function loadFx3d() {
+  if (!fx3dWanted()) return Promise.resolve(null); /* v4.9.4: still mode — 3D layer removed */
   if (window.ZAPFX3D) return Promise.resolve(window.ZAPFX3D);
   if (_fx3dLoading) return _fx3dLoading;
   _fx3dLoading = new Promise(function (res, rej) {
@@ -52,6 +53,7 @@ function loadFx3d() {
 // ========== v4 cinematic city (lazy, after first paint) ==========
 var _cineLoading = null;
 function loadCinematic() {
+  if (!fx3dWanted()) return Promise.resolve(null);
   if (window.ZAPCINE) return Promise.resolve(window.ZAPCINE);
   if (_cineLoading) return _cineLoading;
   _cineLoading = new Promise(function (res, rej) {
@@ -2249,9 +2251,8 @@ function lonLatToWorld(lon, lat, z) {
   return { x: (lon + 180) / 360 * n * 256, y: (1 - Math.log(Math.tan(la) + 1 / Math.cos(la)) / Math.PI) / 2 * n * 256, n: n };
 }
 function tileUrl(z, x, y) {
-  // OSM standard raster tiles — free, no key. Subdomains a/b/c for parallel fetch.
-  var s = ["a", "b", "c"][(x + y) % 3];
-  return "https://" + s + ".tile.openstreetmap.org/" + z + "/" + x + "/" + y + ".png";
+  // OSM standard raster tiles — free, no key. v4.9.4: single HTTP/2 host (OSM retired a/b/c subdomains).
+  return "https://tile.openstreetmap.org/" + z + "/" + x + "/" + y + ".png";
 }
 function metersToPixels(m, lat, z) {
   // Web Mercator: meters per pixel at equator ~ 156543.03 / 2^z ; adjust by cos(lat)
@@ -2348,6 +2349,9 @@ function renderMap(force) {
   if (!v || !tl) return;
   try { ensureMapNeon(v); } catch (e) {}
   var view = mapViewLL();
+  /* v4.9.4: when the user has panned/searched, keep the view anchored — GPS updates move only the dot */
+  if (MAP.follow || !MAP.anchor) MAP.anchor = { lat: view.lat, lon: view.lon };
+  else view = { lat: MAP.anchor.lat, lon: MAP.anchor.lon, src: view.src };
   var liveGps = !!(GPS && GPS.lat != null);
   if (!liveGps) {
     if ($("#mapDot")) $("#mapDot").hidden = true;
@@ -2369,6 +2373,7 @@ function renderMap(force) {
     if (msg) msg.hidden = true;
     var rad = v.querySelector(".map-radar"); if (rad) rad.style.opacity = "1";
   }
+  if (msg && navigator.onLine === false) { msg.hidden = false; msg.textContent = "OFFLINE · MAP WILL REFRESH WHEN BACK ONLINE"; }
 
   var map3dLive = false;
   try { map3dLive = !!(window.ZAPFX3D && window.ZAPFX3D.mapReady()); } catch (e) {}
@@ -2409,7 +2414,15 @@ function renderMap(force) {
         img.loading = "eager";
         img.style.background = "#f2efe8"; /* inverts to dark — no gray unload flash */
         img.onload = function () { img.classList.add("on"); };
-        img.onerror = function () { img.classList.add("err"); img.style.opacity = "0"; };
+        img.onerror = function () {
+          /* v4.9.4: one quiet retry, then fall back to the dark base (never a gray hole) */
+          if (!img._retry && navigator.onLine !== false) {
+            img._retry = 1;
+            setTimeout(function () { if (img.isConnected) img.src = tileUrl(info.z, info.x, info.y) + "?r=1"; }, 1200);
+            return;
+          }
+          img.classList.add("err"); img.style.opacity = "0";
+        };
         img.src = tileUrl(info.z, info.x, info.y);
         // if cached by browser it may already be complete
         if (img.complete && img.naturalWidth) img.classList.add("on");
@@ -2428,19 +2441,17 @@ function renderMap(force) {
   var pinHost = v.querySelector(".map-pins");
   if (!pinHost) { pinHost = document.createElement("div"); pinHost.className = "map-pins"; pinHost.style.cssText = "position:absolute;inset:0;pointer-events:none;z-index:5"; v.appendChild(pinHost); }
   var places = loadPlaces();
-  pinHost.innerHTML = places.map(function (pl) {
+  if (MAP.search) places = places.concat([MAP.search]);
+  var pinHtml = places.map(function (pl) {
     if (pl.lat == null) return "";
     var pw = lonLatToWorld(pl.lon, pl.lat, z);
     var px = pw.x - ox, py = pw.y - oy;
     if (px < -48 || py < -48 || px > W + 48 || py > H + 48) return "";
-    return '<button type="button" class="map-place-pin neon-lit" data-place-go="' + esc(pl.id) + '" style="left:' + Math.round(px) + "px;top:" + Math.round(py) + 'px;pointer-events:auto"><span class="pin-dot" style="background:' + (pl.color || "#5dade2") + '">' + (pl.icon || "📍") + '</span><span class="pin-lab">' + esc(pl.name) + "</span></button>";
+    return '<button type="button" class="map-place-pin neon-lit' + (pl.id === "__search" ? " is-search" : "") + '" data-place-go="' + esc(pl.id) + '" aria-label="' + esc(pl.name) + ' — tap for directions, hold to edit" style="left:' + Math.round(px) + "px;top:" + Math.round(py) + 'px;pointer-events:auto"><span class="pin-dot" style="background:' + (pl.color || "#5dade2") + '">' + (pl.icon || "📍") + '</span><span class="pin-lab">' + esc(pl.name) + "</span></button>";
   }).join("");
-  pinHost.onclick = function (e) {
-    var g = e.target.closest("[data-place-go]"); if (!g) return;
-    e.stopPropagation();
-    var pl = loadPlaces().filter(function (x) { return x.id === g.getAttribute("data-place-go"); })[0];
-    if (pl) showMapPlaceCard(pl);
-  };
+  /* v4.9.4: only rebuild pins when they change — a GPS tick mid-tap used to swap the button and eat the tap */
+  if (pinHost._html !== pinHtml) { pinHost.innerHTML = pinHtml; pinHost._html = pinHtml; }
+  bindMapPins(pinHost);
   // Recenter: visible only after pan/pinch breaks follow; tap re-enables follow
   var rec = $("#mapRec");
   if (rec) {
@@ -2448,6 +2459,96 @@ function renderMap(force) {
     rec.classList.toggle("on", !MAP.follow);
     rec.setAttribute("aria-label", MAP.follow ? "Following your location" : "Recenter on me");
   }
+}
+function findMapPlace(id) {
+  if (MAP.search && id === "__search") return MAP.search;
+  return loadPlaces().filter(function (x) { return x.id === id; })[0] || null;
+}
+function bindMapPins(host) {
+  if (!host || host._zapPins) return; host._zapPins = true;
+  var holdT = null, held = false, sx = 0, sy = 0;
+  function clear() { clearTimeout(holdT); holdT = null; }
+  host.addEventListener("pointerdown", function (e) {
+    var g = e.target.closest("[data-place-go]"); if (!g) return;
+    held = false; clear(); sx = e.clientX; sy = e.clientY;
+    var id = g.getAttribute("data-place-go");
+    if (id === "__search") return;
+    holdT = setTimeout(function () {
+      held = true;
+      var pl = findMapPlace(id);
+      if (pl) { try { hideMapPlaceCard(); } catch (e0) {} openEditPlace(pl); }
+      try { navigator.vibrate && navigator.vibrate(30); } catch (err) {}
+    }, 550);
+  });
+  host.addEventListener("pointermove", function (e) { if (holdT && Math.abs(e.clientX - sx) + Math.abs(e.clientY - sy) > 10) clear(); });
+  host.addEventListener("pointerup", clear);
+  host.addEventListener("pointercancel", clear);
+  host.addEventListener("contextmenu", function (e) { if (e.target.closest("[data-place-go]")) e.preventDefault(); });
+  host.addEventListener("click", function (e) {
+    var g = e.target.closest("[data-place-go]"); if (!g) return;
+    e.stopPropagation();
+    if (held) { held = false; return; }
+    var pl = findMapPlace(g.getAttribute("data-place-go"));
+    if (pl) showMapPlaceCard(pl);
+  });
+}
+function mapShowSearchResult(r) {
+  var lat = +r.lat, lon = +r.lon; if (isNaN(lat) || isNaN(lon)) return;
+  var nm = (r.name || (r.display_name || "").split(",")[0] || "Place").slice(0, 24);
+  MAP.search = { id: "__search", name: nm, label: r.display_name || nm, icon: "📍", color: "#ff2a6d", lat: lat, lon: lon };
+  MAP.follow = false; MAP.anchor = { lat: lat, lon: lon }; MAP.offX = 0; MAP.offY = 0; MAP.z = 16; MAP._key = null;
+  var origin = (GPS && GPS.lat != null) ? GPS : null;
+  if (origin) {
+    PLACE_ETA.__search = { km: haversineKm(origin, { lat: lat, lon: lon }), sec: null };
+    getJSON("https://router.project-osrm.org/route/v1/driving/" + origin.lon + "," + origin.lat + ";" + lon + "," + lat + "?overview=false", 8000).then(function (j) {
+      var rt = j && j.routes && j.routes[0];
+      if (rt) PLACE_ETA.__search = { km: (rt.distance || 0) / 1000, sec: rt.duration };
+      if (_mapCardPl && _mapCardPl.id === "__search") showMapPlaceCard(MAP.search);
+    }).catch(function () {});
+  } else delete PLACE_ETA.__search;
+  renderMap(true);
+  showMapPlaceCard(MAP.search);
+}
+function ensureMapSearch(card) {
+  var box = $("#mapSearch");
+  if (box) return box;
+  box = document.createElement("div");
+  box.id = "mapSearch"; box.className = "map-search";
+  box.innerHTML = '<input id="mapQ" type="search" enterkeyhint="search" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Search a place or address" aria-label="Search places"><div id="mapQRes" class="map-q-res" hidden></div>';
+  var head = card.querySelector(".map-h");
+  if (head && head.nextSibling) card.insertBefore(box, head.nextSibling); else card.appendChild(box);
+  var inp = box.querySelector("#mapQ"), res = box.querySelector("#mapQRes"), tm = null, seq = 0;
+  function run(q) {
+    var my = ++seq;
+    if (navigator.onLine === false) { res.hidden = false; res.innerHTML = '<p class="note">Offline — search needs a connection.</p>'; return; }
+    var c = MAP.anchor || mapViewLL(), vb = "";
+    if (c && c.lat != null) vb = "&viewbox=" + (c.lon - 1.5) + "," + (c.lat + 1) + "," + (c.lon + 1.5) + "," + (c.lat - 1);
+    res.hidden = false; res.innerHTML = '<p class="note">Searching…</p>';
+    getJSON("https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&accept-language=en" + vb + "&q=" + encodeURIComponent(q), 10000).then(function (R) {
+      if (my !== seq) return;
+      R = R || [];
+      res.innerHTML = R.length ? R.map(function (r, i) {
+        return '<button type="button" class="res" data-mq="' + i + '">' + esc(r.display_name) + '</button>';
+      }).join("") : '<p class="note">No matches — try a street and city.</p>';
+      $$("[data-mq]", res).forEach(function (x) {
+        x.addEventListener("click", function (e) {
+          e.stopPropagation();
+          var r = R[+x.getAttribute("data-mq")];
+          res.hidden = true; res.innerHTML = ""; inp.value = ""; try { inp.blur(); } catch (eB) {}
+          mapShowSearchResult(r);
+        });
+      });
+    }).catch(function () { if (my === seq) res.innerHTML = '<p class="note">Search unavailable — try again.</p>'; });
+  }
+  inp.addEventListener("input", function () {
+    clearTimeout(tm); var q = inp.value.trim();
+    if (q.length < 3) { res.hidden = true; res.innerHTML = ""; return; }
+    tm = setTimeout(function () { run(q); }, 450);
+  });
+  inp.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") { e.preventDefault(); clearTimeout(tm); var q = inp.value.trim(); if (q.length >= 2) run(q); }
+  });
+  return box;
 }
 function showMapFollowBadge() {
   var b = $("#mapFollowBadge");
@@ -2470,6 +2571,8 @@ function showMapFollowBadge() {
   }, 1600);
 }
 function mapRecenter() {
+  if (GEO_OFF && !(GPS && GPS.lat != null)) { try { toast("Location is off — allow it for this site in Settings"); } catch (eT) {} }
+  MAP.search = null;
   MAP.follow = true; MAP.offX = 0; MAP.offY = 0; MAP.z = 16; MAP._key = null;
   var rec = $("#mapRec"); if (rec) { rec.hidden = true; rec.classList.remove("on"); }
   renderMap(true);
@@ -2580,14 +2683,19 @@ function worldToLonLat(x, y, z) {
   return { lat: lat, lon: lon };
 }
 function mapCenterLL() {
-  if (!GPS) return null;
+  var c0 = MAP.anchor || (GPS && GPS.lat != null ? GPS : null);
+  if (!c0) return null;
   var z = Math.max(3, Math.min(19, MAP.z | 0));
-  var world = lonLatToWorld(GPS.lon, GPS.lat, z);
+  var world = lonLatToWorld(c0.lon, c0.lat, z);
   return worldToLonLat(world.x + MAP.offX, world.y + MAP.offY, z);
 }
 function closeMapOverlay() {
   var card = $("#hMap");
   if (!card) return;
+  var wasOpen = card.classList.contains("map-fs");
+  try { hideMapPlaceCard(); } catch (eH) {}
+  var qr = $("#mapQRes"); if (qr) { qr.hidden = true; qr.innerHTML = ""; }
+  var qi = $("#mapQ"); if (qi) { try { qi.blur(); } catch (eB) {} }
   card.classList.remove("map-fs");
   document.documentElement.classList.remove("map-fs-open");
   var xb = $("#mapFsClose"); if (xb) xb.hidden = true;
@@ -2595,13 +2703,24 @@ function closeMapOverlay() {
   MAP._key = null;
   try { renderMap(true); } catch (e) {}
   try { portalHome(card); } catch (eP) {}
+  var ph = $("#mapPh"); if (ph) ph.remove();
   try { unlockPageScroll(); } catch (eU) {}
+  if (wasOpen && !anyOverlayOpen()) { try { overlayClearHistory(); } catch (eHi) {} }
   try { armTapShield(450); } catch (e2) {}
 }
 function openMapOverlay() {
   var card = $("#hMap"); if (!card) return;
+  if (card.classList.contains("map-fs")) return;
+  /* v4.9.4: hold the card's space in the page so opening/closing never shifts or jumps the scroll */
+  if (!$("#mapPh") && card.parentNode && card.parentNode !== document.body) {
+    var ph = document.createElement("div"), cs = getComputedStyle(card);
+    ph.id = "mapPh"; ph.className = "map-ph"; ph.setAttribute("aria-hidden", "true");
+    ph.style.height = card.offsetHeight + "px"; ph.style.marginTop = cs.marginTop; ph.style.marginBottom = cs.marginBottom;
+    card.parentNode.insertBefore(ph, card);
+  }
   try { portalToBody(card); } catch (eP) {}
   card.classList.add("map-fs");
+  try { ensureMapSearch(card); } catch (eS) {}
   document.documentElement.classList.add("map-fs-open");
   lockPageScroll();
   crispifyOverlay(card);
@@ -2629,11 +2748,12 @@ function openMapOverlay() {
   if (ext) ext.hidden = false;
   MAP._key = null;
   try { renderMap(true); } catch (e) {}
+  try { overlayPushHistory(); } catch (eHi) {}
   /* v4.6.1: no scrollIntoView — it was shifting layout and letting ghost clicks hit Weather/Music */
 }
 function openMapsExternal() {
-  if (!GPS) { toast(GEO_OFF ? "Turn on Location for this app to see where you are" : "Still finding you…"); return; }
-  var c = mapCenterLL() || GPS;
+  var c = mapCenterLL();
+  if (!c) { toast(GEO_OFF ? "Turn on Location for this app to see where you are" : "Still finding you…"); return; }
   var ll = (+c.lat).toFixed(6) + "," + (+c.lon).toFixed(6);
   var q = (PLACE && (PLACE.road || PLACE.city)) ? [PLACE.road, PLACE.city].filter(Boolean).join(", ") : ll;
   if (IOS) {
@@ -2658,18 +2778,41 @@ function openMapsHere() {
   openMapOverlay();
 }
 (function bindMapOpenExclusive() {
+  /* v4.9.4: ONE toggle per tap. It used to toggle on pointerdown+pointerup+touchend+click
+     (open→close→open→close), so OPEN looked dead and the page jumped. */
   var mapOpen = $("#mapOpen"); if (!mapOpen) return;
-  function onlyMap(e) {
-    try { e.preventDefault(); e.stopPropagation(); if (e.stopImmediatePropagation) e.stopImmediatePropagation(); } catch (err) {}
-    if (tapShieldActive()) return;
+  var lastAct = 0, sx = 0, sy = 0, moved = false;
+  function swallow(e) { try { e.stopPropagation(); if (e.stopImmediatePropagation) e.stopImmediatePropagation(); } catch (err) {} }
+  function act() {
+    var now = Date.now();
+    if (now - lastAct < 700) return;
+    lastAct = now;
     openMapsHere();
   }
-  ["pointerdown", "pointerup", "click", "touchend"].forEach(function (ev) {
-    mapOpen.addEventListener(ev, onlyMap, { capture: true, passive: false });
-  });
+  mapOpen.addEventListener("touchstart", function (e) {
+    swallow(e); moved = false; var t = e.touches && e.touches[0]; if (t) { sx = t.clientX; sy = t.clientY; }
+  }, { capture: true, passive: true });
+  mapOpen.addEventListener("touchmove", function (e) {
+    var t = e.touches && e.touches[0]; if (t && Math.abs(t.clientX - sx) + Math.abs(t.clientY - sy) > 10) moved = true;
+  }, { capture: true, passive: true });
+  mapOpen.addEventListener("pointerdown", swallow, { capture: true });
+  mapOpen.addEventListener("pointerup", swallow, { capture: true });
+  mapOpen.addEventListener("touchend", function (e) {
+    swallow(e);
+    if (moved) return;
+    try { e.preventDefault(); } catch (err) {} /* kill the compat click so it cannot toggle again */
+    act();
+  }, { capture: true, passive: false });
+  mapOpen.addEventListener("click", function (e) {
+    swallow(e); try { e.preventDefault(); } catch (err) {}
+    act();
+  }, { capture: true });
 })();
 document.addEventListener("keydown", function (e) {
-  if (e.key === "Escape" && document.documentElement.classList.contains("map-fs-open")) closeMapOverlay();
+  if (e.key === "Escape" && document.documentElement.classList.contains("map-fs-open")) {
+    var shx = $("#sheet"); if (shx && !shx.hidden) return; /* Esc closes the sheet first, map stays */
+    closeMapOverlay();
+  }
 });
 var mapIn = $("#mapIn"); if (mapIn) mapIn.addEventListener("click", function (e) { e.stopPropagation(); mapZoom(1); });
 var mapOut = $("#mapOut"); if (mapOut) mapOut.addEventListener("click", function (e) { e.stopPropagation(); mapZoom(-1); });
@@ -2762,6 +2905,7 @@ function renderPlacesRow() {
   host.innerHTML = list.map(function (pl, i) {
     var eta = PLACE_ETA[pl.id];
     var sub = eta ? formatEta(eta.sec, eta.km) : "…";
+    if (eta && eta.sec != null && /min/.test(sub)) sub = "~" + sub; /* estimate, no live traffic */
     if (i === 0 && eta) sub = "GO · " + sub;
     var col = pl.color || "#5dade2";
     return '<button type="button" class="place-chip' + (i === 0 ? " nearest" : "") + '" data-place-go="' + esc(pl.id) + '" role="listitem"><span class="pc-ico" style="background:' + col + '">' + (pl.icon || "📍") + '</span><span class="pc-name">' + esc(pl.name) + '</span><span class="pc-eta">' + esc(sub) + "</span></button>";
@@ -2860,17 +3004,32 @@ function showMapPlaceCard(pl) {
   if (!card) {
     card = document.createElement("div");
     card.id = "mapPlaceCard"; card.className = "map-place-card"; card.hidden = true;
-    card.innerHTML = '<div class="mpc-meta"><b id="mpcName"></b><small id="mpcEta"></small></div><button type="button" class="mpc-go" id="mpcGo">GO</button><button type="button" class="mpc-x" id="mpcX" aria-label="Close">✕</button>';
+    card.innerHTML = '<div class="mpc-meta"><b id="mpcName"></b><small id="mpcEta"></small></div><button type="button" class="mpc-go" id="mpcGo" aria-label="Start directions">GO</button><button type="button" class="mpc-ed" id="mpcEd">EDIT</button><button type="button" class="mpc-x" id="mpcX" aria-label="Close">✕</button>';
     v.appendChild(card);
     card.querySelector("#mpcGo").addEventListener("click", function (e) {
       e.stopPropagation();
       if (_mapCardPl) openDirectionsTo(_mapCardPl);
     });
     card.querySelector("#mpcX").addEventListener("click", function (e) { e.stopPropagation(); hideMapPlaceCard(); });
+    card.querySelector("#mpcEd").addEventListener("click", function (e) {
+      e.stopPropagation();
+      var cur = _mapCardPl; if (!cur) return;
+      if (cur.id === "__search") {
+        var list = loadPlaces();
+        var np = { id: "p" + Date.now(), name: cur.name, icon: "📍", color: "#8b5cf6", lat: cur.lat, lon: cur.lon, label: cur.label || cur.name };
+        list.push(np); savePlaces(list);
+        PLACE_ETA[np.id] = PLACE_ETA.__search; MAP.search = null;
+        hideMapPlaceCard(); refreshPlaceEtas(); renderMap(true); toast(np.name + " saved to Places");
+        return;
+      }
+      hideMapPlaceCard(); openEditPlace(cur);
+    });
   }
   var eta = PLACE_ETA[pl.id];
   card.querySelector("#mpcName").textContent = pl.name || "Place";
-  card.querySelector("#mpcEta").textContent = eta ? ("ETA · " + formatEta(eta.sec, eta.km)) : "Tap Go for turn-by-turn";
+  card.querySelector("#mpcEd").textContent = pl.id === "__search" ? "SAVE" : "EDIT";
+  card.querySelector("#mpcEd").setAttribute("aria-label", pl.id === "__search" ? "Save to Places" : "Edit place");
+  card.querySelector("#mpcEta").textContent = eta ? ((eta.sec != null ? "≈ " + formatEta(eta.sec, eta.km) + " drive" : formatEta(null, eta.km) + " away") + " · est., no live traffic") : "Tap GO for turn-by-turn";
   card.hidden = false;
   try { overlayPushHistory(); } catch (e) {}
   try { bindPlaceCardSwipe(card); } catch (e) {}
@@ -2934,7 +3093,7 @@ function openPlaceEditor(presetId) {
     '<label class="field">NAME<input id="plName" maxlength="24" value="' + esc(preset && !isCustom ? preset.name : "") + '" placeholder="e.g. Dad\'s" autocomplete="off"></label>' +
     '<label class="field">SEARCH ADDRESS<input id="plQ" placeholder="Street, city…" autocomplete="off"></label><div id="plRes"></div>' +
     '<button class="btn alt" id="plHere" style="margin-top:8px">◎ Use current location</button>' +
-    '<button class="btn alt" id="plMap" style="margin-top:8px">⌖ Use map center</button>' +
+    '<button class="btn alt" id="plMap" style="margin-top:8px">📍 Use map center</button>' +
     (isCustom ? "" : '<p class="note" style="margin-top:10px">Saves as ' + esc(preset.name) + '. Tap the place later for directions.</p>'),
     function (b) {
       var chosen = null;
@@ -2961,15 +3120,9 @@ function openPlaceEditor(presetId) {
         pick(GPS.lat, GPS.lon, "Current location");
       });
       b.querySelector("#plMap").addEventListener("click", function () {
-        if (!GPS) { toast("Map needs your location first"); return; }
-        var z = MAP.z | 0, world = lonLatToWorld(GPS.lon, GPS.lat, z);
-        var cx = world.x + MAP.offX, cy = world.y + MAP.offY;
-        // inverse web mercator
-        var n = Math.pow(2, z);
-        var lon = cx / (n * 256) * 360 - 180;
-        var latRad = Math.atan(Math.sinh(Math.PI * (1 - 2 * cy / (n * 256))));
-        var lat = latRad * 180 / Math.PI;
-        pick(lat, lon, "Map center");
+        var mc = mapCenterLL();
+        if (!mc) { toast("Map needs your location first"); return; }
+        pick(mc.lat, mc.lon, "Map center");
       });
       var tm;
       b.querySelector("#plQ").addEventListener("input", function (e) {
@@ -3007,6 +3160,9 @@ function openPlaceEditor(presetId) {
       try { navigator.vibrate && navigator.vibrate(30); } catch (err) {}
     }, 550);
   });
+  var hsx = 0, hsy = 0;
+  row.addEventListener("pointerdown", function (e) { hsx = e.clientX; hsy = e.clientY; }, true);
+  row.addEventListener("pointermove", function (e) { if (holdT && Math.abs(e.clientX - hsx) + Math.abs(e.clientY - hsy) > 10) clearHold(); });
   row.addEventListener("pointerup", clearHold);
   row.addEventListener("pointerleave", clearHold);
   row.addEventListener("pointercancel", clearHold);
@@ -3226,13 +3382,17 @@ function lockPageScroll() {
 }
 function unlockPageScroll() {
   if (!SCROLL_LOCK.locked) return;
-  if (anyOverlayOpen()) return;
+  /* v4.9.4: the small map place card is not a page lock — only real sheets/details/full map */
+  var sh = $("#sheet"), zap = $("#zapSheet");
+  if ((sh && !sh.hidden) || (zap && !zap.hidden) || isCardDetailOpen() || document.documentElement.classList.contains("map-fs-open")) return;
   SCROLL_LOCK.locked = false;
+  var keepY = SCROLL_LOCK.y;
   try {
     document.documentElement.classList.remove("sheet-open");
     document.body.classList.remove("sheet-open");
     document.body.style.position = ""; document.body.style.top = "";
     document.body.style.overflow = ""; document.documentElement.style.overflow = "";
+    if (keepY && Math.abs((window.scrollY || 0) - keepY) > 2) window.scrollTo(0, keepY);
   } catch (e) {}
 }
 /* v4.6.3: force-clear scroll lock on boot / pageshow / resume (ignore locked flag) */
@@ -4712,15 +4872,10 @@ function openEditHolding(i) { openAddHolding(i); }
 function settingsHtml(sndOn, liteOn, tiltOn, motionOn) {
   return '<label class="field">YOUR NAME (FOR THE GREETING)<input id="stName" maxlength="20" placeholder="e.g. Sam" value="' + esc(S.name) + '" autocomplete="off"></label>' +
     '<div class="field">TEMPERATURE</div><div class="seg" id="stU"><button type="button" data-v="F">°F · mph</button><button type="button" data-v="C">°C · km/h</button></div>' +
-    '<div class="field">LITE MODE</div><div class="seg" id="stLite"><button type="button" data-v="0">3D ON</button><button type="button" data-v="1">LITE</button></div>' +
-    '<p class="note">Lite skips WebGL (city backdrop), tilt, and particle boot. Auto-on for low-end / Reduce Motion.</p>' +
-    '<div class="field">CARD TILT</div><div class="seg" id="stTilt"><button type="button" data-v="0">OFF</button><button type="button" data-v="1">ON</button></div>' +
-    '<div class="field">MOTION TILT (iOS NEEDS TAP)</div><div class="seg" id="stMotion"><button type="button" data-v="0">OFF</button><button type="button" data-v="1">ENABLE</button></div>' +
-    '<p class="note">Motion tilt asks for permission only when you tap Enable — never auto-prompted.</p>' +
-    '<div class="field">ASSISTANT</div><p class="note">Mic opens on-device commands (weather, directions, apps, theme). No cloud account required.</p>' +
+    '<div class="field">ASSISTANT</div><p class="note">Tap the mic in the top bar to talk to ZAP AI (weather, directions, apps, calls). Mute its voice with the speaker button. No account required.</p>' +
     '<button class="btn" id="stSave" type="button">SAVE</button>' +
     '<h3>UPDATES</h3><button class="btn" id="stUpdate" type="button">Check for updates</button>' +
-    '<p class="note">Running v' + VERSION + '. Themes: tap THEME in the top bar.</p>' +
+    '<p class="note">Running v' + VERSION + '. Theme: tap the color dot in the top bar.</p>' +
     '<h3>RESET</h3><button class="btn warn" id="stReset" type="button">Reset everything to defaults</button>';
 }
 function bindSettings(b, closeAfterSave) {
@@ -4736,9 +4891,9 @@ function bindSettings(b, closeAfterSave) {
   function segM() { $$("#stMotion button", b).forEach(function (x) { x.classList.toggle("on", x.getAttribute("data-v") === motion); }); }
   b.querySelector("#stU").addEventListener("click", function (e) { var x = e.target.closest("[data-v]"); if (x) { u = x.getAttribute("data-v"); seg(); } });
   /* v4.4: UI sounds removed */
-  b.querySelector("#stLite").addEventListener("click", function (e) { var x = e.target.closest("[data-v]"); if (x) { lite = x.getAttribute("data-v"); segL(); } });
-  b.querySelector("#stTilt").addEventListener("click", function (e) { var x = e.target.closest("[data-v]"); if (x) { tilt = x.getAttribute("data-v"); segT(); } });
-  b.querySelector("#stMotion").addEventListener("click", function (e) {
+  var _stLite = b.querySelector("#stLite"); if (_stLite) _stLite.addEventListener("click", function (e) { var x = e.target.closest("[data-v]"); if (x) { lite = x.getAttribute("data-v"); segL(); } });
+  var _stTilt = b.querySelector("#stTilt"); if (_stTilt) _stTilt.addEventListener("click", function (e) { var x = e.target.closest("[data-v]"); if (x) { tilt = x.getAttribute("data-v"); segT(); } });
+  var _stMotion = b.querySelector("#stMotion"); if (_stMotion) _stMotion.addEventListener("click", function (e) {
     var x = e.target.closest("[data-v]"); if (!x) return;
     if (x.getAttribute("data-v") === "1") {
       loadFx3d().then(function (fx) {
@@ -4961,7 +5116,7 @@ function bindLastCalls(host) {
 }
 function dialerHtml() {
   var keys = [["1", ""], ["2", "ABC"], ["3", "DEF"], ["4", "GHI"], ["5", "JKL"], ["6", "MNO"], ["7", "PQRS"], ["8", "TUV"], ["9", "WXYZ"], ["*", ""], ["0", "+"], ["#", ""]];
-  return '<div class="dl-num" id="dlNum" aria-live="polite">&nbsp;</div>' +
+  return '<div class="dl-num empty" id="dlNum" aria-live="polite">Enter a number</div>' +
     '<div class="dl-pad" id="dlPad">' + keys.map(function (k) { return '<button type="button" class="dl-k" data-k="' + k[0] + '" aria-label="' + k[0] + '"><b>' + k[0] + "</b><small>" + k[1] + "</small></button>"; }).join("") + "</div>" +
     '<div class="dl-act"><button type="button" class="dl-sv" id="dlSave" aria-label="Save as favorite">☆</button><button type="button" class="dl-call" id="dlCall" aria-label="Call">CALL</button><button type="button" class="dl-sv" id="dlDel" aria-label="Delete last digit">⌫</button></div>' +
     '<div class="lc-strip comms-log" id="dlLast" aria-label="COMMS LOG"></div>' +
@@ -4970,7 +5125,7 @@ function dialerHtml() {
 }
 function bindDialer(b) {
   var num = "";
-  function draw() { var n = b.querySelector("#dlNum"); if (n) n.textContent = num ? fmtNum(num) : "\u00a0"; }
+  function draw() { var n = b.querySelector("#dlNum"); if (n) { n.textContent = num ? fmtNum(num) : "Enter a number"; n.classList.toggle("empty", !num); } }
   function drawFavs() {
     var host = b.querySelector("#dlFavs"); if (!host) return;
     host.innerHTML = FAVS.length ? FAVS.map(function (f, i) {
@@ -5618,6 +5773,22 @@ function paintZapHist() {
     d.textContent = m.t;
     log.appendChild(d);
   });
+  if (!log.children.length) {
+    // v4.9.4: first-run welcome (not saved to history) + one-tap starters
+    var w = document.createElement("div");
+    w.className = "zap-msg bot zap-welcome";
+    w.textContent = "Hi, I'm ZAP AI. Ask me anything, or tap a starter below. Say \"call Mom\", \"directions to home\" or \"open Spotify\" and I'll do it.";
+    log.appendChild(w);
+    var row = document.createElement("div");
+    row.className = "zap-chips zap-start";
+    [["Weather","weather"],["Directions home","directions to home"],["Start focus","start focus"],["Markets","markets"],["What can you do?","help"]].forEach(function (c) {
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "zap-chip"; b.textContent = c[0];
+      b.addEventListener("click", function () { try { row.remove(); } catch (e) {} zapHandle(c[1]); });
+      row.appendChild(b);
+    });
+    log.appendChild(row);
+  }
   log.scrollTop = log.scrollHeight;
 }
 function openZapAssistant() {
@@ -5770,6 +5941,7 @@ function zapSpeak(text) {
   try {
     if (!window.speechSynthesis) return;
     var clean = String(text || "").replace(/\s+/g, " ").trim().slice(0, 320);
+    if (!/[A-Za-z0-9]/.test(clean)) return; // v4.9.4: never speak the "…" thinking placeholder
     if (!clean) return;
     var u = new SpeechSynthesisUtterance(clean);
     u.rate = 1.02; u.pitch = 1; u.lang = "en-US";
@@ -6519,6 +6691,8 @@ try {
   window.ZAPOS.wallpaperMode = wallpaperMode;
   window.ZAPOS.logCall = logCall;
   window.ZAPOS.zapHandle = zapHandle;
+  /* v4.9.4: read-only QA hooks */
+  window.ZAPOS.qa = { map: function () { return { follow: MAP.follow, offX: MAP.offX, offY: MAP.offY, z: MAP.z, gps: GPS ? { lat: GPS.lat, lon: GPS.lon } : null, geoOff: GEO_OFF }; }, savePlaces: savePlaces, refreshPlaceEtas: refreshPlaceEtas, renderMap: renderMap, loadPlaces: loadPlaces };
 } catch (e) {}
 if (!Store.getLocal("seenHelp", false)) { var _sa = false; try { _sa = window.navigator.standalone === true || (window.matchMedia && matchMedia("(display-mode: standalone)").matches); } catch (eTip) {} if (!_sa) { Store.setLocal("seenHelp", true); setTimeout(function () { toast("Add to Home Screen: MENU → Help"); }, 1800); } else { Store.setLocal("seenHelp", true); } }
 })();

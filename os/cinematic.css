@@ -1,9 +1,0 @@
-/* ZAPWISE//OS cinematic stage — MUST stay position:fixed so it never pushes #app */
-.zw-stage,#zwStage{
-  position:fixed!important;inset:0!important;z-index:0!important;
-  pointer-events:none!important;margin:0!important;padding:0!important;
-  width:100%!important;height:100%!important;background:#03040a;opacity:.38;
-}
-.zw-stage canvas{display:block;width:100%;height:100%}
-.zw-stage[hidden],html.fx-lite .zw-stage{display:none!important}
-html.zw-cine .zw-stage{opacity:.32}
