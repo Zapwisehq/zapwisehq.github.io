@@ -1,7 +1,7 @@
-/* ZAPWISE//OS web app v4.9.1 (Nov 5, 2026). iOS touch fixes, WebKit-grade QA, angular HUD site-wide, neon-pink themes, brighter live wallpaper. No tabs. Voice only from ZAP AI. */
+/* ZAPWISE//OS web app v4.9.2 (Nov 5, 2026). Still mode: no wallpaper, no animation loops, no backdrop blur. Weather NOW sheet, rebuilt Focus, battery chip (where the browser allows). No tabs. Voice only from ZAP AI. */
 (function () {
 "use strict";
-var VERSION = "4.9.1";
+var VERSION = "4.9.2";
 var APP_VERSION = VERSION;
 
 // v4.5: default Lite on coarse/mobile unless user already chose
@@ -28,6 +28,7 @@ var APP_VERSION = VERSION;
 // ========== v3.12 3D FX (lazy) ==========
 var _fx3dLoading = null;
 function fx3dWanted() {
+  return false; /* v4.9.2: wallpaper + 3D removed (iOS scroll flicker) */
   try {
     if (Store.getLocal("liteMode", false)) return false;
     if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return false;
@@ -671,13 +672,13 @@ function ensureHudClock() {
 function tick() {
   ensureHudClock();
   var d = new Date(), h = d.getHours(), sec = d.getSeconds();
-  var hm = $("#hcHm"); if (hm) hm.textContent = (h % 12 || 12) + ":" + pad2(d.getMinutes());
-  var am = $("#hAmpm"); if (am) am.textContent = h < 12 ? "AM" : "PM";
+  var hm = $("#hcHm"), hmv = (h % 12 || 12) + ":" + pad2(d.getMinutes()); if (hm && hm.textContent !== hmv) hm.textContent = hmv;
+  var am = $("#hAmpm"), amv = h < 12 ? "AM" : "PM"; if (am && am.textContent !== amv) am.textContent = amv;
   var secEl = $("#hcSec");
   if (secEl) {
     var kids = secEl.children;
     var n = Math.round((sec / 59) * (kids.length || 12));
-    for (var i = 0; i < kids.length; i++) kids[i].className = i < n ? "on" : "";
+    for (var i = 0; i < kids.length; i++) { var want = i < n ? "on" : ""; if (kids[i].className !== want) kids[i].className = want; }
   }
   if (sec === 0 || !tick.done) { tick.done = true; minute(d); }
   renderFocus();
@@ -697,7 +698,7 @@ function minute(d) {
   var gre = $("#greet"); if (gre) gre.textContent = nm ? ("Hello, " + nm) : "";
   try { updateSkyline(); } catch (e) {}
   var td = $("#tdDay"); if (td) td.textContent = pad2(d.getDate());
-  $$(".ico .cal").forEach(function (c) { c.innerHTML = '<i>' + DOW[d.getDay()] + '</i><b>' + d.getDate() + '</b>'; });
+  $$(".ico .cal").forEach(function (c) { var hh = '<i>' + DOW[d.getDay()] + '</i><b>' + d.getDate() + '</b>'; if (c._h !== hh) { c._h = hh; c.innerHTML = hh; } });
   updateStamps();
   renderNowPlaying();
 }
@@ -705,75 +706,122 @@ function minute(d) {
 var FOC = Store.getLocal("focus", { st: "idle", mins: 25 });
 if (!FOC || typeof FOC !== "object") FOC = { st: "idle", mins: 25 };
 if (!FOC.mins) FOC.mins = 25;
+var FOCUS_HTML =
+  '<div class="mk-h fz-h">FOCUS <span class="foc-sess" id="focSess">0 TODAY</span></div>' +
+  '<div class="fz-presets" id="focPresets" role="group" aria-label="Focus length">' +
+    '<button type="button" class="fz-p" data-foc-min="15">15m</button>' +
+    '<button type="button" class="fz-p" data-foc-min="25">25m</button>' +
+    '<button type="button" class="fz-p" data-foc-min="50">50m</button>' +
+  '</div>' +
+  '<button type="button" class="fz-dial" id="focTap" aria-label="Start or pause focus">' +
+    '<svg class="fz-svg" viewBox="0 0 120 120" aria-hidden="true" focusable="false">' +
+      '<circle class="fz-track" cx="60" cy="60" r="52"/>' +
+      '<circle class="fz-ring" id="focRing" cx="60" cy="60" r="52" transform="rotate(-90 60 60)"/>' +
+    '</svg>' +
+    '<span class="fz-mid"><span class="fz-time" id="mFocV">25:00</span><span class="fz-status" id="mFocL">READY</span></span>' +
+  '</button>' +
+  '<div class="fz-acts">' +
+    '<button type="button" class="fz-btn" id="focToggle">START</button>' +
+    '<button type="button" class="fz-btn alt" id="focReset">RESET</button>' +
+  '</div>';
+function ensureFocusDom() {
+  /* v4.9.2: self-heal — if anything ever wipes the Focus card, rebuild it from the template */
+  var card = $("#mFocus"); if (!card) return null;
+  if (!card.querySelector("#mFocV") || !card.querySelector("#focToggle") || !card.querySelector("#focRing") || !card.querySelector("#focPresets")) {
+    card.innerHTML = FOCUS_HTML;
+  }
+  return card;
+}
+var FOC_DONE_UNTIL = 0;
 function renderFocus() {
-  var now = Date.now(), total = focusMs(), left = total, line;
+  var card = ensureFocusDom(); if (!card) return;
+  var now = Date.now(), total = focusMs(), left = total;
   if (FOC.st === "run") {
     left = FOC.end - now;
     if (left <= 0) {
-      var minsKeep = FOC.mins || 25;
-      FOC = { st: "idle", mins: minsKeep };
+      FOC = { st: "idle", mins: FOC.mins || 25 };
       Store.setLocal("focus", FOC);
       left = focusMs();
+      FOC_DONE_UNTIL = now + 6000;
       try { bumpFocusSession(); } catch (e0) {}
       toast("Focus done. Take 5.");
       try { navigator.vibrate && navigator.vibrate([180, 80, 180]); } catch (e) {}
     }
-  } else if (FOC.st === "pause") left = Math.max(0, FOC.left || 0);
-  else if (FOC.st === "done") { FOC = { st: "idle", mins: FOC.mins || 25 }; Store.setLocal("focus", FOC); left = focusMs(); }
-  else left = total;
+  } else if (FOC.st === "pause") left = Math.max(0, Math.min(total, FOC.left || 0));
+  else { if (FOC.st !== "idle") { FOC = { st: "idle", mins: FOC.mins || 25 }; Store.setLocal("focus", FOC); } left = total; }
   var pct = FOC.st === "idle" ? 0 : Math.max(0, Math.min(1, 1 - left / total));
-  var s = Math.max(0, Math.ceil(left / 1000));
-  var C = 2 * Math.PI * 52;
-  var ring = $("#focRing");
+  var sec = Math.max(0, Math.ceil(left / 1000));
+  var C = 326.73;
+  var ring = card.querySelector("#focRing");
   if (ring) {
-    ring.style.strokeDasharray = String(C);
-    ring.style.strokeDashoffset = String(C * (1 - pct));
-    ring.style.stroke = FOC.st === "pause" ? "var(--amber)" : FOC.st === "run" ? "var(--cyan)" : "var(--amber)";
+    var off = (C * (1 - pct)).toFixed(2);
+    if (ring.getAttribute("stroke-dasharray") !== String(C)) ring.setAttribute("stroke-dasharray", String(C));
+    if (ring.getAttribute("stroke-dashoffset") !== off) ring.setAttribute("stroke-dashoffset", off);
   }
-  var tv = $("#mFocV"); if (tv) tv.textContent = Math.floor(s / 60) + ":" + pad2(s % 60);
-  line = FOC.st === "run" ? "FOCUSING" : FOC.st === "pause" ? "PAUSED" : "READY";
-  var fl = $("#mFocL"); if (fl && fl.textContent !== line) fl.textContent = line;
-  var card = $("#mFocus");
-  if (card) { card.classList.toggle("running", FOC.st === "run"); card.classList.toggle("paused", FOC.st === "pause"); card.classList.remove("done"); }
-  var sess = $("#focSess"); if (sess) sess.textContent = focusSessionsToday() + " TODAY";
-  var tog = $("#focToggle"); if (tog) tog.textContent = FOC.st === "run" ? "PAUSE" : (FOC.st === "pause" ? "RESUME" : "START");
-  $$("#focPresets .foc-p").forEach(function (b) {
-    b.classList.toggle("on", +b.getAttribute("data-foc-min") === +(FOC.mins || 25));
-    b.disabled = FOC.st === "run" || FOC.st === "pause";
+  function txt(sel, v) { var el = card.querySelector(sel); if (el && el.textContent !== v) el.textContent = v; }
+  txt("#mFocV", Math.floor(sec / 60) + ":" + pad2(sec % 60));
+  var done = FOC.st === "idle" && now < FOC_DONE_UNTIL;
+  txt("#mFocL", FOC.st === "run" ? "FOCUSING" : FOC.st === "pause" ? "PAUSED" : done ? "DONE ✓" : "TAP TO START");
+  txt("#focSess", focusSessionsToday() + " TODAY");
+  txt("#focToggle", FOC.st === "run" ? "PAUSE" : (FOC.st === "pause" ? "RESUME" : "START"));
+  card.classList.toggle("running", FOC.st === "run");
+  card.classList.toggle("paused", FOC.st === "pause");
+  card.classList.toggle("done", done);
+  var locked = FOC.st === "run" || FOC.st === "pause";
+  $$("#mFocus [data-foc-min]").forEach(function (b) {
+    var on = +b.getAttribute("data-foc-min") === +(FOC.mins || 25);
+    b.classList.toggle("on", on);
+    b.setAttribute("aria-pressed", on ? "true" : "false");
+    b.classList.toggle("locked", locked);
   });
 }
 function focusToggle() {
   var now = Date.now();
   if (FOC.st === "run") FOC = { st: "pause", left: Math.max(0, FOC.end - now), mins: FOC.mins || 25 };
-  else if (FOC.st === "pause") FOC = { st: "run", end: now + Math.max(0, FOC.left || 0), mins: FOC.mins || 25 };
+  else if (FOC.st === "pause") FOC = { st: "run", end: now + Math.max(1000, FOC.left || 0), mins: FOC.mins || 25 };
   else FOC = { st: "run", end: now + focusMs(), mins: FOC.mins || 25 };
+  FOC_DONE_UNTIL = 0;
   Store.setLocal("focus", FOC); renderFocus();
 }
 function focusReset() {
-  FOC = { st: "idle", mins: FOC.mins || 25 };
+  FOC = { st: "idle", mins: FOC.mins || 25 }; FOC_DONE_UNTIL = 0;
   Store.setLocal("focus", FOC); renderFocus(); toast("Focus reset");
 }
 function focusSetMins(m) {
   m = +m; if (!(m > 0)) return;
-  if (FOC.st === "run" || FOC.st === "pause") { toast("Pause or reset first"); return; }
-  FOC = { st: "idle", mins: m }; Store.setLocal("focus", FOC); renderFocus();
+  if (FOC.st === "run" || FOC.st === "pause") { toast("Reset first to change length"); return; }
+  FOC = { st: "idle", mins: m }; FOC_DONE_UNTIL = 0; Store.setLocal("focus", FOC); renderFocus();
 }
 (function bindFocus() {
-  var card = $("#mFocus"); if (!card) return;
-  var tap = $("#focTap");
-  if (tap) {
-    tap.addEventListener("click", function (e) { e.stopPropagation(); focusToggle(); });
-    tap.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); focusToggle(); } });
+  /* v4.9.2: ONE delegated handler on document (survives any re-render / sheet open-close).
+     touchend fires instantly on iPhone; the follow-up click is deduped. */
+  var lastAt = 0, sx = 0, sy = 0, moved = false;
+  function act(e) {
+    var t = e.target; if (t && t.nodeType === 3) t = t.parentElement;
+    var b = t && t.closest ? t.closest("#mFocus #focToggle,#mFocus #focReset,#mFocus #focTap,#mFocus [data-foc-min]") : null;
+    if (!b) return false;
+    try { if (anyOverlayOpen()) return false; } catch (eO) {}
+    if (e.type === "touchend" && moved) return false;
+    try { e.stopPropagation(); } catch (eS) {}
+    var now = Date.now();
+    /* dedupe only the compat click that follows a handled touchend — never a second real tap */
+    if (e.type === "click" && now - lastAt < 700) { try { e.preventDefault(); } catch (eP) {} return true; }
+    if (e.type === "touchend") { lastAt = now; try { e.preventDefault(); } catch (eP2) {} }
+    if (b.id === "focToggle" || b.id === "focTap") focusToggle();
+    else if (b.id === "focReset") focusReset();
+    else focusSetMins(+b.getAttribute("data-foc-min"));
+    return true;
   }
-  var tog = $("#focToggle"); if (tog) tog.addEventListener("click", function (e) { e.stopPropagation(); focusToggle(); });
-  var rst = $("#focReset"); if (rst) rst.addEventListener("click", function (e) { e.stopPropagation(); focusReset(); });
-  var presets = $("#focPresets");
-  if (presets) presets.addEventListener("click", function (e) {
-    var b = e.target.closest("[data-foc-min]"); if (!b) return;
-    e.stopPropagation(); focusSetMins(+b.getAttribute("data-foc-min"));
-  });
-  // Keep ticking correctly when backgrounded (timestamp-based end)
+  document.addEventListener("touchstart", function (e) {
+    moved = false; var p = e.touches && e.touches[0]; if (p) { sx = p.clientX; sy = p.clientY; }
+  }, { capture: true, passive: true });
+  document.addEventListener("touchmove", function (e) {
+    var p = e.touches && e.touches[0]; if (p && (Math.abs(p.clientX - sx) > 10 || Math.abs(p.clientY - sy) > 10)) moved = true;
+  }, { capture: true, passive: true });
+  document.addEventListener("touchend", act, { capture: true, passive: false });
+  document.addEventListener("click", act, true);
   document.addEventListener("visibilitychange", function () { try { renderFocus(); } catch (e) {} });
+  window.addEventListener("pageshow", function () { try { renderFocus(); } catch (e) {} });
   renderFocus();
 })();
 
@@ -786,9 +834,11 @@ function updateGpsLockChip() {
 function initBatteryHud() {
   var chip = $("#hBat"); if (!chip || !navigator.getBattery) return;
   navigator.getBattery().then(function (b) {
+    if (!b || typeof b.level !== "number" || isNaN(b.level)) return;
     chip.hidden = false;
     function paint() {
       var pct = Math.round((b.level || 0) * 100);
+      chip.classList.toggle("charging", !!b.charging);
       var n = Math.max(0, Math.min(5, Math.ceil(pct / 20)));
       var meter = $("#hBatMeter");
       if (meter) {
@@ -834,6 +884,7 @@ function ensureHudTicks() {
   });
 }
 function startZapWave() {
+  return; /* v4.9.2: no rAF loops */
   var poly = $("#zapWaveLine"); if (!poly || poly._zapWave) return;
   poly._zapWave = true;
   var pts = [], N = 32;
@@ -881,7 +932,7 @@ function currentMedia() { return MEDIA[MEDIA_KEY] || MEDIA[defaultMediaKey()] ||
 function renderNowPlaying() {
   var m = currentMedia();
   var art = $("#npArt"), title = $("#npTitle"), artist = $("#npArtist"), live = $("#npLive");
-  if (art) { art.src = m.icon || "/os/icons/music.jpg"; art.alt = m.name; }
+  if (art) { var asrc = m.icon || "/os/icons/music.jpg"; if (art.getAttribute("src") !== asrc) art.src = asrc; art.alt = m.name; }
   if (title) title.textContent = m.name;
   if (artist) artist.textContent = "Tap ▶ to open";
   if (live) { live.textContent = "SWITCH ▾"; live.setAttribute("aria-label", "Choose music app"); }
@@ -941,7 +992,7 @@ FX.prototype.size = function () {
   }
   return true;
 };
-FX.prototype.set = function (k) { if (k !== this.kind) { this.kind = k; this.seed(); this.drawn = false; } };
+FX.prototype.set = function (k) { if (k !== this.kind) { this.kind = k; this.seed(); this.drawn = false; } fxPaintSoon(); };
 FX.prototype.seed = function () {
   var W = this.w, H = this.h, k = this.kind, n, i, p = [];
   var area = Math.max(1, W * H / 20000);
@@ -1016,17 +1067,15 @@ FX.prototype.draw = function (now, dt) {
     }
   }
 };
-var lastT = performance.now();
-function loop(now) {
-  var dt = Math.min(.05, (now - lastT) / 1000); lastT = now;
-  if (document.visibilityState === "visible") FXS.forEach(function (f) {
-    if (!f.vis || !f.size()) return;
-    if (f.kind === "none") { if (!f.drawn) { f.draw(now, 0); f.drawn = true; } return; }
-    if (RM) { if (!f.drawn) { f.draw(now, 0); f.drawn = true; } return; }
-    f.draw(now, dt);
+/* v4.9.2: weather art paints ONCE per change (no requestAnimationFrame loop = no flicker, no battery drain) */
+var _fxPaintT = 0;
+function loop() {
+  FXS.forEach(function (f) {
+    try { if (!f.size()) return; f.draw(performance.now(), 0); f.drawn = true; } catch (e) {}
   });
-  requestAnimationFrame(loop);
 }
+function fxPaintSoon() { clearTimeout(_fxPaintT); _fxPaintT = setTimeout(loop, 40); }
+window.addEventListener("resize", fxPaintSoon);
 var fxHud = new FX($("#fxHud")), fxMain = new FX($("#fxMain"));
 function fxKind(code, day) {
   if (code === 0 || code === 1) return day ? "sun" : "night";
@@ -1398,8 +1447,41 @@ function scrubFromEvent(cv, e) {
   var sv = $("#wxScrubV"); if (sv) sv.textContent = (meta.feels ? "Feels " : "") + Math.round(val) + "°";
   renderWxDetails(hi);
 }
+function renderWxNow() {
+  var host = $("#wxNow"); if (!host || !WX || !WX.j) return;
+  var j = WX.j, cu = j.current || {}, d = j.daily || {}, u = S.units === "C" ? "C" : "F";
+  var wu = u === "C" ? "km/h" : "mph";
+  function r(x) { return (x == null || isNaN(+x)) ? "—" : Math.round(+x); }
+  var code = cu.weather_code, day = cu.is_day === 1;
+  var cond = code == null ? "—" : wxText(code).replace(/_/g, " ").toLowerCase().replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+  var feels = currentFeels(j); if (feels == null) feels = cu.apparent_temperature;
+  var uvv = cu.uv_index != null ? cu.uv_index : (d.uv_index_max && d.uv_index_max[0]);
+  var uvb = uvBand(uvv);
+  var pop = d.precipitation_probability_max ? (d.precipitation_probability_max[0] || 0) : null;
+  var press = cu.pressure_msl == null ? "—" : (u === "C" ? Math.round(cu.pressure_msl) + " hPa" : ((cu.pressure_msl * 0.02953).toFixed(2) + " inHg"));
+  var rise = d.sunrise && d.sunrise[0], set = d.sunset && d.sunset[0];
+  function cell(k, v, sub) { return '<div class="now-c"><span class="k">' + k + '</span><b>' + v + '</b>' + (sub ? '<small>' + sub + '</small>' : '') + '</div>'; }
+  var html =
+    '<div class="now-k">NOW · ' + esc(String(WX.place || "").toUpperCase()) + '</div>' +
+    '<div class="now-hero"><span class="now-t">' + r(cu.temperature_2m) + '°</span>' +
+      '<span class="now-r"><span class="now-ic" aria-hidden="true">' + (code == null ? "" : ((code <= 1 && !day) ? "✦" : wxEmoji(code, day))) + '</span>' +
+      '<b class="now-cond">' + esc(cond) + '</b>' +
+      '<span class="now-f">Feels like ' + r(feels) + '° · H ' + r(d.temperature_2m_max && d.temperature_2m_max[0]) + '° L ' + r(d.temperature_2m_min && d.temperature_2m_min[0]) + '°</span></span></div>' +
+    '<div class="now-grid">' +
+      cell("HUMIDITY", r(cu.relative_humidity_2m) + "%", "") +
+      cell("WIND", r(cu.wind_speed_10m) + " " + wu, windDirLabel(cu.wind_direction_10m) + (cu.wind_gusts_10m != null ? " · gusts " + r(cu.wind_gusts_10m) : "")) +
+      cell("UV", uvv == null ? "—" : (+uvv).toFixed(1), uvb && uvb.lab ? uvb.lab : "") +
+      cell("RAIN TODAY", pop == null ? "—" : pop + "%", "chance") +
+      cell("SUNRISE", rise ? isoT12(rise) : "—", "") +
+      cell("SUNSET", set ? isoT12(set) : "—", "") +
+      cell("VISIBILITY", fmtVis(cu.visibility, u), "") +
+      cell("PRESSURE", press, "") +
+    '</div>';
+  if (host._h !== html) { host._h = html; host.innerHTML = html; }
+}
 function renderConditions() {
   if (!WX || !WX.j) return;
+  try { renderWxNow(); } catch (eNow) {}
   var j = WX.j, pick = $("#wxDayPick");
   if (!pick) return;
   WX_DAY = Math.max(0, Math.min(WX_DAY, j.daily.time.length - 1));
@@ -1750,6 +1832,8 @@ function animateHoldTotal(to) {
     tv.textContent = money(_dispTotal);
     _animRaf = requestAnimationFrame(step);
   }
+  /* v4.9.2: no count-up animation — set the number once */
+  _dispTotal = target; _animRaf = 0; tv.textContent = money(target); return;
   if (target > prev + 0.01) { tv.classList.add("tick-up", "pulse"); tv.classList.remove("tick-dn"); }
   else if (target < prev - 0.01) { tv.classList.add("tick-dn", "pulse"); tv.classList.remove("tick-up"); }
   clearTimeout(animateHoldTotal._pk);
@@ -1972,7 +2056,7 @@ function renderMkTicker() {
     var chs = (ch == null || isNaN(ch)) ? "" : (" <span class=\"" + cls + "\">" + (ch >= 0 ? "▲" : "▼") + Math.abs(ch).toFixed(1) + "%</span>");
     return "<span><b>" + it.sym + "</b> " + (q ? money(q.usd) : "--") + chs + "</span>";
   }).join("");
-  track.innerHTML = html + html;
+  if (track._last !== html) { track._last = html; track.innerHTML = html; }
   host.hidden = false;
 }
 
@@ -1996,9 +2080,9 @@ function renderMarkets() {
       ((ch == null || isNaN(ch)) ? "--" : ((ch >= 0 ? "+" : "") + ch.toFixed(2) + "%")) + "</span></div>";
   });
   if (!COINS.length) { list = '<p class="offline">Your watchlist is empty. Tap ✎ WATCHLIST to add a coin.</p>'; }
-  var mk = $("#mkList"); if (mk) mk.innerHTML = list;
-  if ($("#hMkList")) $("#hMkList").innerHTML = mini;
-  if ($("#xpMkList")) $("#xpMkList").innerHTML = list;
+  /* v4.9.2: only touch the DOM when content actually changed (no 12s repaint) */
+  function setH(el, h) { if (el && el._h !== h) { el._h = h; el.innerHTML = h; } }
+  setH($("#mkList"), list); setH($("#hMkList"), mini); setH($("#xpMkList"), list);
   try { renderHoldings(); } catch (e) {}
   try { renderHomeMarkets(); } catch (e) {}
   try { renderMkTicker(); } catch (e3) {}
@@ -2021,8 +2105,8 @@ function updateStamps() {
   var last = Math.max(WX && WX.at || 0, MK && MK.at || 0);
   var sync = $("#hSync");
   if (sync) {
-    if (navigator.onLine === false) sync.innerHTML = '<i aria-hidden="true"></i>OFFLINE';
-    else sync.innerHTML = '<i aria-hidden="true"></i>LIVE';
+    var syncH = navigator.onLine === false ? '<i aria-hidden="true"></i>OFFLINE' : '<i aria-hidden="true"></i>LIVE';
+    if (sync._h !== syncH) { sync._h = syncH; sync.innerHTML = syncH; }
     sync.title = last ? ("Last live update " + short12(last)) : "Waiting for live data";
   }
   if (GPS) sh($("#hGps"), GPS.at, "GPS "); else { var g = $("#hGps"); if (g) g.textContent = GEO_OFF ? "GPS OFF" : "GPS --"; }
@@ -2947,9 +3031,11 @@ $$(".tab").forEach(function (b) { b.addEventListener("click", function () { show
   function onDown(e) {
     if (e.pointerType === "mouse" && e.button != null && e.button !== 0) return;
     active = true;
+    wx.classList.add("is-pressed"); clearTimeout(wx._pressT); wx._pressT = setTimeout(function () { wx.classList.remove("is-pressed"); }, 450);
     var p = pt(e); sx = p.x; sy = p.y;
   }
   function onUp(e) {
+    setTimeout(function () { wx.classList.remove("is-pressed"); }, 90);
     if (!active) return;
     active = false;
     var p = pt(e);
@@ -3084,36 +3170,26 @@ document.addEventListener("pointerdown", function (e) {
 /* ===== v4.6.2/v4.6.3: iOS-safe scroll lock + portal sheets into body ===== */
 var SCROLL_LOCK = { y: 0, locked: false };
 function lockPageScroll() {
+  /* v4.9.2: NO body position:fixed. On iPhone that shifted the page under the finger after the
+     keyboard/sheet closed (taps hit the wrong spot, Focus text vanished). Overlays scroll themselves. */
   if (SCROLL_LOCK.locked) return;
   SCROLL_LOCK.y = window.scrollY || document.documentElement.scrollTop || 0;
   SCROLL_LOCK.locked = true;
   try {
     document.documentElement.classList.add("sheet-open");
     document.body.classList.add("sheet-open");
-    document.body.style.position = "fixed";
-    document.body.style.top = "-" + SCROLL_LOCK.y + "px";
-    document.body.style.left = "0";
-    document.body.style.right = "0";
-    document.body.style.width = "100%";
-    document.body.style.overflow = "hidden";
   } catch (e) {}
 }
 function unlockPageScroll() {
   if (!SCROLL_LOCK.locked) return;
-  if (anyOverlayOpen()) return; /* keep locked while another overlay still up */
+  if (anyOverlayOpen()) return;
   SCROLL_LOCK.locked = false;
-  var y = SCROLL_LOCK.y || 0;
   try {
     document.documentElement.classList.remove("sheet-open");
     document.body.classList.remove("sheet-open");
-    document.body.style.position = "";
-    document.body.style.top = "";
-    document.body.style.left = "";
-    document.body.style.right = "";
-    document.body.style.width = "";
-    document.body.style.overflow = "";
+    document.body.style.position = ""; document.body.style.top = "";
+    document.body.style.overflow = ""; document.documentElement.style.overflow = "";
   } catch (e) {}
-  try { window.scrollTo(0, y); } catch (e2) {}
 }
 /* v4.6.3: force-clear scroll lock on boot / pageshow / resume (ignore locked flag) */
 function clearScrollLockHard() {
@@ -3336,7 +3412,7 @@ function openCardDetail(k, opts) {
   requestAnimationFrame(function () {
     try { el.scrollTop = 0; } catch (eT) {}
     try {
-      if (k === "wx") { renderWeather(); renderConditions(); }
+      if (k === "wx") { renderWeather(); renderConditions(); try { renderWxNow(); } catch (eN) {} }
       else { renderMarkets(); try { renderHoldings(); } catch (eH) {} try { renderAccounts(); } catch (eA) {} }
     } catch (eR) {}
     try { el.scrollTop = 0; } catch (eT2) {}
@@ -3490,7 +3566,7 @@ function armTapShield(ms) {
 function tapShieldActive() { return Date.now() < TAP_SHIELD_UNTIL; }
 
 /* ========== Overlay dismiss (v4.3): outside tap, swipe down, Esc, history back ========== */
-var OVERLAY = { hist: false, closingFromPop: false, swipeY0: 0, swipeEl: null };
+var OVERLAY = { hist: false, closingFromPop: false, swipeY0: 0, swipeEl: null, expectPops: 0, openedAt: 0 };
 function anyOverlayOpen() {
   var sh = $("#sheet"), zap = $("#zapSheet"), card = $("#mapPlaceCard");
   return (sh && !sh.hidden) || (zap && !zap.hidden) || (card && !card.hidden) || isCardDetailOpen() || !!(document.documentElement.classList.contains("map-fs-open"));
@@ -3525,6 +3601,7 @@ function hideScrimIfIdle() {
   sc.hidden = true; sc.classList.remove("zap-open");
 }
 function overlayPushHistory() {
+  OVERLAY.openedAt = Date.now();
   if (OVERLAY.hist) return;
   try { history.pushState({ zaposOverlay: 1 }, ""); OVERLAY.hist = true; } catch (e) {}
 }
@@ -3535,16 +3612,15 @@ function reconcileOverlayHistory() {
   OVERLAY.hist = false;
   try {
     if (history.state && history.state.zaposOverlay) {
-      OVERLAY.closingFromPop = true;
+      OVERLAY.expectPops++;
       history.back();
-      OVERLAY.closingFromPop = false;
     }
   } catch (e) {}
 }
 function overlayClearHistory() {
   if (!OVERLAY.hist || OVERLAY.closingFromPop) { OVERLAY.hist = false; return; }
   OVERLAY.hist = false;
-  try { if (history.state && history.state.zaposOverlay) history.back(); } catch (e) {}
+  try { if (history.state && history.state.zaposOverlay) { OVERLAY.expectPops++; history.back(); } } catch (e) {}
 }
 function dismissTopOverlay(fromPop) {
   OVERLAY.closingFromPop = !!fromPop;
@@ -3620,6 +3696,7 @@ function sheet(title, html, bind) {
   bind($("#zapSheet"));
 })();
 function closeSheet(skipHist) {
+  try { var ae0 = document.activeElement; if (ae0 && ae0 !== document.body && ae0.blur && ae0.closest && ae0.closest("#sheet,#zapSheet,.xp")) ae0.blur(); } catch (eBl) {}
   var sh = $("#sheet"); if (sh) { sh.hidden = true; try { sh.classList.remove("finder-sheet"); sh.style.transform = ""; } catch (e) {} }
   hideScrimIfIdle();
   if (!skipHist && !anyOverlayOpen()) overlayClearHistory();
@@ -3658,6 +3735,9 @@ document.addEventListener("keydown", function (e) {
   dismissTopOverlay(false);
 });
 window.addEventListener("popstate", function () {
+  /* v4.9.2: our own history.back() pops arrive async on iOS — never let them close a sheet the user just opened */
+  if (OVERLAY.expectPops > 0) { OVERLAY.expectPops--; return; }
+  if (Date.now() - (OVERLAY.openedAt || 0) < 900) return;
   if (OVERLAY.closingFromPop) { OVERLAY.hist = false; return; }
   if (!anyOverlayOpen()) { OVERLAY.hist = false; return; }
   dismissAllOverlays(true);
@@ -3937,19 +4017,11 @@ function openTheme() {
   }
   sheet("◐ THEME",
     '<p class="note" style="margin-bottom:10px">ZAPWISE//OS <b>v' + VERSION + '</b> · tap a theme to switch. Saved on this device.</p>' +
-    '<div class="wp-block"><div class="wp-lab">WALLPAPER</div><div class="wp-row" id="wpRow">' + wpHTML() + "</div>" +
-    '<p class="note">Neon City skyline stays animated (30fps). Reduced-motion freezes one frame. Lite keeps the motion, just lighter.</p></div>' +
     '<div id="thList">' + rowsHTML() + "</div>",
     function (b) {
       b.querySelector("#thList").addEventListener("click", function (e) {
         var x = e.target.closest("[data-th]"); if (!x) return;
         applyTheme(x.getAttribute("data-th")); Store.set("theme", THEME.id); b.querySelector("#thList").innerHTML = rowsHTML(); toast("Theme: " + THEME.name);
-      });
-      b.querySelector("#wpRow").addEventListener("click", function (e) {
-        var x = e.target.closest("[data-wp]"); if (!x) return;
-        applyWallpaper(x.getAttribute("data-wp"));
-        b.querySelector("#wpRow").innerHTML = wpHTML();
-        toast("Wallpaper: " + ({ neon: "Neon City", stars: "Stars", off: "Off" }[wallpaperMode()]));
       });
     });
 }
@@ -5222,7 +5294,7 @@ function placeNeonRing(v, dx, dy) {
   } catch (e) {}
   // decode / typing effect on brand
   var dec = $("#brandDecode");
-  if (dec && !RM) {
+  if (false && dec && !RM) { /* v4.9.2: no brand glyph flicker */
     var glyphs = "01ABCDEF#$%";
     function pulseDecode() {
       if (document.visibilityState !== "visible") return;
@@ -5326,6 +5398,23 @@ function placeNeonRing(v, dx, dy) {
   var onScroll = function () { top.classList.toggle("scrolled", (window.scrollY || document.documentElement.scrollTop) > 8); };
   window.addEventListener("scroll", onScroll, { passive: true }); onScroll();
 })();
+/* v4.9.2: no double-tap zoom (iOS ignores user-scalable=no). Second tap within 300ms on a
+   non-input element gets preventDefault on touchend — single taps, inputs and scrolling untouched. */
+(function noDoubleTapZoom() {
+  var last = 0, lx = 0, ly = 0;
+  document.addEventListener("touchend", function (e) {
+    if (!e.changedTouches || e.changedTouches.length !== 1 || (e.touches && e.touches.length)) return;
+    var t = e.target; if (t && t.nodeType === 3) t = t.parentElement;
+    if (t && t.closest && t.closest("input,textarea,select,[contenteditable=true],label")) { last = 0; return; }
+    var p = e.changedTouches[0], now = Date.now();
+    if (now - last < 300 && Math.abs(p.clientX - lx) < 40 && Math.abs(p.clientY - ly) < 40) {
+      try { if (e.cancelable) e.preventDefault(); } catch (err) {}
+      last = 0; return;
+    }
+    last = now; lx = p.clientX; ly = p.clientY;
+  }, { passive: false });
+  document.addEventListener("gesturestart", function (e) { try { e.preventDefault(); } catch (err) {} }, { passive: false });
+})();
 // ========== 13. boot ==========
 try { if ("scrollRestoration" in history) history.scrollRestoration = "manual"; } catch (eSR) {}
 try { clearScrollLockHard(); } catch (eCL0) {}
@@ -5338,7 +5427,7 @@ tick(); setInterval(tick, 1000);
 renderWeather(); renderMarkets(); renderMap(); try { renderPlacesRow(); } catch (e) {}
 window.addEventListener("offline", renderNet);
 setInterval(function () { if (COINS.length > 2 && document.visibilityState === "visible" && !document.documentElement.classList.contains("detail-open") && !document.documentElement.classList.contains("sheet-open")) { mkPage++; renderMarkets(); } }, 12000);
-requestAnimationFrame(loop);
+setTimeout(loop, 60);
 show(Q.get("tab") || Store.ui().view || "home");
 requestAnimationFrame(restoreScroll); setTimeout(restoreScroll, 400); // again after late content (weather, icons) settles
 refreshWeather(); refreshMarkets(); refreshGPS(); setTimeout(function () { try { refreshPlaceEtas(); } catch (e) {} }, 1200);

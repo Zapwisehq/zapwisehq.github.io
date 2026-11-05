@@ -2,19 +2,18 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>ZAPWISE//OS</title>
 <meta name="robots" content="noindex,nofollow">
 <meta name="description" content="ZAPWISE//OS: calm glass HUD — clock, weather, map, markets, focus, apps.">
 <meta name="theme-color" content="#070814">
-<meta name="zapos-version" content="4.9.1">
+<meta name="zapos-version" content="4.9.2">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="/os/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/os/icon-180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/os/icon-192.png">
-<link rel="stylesheet" href="/os/app.css?v=4.9.1">
-<link rel="stylesheet" href="/os/cinematic.css?v=4.9.1">
+<link rel="stylesheet" href="/os/app.css?v=4.9.2">
 <style>
 @font-face{font-family:"Rajdhani";font-style:normal;font-weight:600;font-display:swap;src:url("/os/fonts/Rajdhani-SemiBold.ttf") format("truetype")}
 @font-face{font-family:"Rajdhani";font-style:normal;font-weight:700;font-display:swap;src:url("/os/fonts/Rajdhani-Bold.ttf") format("truetype")}
@@ -30,13 +29,10 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
  <div class="boot-bar"><i></i></div>
  <div class="boot-msg" id="bootMsg">INITIALIZING…</div>
 </div>
-<div class="grid-bg" aria-hidden="true"></div>
-<canvas id="wpCanvas" class="wp-canvas" aria-hidden="true"></canvas>
-<div class="wp-lite" aria-hidden="true"></div>
 <div id="app">
 
  <header class="top sticky" id="top">
-  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver" data-app-ver>v4.9.1</span></div>
+  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver" data-app-ver>v4.9.2</span></div>
   <div class="top-r">
    <span class="sync" id="hSync"><i aria-hidden="true"></i>LIVE</span>
    <span class="hud-chip gps" id="hGpsLock" data-lock="0" hidden><i aria-hidden="true"></i>GPS —</span>
@@ -94,6 +90,8 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
   </button>
   <div class="xp wx-cond" id="xpWx" hidden>
    <div class="xp-h"><b id="xpPlace">CONDITIONS</b><button class="chip" id="xpCity" type="button">◎ CHANGE CITY</button></div>
+   <section class="wx-now" id="wxNow" aria-label="Current conditions"></section>
+   <div class="wx-sec-h">HOURLY · NEXT DAYS</div>
    <div class="wx-days" id="wxDayPick" role="tablist" aria-label="Forecast days"></div>
    <div class="wx-day-label" id="wxDayLabel">—</div>
    <div class="wx-chart-head"><span class="wx-hl" id="wxChartHL">--°</span><span class="wx-unit" id="wxUnitLbl">Fahrenheit (°F)</span></div>
@@ -165,31 +163,24 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
     <div class="mk-items" id="hMkList"><span class="dim">Markets loading…</span></div>
     <button type="button" class="mk-add" data-hmk-add="1" id="hMkAct" aria-label="Add account or holding">＋ Add</button>
    </div>
-   <div class="card br focus-card" id="mFocus" role="group" aria-label="Focus timer">
-    <div class="mk-h">FOCUS <span class="foc-sess" id="focSess">0 TODAY</span></div>
-    <div class="foc-wrap" id="focTap" role="button" tabindex="0" aria-label="Start or pause focus">
-     <svg class="foc-svg" viewBox="0 0 120 120" aria-hidden="true">
-      <circle class="foc-track" cx="60" cy="60" r="52"/>
-      <circle class="foc-ring" id="focRing" cx="60" cy="60" r="52"/>
+   <div class="card br focus-card fz" id="mFocus" role="group" aria-label="Focus timer">
+    <div class="mk-h fz-h">FOCUS <span class="foc-sess" id="focSess">0 TODAY</span></div>
+    <div class="fz-presets" id="focPresets" role="group" aria-label="Focus length">
+     <button type="button" class="fz-p" data-foc-min="15">15m</button>
+     <button type="button" class="fz-p on" data-foc-min="25">25m</button>
+     <button type="button" class="fz-p" data-foc-min="50">50m</button>
+    </div>
+    <button type="button" class="fz-dial" id="focTap" aria-label="Start or pause focus">
+     <svg class="fz-svg" viewBox="0 0 120 120" aria-hidden="true" focusable="false">
+      <circle class="fz-track" cx="60" cy="60" r="52"/>
+      <circle class="fz-ring" id="focRing" cx="60" cy="60" r="52" transform="rotate(-90 60 60)"/>
      </svg>
-     <div class="foc-mid">
-      <span class="foc-time" id="mFocV">25:00</span>
-      <span class="foc-status" id="mFocL">TAP TO START</span>
-     </div>
+     <span class="fz-mid"><span class="fz-time" id="mFocV">25:00</span><span class="fz-status" id="mFocL">TAP TO START</span></span>
+    </button>
+    <div class="fz-acts">
+     <button type="button" class="fz-btn" id="focToggle">START</button>
+     <button type="button" class="fz-btn alt" id="focReset">RESET</button>
     </div>
-    <div class="foc-presets" id="focPresets" role="group" aria-label="Focus length">
-     <button type="button" class="foc-p" data-foc-min="15">15</button>
-     <button type="button" class="foc-p on" data-foc-min="25">25</button>
-     <button type="button" class="foc-p" data-foc-min="50">50</button>
-    </div>
-    <div class="foc-acts">
-     <button type="button" class="foc-btn" id="focToggle">START</button>
-     <button type="button" class="foc-btn alt" id="focReset">RESET</button>
-    </div>
-    <span class="segs" id="mFoc" hidden></span>
-    <span class="segs" id="mDay" hidden></span>
-    <span id="mDayV" hidden></span>
-    <span id="mDayL" hidden></span>
    </div>
   </div>
 
@@ -257,6 +248,7 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
    <div id="v-home"></div><div id="hMkActStub"></div><button id="findApp" type="button" hidden aria-label="Find an app" tabindex="-1"></button>
    <span id="srchHint" hidden></span><div id="skyline"></div><div id="skyWx"></div>
    <div id="hudStatus"></div>
+   <span class="segs" id="mFoc"></span><span class="segs" id="mDay"></span><span id="mDayV"></span><span id="mDayL"></span>
   </div>
  </main>
 <footer class="motto" hidden>Shortcuts.</footer>
@@ -306,9 +298,8 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/os/wallpaper.js?v=4.9.1"></script>
-<script src="/os/catalog.js?v=4.9.1"></script>
-<script src="/os/sky.js?v=4.9.1"></script>
-<script src="/os/app.js?v=4.9.1"></script>
+<script src="/os/catalog.js?v=4.9.2"></script>
+<script src="/os/sky.js?v=4.9.2"></script>
+<script src="/os/app.js?v=4.9.2"></script>
 </body>
 </html>

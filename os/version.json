@@ -1,6 +1,6 @@
 {
-  "version": "4.9.1",
+  "version": "4.9.2",
   "built": "2026-11-05",
   "channel": "stable",
-  "notes": "v4.9.1: Video fixes \u2014 (1) wallpaper cyan blocks steady soft-pulse \u22658s no on/off blink; (2) entire Weather card opens detail (9-grid touch; hourly tap unless >10px horiz); (3) ticker own row/height \u2014 no overlap Markets/Focus; (4) Markets +Add stopPropagation \u2014 one sheet only, audit inner card buttons; (5) Weather local date + Open-Meteo day0=today timezone=auto; one feels source current.apparent_temperature. Readable see-through glass (rgba(7,8,20,.72) inner + neon edge). Regression tests included."
+  "notes": "v4.9.2: Still mode \u2014 live wallpaper removed (static #070814 bg, no fixed layer), no CSS animations/backdrop blur/rAF loops = no iPhone flicker. Weather tap opens NOW (current conditions) at top, then hourly/daily; custom pressed state, no gray flash. Focus rebuilt: presets row / ring / actions, delegated touch handlers, self-healing render, timestamp timer, vibrate on done. Battery % + charging bolt where the browser supports it (hidden on iPhone). Double-tap zoom off."
 }
