@@ -1,7 +1,7 @@
-/* ZAPWISE//OS web app v4.7.1 (Nov 5, 2026). LAST CALLS, markets/focus HUD upgrades, ZAP AI (router+Pollinations+WebLLM+voice). No tabs. Rest of app stays silent. */
+/* ZAPWISE//OS web app v4.8.0 (Nov 5, 2026). Wallet paste iOS, Weather first-tap, COMMS LOG, ZAP AI tools, neon-city wallpaper, HUD clock. No tabs. Voice only from ZAP AI. */
 (function () {
 "use strict";
-var VERSION = "4.7.1";
+var VERSION = "4.8.0";
 var APP_VERSION = VERSION;
 
 // v4.5: default Lite on coarse/mobile unless user already chose
@@ -225,7 +225,7 @@ function clone(o) { return o == null ? o : JSON.parse(JSON.stringify(o)); }
 var Store = (function () {
   var STATE_KEY = "zapos.state", DEVICE_KEY = "zapos.device", VER = 1;
   var PREF_KEYS = ["settings", "theme", "apps", "coins", "loc", "favs", "places", "holdings", "broker", "wallets", "accounts", "assistant"];                     // shared state (sync-ready)
-  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss", "mediaKey", "skipBoot", "bootDay", "uiSounds", "recentPins", "wxDay", "wxMode", "portHist", "acctMigrated", "liteMode", "tiltCards", "motionTilt", "callLog", "zapChat", "focusStats"]; // this device only
+  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss", "mediaKey", "skipBoot", "bootDay", "uiSounds", "recentPins", "wxDay", "wxMode", "portHist", "acctMigrated", "liteMode", "tiltCards", "motionTilt", "callLog", "zapChat", "focusStats", "wallpaper", "zapNotes", "zapReminders"]; // this device only
   function read(k) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
   function write(k, v) { if (dead) return false; try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
   var state = read(STATE_KEY), dev = read(DEVICE_KEY), subs = [], uiT = null, dead = false; // dead: after a reset, write nothing more
@@ -315,6 +315,12 @@ function applyTheme(id) {
   } catch (e) {}
 }
 applyTheme(Store.get("theme", "zapwise"));
+try {
+  if (window.ZAPWALL) {
+    window.ZAPWALL.init(document.getElementById("wpCanvas"));
+    applyWallpaper(wallpaperMode());
+  }
+} catch (eWp0) {}
 function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
 function pad2(n) { return (n < 10 ? "0" : "") + n; }
 function t12(d) { var h = d.getHours(); return (h % 12 || 12) + ":" + pad2(d.getMinutes()) + (h < 12 ? "A" : "P"); }
@@ -645,18 +651,48 @@ function renderApps() {
 var MON = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"], DOW = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 function segs(el) { if (!el.children.length) el.innerHTML = new Array(17).join("<i></i>"); return el.children; }
 function setSegs(el, pct, cls) { var c = segs(el), n = Math.round(Math.max(0, Math.min(1, pct)) * 16); for (var i = 0; i < 16; i++) c[i].className = i < n ? cls : ""; }
+function ensureHudClock() {
+  var host = $("#hClock"); if (!host) return null;
+  if (host.dataset.hud === "1") return host;
+  host.dataset.hud = "1";
+  host.classList.add("hud-clock");
+  host.innerHTML =
+    '<div class="hc-sweep" aria-hidden="true"></div>' +
+    '<div class="hc-time"><span class="hc-hm" id="hcHm">--:--</span><span class="hc-ampm" id="hAmpm">--</span></div>' +
+    '<div class="hc-sec" id="hcSec" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>' +
+    '<div class="hc-tags" id="hDate">' +
+      '<span class="hc-tag" id="hcDow">---</span>' +
+      '<span class="hc-tag" id="hcMon">---</span>' +
+      '<span class="hc-tag" id="hcDom">--</span>' +
+    '</div>' +
+    '<div class="hc-bar" aria-hidden="true"><i></i></div>';
+  return host;
+}
 function tick() {
-  var d = new Date(), h = d.getHours();
-  var clk = $("#hClock");
-  if (clk.firstChild && clk.firstChild.nodeType === 3) clk.firstChild.nodeValue = (h % 12 || 12) + ":" + pad2(d.getMinutes());
-  else { var am = $("#hAmpm"); clk.textContent = ""; clk.appendChild(document.createTextNode((h % 12 || 12) + ":" + pad2(d.getMinutes()))); if (am) clk.appendChild(am); }
-  $("#hAmpm").textContent = h < 12 ? "AM" : "PM";
-  if (d.getSeconds() === 0 || !tick.done) { tick.done = true; minute(d); }
+  ensureHudClock();
+  var d = new Date(), h = d.getHours(), sec = d.getSeconds();
+  var hm = $("#hcHm"); if (hm) hm.textContent = (h % 12 || 12) + ":" + pad2(d.getMinutes());
+  var am = $("#hAmpm"); if (am) am.textContent = h < 12 ? "AM" : "PM";
+  var secEl = $("#hcSec");
+  if (secEl) {
+    var kids = secEl.children;
+    var n = Math.round((sec / 59) * (kids.length || 12));
+    for (var i = 0; i < kids.length; i++) kids[i].className = i < n ? "on" : "";
+  }
+  if (sec === 0 || !tick.done) { tick.done = true; minute(d); }
   renderFocus();
 }
 function minute(d) {
-  var h = d.getHours();
-  $("#hDate").textContent = DOW[d.getDay()] + " " + MON[d.getMonth()] + " " + d.getDate();
+  ensureHudClock();
+  var dow = $("#hcDow"), mon = $("#hcMon"), dom = $("#hcDom");
+  if (dow) dow.textContent = DOW[d.getDay()];
+  if (mon) mon.textContent = MON[d.getMonth()];
+  if (dom) dom.textContent = pad2(d.getDate());
+  /* legacy single-line fallback if tags missing */
+  var hd = $("#hDate");
+  if (hd && !hd.classList.contains("hc-tags") && !document.getElementById("hcDow")) {
+    hd.textContent = DOW[d.getDay()] + " " + MON[d.getMonth()] + " " + d.getDate();
+  }
   var nm = (S.name || "").trim();
   var gre = $("#greet"); if (gre) gre.textContent = nm ? ("Hello, " + nm) : "";
   try { updateSkyline(); } catch (e) {}
@@ -2849,9 +2885,8 @@ function show(tab) {
 }
 $$(".tab").forEach(function (b) { b.addEventListener("click", function () { show(b.getAttribute("data-tab")); }); });
 $("#hWx").addEventListener("click", function (e) {
-  if (tapShieldActive()) { e.preventDefault(); e.stopPropagation(); return; }
   e.preventDefault(); e.stopPropagation();
-  toggleXp("wx");
+  openCardDetail("wx", { fromUser: true });
 });
 (function bindHomeMarketsCard() {
   var card = $("#hMk"); if (!card) return;
@@ -2862,11 +2897,10 @@ $("#hWx").addEventListener("click", function (e) {
     try { openAddAccount(); } catch (err) { openPort(); }
   }
   card.addEventListener("click", function (e) {
-    if (tapShieldActive()) { e.preventDefault(); e.stopPropagation(); return; }
     e.stopPropagation();
     if (e.target.closest("#hMkAct,[data-hmk-add]")) { openAdd(e); return; }
-    if (e.target.closest("[data-hmk-port],.hmk-total,.hmk-val")) { openPort(); return; }
-    openPort();
+    if (e.target.closest("[data-hmk-port],.hmk-total,.hmk-val")) { openCardDetail("mk", { fromUser: true }); return; }
+    openCardDetail("mk", { fromUser: true });
   });
   card.addEventListener("keydown", function (e) {
     if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openPort(); }
@@ -2993,12 +3027,11 @@ function fixHeaderGap() {
         try { open = typeof anyOverlayOpen === "function" && anyOverlayOpen(); } catch (eA) {}
         if (!open) {
           if (id === "xpWx" || id === "xpMk") {
-            if (!el.classList.contains("as-detail")) { el.hidden = true; }
-          } else if (id !== "scrim" || el.hidden) {
-            /* leave as-is if intentionally open */
-          }
-          if (el.hidden) {
-            el.style.display = "none";
+            if (!el.classList.contains("as-detail")) {
+              el.hidden = true;
+              /* v4.8.0: do NOT set el.style.display="none" — that stuck after open and blocked Weather */
+              try { el.style.display = ""; } catch (eDsp) {}
+            }
           }
         }
       });
@@ -3064,6 +3097,8 @@ function closeCardDetail(skipHist) {
     try { document.documentElement.classList.remove("detail-open"); } catch (eD2) {}
     el.style.transform = "";
     el.style.top = ""; el.style.bottom = ""; el.style.left = ""; el.style.right = "";
+    /* never leave a sticky inline display:none — [hidden] CSS handles closed state */
+    try { el.style.display = ""; el.style.visibility = ""; el.style.opacity = ""; el.style.pointerEvents = ""; el.style.height = ""; el.style.minHeight = ""; } catch (eClr) {}
     try { el.removeAttribute("role"); } catch (e0) {}
     try { portalHome(el); } catch (eP) {}
   }
@@ -3072,19 +3107,27 @@ function closeCardDetail(skipHist) {
   hideScrimIfIdle();
   if (!skipHist && !anyOverlayOpen()) overlayClearHistory();
   try { unlockPageScroll(); } catch (eU) {}
-  try { armTapShield(450); } catch (e3) {}
+  try { armTapShield(320); } catch (e3) {}
 }
-function openCardDetail(k) {
+function openCardDetail(k, opts) {
   if (k !== "wx" && k !== "mk") return;
-  if (tapShieldActive()) return;
+  opts = opts || {};
+  /* v4.8.0: explicit user taps bypass a lingering tap-shield (root cause of Weather first-tap miss after close). */
+  if (tapShieldActive() && !opts.fromUser) return;
+  if (opts.fromUser && tapShieldActive()) {
+    try {
+      TAP_SHIELD_UNTIL = 0;
+      var _sh = document.getElementById("tapShield");
+      if (_sh) _sh.classList.remove("on");
+      clearTimeout(armTapShield._t);
+    } catch (eClr) {}
+  }
   var el = detailPanel(k), btn = detailBtn(k);
   if (!el) return;
-  /* toggle closed if same detail already open */
-  if (CARD_DETAIL.kind === k && !el.hidden) { closeCardDetail(false); return; }
+  /* toggle closed if same detail already open and actually visible */
+  var already = CARD_DETAIL.kind === k && !el.hidden && el.classList.contains("as-detail");
+  if (already) { closeCardDetail(false); return; }
   if (CARD_DETAIL.kind && CARD_DETAIL.kind !== k) closeCardDetail(true);
-  /* Mark detail open BEFORE closing other overlays. closeZapAssistant/hideMapPlaceCard
-     call overlayClearHistory when anyOverlayOpen() is false — that history.back() races
-     a popstate that would dismiss the sheet we are about to show. */
   CARD_DETAIL.kind = k;
   CARD_DETAIL.scrollY = window.scrollY || document.documentElement.scrollTop || 0;
   try { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch (eB) {}
@@ -3093,6 +3136,18 @@ function openCardDetail(k) {
   try { hideMapPlaceCard(); } catch (eM) {}
   try { if (document.documentElement.classList.contains("map-fs-open")) closeMapOverlay(); } catch (eMo) {}
   try { portalToBody(el); } catch (ePort) {}
+  /* v4.8.0 ROOT CAUSE FIX: fixHeaderGap() used to set el.style.display="none" while closed.
+     Removing [hidden] alone left the inline display:none, so Weather looked like it never opened. */
+  try {
+    el.style.display = "";
+    el.style.visibility = "";
+    el.style.opacity = "";
+    el.style.pointerEvents = "";
+    el.style.transform = "";
+    el.style.height = "";
+    el.style.minHeight = "";
+    el.removeAttribute("aria-hidden");
+  } catch (eSt) {}
   el.hidden = false;
   el.classList.add("as-detail");
   crispifyOverlay(el);
@@ -3103,7 +3158,6 @@ function openCardDetail(k) {
   lockPageScroll();
   showScrim("detail");
   overlayPushHistory();
-  /* paint then render so canvas has size — sheet is fixed in viewport; scrollTop 0 shows header+CLOSE */
   requestAnimationFrame(function () {
     try { el.scrollTop = 0; } catch (eT) {}
     try {
@@ -3111,10 +3165,12 @@ function openCardDetail(k) {
       else { renderMarkets(); try { renderHoldings(); } catch (eH) {} try { renderAccounts(); } catch (eA) {} }
     } catch (eR) {}
     try { el.scrollTop = 0; } catch (eT2) {}
+    /* force a paint in case iOS still had display:none cached */
+    try { void el.offsetHeight; } catch (eRf) {}
   });
 }
 function toggleXp(k) {
-  if (k === "wx" || k === "mk") { openCardDetail(k); return; }
+  if (k === "wx" || k === "mk") { openCardDetail(k, { fromUser: true }); return; }
 }
 $("#xpCity").addEventListener("click", function (e) { e.stopPropagation(); openCity(); });
 (function bindDetailInner() {
@@ -3327,8 +3383,9 @@ window.addEventListener("popstate", function () {
     var y0 = 0, active = false;
     el.addEventListener("touchstart", function (e) {
       if (!e.touches || e.touches.length !== 1) return;
-      /* only from header / top area */
       var t = e.target;
+      /* v4.8.0: never hijack touches inside form fields (iOS wallet paste / caret) */
+      if (t && t.closest && t.closest("input,textarea,select,[contenteditable=true],.field")) return;
       if (!(t.closest && (t.closest(".sheet-h") || t.closest(".zap-h") || t.closest(".xp-h") || t === el))) {
         var rect = el.getBoundingClientRect();
         if (e.touches[0].clientY > rect.top + 56) return;
@@ -3564,6 +3621,21 @@ function openAddApp(opt) {
 }
 
 // ----- theme picker -----
+function wallpaperMode() {
+  var m = "neon";
+  try { m = Store.getLocal("wallpaper", "neon") || "neon"; } catch (e) {}
+  if (m !== "neon" && m !== "stars" && m !== "off") m = "neon";
+  return m;
+}
+function applyWallpaper(mode) {
+  mode = (mode === "stars" || mode === "off" || mode === "neon") ? mode : "neon";
+  try { Store.setLocal("wallpaper", mode); } catch (e) {}
+  try {
+    if (window.ZAPWALL) window.ZAPWALL.setMode(mode);
+    else document.documentElement.setAttribute("data-wallpaper", mode);
+  } catch (e2) {}
+  return mode;
+}
 function openTheme() {
   function rowsHTML() {
     return THEMES.map(function (t) {
@@ -3571,12 +3643,29 @@ function openTheme() {
       return '<button class="thm' + (on ? " on" : "") + '" data-th="' + t.id + '" aria-pressed="' + on + '" style="background:' + v.panel + ';color:' + v.cream + '"><span class="sw4" aria-hidden="true"><i style="background:' + v.void + '"></i><i style="background:' + v.cream + '"></i><i style="background:' + v.amber + '"></i><i style="background:' + v.cyan + '"></i></span><span><b style="color:' + v.amber + '">' + t.name + '</b><small>' + t.sub + '</small></span><span class="ck" style="color:' + v.cyan + '">' + (on ? "✓" : "") + "</span></button>";
     }).join("");
   }
-  sheet("◐ THEME", '<p class="note" style="margin-bottom:10px">Tap a theme to switch. It changes right away and is saved on this device.</p><div id="thList">' + rowsHTML() + "</div>", function (b) {
-    b.querySelector("#thList").addEventListener("click", function (e) {
-      var x = e.target.closest("[data-th]"); if (!x) return;
-      applyTheme(x.getAttribute("data-th")); Store.set("theme", THEME.id); b.querySelector("#thList").innerHTML = rowsHTML(); toast("Theme: " + THEME.name);
+  function wpHTML() {
+    var cur = wallpaperMode();
+    return [["neon","Neon City"],["stars","Stars"],["off","Off"]].map(function (r) {
+      return '<button type="button" class="wp-chip' + (cur === r[0] ? " on" : "") + '" data-wp="' + r[0] + '">' + r[1] + "</button>";
+    }).join("");
+  }
+  sheet("◐ THEME",
+    '<p class="note" style="margin-bottom:10px">Tap a theme to switch. It changes right away and is saved on this device.</p>' +
+    '<div class="wp-block"><div class="wp-lab">WALLPAPER</div><div class="wp-row" id="wpRow">' + wpHTML() + "</div>" +
+    '<p class="note">Neon City is an original low-contrast skyline behind your cards. Lite / reduced-motion uses a static wash.</p></div>' +
+    '<div id="thList">' + rowsHTML() + "</div>",
+    function (b) {
+      b.querySelector("#thList").addEventListener("click", function (e) {
+        var x = e.target.closest("[data-th]"); if (!x) return;
+        applyTheme(x.getAttribute("data-th")); Store.set("theme", THEME.id); b.querySelector("#thList").innerHTML = rowsHTML(); toast("Theme: " + THEME.name);
+      });
+      b.querySelector("#wpRow").addEventListener("click", function (e) {
+        var x = e.target.closest("[data-wp]"); if (!x) return;
+        applyWallpaper(x.getAttribute("data-wp"));
+        b.querySelector("#wpRow").innerHTML = wpHTML();
+        toast("Wallpaper: " + ({ neon: "Neon City", stars: "Stars", off: "Off" }[wallpaperMode()]));
+      });
     });
-  });
 }
 $$("[data-theme-btn]").forEach(function (b) { b.addEventListener("click", openTheme); });
 
@@ -3742,18 +3831,19 @@ function openEditAccount(acctId) {
   sheet("✎ " + (a.name || "ACCOUNT").toUpperCase(),
     '<label class="field">NAME<input id="acName" maxlength="28" value="' + esc(a.name || "") + '"></label>' +
     (isWal
-      ? ('<label class="field">PUBLIC ADDRESS<input id="acAddr" maxlength="128" autocomplete="off" autocapitalize="off" spellcheck="false" value="' + esc(a.address || "") + '"></label><p class="note">Read-only. Never enter a seed phrase.</p>')
+      ? ('<label class="field wal-field">PUBLIC ADDRESS<div class="wal-row"><input id="acAddr" ' + walletAddrAttrs() + ' value="' + esc(a.address || "") + '"><button type="button" class="btn wal-paste" data-wal-paste="1" aria-label="Paste address">PASTE</button></div></label><p class="note wal-detect" id="acDetect">Read-only. Never enter a seed phrase.</p>')
       : '<p class="note">Holdings assigned to this account roll into your net worth. Tap the tile to open the real app/site (never the App Store).</p>') +
     '<button class="btn" id="acSave" style="margin-top:12px">SAVE</button>' +
     '<button class="btn warn" id="acDel" style="margin-top:8px">Remove account</button>',
     function (b) {
+      if (isWal) try { bindWalletAddrField(b, "acAddr", "acDetect"); } catch (eB) {}
       b.querySelector("#acSave").addEventListener("click", function () {
         var nm = (b.querySelector("#acName").value || "").trim().slice(0, 28) || a.name;
         var next = loadAccounts().map(function (x) {
           if (x.id !== a.id) return x;
           var row = Object.assign({}, x, { name: nm });
           if (isWal) {
-            var addr = (b.querySelector("#acAddr").value || "").trim();
+            var addr = (b.querySelector("#acAddr").value || "").replace(/\s+/g, " ").trim();
             var chain = detectChain(addr);
             if (!chain) { toast("Need a valid BTC, ETH, or SOL address"); return x; }
             if (chain === "eth") addr = "0x" + addr.slice(2);
@@ -3843,23 +3933,19 @@ function commitAccountFromCatalog(c, extra) {
 function openAddWalletAccount(c) {
   sheet("＋ " + (c.name || "WALLET").toUpperCase(),
     '<p class="note" style="margin-bottom:10px;color:#9ff0c8"><b>Read-only.</b> Never enter your seed phrase or private key. Public address only.</p>' +
-    '<label class="field">PUBLIC ADDRESS<input id="walAddr" maxlength="128" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="bc1… / 0x… / Solana"></label>' +
-    '<label class="field">NAME (OPTIONAL)<input id="walLabel" maxlength="24" placeholder="' + esc(c.name) + '"></label>' +
-    '<p class="note" id="walDetect">Paste an address — we auto-detect BTC, ETH, or SOL.</p>' +
+    '<label class="field wal-field">PUBLIC ADDRESS' +
+      '<div class="wal-row">' +
+        '<input id="walAddr" ' + walletAddrAttrs() + ' placeholder="bc1… / 0x… / Solana">' +
+        '<button type="button" class="btn wal-paste" data-wal-paste="1" aria-label="Paste address">PASTE</button>' +
+      '</div></label>' +
+    '<label class="field">NAME (OPTIONAL)<input id="walLabel" maxlength="24" placeholder="' + esc(c.name) + '" autocomplete="off"></label>' +
+    '<p class="note wal-detect" id="walDetect">Paste an address — we auto-detect BTC, ETH, or SOL.</p>' +
     '<button class="btn" id="walSave" style="margin-top:12px">TRACK ADDRESS</button>',
     function (b) {
-      function updateDetect() {
-        var a = (b.querySelector("#walAddr").value || "").trim();
-        var chain = detectChain(a);
-        var el = b.querySelector("#walDetect");
-        if (!a) el.textContent = "Paste an address — we auto-detect BTC, ETH, or SOL.";
-        else if (!chain) el.textContent = "Couldn't detect chain. Use a BTC (bc1/1/3), ETH (0x…), or SOL address.";
-        else el.textContent = "Detected: " + ({ btc: "Bitcoin", eth: "Ethereum", sol: "Solana" }[chain]) + " · read-only balance.";
-      }
-      b.querySelector("#walAddr").addEventListener("input", updateDetect); updateDetect();
+      bindWalletAddrField(b, "walAddr", "walDetect");
       setTimeout(function () { var i = b.querySelector("#walAddr"); i && i.focus && i.focus({ preventScroll: true }); }, 40);
       b.querySelector("#walSave").addEventListener("click", function () {
-        var addr = (b.querySelector("#walAddr").value || "").trim();
+        var addr = (b.querySelector("#walAddr").value || "").replace(/\s+/g, " ").trim();
         var label = (b.querySelector("#walLabel").value || "").trim().slice(0, 24);
         var chain = detectChain(addr) || c.chainHint;
         if (!detectChain(addr)) { toast("Need a valid BTC, ETH, or SOL address"); return; }
@@ -3892,6 +3978,69 @@ function openCustomAccount() {
       });
     });
 }
+
+/* ===== v4.8.0 iOS-safe wallet address field (paste + chain detect) ===== */
+function walletAddrAttrs() {
+  return 'type="text" inputmode="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-form-type="other" data-lpignore="true"';
+}
+function bindWalletAddrField(root, inputId, detectId) {
+  var inp = root.querySelector("#" + inputId); if (!inp) return;
+  try {
+    inp.removeAttribute("maxlength");
+    inp.removeAttribute("pattern");
+    inp.setAttribute("type", "text");
+    inp.setAttribute("inputmode", "text");
+    inp.setAttribute("autocomplete", "off");
+    inp.setAttribute("autocapitalize", "off");
+    inp.setAttribute("autocorrect", "off");
+    inp.setAttribute("spellcheck", "false");
+    inp.style.fontSize = "16px";
+  } catch (eA) {}
+  function setVal(v) {
+    v = String(v == null ? "" : v).replace(/\s+/g, " ").trim();
+    inp.value = v;
+    try { inp.dispatchEvent(new Event("input", { bubbles: true })); } catch (e) {}
+  }
+  function updateDetect() {
+    var a = (inp.value || "").trim();
+    var chain = detectChain(a);
+    var el = detectId ? root.querySelector("#" + detectId) : null;
+    if (!el) return;
+    if (!a) { el.textContent = "Paste an address — we auto-detect BTC, ETH, or SOL."; el.className = "note wal-detect"; return; }
+    if (!chain) { el.textContent = "That doesn't look like a BTC (bc1/1/3), ETH (0x…), or SOL address yet."; el.className = "note wal-detect bad"; return; }
+    el.textContent = "Detected: " + ({ btc: "Bitcoin", eth: "Ethereum", sol: "Solana" }[chain]) + " · read-only balance.";
+    el.className = "note wal-detect ok";
+  }
+  inp.addEventListener("input", updateDetect);
+  inp.addEventListener("paste", function (e) {
+    /* allow native paste — never preventDefault */
+    setTimeout(function () { setVal(inp.value); updateDetect(); }, 0);
+  });
+  var pasteBtn = root.querySelector("[data-wal-paste]");
+  if (pasteBtn) {
+    pasteBtn.addEventListener("click", function (e) {
+      e.preventDefault(); e.stopPropagation();
+      function apply(text) {
+        if (!text) { toast("Clipboard empty — long-press the field to paste"); return; }
+        setVal(text); updateDetect();
+        toast("Address pasted");
+      }
+      if (navigator.clipboard && navigator.clipboard.readText) {
+        navigator.clipboard.readText().then(apply).catch(function () {
+          /* iOS Safari often needs user paste gesture — focus + hint */
+          try { inp.focus(); } catch (eF) {}
+          toast("Long-press the field → Paste (clipboard blocked)");
+        });
+      } else {
+        try { inp.focus(); } catch (eF2) {}
+        toast("Long-press the field → Paste");
+      }
+    });
+  }
+  updateDetect();
+  return { updateDetect: updateDetect, setVal: setVal };
+}
+
 function shortAddr(a) {
   a = String(a || "");
   if (a.length <= 14) return a;
@@ -4314,10 +4463,10 @@ function relCallTime(at) {
   if (s < 86400) return Math.floor(s / 3600) + "h";
   return Math.floor(s / 86400) + "d";
 }
-function logCall(n, name) {
+function logCall(n, name, tag) {
   n = cleanNum(n); if (!n) return;
   var log = loadCallLog();
-  log.unshift({ n: n, name: name || favNameFor(n) || "", at: Date.now() });
+  log.unshift({ n: n, name: name || favNameFor(n) || "", at: Date.now(), tag: tag || "OUT" });
   saveCallLog(log);
   try { renderLastCalls(); } catch (e) {}
 }
@@ -4335,21 +4484,27 @@ function renderLastCalls(host) {
   var sig = Math.min(5, Math.max(1, Math.round((navigator.onLine === false ? 1 : 4))));
   var bars = "";
   for (var i = 0; i < 5; i++) bars += "<i class=\"" + (i < sig ? "on" : "") + "\"></i>";
-  var head = '<div class="lc-h"><span class="lc-brack">[</span> LAST CALLS <span class="lc-brack">]</span>' +
-    '<span class="lc-sig" title="signal readout">' + bars + '</span>' +
-    '<span class="lc-clock">' + ((new Date().getHours() % 12) || 12) + ":" + pad2(new Date().getMinutes()) + '</span>' +
-    (log.length ? '<button type="button" class="lc-clear" id="lcClear">CLEAR</button>' : "") + "</div>";
+  host.classList.add("comms-log");
+  var head = '<div class="lc-h comms-h">' +
+    '<span class="comms-title"><span class="lc-brack">◈</span> COMMS LOG</span>' +
+    '<span class="lc-sig comms-sig" title="signal">' + bars + "</span>" +
+    '<button type="button" class="lc-logcall" id="lcLogCall" title="Log a call manually">＋ LOG</button>' +
+    (log.length ? '<button type="button" class="lc-clear" id="lcClear">CLR</button>' : "") +
+    "</div>";
   if (!log.length) {
-    host.innerHTML = head + '<div class="lc-empty">No dials from ZAP//OS yet</div>';
+    host.innerHTML = head + '<div class="lc-empty">No outbound dials logged yet · tap ＋ LOG or call a favorite</div>';
     return;
   }
-  host.innerHTML = head + '<div class="lc-list">' + log.slice(0, 12).map(function (c, i) {
+  host.innerHTML = head + '<div class="lc-list comms-list">' + log.slice(0, 12).map(function (c, i) {
     var label = c.name ? esc(c.name) : esc(fmtNum(c.n));
-    var sub = c.name ? esc(fmtNum(c.n)) : "REDIAL";
-    return '<button type="button" class="lc-row" data-lc="' + i + '" title="Tap to redial · long-press to remove">' +
-      '<span class="lc-main"><b>' + label + '</b><small>' + sub + '</small></span>' +
-      '<span class="lc-meta"><span class="lc-ago">' + relCallTime(c.at) + '</span><span class="lc-go">↺</span></span></button>';
+    var sub = c.name ? esc(fmtNum(c.n)) : "OUT";
+    var tag = c.tag || "OUT";
+    return '<button type="button" class="lc-row comms-row" data-lc="' + i + '" title="Tap to redial">' +
+      '<span class="comms-idx">' + pad2(i + 1) + "</span>" +
+      '<span class="lc-main"><b>' + label + '</b><small>' + sub + "</small></span>" +
+      '<span class="lc-meta"><span class="comms-tag">' + esc(tag) + '</span><span class="lc-ago">' + relCallTime(c.at) + '</span><span class="lc-go">↺</span></span></button>';
   }).join("") + "</div>";
+  try { host.classList.remove("comms-in"); void host.offsetWidth; host.classList.add("comms-in"); } catch (eA) {}
 }
 function bindLastCalls(host) {
   if (!host || host.dataset.bound === "1") return;
@@ -4363,24 +4518,37 @@ function bindLastCalls(host) {
       var i = +row.getAttribute("data-lc");
       var log = loadCallLog();
       if (!log[i]) return;
-      log.splice(i, 1); saveCallLog(log); renderLastCalls(host); toast("Removed from LAST CALLS");
+      log.splice(i, 1); saveCallLog(log); renderLastCalls(host); toast("Removed from COMMS LOG");
     }, 550);
   });
   host.addEventListener("pointerup", function () { clearTimeout(holdT); });
   host.addEventListener("pointerleave", function () { clearTimeout(holdT); });
   host.addEventListener("pointercancel", function () { clearTimeout(holdT); });
   host.addEventListener("click", function (e) {
+    if (e.target.closest("#lcLogCall")) {
+      e.preventDefault();
+      var n = (prompt("Number to log?") || "").trim();
+      if (!n) return;
+      var nm = (prompt("Name (optional)?") || "").trim().slice(0, 24);
+      logCall(cleanNum(n), nm);
+      toast("Logged to COMMS LOG");
+      return;
+    }
     if (e.target.closest("#lcClear")) {
       e.preventDefault();
-      if (!confirm("Clear LAST CALLS on this device?")) return;
-      saveCallLog([]); renderLastCalls(host); toast("LAST CALLS cleared");
+      if (!confirm("Clear COMMS LOG on this device?")) return;
+      saveCallLog([]); renderLastCalls(host); toast("COMMS LOG cleared");
       return;
     }
     var row = e.target.closest("[data-lc]"); if (!row) return;
     if (held) { held = false; return; }
     var i = +row.getAttribute("data-lc");
     var log = loadCallLog();
-    if (log[i]) callNum(log[i].n);
+    if (log[i]) {
+      log[i].tag = "REDIAL";
+      saveCallLog(log);
+      callNum(log[i].n);
+    }
   });
   host.addEventListener("contextmenu", function (e) { if (e.target.closest("[data-lc]")) e.preventDefault(); });
 }
@@ -4389,9 +4557,9 @@ function dialerHtml() {
   return '<div class="dl-num" id="dlNum" aria-live="polite">&nbsp;</div>' +
     '<div class="dl-pad" id="dlPad">' + keys.map(function (k) { return '<button type="button" class="dl-k" data-k="' + k[0] + '" aria-label="' + k[0] + '"><b>' + k[0] + "</b><small>" + k[1] + "</small></button>"; }).join("") + "</div>" +
     '<div class="dl-act"><button type="button" class="dl-sv" id="dlSave" aria-label="Save as favorite">☆</button><button type="button" class="dl-call" id="dlCall" aria-label="Call">CALL</button><button type="button" class="dl-sv" id="dlDel" aria-label="Delete last digit">⌫</button></div>' +
-    '<div class="lc-strip" id="dlLast" aria-label="Last calls from ZAP//OS"></div>' +
+    '<div class="lc-strip comms-log" id="dlLast" aria-label="COMMS LOG"></div>' +
     '<h3>FAVORITES</h3><div id="dlFavs"></div>' +
-    '<p class="note" style="margin-top:10px">Call opens your phone\'s dialer. LAST CALLS & favorites stay on this device only.</p>';
+    '<p class="note" style="margin-top:10px">Call opens your phone\'s dialer. COMMS LOG & favorites stay on this device only — the web cannot read the real phone log.</p>';
 }
 function bindDialer(b) {
   var num = "";
@@ -5262,54 +5430,223 @@ function zapDashContext() {
   bits.push("App: ZAPWISE//OS v" + VERSION + ". Focus sessions today: " + focusSessionsToday() + ".");
   return bits.join(". ");
 }
-function zapOfflineFaq(raw) {
-  var q = String(raw || "").toLowerCase();
-  var tips = [
-    { re: /hello|hi\b|hey|good (morning|afternoon|evening)/, t: "Hey — I'm ZAP AI. Ask me to call someone, check weather, start focus, open an app, or just chat." },
-    { re: /who are you|what are you|your name/, t: "I'm ZAP AI, your helper inside ZAPWISE//OS. Short answers, simple words. Runs on open models when online." },
-    { re: /thank/, t: "Anytime." },
-    { re: /how (do i|to).*(home screen|install|add to)/, t: "On iPhone: Share → Add to Home Screen. On Android: use the Get ZAP//OS page for the free APK, or Add to Home Screen in Chrome." },
-    { re: /how (do i|to).*(theme|color)/, t: "Tap THEME in the top bar, or say “switch theme”. Themes stay on this device." },
-    { re: /how (do i|to).*(favorite|dial|call|phone)/, t: "Open Phone, type a number, tap ☆ to save. Say “call ” + a favorite name anytime." },
-    { re: /how (do i|to).*(focus|timer|pomodoro)/, t: "On Focus, pick 15 / 25 / 50, then Start. It keeps time even if you leave the app." },
-    { re: /how (do i|to).*(market|holding|portfolio|btc|gold)/, t: "Tap Markets, then ＋ Add. BTC and GOLD quote on the home card. Totals stay on this device." },
-    { re: /how (do i|to).*(map|direction)/, t: "Open the map card, save Home or Work, then ask “directions to home”." },
-    { re: /how (do i|to).*(note|calendar)/, t: "Today’s card opens Calendar and Notes. Pin more apps from the Apps search." },
-    { re: /offline|no internet|airplane/, t: "You're offline. I can still run phone, focus, themes, and saved data. When you're back online I can answer more free-form questions." },
-    { re: /mute|voice|speak|talk/, t: "Tap the speaker in this chat to mute or unmute my voice. The rest of the OS stays silent." },
-    { re: /download|offline brain|webllm|private ai/, t: "On WebGPU devices, tap Download offline brain (~1 GB) once. Then I can chat privately with no network." },
-    { re: /joke|funny/, t: "Why did the HUD go to therapy? Too many unresolved overlays." },
-    { re: /help|what can you|commands/, t: HELP_TEXT }
-  ];
-  for (var i = 0; i < tips.length; i++) {
-    if (tips[i].re.test(q)) return tips[i].t;
+function zapLoadNotes() {
+  try { return Store.getLocal("zapNotes", []) || []; } catch (e) { return []; }
+}
+function zapSaveNotes(arr) {
+  try { Store.setLocal("zapNotes", (arr || []).slice(0, 80)); } catch (e) {}
+}
+function zapLoadReminders() {
+  try { return Store.getLocal("zapReminders", []) || []; } catch (e) { return []; }
+}
+function zapSaveReminders(arr) {
+  try { Store.setLocal("zapReminders", (arr || []).slice(0, 40)); } catch (e) {}
+}
+function zapWxSummary(kind) {
+  kind = kind || "now";
+  if (!WX || !WX.j) return "Weather still loading — open Weather for the full card.";
+  var j = WX.j, place = WX.place || "Here", u = (S.units === "C" ? "°C" : "°F");
+  var cur = j.current || j.current_weather || {};
+  var t = cur.temperature_2m != null ? cur.temperature_2m : cur.temperature;
+  var bits = [place];
+  if (t != null) bits.push(Math.round(+t) + u);
+  try {
+    if (j.daily) {
+      bits.push("H " + Math.round(j.daily.temperature_2m_max[0]) + "° / L " + Math.round(j.daily.temperature_2m_min[0]) + "°");
+      var rain0 = j.daily.precipitation_probability_max[0] || 0;
+      bits.push("rain chance " + rain0 + "%");
+    }
+  } catch (e) {}
+  if (kind === "rain" || /rain|umbrella|wet/.test(kind)) {
+    var rain = (j.daily && j.daily.precipitation_probability_max[0]) || 0;
+    return place + ": rain chance today " + rain + "%." + (rain >= 40 ? " Bring a jacket." : " Looking mostly dry.");
   }
-  // Always answer something useful
-  return "I can help with that once you're online, or try: call a favorite, weather, markets, start focus, open an app, or directions to home. " +
-    (navigator.onLine === false ? "You're offline right now." : "Say it another way and I'll try again.");
+  if (kind === "later" || kind === "forecast") {
+    try {
+      var H = j.hourly || {};
+      var now = new Date();
+      var key = now.toISOString().slice(0, 13);
+      var hi = (H.time || []).findIndex(function (t) { return t.slice(0, 13) === key; });
+      if (hi < 0) hi = 0;
+      var later = Math.min(hi + 4, (H.time || []).length - 1);
+      var tL = H.temperature_2m && H.temperature_2m[later];
+      var pL = H.precipitation_probability && H.precipitation_probability[later];
+      var when = H.time[later] ? H.time[later].slice(11, 16) : "later";
+      return place + " around " + when + ": " + (tL != null ? Math.round(tL) + u : "--") +
+        (pL != null ? (", rain " + pL + "%") : "") + ". " + bits.join(" · ");
+    } catch (e2) {}
+  }
+  return bits.join(" · ");
+}
+function zapEvalMath(expr) {
+  var e = String(expr || "").replace(/[^0-9+\-*/().%\s]/g, "").trim();
+  if (!e || e.length > 80) return null;
+  try {
+    // eslint-disable-next-line no-new-func
+    var v = Function('"use strict"; return (' + e + ");")();
+    if (typeof v !== "number" || !isFinite(v)) return null;
+    return (Math.round(v * 1e8) / 1e8);
+  } catch (err) { return null; }
+}
+function zapOfflineFaq(raw) {
+  var q = String(raw || "").trim().toLowerCase();
+  // Exact / near-exact greetings & help only — never swallow real questions
+  if (/^(hi|hello|hey|yo|sup|good (morning|afternoon|evening))[!?.]*$/.test(q)) {
+    return "Hey — I'm ZAP AI. Ask weather, markets, call a favorite, start focus, open an app, convert currency, or just chat.";
+  }
+  if (/^(thanks|thank you|thx|ty)[!?.]*$/.test(q)) return "Anytime.";
+  if (/^(who are you|what are you|your name)[!?.]*$/.test(q)) {
+    return "I'm ZAP AI inside ZAPWISE//OS. Short answers, live dashboard when I can, open models when online.";
+  }
+  if (/^(help|what can you( do)?|commands|\?)[!?.]*$/.test(q)) return HELP_TEXT;
+  if (/how (do i|to).*(home screen|install|add (an? )?app|add to)/.test(q)) {
+    return "On iPhone: Share → Add to Home Screen. On Android: Get ZAP//OS for the free APK, or Add to Home Screen in Chrome.";
+  }
+  if (/how (do i|to).*(theme|color)/.test(q)) return "Tap THEME in the top bar, or say “switch theme”. Themes stay on this device.";
+  if (/how (do i|to).*(favorite|dial|call|phone)/.test(q)) return "Open Phone, type a number, tap ☆ to save. Say “call ” + a favorite name anytime.";
+  if (/how (do i|to).*(focus|timer|pomodoro)/.test(q)) return "On Focus, pick 15 / 25 / 50, then Start. It keeps time even if you leave the app.";
+  if (/how (do i|to).*(market|holding|portfolio|btc|gold|wallet)/.test(q)) return "Tap Markets, then ＋ Add. Paste a wallet or add a holding. Totals stay on this device.";
+  if (/how (do i|to).*(map|direction)/.test(q)) return "Open the map card, save Home or Work, then ask “directions to home”.";
+  if (/how (do i|to).*(note|calendar|reminder)/.test(q)) return "Say “add note …” or “remind me …”. Today’s card also opens Calendar and Notes.";
+  if (/offline|no internet|airplane/.test(q)) return "You're offline. Phone, focus, notes, math, and saved data still work. Free-form chat needs a connection.";
+  if (/^(mute|unmute)( voice)?[!?.]*$|^(voice|speak|talk)$/.test(q)) return "Tap the speaker in this chat to mute or unmute my voice. The rest of the OS stays silent.";
+  if (/download|offline brain|webllm|private ai/.test(q)) return "On WebGPU devices, tap Download offline brain (~1 GB) once. Then I can chat privately with no network.";
+  if (/^(joke|tell me a joke|funny)[!?.]*$/.test(q)) return "Why did the HUD go to therapy? Too many unresolved overlays.";
+  return "Try: weather later, will it rain, how's BTC, portfolio, open Spotify, call mom, start focus 25, directions home, add note buy milk, remind me, convert 50 usd to eur, or ask anything.";
 }
 function routeZapIntent(raw) {
   var q = String(raw || "").trim().toLowerCase();
+  var orig = String(raw || "").trim();
   if (!q) return { skill: "help", text: HELP_TEXT };
-  if (/^(help|what can you|commands|\?)$/.test(q) || (/\bhelp\b/.test(q) && q.length < 24)) {
-    return { skill: "help", text: HELP_TEXT };
+
+  // Exact FAQ / greetings only
+  if (/^(hi|hello|hey|yo|sup|good (morning|afternoon|evening))[!?.]*$/.test(q) ||
+      /^(thanks|thank you|thx|ty)[!?.]*$/.test(q) ||
+      /^(who are you|what are you|your name)[!?.]*$/.test(q) ||
+      /^(help|what can you( do)?|commands|\?)[!?.]*$/.test(q) ||
+      /^(joke|tell me a joke)[!?.]*$/.test(q)) {
+    return { skill: "chat.local", text: zapOfflineFaq(q) };
   }
+  if (/^how (do i|to)\b/.test(q) && /(home screen|install|add (an? )?app|theme|favorite|dial|call|phone|focus|timer|market|holding|portfolio|map|direction|note|calendar|reminder|wallet)/.test(q)) {
+    return { skill: "chat.local", text: zapOfflineFaq(q) };
+  }
+
   if (/\b(what('?s| is)?\s+)?(the\s+)?(time|date|day)\b/.test(q) || /^(time|date)$/.test(q)) {
     var d = new Date();
     var line = DOW[d.getDay()] + " " + MON[d.getMonth()] + " " + d.getDate() + " · " + ((d.getHours() % 12) || 12) + ":" + pad2(d.getMinutes()) + (d.getHours() < 12 ? " AM" : " PM");
     return { skill: "time.now", text: line };
   }
+
+  // Math: "what is 12*8", "calculate 2+2", bare expression
+  if (/^(what('?s| is)|calculate|compute|math)\b/.test(q) || /^[\d(][\d+\-*/().%\s]+$/.test(q)) {
+    var expr = orig.replace(/^(what('?s| is)|calculate|compute|math)\s+/i, "").replace(/\?+$/, "").trim();
+    if (/^[\d(][\d+\-*/().%\s]+$/.test(expr)) {
+      var mv = zapEvalMath(expr);
+      if (mv != null) return { skill: "math.eval", text: expr.replace(/\s+/g, "") + " = " + mv };
+    }
+  }
+
+  // Currency / unit convert via frankfurter
+  var cm = q.match(/(?:convert\s+)?(\d+(?:\.\d+)?)\s*([a-z]{3})\s+(?:to|in|into)\s+([a-z]{3})\b/) ||
+           q.match(/(\d+(?:\.\d+)?)\s*(usd|eur|gbp|jpy|cad|aud|chf|mxn|inr)\s+(?:to|in)\s+(usd|eur|gbp|jpy|cad|aud|chf|mxn|inr)\b/);
+  if (cm) {
+    var amt = parseFloat(cm[1]), fr = cm[2].toUpperCase(), to = cm[3].toUpperCase();
+    return {
+      skill: "fx.convert",
+      text: "Converting " + amt + " " + fr + " → " + to + "…",
+      async: true,
+      runAsync: function () {
+        return fetch("https://open.er-api.com/v6/latest/" + encodeURIComponent(fr), { cache: "no-store" })
+          .then(function (r) { return r.json(); })
+          .then(function (j) {
+            var rate = j && j.rates && j.rates[to];
+            if (rate == null) throw new Error("no rate");
+            var v = amt * rate;
+            return amt + " " + fr + " ≈ " + (Math.round(v * 100) / 100) + " " + to + ".";
+          })
+          .catch(function () { return "Couldn't reach the free FX rate. Try again online."; });
+      }
+    };
+  }
+
+  // Define
+  var dm = q.match(/^(define|definition of|what does|what is)\s+([a-z][a-z\-']{1,40})\??$/i) ||
+           q.match(/^define\s+([a-z][a-z\-']{1,40})\??$/);
+  if (dm) {
+    var word = (dm[2] || dm[1] || "").toLowerCase();
+    if (word && !/weather|bitcoin|btc|gold|time|date|portfolio|focus/.test(word)) {
+      return {
+        skill: "dict.define",
+        text: "Looking up “" + word + "”…",
+        async: true,
+        runAsync: function () {
+          return fetch("https://api.dictionaryapi.dev/api/v2/entries/en/" + encodeURIComponent(word), { cache: "no-store" })
+            .then(function (r) { return r.json(); })
+            .then(function (j) {
+              var m = j && j[0] && j[0].meanings && j[0].meanings[0];
+              var def = m && m.definitions && m.definitions[0] && m.definitions[0].definition;
+              return def ? (word + ": " + def) : ("No short definition for “" + word + "”.");
+            })
+            .catch(function () { return "Dictionary offline — try again when connected."; });
+        }
+      };
+    }
+  }
+
+  // Quick facts (small local set; else chat)
+  var facts = {
+    "earth": "Earth is the third planet from the Sun; one day ≈ 24 hours, one year ≈ 365.25 days.",
+    "moon": "The Moon is Earth's only natural satellite; average distance ≈ 384,400 km.",
+    "sun": "The Sun is a G-type main-sequence star; light takes about 8 minutes to reach Earth.",
+    "bitcoin": "Bitcoin is a decentralized digital currency launched in 2009. Ask “how's BTC” for the live quote.",
+    "zapwise": "ZAPWISE//OS is your personal home-screen OS — weather, markets, focus, phone, and ZAP AI."
+  };
+  var fm = q.match(/^(quick )?fact(s)? (about |on |for )?([a-z][a-z0-9 \-]{1,40})$/) ||
+           q.match(/^tell me (a |something )?about\s+([a-z][a-z0-9 \-]{1,40})$/);
+  if (fm) {
+    var topic = (fm[4] || fm[2] || "").trim().toLowerCase();
+    if (facts[topic]) return { skill: "fact.local", text: facts[topic] };
+  }
+
+  // Notes
+  var nm = orig.match(/^(?:add\s+)?note(?:s)?\s+(?:that\s+|to\s+|:)?.+$/i) || orig.match(/^add note\s+(.+)$/i);
+  if (/\b(add|new|save)\s+note\b/.test(q) || /^note\s+\S/.test(q)) {
+    var body = orig.replace(/^(?:please\s+)?(?:add\s+)?(?:a\s+)?note(?:s)?\s*(?:that\s+|to\s+|:\s*)?/i, "").trim();
+    if (!body || /^(open|list|show)$/i.test(body)) {
+      var notes = zapLoadNotes();
+      return { skill: "notes.list", text: notes.length ? ("Notes: " + notes.slice(0, 5).map(function (n) { return n.t; }).join(" · ")) : "No notes yet. Say “add note buy milk”.",
+        action: { label: "Notes", run: function () { closeZapAssistant(); try { $("#tdNote").click(); } catch (e) {} } } };
+    }
+    var arr = zapLoadNotes();
+    arr.unshift({ t: body.slice(0, 160), at: Date.now() });
+    zapSaveNotes(arr);
+    return { skill: "notes.add", text: "Saved note: “" + body.slice(0, 80) + "”." };
+  }
+  if (/^(list|show|my)\s+notes?\b|^notes\b/.test(q) && !/add/.test(q)) {
+    var ns = zapLoadNotes();
+    return { skill: "notes.list", text: ns.length ? ("Notes: " + ns.slice(0, 6).map(function (n) { return n.t; }).join(" · ")) : "No notes yet." };
+  }
+
+  // Reminders
+  if (/\b(remind me|set (a )?reminder|reminder)\b/.test(q)) {
+    var rb = orig.replace(/^(please\s+)?(remind me( to)?|set (a )?reminder( to| for)?|reminder:?)\s*/i, "").trim() || "something";
+    var rem = zapLoadReminders();
+    rem.unshift({ t: rb.slice(0, 160), at: Date.now() });
+    zapSaveReminders(rem);
+    return { skill: "reminder.add", text: "Reminder saved: “" + rb.slice(0, 80) + "”. (Shown here — enable phone reminders in your system app for alerts.)" };
+  }
+
   if (/^call\b|\bdial\b/.test(q) || (/\bphone\b/.test(q) && /call|dial|favorite/.test(q))) {
     var want = q.replace(/^(please\s+)?(call|dial|phone)\s+(me\s+)?/, "").trim();
-    var favs = FAVS || [];
+    var favs = (typeof FAVS !== "undefined" && FAVS && FAVS.length) ? FAVS : (Store.get("favs", []) || []);
     var hit = null;
     if (want) hit = favs.filter(function (f) { return (f.name || "").toLowerCase().indexOf(want) >= 0; })[0];
     if (!hit && favs.length === 1) hit = favs[0];
     if (!hit) return { skill: "call.fav", text: favs.length ? ("Say “call ” + a favorite: " + favs.map(function (f) { return f.name; }).join(", ")) : "No favorites yet. Save one from Phone.", action: { label: "Phone", run: function () { closeZapAssistant(); openDial(); } } };
     return {
       skill: "call.fav",
-      text: "Call " + hit.name + "?",
-      action: { label: "Call", run: function () { closeZapAssistant(); callNum(hit.num); } }
+      text: "Calling " + hit.name + ".",
+      action: { label: "Call", run: function () { closeZapAssistant(); try { logCall(hit.num, hit.name, "OUT"); } catch (e) {} callNum(hit.num); } }
     };
   }
   if (/open\s+phone|show\s+(the\s+)?(dialer|keypad)|phone\s+pad/.test(q)) {
@@ -5334,26 +5671,22 @@ function routeZapIntent(raw) {
       action: { label: "Add holding", run: function () { closeZapAssistant(); try { openAddHolding(); } catch (e) { toggleXp("mk"); } } }
     };
   }
-  if (/net\s*worth|portfolio|balance|how much|holdings/.test(q)) {
+  if (/net\s*worth|portfolio|balance|how much.*(worth|have|portfolio)|my holdings/.test(q) || /^(portfolio|holdings)$/.test(q)) {
     var st = portfolioStats();
     var txt = st.priced
       ? ("Net worth " + money(st.total) + (st.day != null ? (" · today " + signedMoney(st.day)) : ""))
       : "No priced holdings yet. Add an account from Markets.";
     return { skill: "portfolio.total", text: txt, action: { label: "Open portfolio", run: function () { closeZapAssistant(); toggleXp("mk"); } } };
   }
-  if (/weather|forecast|temperature|temp\b|rain|hot|cold/.test(q)) {
-    var line = "Weather unavailable yet.";
-    try {
-      if (WX && WX.j) {
-        var cur = WX.j.current_weather || (WX.j.current) || {};
-        var t = cur.temperature != null ? cur.temperature : cur.temp;
-        var place = (WX.place || "Here");
-        line = place + " · " + (t != null ? (Math.round(+t) + "°") : "--");
-      }
-    } catch (e) {}
-    return { skill: "weather.now", text: line, action: { label: "Open weather", run: function () { closeZapAssistant(); toggleXp("wx"); } } };
+
+  // Weather — now / later / rain
+  if (/weather|forecast|temperature|temp\b|rain|umbrella|hot|cold|humid/.test(q)) {
+    var kind = /later|tonight|afternoon|evening|forecast|tomorrow/.test(q) ? "later" : (/rain|umbrella|wet/.test(q) ? "rain" : "now");
+    return { skill: "weather." + kind, text: zapWxSummary(kind), action: { label: "Open weather", run: function () { closeZapAssistant(); toggleXp("wx"); } } };
   }
-  if (/\b(go|drive|navigate|directions?)\b/.test(q) || /\bhome\b/.test(q) || /\bwork\b/.test(q)) {
+
+  // Directions — require go/drive/navigate/directions OR explicit "directions home"
+  if (/\b(go|drive|navigate|directions?)\b/.test(q) || /^(home|work)$/.test(q) || /\bdirections (to )?(home|work)\b/.test(q)) {
     var places = loadPlaces();
     var wantP = null;
     var m = q.match(/(?:directions?|drive|navigate|go)\s+(?:to\s+)?(.+)$/);
@@ -5367,7 +5700,7 @@ function routeZapIntent(raw) {
     if (!hitP) return { skill: "places.go", text: "No saved places yet. Add Home or Work on the map card." };
     return {
       skill: "places.go",
-      text: "Directions to " + (hitP.name || "place") + "?",
+      text: "Directions to " + (hitP.name || "place") + ".",
       action: { label: "Go", run: function () { closeZapAssistant(); openDirectionsTo(hitP); } }
     };
   }
@@ -5391,27 +5724,34 @@ function routeZapIntent(raw) {
   if (/maps|where am i|locate/.test(q)) {
     return { skill: "maps.here", text: GPS ? ("You are near " + ((PLACE && (PLACE.road || PLACE.city)) || (GPS.lat.toFixed(4) + ", " + GPS.lon.toFixed(4)))) : "Location off or still finding you.", action: { label: "Open Maps", run: function () { closeZapAssistant(); openMapsHere(); } } };
   }
-  if (/^(start\s+)?focus\b|pomodoro|timer|start focus/.test(q)) {
-    return { skill: "focus.start", text: "Start a " + ((FOC && FOC.mins) || 25) + "-minute focus sprint?", action: { label: "Start focus", run: function () { closeZapAssistant(); try { focusToggle(); setHudTab("focus", { silent: true }); } catch (e) {} } } };
+  if (/focus|pomodoro|timer/.test(q)) {
+    var mins = 25;
+    var mm = q.match(/\b(\d{1,3})\s*(m|min|mins|minutes)?\b/);
+    if (mm) mins = Math.max(1, Math.min(180, parseInt(mm[1], 10)));
+    else if (/50|long/.test(q)) mins = 50;
+    else if (/15|short/.test(q)) mins = 15;
+    return {
+      skill: "focus.start",
+      text: "Starting a " + mins + "-minute focus sprint.",
+      action: {
+        label: "Focus",
+        auto: true,
+        run: function () {
+          try { FOC = { st: "idle", mins: mins }; Store.setLocal("focus", FOC); if (FOC.st !== "run") focusToggle(); setHudTab("focus", { silent: true }); } catch (e) {}
+        }
+      }
+    };
   }
-  if (/btc|bitcoin|gold|paxg|markets?/.test(q)) {
+  if (/btc|bitcoin|gold|paxg|markets?|how('?s| is) (btc|bitcoin|gold)/.test(q)) {
     var dmk = MK && MK.d || {};
     var btc = dmk.bitcoin, gold = dmk["pax-gold"];
     var bits = [];
-    if (btc) bits.push("BTC " + money(btc.usd));
+    if (btc) bits.push("BTC " + money(btc.usd) + (btc.usd_24h_change != null ? (" (" + (btc.usd_24h_change >= 0 ? "+" : "") + btc.usd_24h_change.toFixed(1) + "%)") : ""));
     if (gold) bits.push("GOLD " + money(gold.usd));
     return { skill: "markets.quote", text: bits.length ? bits.join(" · ") : "Markets still loading.", action: { label: "Markets", run: function () { closeZapAssistant(); toggleXp("mk"); } } };
   }
   if (/\bnote|notes\b/.test(q)) {
     return { skill: "notes.open", text: "Open Notes?", action: { label: "Notes", run: function () { closeZapAssistant(); try { $("#tdNote").click(); } catch (e) {} } } };
-  }
-  // Local smalltalk / FAQ — always answer, skip network
-  if (/^(hi|hello|hey|yo|sup|good (morning|afternoon|evening))\b/.test(q) ||
-      /^(thanks|thank you|thx|ty)\b/.test(q) ||
-      /who are you|what are you|your name|what can you|help\b|commands/.test(q) ||
-      /how (do i|to)\b/.test(q) ||
-      /^(joke|tell me a joke)\b/.test(q)) {
-    return { skill: "chat.local", text: zapOfflineFaq(q) };
   }
   // Not an action — hand off to online/offline AI (never hard-fail)
   return { skill: "chat", text: "" };
@@ -5590,7 +5930,18 @@ function zapHandle(raw) {
   zapAppend("user", q);
   var intent = routeZapIntent(q);
   if (intent.skill !== "chat") {
+    if (intent.async && typeof intent.runAsync === "function") {
+      var thinkA = zapAppend("bot", intent.text || "…", null, { skipHist: true });
+      Promise.resolve()
+        .then(function () { return intent.runAsync(); })
+        .then(function (txt) { zapFinishBot(thinkA, txt || intent.text, intent.action); updateZapBadge(); })
+        .catch(function () { zapFinishBot(thinkA, intent.text || "Couldn't finish that.", intent.action); updateZapBadge(); });
+      return;
+    }
     zapAppend("bot", intent.text, intent.action);
+    if (intent.action && intent.action.auto) {
+      try { intent.action.run(); } catch (eA) {}
+    }
     updateZapBadge();
     return;
   }
@@ -5732,6 +6083,13 @@ try {
   window.ZAPOS.closeSheet = closeSheet;
   window.ZAPOS.dismissOverlay = function () { dismissTopOverlay(false); };
   window.ZAPOS.routeZap = routeZapIntent;
+  window.ZAPOS.setFavs = function (arr) { FAVS = Array.isArray(arr) ? arr : []; saveFavs(); return FAVS; };
+  window.ZAPOS.seedWx = function (wx) { try { WX = wx; Store.setLocal("wx", wx); } catch (e) {} };
+  window.ZAPOS.detectChain = detectChain;
+  window.ZAPOS.applyWallpaper = applyWallpaper;
+  window.ZAPOS.wallpaperMode = wallpaperMode;
+  window.ZAPOS.logCall = logCall;
+  window.ZAPOS.zapHandle = zapHandle;
 } catch (e) {}
 if (!Store.getLocal("seenHelp", false)) { var _sa = false; try { _sa = window.navigator.standalone === true || (window.matchMedia && matchMedia("(display-mode: standalone)").matches); } catch (eTip) {} if (!_sa) { Store.setLocal("seenHelp", true); setTimeout(function () { toast("Add to Home Screen: MENU → Help"); }, 1800); } else { Store.setLocal("seenHelp", true); } }
 })();

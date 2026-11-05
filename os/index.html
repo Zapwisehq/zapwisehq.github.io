@@ -7,14 +7,18 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="description" content="ZAPWISE//OS: calm glass HUD — clock, weather, map, markets, focus, apps.">
 <meta name="theme-color" content="#070814">
-<meta name="zapos-version" content="4.7.1">
+<meta name="zapos-version" content="4.8.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="/os/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/os/icon-180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/os/icon-192.png">
-<link rel="stylesheet" href="/os/app.css?v=4.7.1">
-<link rel="stylesheet" href="/os/cinematic.css?v=4.7.1">
+<link rel="stylesheet" href="/os/app.css?v=4.8.0">
+<link rel="stylesheet" href="/os/cinematic.css?v=4.8.0">
+<style>
+@font-face{font-family:"Rajdhani";font-style:normal;font-weight:600;font-display:swap;src:url("/os/fonts/Rajdhani-SemiBold.ttf") format("truetype")}
+@font-face{font-family:"Rajdhani";font-style:normal;font-weight:700;font-display:swap;src:url("/os/fonts/Rajdhani-Bold.ttf") format("truetype")}
+</style>
 <script>
 (function(){try{var raw=localStorage.getItem("zapos.device");var j=raw?JSON.parse(raw):{};if(!j||typeof j!=="object")j={};if(!Object.prototype.hasOwnProperty.call(j,"liteMode")){var m=false;try{m=(window.matchMedia&&(matchMedia("(pointer: coarse)").matches||matchMedia("(max-width: 900px)").matches))||/iPhone|iPad|iPod|Android/i.test(navigator.userAgent||"")||navigator.standalone===true;}catch(e0){}if(m){j.liteMode=true;localStorage.setItem("zapos.device",JSON.stringify(j));}}if(j.liteMode)document.documentElement.classList.add("fx-lite");}catch(e){}
 try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.themeCss){var s=document.createElement("style");s.id="themeBoot";s.textContent=p.themeCss;document.head.appendChild(s);}}}catch(e){}})();
@@ -27,10 +31,12 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
  <div class="boot-msg" id="bootMsg">INITIALIZING…</div>
 </div>
 <div class="grid-bg" aria-hidden="true"></div>
+<canvas id="wpCanvas" class="wp-canvas" aria-hidden="true"></canvas>
+<div class="wp-lite" aria-hidden="true"></div>
 <div id="app">
 
  <header class="top sticky" id="top">
-  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver">v4.7.1</span></div>
+  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver">v4.8.0</span></div>
   <div class="top-r">
    <span class="sync" id="hSync"><i aria-hidden="true"></i>LIVE</span>
    <span class="hud-chip gps" id="hGpsLock" data-lock="0" hidden><i aria-hidden="true"></i>GPS —</span>
@@ -44,8 +50,17 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
 
   <div class="row2 hero-row">
    <div class="card br hero" id="heroCard">
-    <div class="h-clock" id="hClock" aria-live="off">--:--<em id="hAmpm"></em></div>
-    <div class="h-date" id="hDate">—</div>
+    <div class="h-clock hud-clock" id="hClock" data-hud="1" aria-live="off">
+     <div class="hc-sweep" aria-hidden="true"></div>
+     <div class="hc-time"><span class="hc-hm" id="hcHm">--:--</span><span class="hc-ampm" id="hAmpm">--</span></div>
+     <div class="hc-sec" id="hcSec" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+     <div class="hc-tags" id="hDate">
+      <span class="hc-tag" id="hcDow">---</span>
+      <span class="hc-tag" id="hcMon">---</span>
+      <span class="hc-tag" id="hcDom">--</span>
+     </div>
+     <div class="hc-bar" aria-hidden="true"><i></i></div>
+    </div>
     <div class="hero-bot"><span class="greet" id="greet"></span></div>
    </div>
    <div class="card br play" id="hPlay">
@@ -291,8 +306,9 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/os/catalog.js?v=4.7.1"></script>
-<script src="/os/sky.js?v=4.7.1"></script>
-<script src="/os/app.js?v=4.7.1"></script>
+<script src="/os/wallpaper.js?v=4.8.0"></script>
+<script src="/os/catalog.js?v=4.8.0"></script>
+<script src="/os/sky.js?v=4.8.0"></script>
+<script src="/os/app.js?v=4.8.0"></script>
 </body>
 </html>

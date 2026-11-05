@@ -1,6 +1,6 @@
 {
-  "version": "4.7.1",
-  "released": "2026-11-05",
-  "name": "ZAPWISE//OS",
-  "notes": "ZAP AI: local smalltalk/FAQ first; sanitize replies (no markdown/context dump). QA-hardened after 4.7.0 visual pass."
+  "version": "4.8.0",
+  "built": "2026-11-05",
+  "channel": "stable",
+  "notes": "v4.8.0: iOS wallet paste + PASTE btn; Weather first-tap fix; COMMS LOG HUD; ZAP AI tools (math/FX/notes/reminders/wx); neon-city live wallpaper; angular HUD clock (Rajdhani)."
 }
