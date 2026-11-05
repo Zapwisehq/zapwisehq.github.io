@@ -7,7 +7,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="description" content="ZAPWISE//OS: calm glass HUD — clock, weather, map, markets, focus, apps.">
 <meta name="theme-color" content="#070814">
-<meta name="zapos-version" content="4.9.5">
+<meta name="zapos-version" content="4.9.6">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="/os/manifest.webmanifest">
@@ -26,7 +26,7 @@
 <link rel="apple-touch-startup-image" media="(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/os/splash/splash-1206x2622.png">
 <link rel="apple-touch-startup-image" media="(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/os/splash/splash-1320x2868.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/os/icon-192.png">
-<link rel="stylesheet" href="/os/app.css?v=4.9.5">
+<link rel="stylesheet" href="/os/app.css?v=4.9.6">
 <style>
 @font-face{font-family:"Rajdhani";font-style:normal;font-weight:600;font-display:swap;src:url("/os/fonts/Rajdhani-SemiBold.woff2") format("woff2"),url("/os/fonts/Rajdhani-SemiBold.ttf") format("truetype")}
 @font-face{font-family:"Rajdhani";font-style:normal;font-weight:700;font-display:swap;src:url("/os/fonts/Rajdhani-Bold.woff2") format("woff2"),url("/os/fonts/Rajdhani-Bold.ttf") format("truetype")}
@@ -45,7 +45,7 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
 <div id="app">
 
  <header class="top sticky" id="top">
-  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver" data-app-ver>v4.9.5</span></div>
+  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver" data-app-ver>v4.9.6</span></div>
   <div class="top-r">
    <span class="sync" id="hSync"><i aria-hidden="true"></i>LIVE</span>
    <span class="hud-chip gps" id="hGpsLock" data-lock="0" hidden><i aria-hidden="true"></i>GPS —</span>
@@ -185,6 +185,17 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
    <div class="track" id="mkTickerTrack"></div>
   </div>
 
+  <div class="card br h-bk" id="hBk" role="region" aria-label="Banks">
+   <div class="mk-h">BANK<span class="mk-t" id="hBkT"></span><button type="button" class="bk-eye" id="hBkEye" aria-label="Hide balances and last 4" aria-pressed="false" title="Privacy: hide balances and last 4">👁</button></div>
+   <div class="bk-hero" id="hBkPort">
+    <b class="hmk-total" id="hBkTotal">—</b>
+    <span class="hmk-day" id="hBkSub">Balances you type · this phone only</span>
+   </div>
+   <div class="bk-grid" id="hBkGrid" role="list"></div>
+   <button type="button" class="mk-add" id="hBkAdd" aria-label="Add bank">＋ Add Bank</button>
+   <p class="note bk-foot">Tap a bank to open it · hold or Edit to change · eye hides balances + last 4 · only last 4 digits, never full numbers</p>
+  </div>
+
   <div class="row2">
    <div class="card br h-mk" id="hMk" role="button" tabindex="0" aria-label="Open markets detail" aria-expanded="false" aria-controls="xpMk">
     <div class="mk-h">MARKETS<span class="mk-t" id="hMkT">--</span></div>
@@ -194,7 +205,7 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
     </div>
     <canvas class="mk-mini-spark" id="hMkSpark" width="280" height="40" aria-hidden="true"></canvas>
     <div class="mk-items" id="hMkList"><span class="dim">Markets loading…</span></div>
-    <button type="button" class="mk-add" data-hmk-add="1" id="hMkAct" aria-label="Add account or holding">＋ Add</button>
+    <button type="button" class="mk-add" data-hmk-add="1" id="hMkAct" aria-label="Add wallet, broker or holding">＋ Add</button>
    </div>
    <div class="card br focus-card fz" id="mFocus" role="group" aria-label="Focus timer">
     <div class="mk-h fz-h">FOCUS <span class="foc-sess" id="focSess">0 TODAY</span></div>
@@ -217,6 +228,7 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
    </div>
   </div>
 
+
   <div class="xp" id="xpMk" hidden>
    <div class="xp-h detail-head"><b id="xpMkTitle">MARKETS</b></div>
    <div class="port-hero" id="portHero" aria-label="Portfolio net worth">
@@ -228,9 +240,9 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
     </div>
     <canvas class="hold-chart" id="holdChart" width="560" height="96" aria-label="Portfolio sparkline"></canvas>
    </div>
-   <div class="xp-h"><b>ACCOUNTS</b><button class="chip accent" id="xpAcctAdd" type="button">＋ ACCOUNT</button></div>
+   <div class="xp-h"><b>BROKERS &amp; WALLETS</b><button class="chip accent" id="xpAcctAdd" type="button">＋ ACCOUNT</button></div>
    <div class="acct-grid" id="acctGrid" role="list"></div>
-   <p class="note acct-note">Tap an account to open it. Long-press to edit.</p>
+   <p class="note acct-note">Tap to open · hold to edit. Banks live in the Bank bar under the ticker.</p>
    <div class="xp-h" style="margin-top:12px"><b>HOLDINGS</b><button class="chip" id="xpHoldAdd" type="button">＋ Add holding</button></div>
    <div class="quick-add" id="quickAdd" hidden>
     <div class="qa-h">ONE-TAP ADD</div>
@@ -314,8 +326,8 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/os/catalog.js?v=4.9.5"></script>
-<script src="/os/sky.js?v=4.9.5"></script>
-<script src="/os/app.min.js?v=4.9.5"></script>
+<script src="/os/catalog.js?v=4.9.6"></script>
+<script src="/os/sky.js?v=4.9.6"></script>
+<script src="/os/app.min.js?v=4.9.6"></script>
 </body>
 </html>

@@ -1256,7 +1256,8 @@ html:not(.light) .card::after{
 
 /* ===== v4.9.1 video-fix layout ===== */
 /* Ensure Markets/Focus sit fully below ticker's layout box */
-#mkTicker + .row2, .mk-ticker + .row2 { margin-top: 0; padding-top: 0; }
+#mkTicker + .h-bk, .mk-ticker + .h-bk { margin-top: -1px; } /* flush shared neon edge */
+#hBk + .row2, .h-bk + .row2 { margin-top: 0; padding-top: 0; }
 /* Focus/Maps inner controls stay above card chrome for hit-testing */
 #mFocus .foc-wrap, #mFocus .foc-btns, #mFocus [data-foc-min],
 #hMk #hMkAct, #hMk [data-hmk-add], #placeAdd, #mapOpen {
@@ -1512,3 +1513,101 @@ html.motion-on .tour-spot{transition:top .25s ease,left .25s ease,width .25s eas
 .welcome-card .wc-row::-webkit-scrollbar{display:none}
 .welcome-card .chip{flex:none;white-space:nowrap;padding:0 12px}
 #acctGrid .acct-empty{grid-column:1/-1;margin:4px 0}
+
+/* ===== v4.9.6: Bank bar — long strip flush with ticker tape width/edges ===== */
+#mkTicker.mk-ticker,#hBk.h-bk{
+  box-sizing:border-box;width:100%;max-width:100%;
+  margin-left:0;margin-right:0;align-self:stretch;
+}
+#mkTicker.mk-ticker{
+  margin-bottom:0!important;
+  border-bottom-color:transparent!important;
+}
+#hBk.h-bk{
+  position:relative;z-index:2;display:flex;flex-direction:column;gap:8px;
+  margin:0 0 14px;padding:10px 12px 12px;min-height:0;
+  width:100%;box-sizing:border-box;clear:both;
+  clip-path:polygon(0 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,10px 100%,0 calc(100% - 10px))!important;
+  border-radius:0!important;
+  border:1px solid rgba(5,217,232,.28)!important;
+  border-top:1px solid rgba(255,42,109,.55)!important; /* shared neon seam with ticker */
+  background:linear-gradient(160deg,rgba(255,42,109,.07),rgba(7,8,20,.78) 42%,rgba(5,217,232,.05))!important;
+  cursor:default;
+}
+#hBk.h-bk::after{
+  content:"";position:absolute;inset:1px;z-index:0;pointer-events:none;
+  background:rgba(7,8,20,.72);
+  clip-path:inherit;
+}
+#hBk .mk-h,#hBk .bk-hero,#hBk .bk-grid,#hBk .mk-add,#hBk .bk-foot{position:relative;z-index:1}
+#hBk .mk-h{display:flex;align-items:center;gap:8px;margin-bottom:2px}
+#hBk .mk-h .mk-t{margin-left:auto;font-size:10px;font-weight:600;letter-spacing:.04em;color:var(--dim);font-family:var(--mono);text-transform:none}
+#hBk .bk-eye{
+  flex:none;width:44px;height:44px;min-width:44px;border-radius:50%;
+  border:1px solid rgba(5,217,232,.4);background:#070814;color:#05d9e8;
+  font-size:16px;display:grid;place-items:center;cursor:pointer;padding:0;
+  -webkit-tap-highlight-color:transparent;
+}
+#hBk .bk-eye[aria-pressed="true"]{border-color:rgba(255,42,109,.55);color:#ff2aa3;opacity:.85}
+#hBk .bk-hero{display:flex;flex-direction:column;gap:2px;min-width:0;padding:2px 0 4px}
+#hBk .hmk-total{font-size:28px;font-weight:900;letter-spacing:-.02em;line-height:1.1;color:var(--ink);font-variant-numeric:tabular-nums}
+#hBk .hmk-day{font-size:12px;color:var(--mut,#9aa3b2);font-weight:600}
+#hBk.bk-private .hmk-total,#hBk.bk-private .bk-bal,#hBk.bk-private .bk-last4-digits{filter:none}
+#hBk .bk-grid{
+  display:flex;flex-direction:row;flex-wrap:nowrap;gap:10px;
+  overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;
+  scroll-snap-type:x proximity;padding:2px 2px 6px;margin:0 -2px;
+  scrollbar-width:none;
+}
+#hBk .bk-grid::-webkit-scrollbar{display:none}
+#hBk .bk-tile{
+  flex:0 0 auto;scroll-snap-align:start;
+  display:flex;flex-direction:column;align-items:flex-start;gap:6px;
+  min-width:168px;max-width:220px;min-height:112px;padding:12px;
+  clip-path:var(--hud-clip-sm);border-radius:0;
+  border:1px solid rgba(5,217,232,.22);background:rgba(7,8,20,.78);
+  color:inherit;text-align:left;cursor:pointer;
+  -webkit-user-select:none;user-select:none;touch-action:manipulation;
+}
+#hBk .bk-tile:active{transform:scale(.98);box-shadow:inset 0 0 0 1px var(--cyan)}
+#hBk .bk-tile .at-ico{width:36px;height:36px;border-radius:10px;overflow:hidden;display:grid;place-items:center;background:#111827;flex:none}
+#hBk .bk-tile .at-ico img{width:100%;height:100%;object-fit:cover}
+#hBk .bk-tile .at-ico .let{font-weight:900;font-size:16px;color:#fff}
+#hBk .bk-tile .bk-name{font-weight:800;font-size:14px;line-height:1.15;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#hBk .bk-tile .bk-last4{font-size:12px;font-weight:700;letter-spacing:.12em;color:var(--cyan);font-family:var(--mono)}
+#hBk .bk-tile .bk-bal{
+  margin-top:auto;font-size:20px;font-weight:900;letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums;color:var(--ink);line-height:1.1;
+}
+#hBk .bk-tile .bk-upd{font-size:10px;font-weight:600;color:var(--mut,#9aa3b2);letter-spacing:.04em}
+#hBk .bk-tile .bk-edit{
+  position:absolute;top:6px;right:6px;width:36px;height:36px;min-height:36px;
+  border-radius:10px;border:1px solid rgba(255,255,255,.18);background:rgba(7,8,20,.85);
+  color:var(--ink);font-size:12px;font-weight:800;display:grid;place-items:center;padding:0;z-index:2;
+}
+#hBk .bk-tile{position:relative}
+#hBk .bk-tile.empty{
+  align-items:center;justify-content:center;text-align:center;border-style:dashed;opacity:.85;
+  color:var(--muted);font-size:13px;font-weight:700;min-width:140px;
+}
+#hBk .mk-add{align-self:flex-start;margin-top:4px}
+#hBk .bk-foot{margin:2px 0 0;font-size:11px;color:var(--mut,#9aa3b2);line-height:1.35}
+#hBk.bk-private .bk-bal,#hBk.bk-private #hBkTotal{letter-spacing:.08em}
+.bank-last4-row{display:flex;align-items:center;gap:8px}
+.bank-last4-row input{flex:1;min-width:0}
+#bkLast4{font-size:16px!important;color:#f4f6fb!important;background:#0b1020!important;border:1px solid rgba(92,225,230,.45)!important;caret-color:#05d9e8;letter-spacing:.2em;font-variant-numeric:tabular-nums}
+#bkLast4::placeholder{color:#7f8aa3!important;opacity:1;letter-spacing:normal}
+.bank-last4-note{font-size:11px;color:var(--mut,#9aa3b2);margin:4px 0 0}
+/* Markets home clarity */
+.h-mk .mk-sec{font:700 10px/1 "Rajdhani",var(--mono);letter-spacing:.14em;color:var(--cyan);margin:2px 0 0;opacity:.9}
+.h-mk .mk-row{display:flex;align-items:center;gap:8px}
+.h-mk .hmk-total{font-size:26px;font-weight:900;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+@media (max-width:360px){
+  #hBk .bk-tile{min-width:148px;padding:10px}
+  #hBk .hmk-total{font-size:24px}
+  #hBk .bk-tile .bk-bal{font-size:18px}
+}
+@media (min-width:768px){
+  #mkTicker.mk-ticker,#hBk.h-bk{width:100%}
+  #hBk .bk-tile{min-width:180px}
+}
