@@ -59,9 +59,10 @@ main{padding:0 var(--padr) 8px var(--pad)}
 @media (hover:hover) and (pointer:fine){.srch-h{display:inline-flex}}
 
 /* Hero row */
-.row2{display:grid;grid-template-columns:1.1fr .9fr;gap:12px;margin-bottom:12px;align-items:stretch}
-.row2 > .card{height:100%}
-@media (max-width:420px){.row2{grid-template-columns:1fr 1fr;gap:10px}}
+.row2{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:12px;align-items:start}
+.row2 > .card{height:auto;width:100%;min-width:0;align-self:start}
+.row2.hero-row{grid-template-columns:1.05fr .95fr;align-items:start}
+.row2.hero-row > .card{height:auto;align-self:start}
 .hero{padding:16px 16px 14px;min-height:148px;display:flex;flex-direction:column;justify-content:space-between}
 .h-clock{font-size:clamp(34px,9vw,44px);font-weight:800;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums;color:var(--ink)}
 .h-clock em{font-style:normal;font-size:.38em;margin-left:6px;color:var(--amber);font-weight:800;letter-spacing:.06em;vertical-align:super}
@@ -86,8 +87,8 @@ main{padding:0 var(--padr) 8px var(--pad)}
 .np-play:active{transform:scale(.96)}
 
 /* Weather */
-.h-wx{display:block;margin-bottom:12px;padding:0;min-height:168px;isolation:isolate;cursor:pointer}
-.h-wx .fx{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:.55}
+.h-wx{display:block;margin-bottom:12px;padding:0;min-height:0;isolation:isolate;cursor:pointer;position:relative;overflow:hidden}
+.h-wx .fx,#hWx .fx{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;z-index:0!important;pointer-events:none!important;opacity:.55;display:block;max-width:none;max-height:none}
 .hw-in{position:relative;z-index:1;display:flex;flex-direction:column;gap:10px;padding:16px;background:linear-gradient(180deg,rgba(7,8,20,.15),rgba(7,8,20,.55))}
 .hw-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 .hw-temp{display:block;font-size:clamp(36px,9vw,48px);font-weight:800;letter-spacing:-.03em;line-height:1}
@@ -123,7 +124,7 @@ html.light .map-tiles{filter:none}
 .map-attr{position:absolute;left:8px;bottom:8px;z-index:3;font-size:9px;color:rgba(244,239,228,.55);text-decoration:none;background:rgba(7,8,20,.55);padding:2px 6px;border-radius:6px}
 
 /* Markets + Focus */
-.h-mk,.focus-card{padding:12px;min-height:168px;display:flex;flex-direction:column;gap:8px;cursor:pointer}
+.h-mk,.focus-card{padding:14px;min-height:0;display:flex;flex-direction:column;gap:8px;cursor:pointer}
 .mk-h{font-size:10px;font-weight:800;letter-spacing:.16em;color:var(--dim)}
 .mk-items{display:flex;flex-direction:column;gap:10px;flex:1}
 .mk-row{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center}
@@ -535,13 +536,13 @@ html[style*="--void:#10040f"]{--muted:rgba(255,245,251,.78)!important;--dim:#d4b
 .wx-cell.wide{grid-column:1/-1}
 .wx-temp-chart{touch-action:none;cursor:crosshair}
 @media (max-width:420px){
-  .play .np-body{flex-direction:column;align-items:stretch;gap:10px}
-  .play .np-pick{width:100%;min-width:0}
-  .play .np-art{width:32px;height:32px;border-radius:9px;flex:none}
+  .play .np-body{flex-direction:row;align-items:center;gap:8px}
+  .play .np-pick{flex:1;min-width:0}
+  .play .np-art{width:36px;height:36px;border-radius:10px;flex:none}
   .play .np-meta{min-width:0;flex:1;overflow:hidden}
   .play .np-meta b{font-size:12px;letter-spacing:-.01em}
   .play .np-meta small{font-size:10px}
-  .play .np-play{width:100%;height:44px;border-radius:12px;font-size:16px;box-shadow:0 6px 16px rgba(0,0,0,.3)}
+  .play .np-play{width:40px;height:40px;min-height:40px;border-radius:12px;font-size:14px;flex:none;box-shadow:0 4px 12px rgba(0,0,0,.28)}
 }
 @media (max-width:360px){
   .wx-grid{gap:6px}
@@ -628,7 +629,7 @@ html[style*="--void:#10040f"]{--muted:rgba(255,245,251,.78)!important;--dim:#d4b
 html,body{overscroll-behavior-y:none;overscroll-behavior:none;-webkit-overflow-scrolling:touch}
 #app{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
 .os-page{display:flex;flex-direction:column;gap:12px;padding:0 var(--pad) 8px;padding-right:var(--padr)}
-.row2.hero-row{align-items:stretch}
+.row2.hero-row{align-items:start}
 .card.br{animation:none}
 .br:before,.br:after{animation:none;opacity:.9;filter:drop-shadow(0 0 2px rgba(240,162,2,.45))}
 /* Soft starry bg already in .grid-bg — calm, no cinematic stage */
@@ -1398,10 +1399,13 @@ html:not(.motion-on) .mk-ticker .tape-seg[aria-hidden]{display:none!important}
 .asst-dock{display:none!important}
 .top-r .h-mic{position:static!important;width:44px!important;height:44px!important;min-width:44px;min-height:44px;flex:0 0 44px;border-radius:50%;
   border:1px solid rgba(92,225,230,.6)!important;background:#070814!important;color:#05d9e8!important;display:grid!important;place-items:center;box-shadow:0 0 0 1px rgba(0,0,0,.3)!important;padding:0!important}
-@media (max-width:420px){
-  .top-r .h-theme{font-size:0!important;letter-spacing:0!important;width:44px;padding:0!important;justify-content:center;gap:0!important}
+@media (max-width:767px){
+  .top-r .h-theme{font-size:0!important;letter-spacing:0!important;width:44px;min-width:44px;padding:0!important;justify-content:center;gap:0!important}
   .top-r .h-theme i{width:16px;height:16px}
-  .top-r{gap:6px!important}
+  .top-r{gap:4px!important;max-width:64%;min-width:0;overflow:hidden}
+  .top{min-width:0;overflow:hidden}
+  .brand{min-width:0;overflow:hidden;text-overflow:ellipsis}
+  .top-r .sync{padding:6px 8px;font-size:9px}
 }
 @media (max-width:400px){.brand .decode{display:none!important}.brand{letter-spacing:.02em!important;font-size:12px!important}.brand .ver{font-size:9px!important;letter-spacing:.04em!important;padding:2px 4px!important;margin-left:3px!important}}
 @media (max-width:400px){.brand{text-overflow:clip!important;flex:1 1 auto}.brand .ver{display:none!important}}
@@ -1775,7 +1779,7 @@ html.motion-on .card-holo .card-holo-sweep{
   transform:translate3d(-120%,0,0) skewX(-12deg);
 }
 /* content above hologram layer */
-html.motion-on .card.br > *:not(.card-holo){position:relative;z-index:1}
+html.motion-on .card.br > *:not(.card-holo):not(.fx):not(canvas.fx){position:relative;z-index:1}
 html.motion-on .card.br.is-live > .card-holo .card-holo-tint{
   animation:holoTintDrift 8.5s ease-in-out infinite !important;
   animation-delay:var(--holo-delay,0s) !important;
@@ -1844,3 +1848,155 @@ html.motion-on .panel-group > .panel-inner{z-index:2}
 .bk-link-auto.is-unset{border-style:dashed}
 
 .bk-link-note{display:block;margin-top:6px;font:600 10px/1.2 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:rgba(247,240,232,.4);text-align:center}
+
+
+/* ===== v4.10.0 layout: phone-first single column, no empty weather, dial fits ===== */
+/* Default .row2 stacks on phones; hero-row (clock+music) stays 2-col; tools stack until tablet */
+.row2{
+  display:grid!important;
+  grid-template-columns:1fr!important;
+  gap:12px!important;
+  align-items:start!important;
+  margin-bottom:12px;
+}
+.row2 > .card{
+  width:100%!important;min-width:0!important;max-width:100%!important;
+  height:auto!important;align-self:start!important;
+}
+/* Today: clock | music stay side-by-side on phone */
+.row2.hero-row{
+  grid-template-columns:1.05fr .95fr!important;
+  gap:12px!important;
+  align-items:start!important;
+}
+.row2.hero-row > .card{
+  height:auto!important;align-self:start!important;min-width:0!important;
+}
+/* Tools: Focus then Phone — always full-width under 768 */
+.row2.panel-tools{
+  grid-template-columns:1fr!important;
+  align-items:start!important;
+}
+@media (min-width:768px){
+  .row2{
+    grid-template-columns:1fr 1fr!important;
+    align-items:start!important;
+  }
+  .row2.hero-row{grid-template-columns:1.1fr .9fr!important}
+  .row2.panel-tools{grid-template-columns:1fr 1fr!important;align-items:start!important}
+}
+
+/* Consistent card padding / gaps */
+.card.br{box-sizing:border-box}
+#mFocus.fz,#phoneMount{padding:14px!important}
+#mFocus.fz{min-height:0!important;height:auto!important;align-self:start!important}
+.panel-group{padding:14px}
+.panel-tools{margin-top:4px}
+
+/* Weather: hug content — fx canvas must NEVER take layout space */
+#hWx.h-wx,.h-wx{
+  min-height:0!important;height:auto!important;
+  position:relative!important;overflow:hidden;
+  padding:0!important;margin-bottom:12px;
+}
+#hWx .fx,#hWx canvas.fx,.h-wx .fx{
+  position:absolute!important;inset:0!important;
+  width:100%!important;height:100%!important;
+  max-width:none!important;max-height:none!important;
+  z-index:0!important;pointer-events:none!important;
+  /* cancel motion-on > * {position:relative} that put canvas back in-flow (~150px empty) */
+}
+#hWx .hw-in,.h-wx .hw-in{
+  position:relative!important;z-index:1!important;
+  padding:14px!important;gap:10px;
+  display:flex;flex-direction:column;
+}
+#hWx > .card-holo{position:absolute!important;inset:0!important;z-index:0!important}
+
+/* Music play: compact circle, not a full-width slab */
+.panel-today .play .np-body{flex-direction:row!important;align-items:center!important;gap:8px!important}
+.panel-today .play .np-play{
+  width:40px!important;height:40px!important;min-height:40px!important;min-width:40px!important;
+  border-radius:12px!important;flex:none!important;
+  font-size:14px!important;
+}
+.panel-today .play .np-art{width:36px!important;height:36px!important}
+.panel-today .play{padding:10px 4px!important;gap:8px!important}
+.panel-today .hero-row{align-items:start!important;gap:12px!important}
+
+/* Phone dialer: fit inside card at 360–430 */
+#phoneMount{overflow:hidden;min-width:0}
+#phoneMount .phone-h{
+  display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;
+  gap:4px 10px;margin-bottom:10px;
+}
+#phoneMount .phone-h b{white-space:nowrap}
+#phoneMount .phone-sub{
+  font:700 10px/1.2 var(--mono);letter-spacing:.1em;color:rgba(247,240,232,.55);
+  white-space:nowrap;
+}
+#phoneMount .dl-pad{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;width:100%;max-width:min(288px,100%);margin:0 auto;
+  box-sizing:border-box;
+}
+#phoneMount .dl-k{
+  width:100%;max-width:72px;height:auto;aspect-ratio:1/1;max-height:72px;
+  margin:0 auto;border-radius:14px;box-sizing:border-box;
+  min-height:0;padding:0;
+}
+#phoneMount .dl-k b{font-size:clamp(18px,5.5vw,24px);line-height:1}
+#phoneMount .dl-k small{font-size:8px;letter-spacing:.1em}
+#phoneMount .dl-act{
+  display:grid;grid-template-columns:minmax(44px,56px) minmax(0,1fr) minmax(44px,56px);
+  gap:8px;width:100%;max-width:min(288px,100%);margin:12px auto 6px;
+  box-sizing:border-box;align-items:center;
+}
+#phoneMount .dl-call,#phoneMount .dl-sv{
+  width:100%;min-width:0;height:48px;max-height:52px;box-sizing:border-box;
+}
+#phoneMount .dl-num{font-size:clamp(18px,6vw,28px);min-height:36px;margin:2px 0 8px}
+#phoneMount .comms-title{white-space:nowrap;font-size:11px;letter-spacing:.12em}
+#phoneMount .comms-log{overflow:hidden;min-width:0}
+#phoneMount h3{font:700 11px/1.2 var(--mono);letter-spacing:.14em;color:var(--cyan);margin:14px 0 8px}
+#phoneMount .note{
+  margin-top:10px;font-size:11px;line-height:1.45;letter-spacing:0;
+  white-space:normal;word-break:break-word;overflow:visible;
+  position:relative;z-index:1;color:rgba(247,240,232,.62)!important;
+  text-shadow:none;
+}
+#phoneMount .fav-add-tile{max-width:100%;box-sizing:border-box}
+
+/* Focus dial stays reasonable when full-width */
+#mFocus .fz-dial{width:min(132px,42vw);max-width:140px}
+#mFocus .fz-p{max-width:none}
+
+/* General overflow guard on cards */
+.card.br,.panel-group,#phoneMount,#mFocus,#hWx,.panel-today{
+  max-width:100%;
+  box-sizing:border-box;
+}
+
+/* v4.10.0 top overflow + ignore intentional paint overflow */
+.top-r .h-mic,.top-r .zap-fab{overflow:visible;box-sizing:border-box}
+.card-holo,.card-holo .card-holo-tint,.card-holo .card-holo-sweep{overflow:hidden;pointer-events:none}
+.np-meta b,.np-meta small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+
+/* v4.10.0 top bar compact — chips must fit without horizontal scroll */
+@media (max-width:480px){
+  .top-r .sync{display:none!important}
+  .top-r{max-width:70%!important;gap:4px!important}
+}
+@media (max-width:767px){
+  .top{display:flex;align-items:center;gap:8px}
+  .brand{flex:1 1 auto;min-width:0}
+  .top-r{flex:0 1 auto;flex-wrap:nowrap;justify-content:flex-end}
+  .top-r .hud-chip{max-width:72px;overflow:hidden}
+  .top-r .h-mic,.top-r .zap-fab,.top-r .h-help,.top-r .avatar,.top-r .h-theme{
+    flex:0 0 44px;width:44px;height:44px;min-width:44px;overflow:hidden;
+  }
+}
+/* map stage paints tiles beyond box — clip */
+.map-v,.map-stage,#mapV{overflow:hidden!important}
+#phoneMount .comms-h{min-width:0;overflow:hidden}
+#phoneMount .comms-title{overflow:hidden;text-overflow:ellipsis;max-width:100%}

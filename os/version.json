@@ -1,6 +1,6 @@
 {
-  "version": "4.9.9",
+  "version": "4.10.0",
   "built": "2026-11-05",
   "channel": "stable",
-  "notes": "v4.9.9: Bank auto-link stub says Not set up yet (no coming-soon copy). Same as 4.9.8 otherwise — Plaid-ready adapter, Manual source, layout groups, live holograms."
+  "notes": "v4.10.0: Phone layout fix \u2014 Focus+Phone stack full-width under 768px; dial pad fits; weather empty canvas gap gone; music play compact; overflow/overlap QA."
 }

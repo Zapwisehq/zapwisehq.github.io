@@ -1,7 +1,7 @@
-/* ZAPWISE//OS web app v4.9.9 (Nov 5, 2026). Live TomTom traffic colors on the map (proxy tiles, no client API key). Bank bar under ticker (v4.9.6). Back closes one layer per press. Help tour, marquee ticker, hologram motion, compass cone, map tile cache + backup server, search cache. Source: edit app.js, run os/build.sh → app.min.js. No tabs. Voice only from ZAP AI. */
+/* ZAPWISE//OS web app v4.10.0 (Nov 5, 2026). Live TomTom traffic colors on the map (proxy tiles, no client API key). Bank bar under ticker (v4.9.6). Back closes one layer per press. Help tour, marquee ticker, hologram motion, compass cone, map tile cache + backup server, search cache. Source: edit app.js, run os/build.sh → app.min.js. No tabs. Voice only from ZAP AI. */
 (function () {
 "use strict";
-var VERSION = "4.9.9";
+var VERSION = '4.10.0';
 var APP_VERSION = VERSION;
 
 // v4.5: default Lite on coarse/mobile unless user already chose
@@ -5483,7 +5483,7 @@ function dialerHtml() {
     '<div class="dl-act"><button type="button" class="dl-sv" id="dlSave" aria-label="Save as favorite">☆</button><button type="button" class="dl-call" id="dlCall" aria-label="Call">CALL</button><button type="button" class="dl-sv" id="dlDel" aria-label="Delete last digit">⌫</button></div>' +
     '<div class="lc-strip comms-log" id="dlLast" aria-label="COMMS LOG"></div>' +
     '<h3>FAVORITES</h3><div id="dlFavs"></div>' +
-    '<p class="note" style="margin-top:10px">Call opens your phone\'s dialer. COMMS LOG & favorites stay on this device only — the web cannot read the real phone log.</p>';
+    '<p class="note">Opens your phone dialer. COMMS LOG &amp; favorites stay on this device only.</p>';
 }
 function bindDialer(b) {
   var num = "";
@@ -5527,7 +5527,7 @@ function mountPhoneScreen() {
   var host = document.getElementById("phoneMount");
   if (!host) return;
   if (host.dataset.ready === "1") return;
-  host.innerHTML = '<div class="places-h phone-h"><b>PHONE</b><span class="dim" style="letter-spacing:.08em">DIAL · FAVORITES</span></div>' + dialerHtml(); /* v4.9.5: card title */
+  host.innerHTML = '<div class="places-h phone-h"><b>PHONE</b><span class="dim phone-sub">DIAL · FAVORITES</span></div>' + dialerHtml();
   host.dataset.ready = "1";
   bindDialer(host);
 }
