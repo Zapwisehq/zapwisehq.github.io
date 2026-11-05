@@ -1,7 +1,7 @@
-/* ZAPWISE//OS web app v4.11.0 (Nov 5, 2026). Premium card holograms (foil/sweep/glow/tilt). Live TomTom traffic. Bank Plaid Worker client. Motion toggle. No tabs. Voice only from ZAP AI. Source: edit app.js → build.sh → app.min.js. */
+/* ZAPWISE//OS web app v4.12.0 (Nov 5, 2026). Product funnel + access client (gate OFF). Premium holograms. Plaid bank. Demo mode. */
 (function () {
 "use strict";
-var VERSION = '4.11.0';
+var VERSION = '4.12.0';
 var APP_VERSION = VERSION;
 
 // v4.5: default Lite on coarse/mobile unless user already chose
@@ -2288,6 +2288,83 @@ function ensureCardHolos() {
   });
 }
 applyMotion();
+
+/* ========== v4.12.0 demo mode (sample data; no personal / no real bank) ========== */
+function zapDemoMode() {
+  try { return !!(window.ZAP_ACCESS && ZAP_ACCESS.isDemo && ZAP_ACCESS.isDemo()); } catch (e) { return false; }
+}
+function seedDemoData() {
+  if (!zapDemoMode()) return;
+  try { document.documentElement.classList.add("zap-demo"); } catch (e) {}
+  try {
+    var j = {};
+    try { j = JSON.parse(localStorage.getItem("zapos.device") || "{}") || {}; } catch (e0) { j = {}; }
+    j.welcomeSeen = true;
+    j.uiMotion = true;
+    j.mapTraffic = true;
+    j.demoMode = true;
+    localStorage.setItem("zapos.device", JSON.stringify(j));
+  } catch (e1) {}
+  try {
+    if (!Store.getLocal("focus", null)) {
+      Store.setLocal("focus", { label: "Deep work", mins: 25, left: 25 * 60, running: false });
+    }
+  } catch (e2) {}
+  try {
+    var tip = document.createElement("div");
+    tip.id = "zapDemoBanner";
+    tip.setAttribute("role", "status");
+    tip.style.cssText = "position:sticky;top:0;z-index:40;padding:8px 12px;text-align:center;font:700 11px/1.3 ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase;color:#070814;background:linear-gradient(90deg,#05d9e8,#ff2a6d);";
+    tip.innerHTML = "DEMO · sample data · <a href=\"/os/product/#get-access\" style=\"color:#070814;text-decoration:underline\">Get access</a>";
+    var app = document.getElementById("app") || document.body;
+    if (app && !document.getElementById("zapDemoBanner")) app.insertBefore(tip, app.firstChild);
+  } catch (e3) {}
+  /* block real bank link UI in demo */
+  try {
+    document.addEventListener("click", function (ev) {
+      var t = ev.target && ev.target.closest && ev.target.closest(".bk-link-auto, [data-bank-link], #bkLinkAuto");
+      if (t && zapDemoMode()) { ev.preventDefault(); ev.stopPropagation(); try { toast("Demo mode — bank link disabled"); } catch (e) {} }
+    }, true);
+  } catch (e4) {}
+}
+seedDemoData();
+
+/* Access gate: never locks while gate off / worker missing; fail-open */
+(function bootAccess() {
+  if (!window.ZAP_ACCESS) return;
+  if (zapDemoMode()) return;
+  ZAP_ACCESS.check().then(function (res) {
+    if (!res || res.allowed) return;
+    /* only if gate truly on and denied */
+    var ov = document.createElement("div");
+    ov.id = "zapAccessGate";
+    ov.setAttribute("role", "dialog");
+    ov.style.cssText = "position:fixed;inset:0;z-index:9999;background:rgba(7,8,20,.92);display:flex;align-items:center;justify-content:center;padding:20px;";
+    ov.innerHTML = '<div style="max-width:420px;width:100%;padding:22px;border:1px solid rgba(5,217,232,.35);background:#0c1020;color:#f7f0e8;font-family:system-ui,sans-serif">' +
+      '<div style="font:800 12px/1 ui-monospace,monospace;letter-spacing:.14em;color:#05d9e8;margin-bottom:10px">ZAPWISE//OS ACCESS</div>' +
+      '<p style="margin:0 0 14px;line-height:1.45">Enter an invite code or license key to unlock the full OS. Or try the free demo.</p>' +
+      '<label style="display:block;font-size:12px;margin-bottom:6px">Invite or license</label>' +
+      '<input id="zapAccessKey" style="width:100%;min-height:44px;padding:10px;margin-bottom:12px;background:#070814;border:1px solid rgba(5,217,232,.4);color:#f7f0e8" autocomplete="off" />' +
+      '<button type="button" id="zapAccessGo" style="width:100%;min-height:48px;font-weight:800;border:0;background:#ff2a6d;color:#fff;cursor:pointer">Unlock</button>' +
+      '<p style="margin:12px 0 0;font-size:13px"><a href="/os/?demo=1" style="color:#05d9e8">Free demo</a> · <a href="/os/product/#get-access" style="color:#05d9e8">Get ZAPWISE//OS</a></p></div>';
+    document.body.appendChild(ov);
+    document.getElementById("zapAccessGo").onclick = function () {
+      var v = (document.getElementById("zapAccessKey").value || "").trim();
+      if (!v) return;
+      var p = v.length > 20
+        ? ZAP_ACCESS.check({ license: v })
+        : ZAP_ACCESS.redeemInvite(v).then(function (r) {
+            if (r && r.ok) return ZAP_ACCESS.check();
+            return ZAP_ACCESS.check({ invite: v });
+          });
+      p.then(function (r2) {
+        if (r2 && r2.allowed) { try { ov.remove(); toast("Access unlocked"); } catch (e) { location.reload(); } }
+        else try { toast("Code not accepted"); } catch (e2) {}
+      });
+    };
+  }).catch(function () {});
+})();
+
 try { var _rmq = matchMedia("(prefers-reduced-motion: reduce)"); if (_rmq.addEventListener) _rmq.addEventListener("change", applyMotion); } catch (e) {}
 
 /* ========== v4.11.0 gentle holo tilt (pointer / orientation; motion-on only) ========== */
@@ -5294,6 +5371,7 @@ function settingsHtml(sndOn, liteOn, tiltOn, motionOn) {
     '<button class="btn" id="stSave" type="button">SAVE</button>' +
     '<h3>UPDATES</h3><button class="btn" id="stUpdate" type="button">Check for updates</button>' +
     '<p class="note">Running v' + VERSION + '. Theme: tap the color dot in the top bar.</p>' +
+    (window.ZAP_ACCESS && ZAP_ACCESS.ownerUiWanted && ZAP_ACCESS.ownerUiWanted() ? '<div class="field" id="stInviteBox"><label>Owner · Invite someone free</label><input id="stInviteNote" placeholder="Optional note" /><button type="button" class="btn" id="stInviteGo">Create invite code</button><p class="note" id="stInviteOut"></p></div>' : '<p class="note dim" id="stInviteHint">Access gate is off for everyone until launch. Owner invite tools appear when enabled.</p>') +
     '<h3>RESET</h3><button class="btn warn" id="stReset" type="button">Reset everything to defaults</button>';
 }
 function bindSettings(b, closeAfterSave) {
@@ -7312,6 +7390,11 @@ function openLinkBankStub() {
     toast("Bank auto-link isn’t set up — balances stay manual on this phone.");
     return;
   }
+  /* Primary CTA: go straight to Plaid Link page. Settings (pair/unlink) when already linked. */
+  if (!bankDeviceReady()) {
+    location.href = (window.ZAP_BANK_PLAID && ZAP_BANK_PLAID.linkPage) || "/os/link/";
+    return;
+  }
   openBankSettings();
 }
 
@@ -7846,4 +7929,40 @@ try { startCompass(false); } catch (e) {}
 try { window.ZAPOS.startTour = startTour; window.ZAPOS.endTour = endTour; window.ZAPOS.renderBanks = renderBanks; window.ZAPOS.openAddBankPicker = openAddBankPicker; window.ZAPOS.sanitizeLast4 = sanitizeLast4; window.ZAPOS.bankPrivacyOn = bankPrivacyOn; window.ZAPOS.setBankPrivacy = setBankPrivacy; window.ZAPOS.qa.compass = function () { return { c: COMPASS, gps: GPS && GPS.lat, hd: currentHeading() }; }; window.ZAPOS.qa.hist = function () { return { depth: HIST.depth, expect: HIST.expect, layers: overlayLayers(), state: history.state, len: history.length }; }; window.ZAPOS.qa.banks = function () { return { n: loadAccounts().filter(function (a) { return a.kind === "bank"; }).length, privacy: bankPrivacyOn(), total: bankStats().total, last4s: loadAccounts().filter(function (a) { return a.kind === "bank"; }).map(function (a) { return a.last4 || null; }) }; }; window.ZAPOS.qa.holo = function () { return { motion: motionWanted(), live: document.querySelectorAll(".card.br.is-live .card-holo-foil").length, foil: !!document.querySelector(".card-holo-foil"), glow: !!document.querySelector(".card-holo-glow") }; }; } catch (eQ) {}
 setTimeout(showWelcomeOnce, 1400);
 if (!Store.getLocal("seenHelp", false)) { var _sa = false; try { _sa = window.navigator.standalone === true || (window.matchMedia && matchMedia("(display-mode: standalone)").matches); } catch (eTip) {} if (!_sa) { Store.setLocal("seenHelp", true); } else { Store.setLocal("seenHelp", true); } }
+})();
+
+/* v4.12.0 owner invite click (visible only when owner UI flag set) */
+document.addEventListener("click", function (e) {
+  var btn = e.target && e.target.closest && e.target.closest("#stInviteGo");
+  if (!btn) return;
+  e.preventDefault();
+  if (!window.ZAP_ACCESS || !ZAP_ACCESS.ACCESS_WORKER_URL) { try { toast("Access Worker not configured"); } catch (err) {} return; }
+  var noteEl = document.getElementById("stInviteNote");
+  var out = document.getElementById("stInviteOut");
+  var admin = "";
+  try { admin = sessionStorage.getItem("zapos.ownerAdminKey") || ""; } catch (e0) {}
+  if (!admin) { try { toast("Owner key not on this device"); } catch (e1) {} return; }
+  fetch(ZAP_ACCESS.ACCESS_WORKER_URL.replace(/\/$/, "") + "/v1/owner/invites", {
+    method: "POST",
+    headers: { "content-type": "application/json", "Authorization": "Bearer " + admin, "X-Device-Id": ZAP_ACCESS.deviceId() },
+    body: JSON.stringify({ uses: 1, note: (noteEl && noteEl.value) || "" })
+  }).then(function (r) { return r.json(); }).then(function (j) {
+    if (j && j.code) {
+      var link = location.origin + "/os/?invite=" + encodeURIComponent(j.code);
+      if (out) out.textContent = "Code " + j.code + " · " + link;
+      try { navigator.clipboard.writeText(link); toast("Invite link copied"); } catch (e2) { toast("Invite " + j.code); }
+    } else try { toast((j && j.error) || "Invite failed"); } catch (e3) {}
+  }).catch(function () { try { toast("Invite failed"); } catch (e4) {} });
+}, true);
+
+/* invite= redeem boot */
+(function () {
+  try {
+    var q = new URLSearchParams(location.search);
+    var inv = q.get("invite");
+    if (!inv || !window.ZAP_ACCESS) return;
+    ZAP_ACCESS.redeemInvite(inv).then(function (r) {
+      if (r && r.ok) try { toast("Invite saved on this device"); } catch (e) {}
+    }).catch(function () {});
+  } catch (e) {}
 })();

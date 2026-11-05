@@ -40,6 +40,13 @@
     .link-actions .btn.ghost { border-color: rgba(127,139,176,0.5); background: transparent; color: #b8c4e0; }
     .link-status { min-height: 1.3em; margin-top: 12px; font-size: 0.9rem; color: #05d9e8; }
     .link-status.err { color: #ff2a6d; }
+    .inapp-tip {
+      display: none; margin: 0 0 12px; padding: 10px 12px; border-radius: 10px;
+      border: 1px solid rgba(255,42,109,0.55); background: rgba(255,42,109,0.12);
+      color: #ffd0e0; font-size: 0.92rem; line-height: 1.35;
+    }
+    .inapp-tip[hidden] { display: none !important; }
+    .inapp-tip:not([hidden]) { display: block; }
   </style>
 </head>
 <body class="link-page">
@@ -48,13 +55,18 @@
     <h1>Link your bank</h1>
     <p>You'll sign in on your bank's own screen. We never see your bank password. Only balances and last 4 digits come back.</p>
     <p class="note">Free read-only link · USAA and other US banks · stays on this device after you finish.</p>
+    <div class="inapp-tip" id="inAppTip" hidden>
+      You're in an in-app browser. Bank sign-in often can't return here.
+      <strong>Open this page in Safari</strong> for the bank sign-in to finish.
+    </div>
     <div class="link-actions">
       <button type="button" class="btn primary" id="btnLink">Continue to bank login</button>
+      <button type="button" class="btn ghost" id="btnCopyLink" hidden>Copy link for Safari</button>
       <a class="btn ghost" id="btnBack" href="/os/">Back to OS</a>
     </div>
     <div class="link-status" id="status" aria-live="polite"></div>
   </main>
   <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
-  <script src="./link.js"></script>
+  <script src="./link.js?v=4.11.1"></script>
 </body>
 </html>
