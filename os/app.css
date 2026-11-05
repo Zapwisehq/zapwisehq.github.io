@@ -897,3 +897,60 @@ html.fx-paused .zap-hex{animation-play-state:paused!important}
 
 /* segmented meters polish */
 .seg button{border-radius:4px;font-family:var(--mono);letter-spacing:.08em;font-size:11px}
+
+
+/* === v3.12 3D layer === */
+html.fx-3d .card.br.hud-panel{transform-style:preserve-3d;will-change:transform;transition:transform .18s ease-out,box-shadow .18s}
+html.fx-3d .card.br.hud-panel.tilt-live{
+  box-shadow:0 18px 40px rgba(0,0,0,.45),
+    calc(var(--tilt-x,0)*12px) calc(var(--tilt-y,0)*12px) 0 rgba(61,231,255,.22),
+    inset 0 0 0 1px rgba(61,231,255,.25);
+}
+html.fx-lite .card.br.hud-panel{transform:none!important;will-change:auto}
+.map-gl{position:absolute;inset:0;z-index:1;border-radius:inherit}
+.map-v.map-3d .map-stage{pointer-events:none}
+.map-v.map-3d .map-markers{z-index:5;pointer-events:none}
+.map-v.map-3d .map-tools{z-index:6}
+.map-v.map-3d .map-msg,.map-v.map-3d .map-attr,.map-v.map-3d .map-traffic-note{z-index:6}
+.map-v.map-3d .map-shade{opacity:.35;z-index:2}
+.zap-orb3d{position:absolute;inset:0;border-radius:inherit;overflow:hidden;pointer-events:none;z-index:1}
+.zap-orb3d canvas{width:100%!important;height:100%!important;display:block}
+html.fx-3d .zap-fab.zap-orb .zap-hex{opacity:.15}
+html.fx-lite .zap-orb3d{display:none}
+.boot-fx{position:absolute;inset:0;z-index:0;pointer-events:none}
+.sky-parallax{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden}
+.sky-p{position:absolute;left:-8%;right:-8%;bottom:0;height:70%;opacity:.55;
+  background:linear-gradient(90deg,transparent 0%,rgba(61,231,255,.08) 20%,rgba(240,162,2,.1) 50%,rgba(61,231,255,.08) 80%,transparent 100%);
+  clip-path:polygon(0% 100%,4% 62%,8% 78%,12% 40%,16% 70%,22% 28%,28% 66%,34% 22%,40% 58%,46% 18%,52% 64%,58% 30%,64% 72%,70% 24%,76% 60%,82% 36%,88% 68%,94% 42%,100% 100%);
+  transform:translate3d(0,0,0);will-change:transform}
+.sky-p.far{opacity:.28;height:58%;bottom:8%}
+.sky-p.mid{opacity:.4;height:64%;bottom:4%;filter:hue-rotate(20deg)}
+.sky-p.near{opacity:.5;height:72%;filter:hue-rotate(-10deg)}
+html.fx-lite .sky-parallax{display:none}
+/* sheet / panel 3D fly */
+html.fx-3d .sheet:not([hidden]){
+  animation:sheetFlyIn .38s cubic-bezier(.2,.8,.2,1) both;
+  transform-origin:50% 100%;
+}
+html.fx-3d .sheet.sheet-out{animation:sheetFlyOut .28s ease-in both}
+@keyframes sheetFlyIn{
+  from{opacity:0;transform:translateX(-50%) translateY(28px) rotateX(8deg) scale(.96)}
+  to{opacity:1;transform:translateX(-50%) translateY(0) rotateX(0) scale(1)}
+}
+@keyframes sheetFlyOut{
+  from{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}
+  to{opacity:0;transform:translateX(-50%) translateY(24px) rotateX(6deg) scale(.97)}
+}
+html.fx-3d .zap-sheet:not([hidden]){
+  animation:zapFlyIn .34s cubic-bezier(.2,.8,.2,1) both;
+}
+@keyframes zapFlyIn{
+  from{opacity:0;transform:translateY(16px) scale(.96)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+@media (prefers-reduced-motion:reduce){
+  html.fx-3d .sheet:not([hidden]),html.fx-3d .sheet.sheet-out,html.fx-3d .zap-sheet:not([hidden]){animation:none}
+  html.fx-3d .card.br.hud-panel{transition:none}
+}
+html.fx-paused .sky-p,html.fx-paused .zap-orb3d canvas{animation-play-state:paused!important}
+.lite-pill{display:inline-flex;align-items:center;gap:6px;font-size:11px;letter-spacing:.08em;color:var(--muted)}

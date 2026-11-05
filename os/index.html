@@ -7,10 +7,10 @@
 <meta name="robots" content="noindex,follow">
 <meta name="description" content="ZAPWISE//OS: one full-screen home for your clock, weather, markets, map and apps.">
 <meta name="theme-color" content="#070814">
-<meta name="zapos-version" content="3.11.0">
+<meta name="zapos-version" content="3.12.0">
 <script>
 /* Early update probe — runs even before app.js. Reloads once if /os/version.json is newer. */
-(function(){var V="3.11.0",k="zapos.bootReload";try{if(sessionStorage.getItem(k)===V)return;}catch(e){}
+(function(){var V="3.12.0",k="zapos.bootReload";try{if(sessionStorage.getItem(k)===V)return;}catch(e){}
 fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.ok?r.json():null}).then(function(j){
   if(!j||!j.version||j.version===V)return;
   try{sessionStorage.setItem(k,j.version);sessionStorage.setItem("zapos.pendingToast","Updated to v"+j.version);}catch(e){}
@@ -22,7 +22,7 @@ fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){retu
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ZAP//OS">
 <meta name="format-detection" content="telephone=no">
-<link rel="manifest" href="/os/manifest.webmanifest?v=3.11.0">
+<link rel="manifest" href="/os/manifest.webmanifest?v=3.12.0">
 <link rel="apple-touch-icon" href="/os/icon-180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/os/icon-192.png">
 <link rel="preconnect" href="https://api.open-meteo.com" crossorigin>
@@ -30,7 +30,9 @@ fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){retu
 <link rel="preconnect" href="https://tile.openstreetmap.org" crossorigin>
 <link rel="dns-prefetch" href="https://a.tile.openstreetmap.org">
 <link rel="preconnect" href="https://nominatim.openstreetmap.org" crossorigin>
-<link rel="stylesheet" href="/os/app.css?v=3.11.0">
+<link rel="dns-prefetch" href="https://tiles.openfreemap.org">
+<link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="/os/app.css?v=3.12.0">
 <script>try{var z=JSON.parse(localStorage.getItem("zapos.device")||"{}").themeCss;if(z&&z.css){var s=document.createElement("style");s.textContent=z.css;document.head.appendChild(s);if(z.light)document.documentElement.classList.add("light");var m=document.querySelector('meta[name="theme-color"]');if(m&&z.meta)m.setAttribute("content",z.meta);}}catch(e){}</script>
 </head>
 <body class="cyber">
@@ -48,7 +50,7 @@ fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){retu
 <div id="app">
 
  <header class="top sticky hud-top" id="top">
-  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver">v3.11.0</span></div>
+  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver">v3.12.0</span></div>
   <div class="hud-status" id="hudStatus" aria-label="System status">
    <span class="hud-chip sync" id="hSync"><i aria-hidden="true"></i>SYNCED</span>
    <span class="hud-chip gps" id="hGpsLock" data-lock="0"><i aria-hidden="true"></i>GPS —</span>
@@ -76,6 +78,7 @@ fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){retu
     <div class="skyline" id="skyline" aria-hidden="true" data-period="night" data-wx="">
      <div class="sky-wash"></div>
      <div class="sky-buildings"></div>
+     <div class="sky-parallax" aria-hidden="true"><i class="sky-p far"></i><i class="sky-p mid"></i><i class="sky-p near"></i></div>
      <div class="sky-wx" id="skyWx"></div>
     </div>
     <div class="clock-wrap">
@@ -156,6 +159,7 @@ fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){retu
     </span>
    </div>
    <div class="map-v" id="mapV" aria-label="Live map">
+    <div class="map-gl" id="mapGl" hidden aria-hidden="true"></div>
     <div class="map-stage" id="mapStage">
      <div class="map-tiles" id="mapTiles"></div>
      <div class="map-markers" id="mapMarkers" aria-hidden="true">
@@ -285,6 +289,7 @@ fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){retu
 </div>
 
 <button type="button" class="zap-fab zap-orb" id="zapFab" aria-label="Open ZAP assistant" title="ZAP assistant">
+ <span class="zap-orb3d" aria-hidden="true"></span>
  <span class="zap-hex" aria-hidden="true"></span>
  <svg class="zap-wave" id="zapWave" viewBox="0 0 64 24" aria-hidden="true" preserveAspectRatio="none">
   <polyline id="zapWaveLine" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" points="0,12 64,12"/>
@@ -322,8 +327,8 @@ fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){retu
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/os/catalog.js?v=3.11.0"></script>
-<script src="/os/sky.js?v=3.11.0"></script>
-<script src="/os/app.js?v=3.11.0"></script>
+<script src="/os/catalog.js?v=3.12.0"></script>
+<script src="/os/sky.js?v=3.12.0"></script>
+<script src="/os/app.js?v=3.12.0"></script>
 </body>
 </html>

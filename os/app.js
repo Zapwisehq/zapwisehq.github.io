@@ -1,4 +1,4 @@
-/* ZAPWISE//OS web app v3.11.0 (Nov 5, 2026). Full HUD look; honest traffic (OSRM ETA, no fake jams); Smart mode via Pollinations + private WebLLM. Static, no build step, no API keys.
+/* ZAPWISE//OS web app v3.12.0 (Nov 5, 2026). 3D hologram orb + MapLibre city (OpenFreeMap); card tilt; particle boot; Lite mode. Keeps v3.11 HUD + Smart mode + honest traffic. Static, no API keys.
    Data: Open-Meteo (weather + city search), api-bdc.io (city name for weather), CoinGecko (crypto + PAX Gold),
    mempool.space (BTC balance), ethereum.publicnode.com (ETH balance), solana.publicnode.com (SOL balance),
    OSM standard tiles (keyless, CSS dark filter) + Nominatim reverse geocoding (road + city, cached, re-queried only after moving > 40 m).
@@ -18,8 +18,53 @@
    Store.applyRemote below. */
 (function () {
 "use strict";
-var VERSION = "3.11.0";
+var VERSION = "3.12.0";
 var APP_VERSION = VERSION;
+
+// ========== v3.12 3D FX (lazy) ==========
+var _fx3dLoading = null;
+function fx3dWanted() {
+  try {
+    if (Store.getLocal("liteMode", false)) return false;
+    if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return false;
+  } catch (e) {}
+  return true;
+}
+function loadFx3d() {
+  if (window.ZAPFX3D) return Promise.resolve(window.ZAPFX3D);
+  if (_fx3dLoading) return _fx3dLoading;
+  _fx3dLoading = new Promise(function (res, rej) {
+    var s = document.createElement("script");
+    s.src = "/os/fx3d.js?v=" + VERSION;
+    s.async = true;
+    s.onload = function () { res(window.ZAPFX3D); };
+    s.onerror = function () { _fx3dLoading = null; rej(new Error("fx3d")); };
+    document.head.appendChild(s);
+  });
+  return _fx3dLoading;
+}
+function initFx3dLayer() {
+  if (!fx3dWanted()) {
+    document.documentElement.classList.add("fx-lite");
+    document.documentElement.classList.remove("fx-3d");
+    return Promise.resolve(null);
+  }
+  return loadFx3d().then(function (fx) {
+    if (!fx) return null;
+    var lite = false; try { lite = !!Store.getLocal("liteMode", false); } catch (e) {}
+    var tilt = true; try { var tv = Store.getLocal("tiltCards", null); tilt = tv == null ? true : !!tv; } catch (e) {}
+    return fx.init({ lite: lite, tilt: tilt }).then(function (info) {
+      try {
+        if (Store.getLocal("motionTilt", false)) fx.setMotionEnabled(true);
+      } catch (e) {}
+      return info;
+    });
+  }).catch(function () {
+    document.documentElement.classList.add("fx-lite");
+    return null;
+  });
+}
+
 var STATUS_MSGS = ["> SHORTCUTS ARMED", "> NET SECURE", "> AI LINK STABLE", "> SIGNAL CLEAN", "> APPS READY"];
 var FOCUS_MS = 25 * 60000;
 var DAY_START = 7, DAY_END = 23;
@@ -33,7 +78,7 @@ function clone(o) { return o == null ? o : JSON.parse(JSON.stringify(o)); }
 var Store = (function () {
   var STATE_KEY = "zapos.state", DEVICE_KEY = "zapos.device", VER = 1;
   var PREF_KEYS = ["settings", "theme", "apps", "coins", "loc", "favs", "places", "holdings", "broker", "wallets", "accounts", "assistant"];                     // shared state (sync-ready)
-  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss", "mediaKey", "skipBoot", "bootDay", "uiSounds", "recentPins", "wxDay", "wxMode", "portHist", "acctMigrated"]; // this device only
+  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss", "mediaKey", "skipBoot", "bootDay", "uiSounds", "recentPins", "wxDay", "wxMode", "portHist", "acctMigrated", "liteMode", "tiltCards", "motionTilt"]; // this device only
   function read(k) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
   function write(k, v) { if (dead) return false; try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
   var state = read(STATE_KEY), dev = read(DEVICE_KEY), subs = [], uiT = null, dead = false; // dead: after a reset, write nothing more
@@ -504,6 +549,12 @@ function startZapWave() {
     }
     t0 = now * 0.004;
     var listening = !!_zapListening;
+    try {
+      if (window.ZAPFX3D) {
+        window.ZAPFX3D.setOrbMood(listening ? "listen" : "idle");
+        window.ZAPFX3D.setOrbLevel(listening ? 0.55 : 0.08);
+      }
+    } catch (e) {}
     var s = "";
     for (var i = 0; i < N; i++) {
       var x = (i / (N - 1)) * 64;
@@ -1728,9 +1779,14 @@ function renderMap(force) {
   placeUserLayers(v, W, H, ox, oy, z);
   if (msg) msg.hidden = true;
   var rad = v.querySelector(".map-radar"); if (rad) rad.style.opacity = "1";
-  if (!force && MAP._key === key) {
+  var map3dLive = false;
+  try { map3dLive = !!(window.ZAPFX3D && window.ZAPFX3D.mapReady()); } catch (e) {}
+  if (map3dLive) {
+    try { window.ZAPFX3D.syncMap({ lat: GPS.lat, lon: GPS.lon, z: z, follow: MAP.follow, snap: !!force && !!MAP.follow }); } catch (e) {}
+  }
+  if (!map3dLive && !force && MAP._key === key) {
     // still refresh pins positions
-  } else {
+  } else if (!map3dLive) {
     MAP._key = key;
     var n = world.n;
     var x0 = Math.floor(ox / 256) - 1, x1 = Math.floor((ox + W) / 256) + 1;
@@ -2313,7 +2369,7 @@ function openMenu() {
     "<h3>APPS</h3>" + row("▦", "Edit apps", "Add, remove, show, hide or reorder apps", "apps") +
     "<h3>WEATHER</h3>" + row("☁", "Weather location", LOC.mode === "city" ? "City: " + esc(LOC.name) : "Using my location", "city") +
     "<h3>MARKETS</h3>" + row("₿", "Edit watchlist", COINS.map(function (c) { return esc(c.sym); }).join(" · ") || "Empty", "coins") +
-    "<h3>SETTINGS</h3>" + row("⚙", "Settings", "Your name, °F / °C, reset", "settings") +
+    "<h3>SETTINGS</h3>" + row("⚙", "Settings", "Name, units, Lite mode, tilt, sounds", "settings") +
     row("↻", "Check for updates", "Now running v" + VERSION, "update") +
     "<h3>HELP</h3>" + row("?", "Add to Home Screen", "3 steps to open it like a real app", "help") +
     '<p class="note" style="margin-top:12px">ZAPWISE//OS v' + VERSION + " · Everything you change is saved on this device only.</p>",
@@ -3064,30 +3120,70 @@ function openEditHolding(i) { openAddHolding(i); }
 // ----- settings -----
 function openSettings() {
   var sndOn = !!Store.getLocal("uiSounds", false);
+  var liteOn = !!Store.getLocal("liteMode", false);
+  var tiltOn = Store.getLocal("tiltCards", null); if (tiltOn == null) tiltOn = true; else tiltOn = !!tiltOn;
+  var motionOn = !!Store.getLocal("motionTilt", false);
   sheet("⚙ SETTINGS",
     '<label class="field">YOUR NAME (FOR THE GREETING)<input id="stName" maxlength="20" placeholder="e.g. Sam" value="' + esc(S.name) + '" autocomplete="off"></label>' +
     '<div class="field">TEMPERATURE</div><div class="seg" id="stU"><button data-v="F">°F · mph</button><button data-v="C">°C · km/h</button></div>' +
     '<div class="field">SOFT UI SOUNDS</div><div class="seg" id="stSnd"><button data-v="0">OFF</button><button data-v="1">ON</button></div>' +
     '<p class="note">Soft synth taps when you press cards. Off by default.</p>' +
-    '<div class="field">ZAP ASSISTANT</div><p class="note">Offline keyword router for weather, net worth, places, and apps. Optional on-device AI is experimental — open the ZAP button, then AI.</p>' +
+    '<div class="field">LITE MODE</div><div class="seg" id="stLite"><button data-v="0">3D ON</button><button data-v="1">LITE</button></div>' +
+    '<p class="note">Lite skips WebGL (orb + 3D city), tilt, and particle boot. Auto-on for low-end / Reduce Motion.</p>' +
+    '<div class="field">CARD TILT</div><div class="seg" id="stTilt"><button data-v="0">OFF</button><button data-v="1">ON</button></div>' +
+    '<div class="field">MOTION TILT (iOS NEEDS TAP)</div><div class="seg" id="stMotion"><button data-v="0">OFF</button><button data-v="1">ENABLE</button></div>' +
+    '<p class="note">Motion tilt asks for permission only when you tap Enable — never auto-prompted.</p>' +
+    '<div class="field">ZAP ASSISTANT</div><p class="note">Offline keyword router for weather, net worth, places, and apps. Smart mode uses Pollinations. Optional private WebLLM on-device.</p>' +
     '<button class="btn" id="stSave">SAVE</button>' +
     '<h3>RESET</h3><button class="btn warn" id="stReset">Reset everything to defaults</button>',
     function (b) {
-      var u = S.units, snd = sndOn ? "1" : "0";
+      var u = S.units, snd = sndOn ? "1" : "0", lite = liteOn ? "1" : "0", tilt = tiltOn ? "1" : "0", motion = motionOn ? "1" : "0";
       function seg() { $$("#stU button", b).forEach(function (x) { x.classList.toggle("on", x.getAttribute("data-v") === u); }); }
       function segS() { $$("#stSnd button", b).forEach(function (x) { x.classList.toggle("on", x.getAttribute("data-v") === snd); }); }
+      function segL() { $$("#stLite button", b).forEach(function (x) { x.classList.toggle("on", x.getAttribute("data-v") === lite); }); }
+      function segT() { $$("#stTilt button", b).forEach(function (x) { x.classList.toggle("on", x.getAttribute("data-v") === tilt); }); }
+      function segM() { $$("#stMotion button", b).forEach(function (x) { x.classList.toggle("on", x.getAttribute("data-v") === motion); }); }
       b.querySelector("#stU").addEventListener("click", function (e) { var x = e.target.closest("[data-v]"); if (x) { u = x.getAttribute("data-v"); seg(); } });
       b.querySelector("#stSnd").addEventListener("click", function (e) { var x = e.target.closest("[data-v]"); if (x) { snd = x.getAttribute("data-v"); segS(); if (snd === "1") { setUiSounds(true); sfxTap(); } } });
+      b.querySelector("#stLite").addEventListener("click", function (e) { var x = e.target.closest("[data-v]"); if (x) { lite = x.getAttribute("data-v"); segL(); } });
+      b.querySelector("#stTilt").addEventListener("click", function (e) { var x = e.target.closest("[data-v]"); if (x) { tilt = x.getAttribute("data-v"); segT(); } });
+      b.querySelector("#stMotion").addEventListener("click", function (e) {
+        var x = e.target.closest("[data-v]"); if (!x) return;
+        if (x.getAttribute("data-v") === "1") {
+          loadFx3d().then(function (fx) {
+            if (!fx) { motion = "0"; segM(); toast("3D layer unavailable"); return; }
+            fx.requestMotionPermission().then(function (ok) {
+              motion = ok ? "1" : "0"; segM();
+              toast(ok ? "Motion tilt on" : "Motion permission denied");
+            });
+          }).catch(function () { motion = "0"; segM(); });
+        } else { motion = "0"; segM(); if (window.ZAPFX3D) window.ZAPFX3D.setMotionEnabled(false); }
+      });
       b.querySelector("#stSave").addEventListener("click", function () {
         var uc = u !== S.units; S.name = b.querySelector("#stName").value.trim().slice(0, 20); S.units = u; Store.set("settings", S);
         setUiSounds(snd === "1");
+        try {
+          Store.setLocal("liteMode", lite === "1");
+          Store.setLocal("tiltCards", tilt === "1");
+          Store.setLocal("motionTilt", motion === "1");
+        } catch (e) {}
+        if (window.ZAPFX3D) {
+          window.ZAPFX3D.setLite(lite === "1");
+          window.ZAPFX3D.setTiltEnabled(tilt === "1");
+          window.ZAPFX3D.setMotionEnabled(motion === "1");
+        } else if (lite !== "1") {
+          initFx3dLayer();
+        } else {
+          document.documentElement.classList.add("fx-lite");
+          document.documentElement.classList.remove("fx-3d");
+        }
         minute(new Date()); closeSheet(); toast("Saved"); if (uc) refreshWeather(true);
       });
       b.querySelector("#stReset").addEventListener("click", function () {
         if (!confirm("Reset apps, watchlist, weather city and settings to the defaults?")) return;
         Store.reset(); location.reload();
       });
-      seg(); segS();
+      seg(); segS(); segL(); segT(); segM();
     });
 }
 
@@ -3437,7 +3533,7 @@ function placeNeonRing(v, dx, dy) {
     try { last = Store.getLocal("bootDay", "") || ""; } catch (e) {}
     var sess = false; try { sess = sessionStorage.getItem("zapos.skipBoot") === day; } catch (e) {}
     // Daily boot only (first open each calendar day). Skippable. Cap ~1.4s.
-    if (RM || last === day || sess) { finishBoot(); }
+    if (RM || last === day || sess || !fx3dWanted()) { finishBoot(); }
     else {
       boot.setAttribute("aria-hidden", "false");
       var nm = ((S && S.name) || "").trim() || "operator";
@@ -3446,25 +3542,36 @@ function placeNeonRing(v, dx, dy) {
         "SENSORS LINKED",
         "READY"
       ];
-      var mi = 0, t0 = Date.now();
+      var mi = 0, t0 = Date.now(), cancelled = false, cancelFx = null;
       if (bootMsg) bootMsg.textContent = msgs[0];
+      // Particle title forms then disperses (lazy fx3d; skip if slow)
+      loadFx3d().then(function (fx) {
+        if (!fx || cancelled || boot.classList.contains("go")) return;
+        cancelFx = fx.runParticleBoot({});
+      }).catch(function () {});
       var iv = setInterval(function () {
         mi++;
         if (bootMsg) bootMsg.textContent = msgs[Math.min(mi, msgs.length - 1)];
-        if (mi >= msgs.length - 1 || Date.now() - t0 > 1400) {
+        if (mi >= msgs.length - 1 || Date.now() - t0 > 1450) {
           clearInterval(iv);
-          setTimeout(finishBoot, 120);
+          setTimeout(finishBoot, 80);
         }
-      }, 380);
-      if (bootSkip) bootSkip.onclick = function () { clearInterval(iv); finishBoot(); };
+      }, 360);
+      function skipBoot() {
+        cancelled = true; clearInterval(iv);
+        try { if (typeof cancelFx === "function") cancelFx(); } catch (e) {}
+        finishBoot();
+      }
+      if (bootSkip) bootSkip.onclick = skipBoot;
       boot.addEventListener("click", function (e) {
         if (e.target && e.target.id === "bootSkip") return;
-        clearInterval(iv); finishBoot();
+        skipBoot();
       }, { once: true });
       try { sessionStorage.setItem("zapos.skipBoot", day); } catch (e) {}
     }
   }
   try { bindChargeUp(); updateSkyline(); buildClockTicks(); ensureHudTicks(); initBatteryHud(); updateGpsLockChip(); startZapWave(); } catch (e) {}
+  try { setTimeout(function () { initFx3dLayer(); }, 400); } catch (e) {}
   // decode / typing effect on brand
   var dec = $("#brandDecode");
   if (dec && !RM) {
@@ -3490,6 +3597,12 @@ function placeNeonRing(v, dx, dy) {
   // pause CSS animations via class when hidden
   function syncVis() {
     document.documentElement.classList.toggle("fx-paused", document.visibilityState !== "visible");
+    try {
+      if (window.ZAPFX3D) {
+        if (document.visibilityState !== "visible") window.ZAPFX3D.pause();
+        else window.ZAPFX3D.resume();
+      }
+    } catch (e) {}
   }
   document.addEventListener("visibilitychange", syncVis); syncVis();
 })();
@@ -3654,6 +3767,16 @@ function openZapAssistant() {
   var sheet = $("#zapSheet"); if (!sheet) return;
   sheet.hidden = false;
   try { updateZapBadge(); renderZapChips(); refreshZapAiBar(); } catch (e) {}
+  try {
+    if (fx3dWanted()) {
+      loadFx3d().then(function (fx) {
+        if (!fx) return;
+        var fab = $("#zapFab");
+        if (fab) fx.mountOrb(fab);
+        fx.setOrbMood("idle");
+      }).catch(function () {});
+    }
+  } catch (e) {}
   setTimeout(function () { try { $("#zapIn").focus(); } catch (e) {} }, 40);
 }
 function closeZapAssistant() {
@@ -3703,7 +3826,11 @@ function zapSpeak(text) {
   try {
     if (!window.speechSynthesis) return;
     var u = new SpeechSynthesisUtterance(String(text).slice(0, 280));
-    u.rate = 1.05; window.speechSynthesis.cancel(); window.speechSynthesis.speak(u);
+    u.rate = 1.05;
+    try { if (window.ZAPFX3D) window.ZAPFX3D.setOrbMood("speak"); } catch (e) {}
+    u.onend = function () { try { if (window.ZAPFX3D) window.ZAPFX3D.setOrbMood("idle"); } catch (e) {} };
+    u.onerror = u.onend;
+    window.speechSynthesis.cancel(); window.speechSynthesis.speak(u);
   } catch (e) {}
 }
 var _zapRec = null, _zapListening = false;
@@ -4049,8 +4176,10 @@ function zapHandle(raw) {
   }
   // Default Smart mode (Pollinations) for free-form help
   if (a.smartMode) {
+    try { if (window.ZAPFX3D) window.ZAPFX3D.setOrbMood("think"); } catch (e) {}
     zapAppend("bot", "Smart mode…");
     zapAskSmart(q).then(function (txt) {
+      try { if (window.ZAPFX3D) window.ZAPFX3D.setOrbMood("idle"); } catch (e) {}
       var log = $("#zapLog");
       if (log && log.lastChild && log.lastChild.classList.contains("bot")) log.removeChild(log.lastChild);
       zapAppend("bot", txt);
