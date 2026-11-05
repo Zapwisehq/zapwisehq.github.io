@@ -8,8 +8,8 @@
   --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:var(--font);overflow-x:hidden}
-body{min-height:100dvh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+html{margin:0;min-height:100%;height:auto;background:var(--bg);color:var(--ink);font-family:var(--font);overflow-x:hidden;overflow-y:scroll;-webkit-font-smoothing:antialiased}
+body{margin:0;min-height:100dvh;height:auto;overflow-x:hidden;overflow-y:visible;background:var(--bg);color:var(--ink);font-family:var(--font);-webkit-font-smoothing:antialiased}
 button,input,select,textarea{font:inherit;color:inherit}
 button{background:none;border:0;cursor:pointer;padding:0}
 img{display:block;max-width:100%}
@@ -398,7 +398,7 @@ html.fx-paused html.fx-paused .mk-ticker .track,html.fx-paused .map-radar,html.f
 .h-srch{overflow:visible}
 .tile .ic{position:relative;overflow:hidden}
 
-#app{overflow-x:clip;max-width:100vw}
+#app{overflow-x:clip;max-width:min(560px,100%)}
 .top{min-width:0}
 
 /* ========== v3.3 polish ========== */
@@ -626,7 +626,8 @@ html[style*="--void:#10040f"]{--muted:rgba(255,245,251,.78)!important;--dim:#d4b
 
 
 /* ========== v4.4 calm upgrades on v3.7.1 base ========== */
-html,body{overscroll-behavior-y:none;overscroll-behavior:none;-webkit-overflow-scrolling:touch}
+html{overscroll-behavior-y:contain;overscroll-behavior-x:none;-webkit-overflow-scrolling:touch}
+body{overscroll-behavior-y:auto;overscroll-behavior-x:none}
 #app{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
 .os-page{display:flex;flex-direction:column;gap:12px;padding:0 var(--pad) 8px;padding-right:var(--padr)}
 .row2.hero-row{align-items:start}
@@ -2232,3 +2233,68 @@ html.motion-on .card.br .panel-h{color:#b8f7fb}
 #hBk .bk-foot{margin:8px 0 0;font-size:11px;color:var(--mut,#9aa3b2);line-height:1.35}
 #hBk .bk-card.empty,#hBk .bk-edit,#hBk .bk-bal-hint,#hBk .bk-source{display:none!important}
 #hBk .hmk-day{font-size:12px;color:var(--mut,#9aa3b2);font-weight:600}
+
+
+/* ===== v4.13.1 DESKTOP: readable column, scrollable page, no clipped tools ===== */
+html{overflow-x:hidden!important;overflow-y:scroll!important;height:auto!important;max-height:none!important}
+body{overflow-x:hidden!important;overflow-y:visible!important;height:auto!important;max-height:none!important;position:static!important}
+/* Only lock scroll while a real overlay is open */
+html.sheet-open,html.sheet-open body,
+html.detail-open,html.detail-open body,
+html.map-fs-open,html.map-fs-open body{overflow:hidden!important;overscroll-behavior:none}
+#app{
+  width:100%;
+  max-width:min(560px,100%)!important;
+  margin-left:auto;margin-right:auto;
+  min-height:100dvh;height:auto!important;max-height:none!important;
+  overflow-x:clip;overflow-y:visible!important;
+  box-sizing:border-box;
+}
+@media (min-width:768px){
+  #app{max-width:min(720px,100%)!important}
+  .apps{grid-template-columns:repeat(6,minmax(0,1fr))}
+}
+@media (min-width:1100px){
+  #app{max-width:min(860px,100%)!important}
+  .apps{grid-template-columns:repeat(8,minmax(0,1fr))}
+}
+/* Tools: stack until each column would be wide enough; never clip Phone */
+.row2.panel-tools{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr)!important;
+  gap:12px!important;
+  align-items:start!important;
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+}
+@media (min-width:900px){
+  .row2.panel-tools{
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+  }
+}
+.row2.panel-tools > .card,
+#mFocus.fz,#phoneMount{
+  width:100%!important;max-width:100%!important;min-width:0!important;
+  height:auto!important;align-self:start!important;
+  box-sizing:border-box!important;
+}
+#phoneMount{overflow-x:clip;overflow-y:visible!important}
+#phoneMount .dl-pad,#phoneMount .dl-act{
+  width:100%!important;max-width:min(288px,100%)!important;margin-left:auto;margin-right:auto;
+  box-sizing:border-box!important;
+}
+#phoneMount .comms-log,#phoneMount .note,#phoneMount .comms-title{
+  max-width:100%!important;overflow-wrap:anywhere;word-break:break-word;
+}
+#phoneMount .comms-title{white-space:normal!important}
+/* Money / markets stay in normal flow — no floats escaping */
+.panel-money,#hMk,.h-mk{width:100%;max-width:100%;min-width:0;float:none!important}
+#hMk .mk-add,.mk-add{float:none!important;position:relative!important}
+/* Desktop: don't let touch-action on root block trackpad pan/wheel */
+@media (hover:hover) and (pointer:fine){
+  html,body{touch-action:auto!important}
+  .card.br,.panel-group,#phoneMount,#mFocus{touch-action:manipulation}
+  /* map/chart keep their own touch-action */
+  .map-v,.wx-temp-chart{touch-action:none}
+}

@@ -1,7 +1,7 @@
-/* ZAPWISE//OS web app v4.13.0 (Nov 5, 2026). Plaid-only Bank UI. Music panel polish. Soft holograms. Auto refresh. Motion toggle. No tabs. Source: edit app.js → build.sh → app.min.js. */
+/* ZAPWISE//OS web app v4.13.1 (Nov 5, 2026). Desktop scroll + layout fix. Plaid-only Bank. Motion toggle. No tabs. Source: edit app.js → build.sh → app.min.js. */
 (function () {
 "use strict";
-var VERSION = '4.13.0';
+var VERSION = '4.13.1';
 var APP_VERSION = VERSION;
 
 // v4.5: default Lite on coarse/mobile unless user already chose
@@ -154,7 +154,9 @@ function forceCardsVisible() {
       document.body.style.width = "";
       document.documentElement.classList.remove("sheet-open");
       document.body.classList.remove("sheet-open");
+      document.documentElement.classList.remove("detail-open");
       try { if (typeof SCROLL_LOCK !== "undefined") { SCROLL_LOCK.locked = false; SCROLL_LOCK.y = 0; } } catch (eL) {}
+      try { if (typeof ensurePageScrollable === "function") ensurePageScrollable(); } catch (eE) {}
     }
   } catch (e2) {}
 }
@@ -3772,6 +3774,60 @@ function clearScrollLockHard() {
     document.body.style.pointerEvents = "";
   } catch (e) {}
 }
+function ensurePageScrollable() {
+  /* v4.13.1: desktop wheel/trackpad must always reach the document scroller when no overlay is open */
+  try {
+    var overlayUp = false;
+    try {
+      overlayUp = (typeof anyOverlayOpen === "function" && anyOverlayOpen())
+        || (typeof isCardDetailOpen === "function" && isCardDetailOpen())
+        || document.documentElement.classList.contains("map-fs-open")
+        || document.documentElement.classList.contains("sheet-open")
+        || document.documentElement.classList.contains("detail-open")
+        || document.body.classList.contains("sheet-open");
+    } catch (eO) {}
+    if (overlayUp) return;
+    clearScrollLockHard();
+    try {
+      document.documentElement.style.overflowX = "hidden";
+      document.documentElement.style.overflowY = "scroll";
+      document.body.style.overflowX = "hidden";
+      document.body.style.overflowY = "visible";
+      document.body.style.position = "";
+      document.body.style.height = "";
+      document.body.style.maxHeight = "";
+      document.documentElement.style.height = "";
+      document.documentElement.style.maxHeight = "";
+    } catch (eS) {}
+  } catch (e) {}
+}
+(function bindDesktopScrollInsurance() {
+  if (document.documentElement._zapScrollIns) return;
+  document.documentElement._zapScrollIns = true;
+  function kick() { try { ensurePageScrollable(); } catch (e) {} }
+  kick();
+  document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible") setTimeout(kick, 50); });
+  window.addEventListener("pageshow", function () { setTimeout(kick, 50); });
+  window.addEventListener("focus", function () { setTimeout(kick, 50); });
+  /* if a sheet/detail closes, unlock immediately */
+  document.addEventListener("click", function () { setTimeout(kick, 0); }, true);
+  setInterval(function () {
+    try {
+      if (document.visibilityState !== "visible") return;
+      var locked = document.documentElement.classList.contains("sheet-open")
+        || document.body.classList.contains("sheet-open")
+        || document.documentElement.classList.contains("detail-open");
+      if (!locked) return;
+      var sh = document.getElementById("sheet");
+      var zap = document.getElementById("zapSheet");
+      var sheetUp = (sh && !sh.hidden) || (zap && !zap.hidden);
+      var detailUp = typeof isCardDetailOpen === "function" && isCardDetailOpen();
+      var mapUp = document.documentElement.classList.contains("map-fs-open");
+      if (!sheetUp && !detailUp && !mapUp) ensurePageScrollable();
+    } catch (e) {}
+  }, 2000);
+})();
+
 function portalToBody(el) {
   if (!el) return;
   if (!el._zapHome && el.parentNode) {
