@@ -13,7 +13,7 @@
     scene: null,
     camera: null,
     city: null,
-    orb: null,
+    
     raf: 0,
     dpr: 1,
     reduceMotion: false,
@@ -139,38 +139,6 @@
     return group;
   }
 
-  function buildOrb(THREE) {
-    var g = new THREE.Group();
-    var core = new THREE.Mesh(
-      new THREE.SphereGeometry(1.4, 24, 24),
-      new THREE.MeshBasicMaterial({ color: 0x5ce1e6, transparent: true, opacity: 0.35 })
-    );
-    g.add(core);
-    var ring = new THREE.Mesh(
-      new THREE.TorusGeometry(2.1, 0.05, 8, 48),
-      new THREE.MeshBasicMaterial({ color: 0xf0a202, transparent: true, opacity: 0.55 })
-    );
-    ring.rotation.x = Math.PI / 2.4;
-    g.add(ring);
-    g.position.set(0, 6, -6);
-    state.orb = g;
-    if (state.tier === "high") {
-      var canvas = document.createElement("canvas");
-      canvas.width = 64; canvas.height = 64;
-      var ctx = canvas.getContext("2d");
-      var grd = ctx.createRadialGradient(32, 32, 2, 32, 32, 30);
-      grd.addColorStop(0, "rgba(92,225,230,0.9)");
-      grd.addColorStop(0.4, "rgba(92,225,230,0.25)");
-      grd.addColorStop(1, "rgba(92,225,230,0)");
-      ctx.fillStyle = grd; ctx.fillRect(0, 0, 64, 64);
-      var tex = new THREE.CanvasTexture(canvas);
-      var spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
-      spr.scale.set(8, 8, 1);
-      g.add(spr);
-      state.glow.push(spr);
-    }
-    return g;
-  }
 
   function onResize() {
     if (!state.renderer || !state.camera) return;
@@ -197,10 +165,6 @@
     state.camera.position.set(Math.sin(yaw) * 6, baseY, baseZ);
     state.camera.lookAt(Math.sin(yaw) * 2, 4, -4 + Math.cos(t * 0.15));
 
-    if (state.orb) {
-      state.orb.rotation.y = t * 0.4;
-      state.orb.position.y = 6 + Math.sin(t * 0.9) * 0.35;
-    }
     if (state.city) state.city.rotation.y = Math.sin(t * 0.05) * 0.02;
     state.renderer.render(state.scene, state.camera);
   }
@@ -224,7 +188,6 @@
     state.camera = camera;
 
     scene.add(buildCity(THREE));
-    scene.add(buildOrb(THREE));
 
     var starGeo = new THREE.BufferGeometry();
     var starN = state.tier === "high" ? 220 : 100;

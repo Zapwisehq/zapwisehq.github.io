@@ -1,9 +1,8 @@
-/* ZAPWISE//OS fx3d.js — lazy 3D layer (Three.js orb, MapLibre city, tilt, boot particles).
+/* ZAPWISE//OS fx3d.js — lazy FX layer (MapLibre city, tilt, boot particles). No Three.js orb.
    Loaded after first paint. Falls back silently when Lite / no WebGL / Reduce Motion. */
 (function (global) {
   "use strict";
   var VERSION = "4.0.0";
-  var THREE_URL = "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js";
   var ML_JS = "https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js";
   var ML_CSS = "https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css";
   var OFM_STYLE = "https://tiles.openfreemap.org/styles/liberty";
@@ -264,113 +263,23 @@
     }, { passive: true });
   }
 
-  /* ---------- Three.js hologram orb ---------- */
+  /* ---------- Orb removed (v4.3): flat CSS assistant button; no Three.js sphere ---------- */
   function teardownOrb(keepHost) {
-    if (state.orb) {
-      try { cancelAnimationFrame(state.orb.raf); } catch (e) {}
-      try { state.orb.renderer.dispose(); } catch (e) {}
-      if (state.orb.canvas && state.orb.canvas.parentNode && !keepHost) {
-        try { state.orb.canvas.remove(); } catch (e) {}
+    try {
+      var host = document.getElementById("zapFab");
+      if (host) {
+        var c = host.querySelector("canvas");
+        if (c) c.remove();
+        var w = host.querySelector(".zap-orb3d");
+        if (w) w.innerHTML = "";
       }
-      state.orb = null;
-    }
+    } catch (e) {}
+    state.orb = null;
   }
+  function setOrbMood(mood) { /* no-op: assistant is flat HUD button */ }
+  function setOrbLevel(n) { /* no-op */ }
+  function mountOrb(host) { teardownOrb(true); return Promise.resolve(false); }
 
-  function setOrbMood(mood) {
-    if (state.orb) state.orb.mood = mood || "idle";
-  }
-  function setOrbLevel(n) {
-    if (state.orb) state.orb.level = Math.max(0, Math.min(1, +n || 0));
-  }
-
-  function mountOrb(host) {
-    if (!host || state.tier === "lite" || state.liteForced || !hasWebGL()) return Promise.resolve(false);
-    if (state.orb) return Promise.resolve(true);
-    return loadScript(THREE_URL).then(function () {
-      if (!global.THREE) throw new Error("no THREE");
-      var THREE = global.THREE;
-      var wrap = host.querySelector(".zap-orb3d") || document.createElement("div");
-      wrap.className = "zap-orb3d";
-      wrap.setAttribute("aria-hidden", "true");
-      if (!wrap.parentNode) host.insertBefore(wrap, host.firstChild);
-      var w = 72, h = 72;
-      var renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "low-power" });
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-      renderer.setSize(w, h);
-      renderer.setClearColor(0x000000, 0);
-      wrap.appendChild(renderer.domElement);
-      var scene = new THREE.Scene();
-      var camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
-      camera.position.z = 3.2;
-      var group = new THREE.Group();
-      scene.add(group);
-
-      var sphere = new THREE.Mesh(
-        new THREE.SphereGeometry(0.85, 24, 18),
-        new THREE.MeshBasicMaterial({ color: 0x3de7ff, wireframe: true, transparent: true, opacity: 0.55 })
-      );
-      group.add(sphere);
-
-      var ringGeo = new THREE.TorusGeometry(1.15, 0.02, 8, 64);
-      var ringMat = new THREE.MeshBasicMaterial({ color: 0xff4fd8, transparent: true, opacity: 0.85 });
-      var ring1 = new THREE.Mesh(ringGeo, ringMat);
-      ring1.rotation.x = Math.PI / 2.4;
-      group.add(ring1);
-      var ring2 = new THREE.Mesh(ringGeo.clone(), new THREE.MeshBasicMaterial({ color: 0x3de7ff, transparent: true, opacity: 0.7 }));
-      ring2.rotation.x = Math.PI / 2; ring2.rotation.y = 0.4;
-      ring2.scale.set(0.92, 0.92, 0.92);
-      group.add(ring2);
-
-      var verts = [];
-      for (var i = 0; i < 48; i++) {
-        var u = Math.random() * Math.PI * 2, v = Math.acos(2 * Math.random() - 1);
-        var r = 1.35 + Math.random() * 0.35;
-        verts.push(r * Math.sin(v) * Math.cos(u), r * Math.sin(v) * Math.sin(u), r * Math.cos(v));
-      }
-      var pGeo = new THREE.BufferGeometry();
-      pGeo.setAttribute("position", new THREE.Float32BufferAttribute(verts, 3));
-      var pts = new THREE.Points(pGeo, new THREE.PointsMaterial({ color: 0x7af0ff, size: 0.045, transparent: true, opacity: 0.9 }));
-      group.add(pts);
-
-      // canvas text sprite "ZAP"
-      var tc = document.createElement("canvas"); tc.width = 128; tc.height = 64;
-      var tctx = tc.getContext("2d");
-      tctx.fillStyle = "#ffffff"; tctx.font = "bold 36px ui-sans-serif,system-ui,sans-serif";
-      tctx.textAlign = "center"; tctx.textBaseline = "middle"; tctx.fillText("ZAP", 64, 34);
-      var tex = new THREE.CanvasTexture(tc);
-      var sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true }));
-      sprite.scale.set(1.1, 0.55, 1);
-      group.add(sprite);
-
-      var orb = {
-        renderer: renderer, scene: scene, camera: camera, group: group,
-        sphere: sphere, ring1: ring1, ring2: ring2, pts: pts,
-        canvas: renderer.domElement, wrap: wrap,
-        mood: "idle", level: 0, raf: 0, t: 0
-      };
-      state.orb = orb;
-
-      function loop() {
-        orb.raf = requestAnimationFrame(loop);
-        if (state.paused || document.hidden || state.tier === "lite") return;
-        orb.t += 0.016;
-        var boost = orb.mood === "speak" ? 1.8 : orb.mood === "think" ? 1.3 : orb.mood === "listen" ? 1.5 : 1;
-        boost += orb.level * 1.2;
-        sphere.rotation.y += 0.008 * boost;
-        sphere.rotation.x += 0.003 * boost;
-        ring1.rotation.z += 0.012 * boost;
-        ring2.rotation.z -= 0.01 * boost;
-        pts.rotation.y += 0.006 * boost;
-        var s = 1 + Math.sin(orb.t * 3) * 0.02 * boost + orb.level * 0.08;
-        group.scale.set(s, s, s);
-        renderer.render(scene, camera);
-      }
-      loop();
-      return true;
-    }).catch(function () { return false; });
-  }
-
-  /* ---------- MapLibre 3D city ---------- */
   function teardownMap(show2d) {
     if (state.map) {
       try { state.map.remove(); } catch (e) {}
@@ -416,6 +325,7 @@
         bearing: -18,
         attributionControl: false,
         interactive: true,
+        cooperativeGestures: true, /* one-finger page scroll; two-finger pan */
         fadeDuration: 0,
         maxPitch: 65,
         transformRequest: function (url, resType) {
@@ -547,7 +457,7 @@
     setLite: setLite,
     isLite: function () { return state.tier === "lite" || state.liteForced; },
     runParticleBoot: runParticleBoot,
-    mountOrb: mountOrb,
+    mountOrb: mountOrb, /* disabled */
     setOrbMood: setOrbMood,
     setOrbLevel: setOrbLevel,
     setTiltEnabled: setTiltEnabled,

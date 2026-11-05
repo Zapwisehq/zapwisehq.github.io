@@ -12,8 +12,8 @@
 <link rel="manifest" href="/os/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/os/icon-180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/os/icon-192.png">
-<link rel="stylesheet" href="/os/app.css?v=4.2.0">
-<link rel="stylesheet" href="/os/cinematic.css?v=4.2.0">
+<link rel="stylesheet" href="/os/app.css?v=4.3.0">
+<link rel="stylesheet" href="/os/cinematic.css?v=4.3.0">
 <script>
 (function(){try{var l=localStorage.getItem("zapos.device");if(l){var j=JSON.parse(l);if(j&&j.liteMode)document.documentElement.classList.add("fx-lite");}}catch(e){}
 try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.themeCss){var s=document.createElement("style");s.id="themeBoot";s.textContent=p.themeCss;document.head.appendChild(s);}}}catch(e){}})();
@@ -29,7 +29,7 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
 <div id="app">
 
  <header class="top sticky hud-top" id="top">
-  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver">v4.2.0</span></div>
+  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver">v4.3.0</span></div>
   <div class="hud-status" id="hudStatus" aria-label="System status">
    <span class="hud-chip sync" id="hSync"><i aria-hidden="true"></i>SYNCED</span>
    <span class="hud-chip gps" id="hGpsLock" data-lock="0"><i aria-hidden="true"></i>GPS —</span>
@@ -288,13 +288,12 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
  <div class="sheet-b" id="sheetBody"></div>
 </div>
 
-<button type="button" class="zap-fab zap-orb asst" id="zapFab" aria-label="Open Assistant" title="Assistant">
- <span class="zap-orb3d" aria-hidden="true"></span>
- <span class="zap-hex" aria-hidden="true"></span>
- <svg class="zap-wave" id="zapWave" viewBox="0 0 64 24" aria-hidden="true" preserveAspectRatio="none">
-  <polyline id="zapWaveLine" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" points="0,12 64,12"/>
- </svg>
-</button>
+<div class="asst-dock" id="asstDock">
+ <button type="button" class="zap-hint" id="zapHint" aria-label="Ask assistant for directions home">Directions home? Say GO.</button>
+ <button type="button" class="zap-fab asst-mic" id="zapFab" aria-label="Open Assistant" title="Assistant">
+  <svg class="zap-mic-ico" viewBox="0 0 24 24" aria-hidden="true" width="22" height="22"><path fill="currentColor" d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-3.1A7 7 0 0 0 19 11h-2z"/></svg>
+ </button>
+</div>
 <div class="zap-sheet" id="zapSheet" hidden role="dialog" aria-modal="false" aria-labelledby="zapTitle">
  <div class="zap-h">
   <b id="zapTitle">Assistant</b>
@@ -326,8 +325,8 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/os/catalog.js?v=4.2.0"></script>
-<script src="/os/sky.js?v=4.2.0"></script>
-<script src="/os/app.js?v=4.2.0"></script>
+<script src="/os/catalog.js?v=4.3.0"></script>
+<script src="/os/sky.js?v=4.3.0"></script>
+<script src="/os/app.js?v=4.3.0"></script>
 </body>
 </html>

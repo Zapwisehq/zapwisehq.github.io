@@ -1,7 +1,7 @@
-/* ZAPWISE//OS web app v4.2.0 (Nov 5, 2026). One-page cyberpunk HUD matching concept — sound on, no tab bar, desktop command-center. Static, no API keys. */
+/* ZAPWISE//OS web app v4.3.0 (Nov 5, 2026). One-page cyberpunk HUD matching concept — sound on, no tab bar, desktop command-center. Static, no API keys. */
 (function () {
 "use strict";
-var VERSION = "4.2.0";
+var VERSION = "4.3.0";
 var APP_VERSION = VERSION;
 
 // ========== v3.12 3D FX (lazy) ==========
@@ -113,7 +113,7 @@ function initFx3dLayer() {
   return loadFx3d().then(function (fx) {
     if (!fx) return null;
     var lite = false; try { lite = !!Store.getLocal("liteMode", false); } catch (e) {}
-    var tilt = true; try { var tv = Store.getLocal("tiltCards", null); tilt = tv == null ? true : !!tv; } catch (e) {}
+    var tilt = false; try { var tv = Store.getLocal("tiltCards", null); tilt = tv == null ? false : !!tv; } catch (e) {}
     return fx.init({ lite: lite, tilt: tilt }).then(function (info) {
       try {
         if (Store.getLocal("motionTilt", false)) fx.setMotionEnabled(true);
@@ -1846,32 +1846,49 @@ function placeUserLayers(v, W, H, ox, oy, z) {
     $$(".map-place-pin", v).forEach(function (pin) { pin.classList.add("neon-lit"); });
   } catch (e) {}
 }
+function mapViewLL() {
+  /* Center map without requiring a live GPS fix: GPS → last gpsLoc → city LOC → SF default */
+  if (GPS && GPS.lat != null && GPS.lon != null) return { lat: +GPS.lat, lon: +GPS.lon, src: "gps" };
+  try {
+    var last = Store.getLocal("gpsLoc", null);
+    if (last && last.lat != null && last.lon != null) return { lat: +last.lat, lon: +last.lon, src: "last" };
+  } catch (e) {}
+  if (LOC && LOC.lat != null && LOC.lon != null) return { lat: +LOC.lat, lon: +LOC.lon, src: "city" };
+  if (PLACE && PLACE.lat != null && PLACE.lon != null) return { lat: +PLACE.lat, lon: +PLACE.lon, src: "place" };
+  return { lat: 37.7749, lon: -122.4194, src: "default" };
+}
 function renderMap(force) {
   renderPlace();
   var v = $("#mapV"), tl = $("#mapTiles"), msg = $("#mapMsg");
   if (!v || !tl) return;
   try { ensureMapNeon(v); } catch (e) {}
-  if (!GPS) {
-    // keep last tiles if any; just hide user layers
+  var view = mapViewLL();
+  var liveGps = !!(GPS && GPS.lat != null);
+  if (!liveGps) {
     if ($("#mapDot")) $("#mapDot").hidden = true;
-    var rad = v.querySelector(".map-radar"); if (rad) rad.style.opacity = "0";
-    if (msg) { msg.hidden = false; msg.textContent = GEO_OFF ? "LOCATION OFF · ALLOW IT IN SETTINGS TO SEE THE MAP" : "LOCATING…"; }
-    return;
+    var rad0 = v.querySelector(".map-radar"); if (rad0) rad0.style.opacity = "0";
+    if (msg) {
+      msg.hidden = false;
+      msg.textContent = GEO_OFF ? "LOCATION OFF · SHOWING CITY / LAST MAP" : (view.src === "default" ? "LOCATING… · NEON MAP PREVIEW" : "SHOWING SAVED / CITY MAP");
+    }
   }
   var W = v.clientWidth, H = v.clientHeight; if (!W || !H) return;
   var z = Math.max(3, Math.min(19, MAP.z | 0));
-  var world = lonLatToWorld(GPS.lon, GPS.lat, z);
+  var world = lonLatToWorld(view.lon, view.lat, z);
   var cx = world.x + MAP.offX, cy = world.y + MAP.offY;
   var ox = cx - W / 2, oy = cy - H / 2;
   var key = z + ":" + Math.round(ox) + ":" + Math.round(oy) + ":" + W + "x" + H + ":" + (MAP.follow ? "F" : "P");
   // Always update user layers even if tiles unchanged
-  placeUserLayers(v, W, H, ox, oy, z);
-  if (msg) msg.hidden = true;
-  var rad = v.querySelector(".map-radar"); if (rad) rad.style.opacity = "1";
+  if (liveGps) {
+    placeUserLayers(v, W, H, ox, oy, z);
+    if (msg) msg.hidden = true;
+    var rad = v.querySelector(".map-radar"); if (rad) rad.style.opacity = "1";
+  }
+
   var map3dLive = false;
   try { map3dLive = !!(window.ZAPFX3D && window.ZAPFX3D.mapReady()); } catch (e) {}
   if (map3dLive) {
-    try { window.ZAPFX3D.syncMap({ lat: GPS.lat, lon: GPS.lon, z: z, follow: MAP.follow, snap: !!force && !!MAP.follow }); } catch (e) {}
+    try { window.ZAPFX3D.syncMap({ lat: view.lat, lon: view.lon, z: z, follow: MAP.follow && liveGps, snap: !!force && !!MAP.follow && liveGps }); } catch (e) {}
   }
   if (!map3dLive && !force && MAP._key === key) {
     // still refresh pins positions
@@ -1960,25 +1977,49 @@ function mapZoom(d) {
   MAP.offX *= f; MAP.offY *= f; MAP.z = next; MAP._key = null; renderMap(true);
 }
 (function bindMapGestures() {
+  /* v4.3: one-finger page scroll passes through; pan with 2 fingers or after tap-to-arm */
   var v = $("#mapV"); if (!v) return;
   var startX = 0, startY = 0, baseOffX = 0, baseOffY = 0, pin0 = null;
+  var armed = false, armTimer = null, downOnMap = false, isTouch = false;
+  function setArmed(on) {
+    armed = !!on;
+    v.classList.toggle("map-armed", armed);
+    clearTimeout(armTimer);
+    if (armed) armTimer = setTimeout(function () { setArmed(false); }, 12000);
+  }
   function pt(e) { var t = e.touches ? e.touches[0] : e; return { x: t.clientX, y: t.clientY }; }
+  function canPan(e) {
+    if (e.pointerType === "mouse" || (e.type && e.type.indexOf("mouse") === 0)) return true;
+    if (e.touches && e.touches.length >= 2) return true;
+    return armed;
+  }
   function onDown(e) {
-    if (e.target.closest(".map-tool,.map-attr,.map-open,.map-place-pin")) return;
-    MAP.dragging = true; MAP.moved = false;
+    if (e.target.closest(".map-tool,.map-attr,.map-open,.map-place-pin,.map-place-card,.mpc-go,.mpc-x")) return;
+    isTouch = !!(e.touches || e.pointerType === "touch");
+    downOnMap = true; MAP.moved = false;
     var p = pt(e); startX = p.x; startY = p.y; baseOffX = MAP.offX; baseOffY = MAP.offY;
     if (e.touches && e.touches.length === 2) {
       var a = e.touches[0], b = e.touches[1];
       pin0 = { dist: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY), z: MAP.z };
-    } else pin0 = null;
+      MAP.dragging = true;
+    } else {
+      pin0 = null;
+      /* only claim drag when armed or mouse — otherwise let the page scroll */
+      MAP.dragging = canPan(e);
+    }
   }
   function onMove(e) {
-    if (!MAP.dragging) return;
-    if (e.touches && e.touches.length === 2 && pin0) {
-      e.preventDefault();
+    if (!downOnMap) return;
+    if (e.touches && e.touches.length === 2) {
+      if (!pin0) {
+        var a0 = e.touches[0], b0 = e.touches[1];
+        pin0 = { dist: Math.hypot(a0.clientX - b0.clientX, a0.clientY - b0.clientY), z: MAP.z };
+      }
+      MAP.dragging = true;
+      if (e.cancelable) e.preventDefault();
       var a = e.touches[0], b = e.touches[1];
       var dist = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
-      var dz = Math.round(Math.log2(dist / pin0.dist));
+      var dz = Math.round(Math.log2(dist / Math.max(1, pin0.dist)));
       var nz = Math.max(3, Math.min(19, pin0.z + dz));
       if (nz !== MAP.z) { var f = Math.pow(2, nz - MAP.z); MAP.offX *= f; MAP.offY *= f; MAP.z = nz; pin0.dist = dist; pin0.z = nz; MAP._key = null; renderMap(true); }
       MAP.moved = true; MAP.follow = false; return;
@@ -1986,24 +2027,39 @@ function mapZoom(d) {
     var p = pt(e);
     var dx = p.x - startX, dy = p.y - startY;
     if (Math.abs(dx) + Math.abs(dy) > 6) MAP.moved = true;
+    if (!MAP.dragging) return; /* one-finger unarmed: do NOT preventDefault — page scrolls */
     if (MAP.moved) {
       if (e.cancelable) e.preventDefault();
-      MAP.follow = false; // pan breaks auto-follow
+      MAP.follow = false;
       try { hideMapPlaceCard(); } catch (err) {}
       MAP.offX = baseOffX - dx; MAP.offY = baseOffY - dy; renderMap(true);
     }
   }
-  function onUp() { MAP.dragging = false; pin0 = null; }
+  function onUp(e) {
+    if (downOnMap && !MAP.moved && isTouch && !(e.touches && e.touches.length)) {
+      /* tap arms map for one-finger pan */
+      setArmed(!armed);
+      if (armed) try { toast("Map pan on · tap again to scroll page"); } catch (err) {}
+    }
+    MAP.dragging = false; pin0 = null; downOnMap = false;
+  }
   v.addEventListener("pointerdown", onDown);
-  window.addEventListener("pointermove", onMove, { passive: false });
-  window.addEventListener("pointerup", onUp);
+  v.addEventListener("pointermove", onMove, { passive: false });
+  v.addEventListener("pointerup", onUp);
+  v.addEventListener("pointercancel", onUp);
   v.addEventListener("touchstart", onDown, { passive: true });
   v.addEventListener("touchmove", onMove, { passive: false });
   v.addEventListener("touchend", onUp);
+  v.addEventListener("touchcancel", onUp);
+  /* wheel zoom only when armed or with ctrl/meta — else let page scroll */
   v.addEventListener("wheel", function (e) {
+    if (!(armed || e.ctrlKey || e.metaKey)) return;
     e.preventDefault();
     mapZoom(e.deltaY < 0 ? 1 : -1);
   }, { passive: false });
+  document.addEventListener("pointerdown", function (e) {
+    if (armed && !v.contains(e.target)) setArmed(false);
+  }, { capture: true, passive: true });
 })();
 window.addEventListener("online", function () { MAP._key = null; renderMap(true); });
 function refreshGPS() { try { startGpsWatch(); } catch (e) { getPos().catch(function () {}); } }
@@ -2079,13 +2135,19 @@ function formatEta(sec, km) {
 }
 var PLACE_ETA = {};
 function refreshPlaceEtas() {
-  var list = loadPlaces(); if (!GPS || !list.length) { renderPlacesRow(); return; }
+  var list = loadPlaces(); if (!list.length) { renderPlacesRow(); return; }
+  var origin = (GPS && GPS.lat != null) ? GPS : null;
+  if (!origin) { try { origin = Store.getLocal("gpsLoc", null); } catch (e) {} }
+  if (!origin || origin.lat == null) {
+    if (LOC && LOC.lat != null) origin = { lat: LOC.lat, lon: LOC.lon };
+  }
+  if (!origin || origin.lat == null) { renderPlacesRow(); return; }
   list.forEach(function (pl) {
     if (pl.lat == null) return;
-    var km = haversineKm(GPS, { lat: pl.lat, lon: pl.lon });
+    var km = haversineKm(origin, { lat: pl.lat, lon: pl.lon });
     PLACE_ETA[pl.id] = { km: km, sec: null };
     // OSRM public demo — light use only
-    var url = "https://router.project-osrm.org/route/v1/driving/" + GPS.lon + "," + GPS.lat + ";" + pl.lon + "," + pl.lat + "?overview=false";
+    var url = "https://router.project-osrm.org/route/v1/driving/" + origin.lon + "," + origin.lat + ";" + pl.lon + "," + pl.lat + "?overview=false";
     getJSON(url, 8000).then(function (j) {
       var r = j && j.routes && j.routes[0];
       if (r) PLACE_ETA[pl.id] = { km: (r.distance || 0) / 1000, sec: r.duration };
@@ -2105,11 +2167,18 @@ function renderPlacesRow() {
     }).join("") + '<button type="button" class="place-chip" data-place-new="custom" role="listitem"><span class="pc-ico" style="background:#8b5cf6">＋</span><span class="pc-name">Custom</span><span class="pc-eta">Add</span></button>';
     return;
   }
-  host.innerHTML = list.map(function (pl) {
+  /* sticky nearest first */
+  list = list.slice().sort(function (a, b) {
+    var ea = PLACE_ETA[a.id], eb = PLACE_ETA[b.id];
+    var ka = ea && ea.km != null ? ea.km : 1e9, kb = eb && eb.km != null ? eb.km : 1e9;
+    return ka - kb;
+  });
+  host.innerHTML = list.map(function (pl, i) {
     var eta = PLACE_ETA[pl.id];
     var sub = eta ? formatEta(eta.sec, eta.km) : "…";
+    if (i === 0 && eta) sub = "GO · " + sub;
     var col = pl.color || "#5dade2";
-    return '<button type="button" class="place-chip" data-place-go="' + esc(pl.id) + '" role="listitem"><span class="pc-ico" style="background:' + col + '">' + (pl.icon || "📍") + '</span><span class="pc-name">' + esc(pl.name) + '</span><span class="pc-eta">' + esc(sub) + "</span></button>";
+    return '<button type="button" class="place-chip' + (i === 0 ? " nearest" : "") + '" data-place-go="' + esc(pl.id) + '" role="listitem"><span class="pc-ico" style="background:' + col + '">' + (pl.icon || "📍") + '</span><span class="pc-name">' + esc(pl.name) + '</span><span class="pc-eta">' + esc(sub) + "</span></button>";
   }).join("") + '<button type="button" class="place-chip" data-place-new="custom" role="listitem"><span class="pc-ico" style="background:#8b5cf6">＋</span><span class="pc-name">Add</span><span class="pc-eta">New</span></button>';
 }
 function placeLL(pl) {
@@ -2164,9 +2233,38 @@ function migratePlacesCoords() {
   });
 }
 var _mapCardPl = null;
+(function bindMapCardOutside() {
+  document.addEventListener("pointerdown", function (e) {
+    var card = $("#mapPlaceCard");
+    if (!card || card.hidden) return;
+    if (card.contains(e.target)) return;
+    if (e.target.closest && e.target.closest(".map-place-pin")) return;
+    hideMapPlaceCard();
+  }, { capture: true, passive: true });
+})();
 function hideMapPlaceCard() {
   _mapCardPl = null;
-  var card = $("#mapPlaceCard"); if (card) card.hidden = true;
+  var card = $("#mapPlaceCard"); if (card) { card.hidden = true; try { card.style.transform = ""; } catch (e) {} }
+  try { if (!anyOverlayOpen()) overlayClearHistory(); } catch (e) {}
+}
+function bindPlaceCardSwipe(el) {
+  if (!el || el._zapSwipe) return; el._zapSwipe = true;
+  var y0 = 0, active = false;
+  el.addEventListener("touchstart", function (e) {
+    if (!e.touches || e.touches.length !== 1) return;
+    y0 = e.touches[0].clientY; active = true;
+  }, { passive: true });
+  el.addEventListener("touchmove", function (e) {
+    if (!active || !e.touches || !e.touches.length) return;
+    var dy = e.touches[0].clientY - y0;
+    if (dy > 0) el.style.transform = "translateY(" + Math.min(dy, 160) + "px)";
+  }, { passive: true });
+  el.addEventListener("touchend", function (e) {
+    if (!active) return; active = false;
+    var dy = (e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientY : y0) - y0;
+    el.style.transform = "";
+    if (dy > 56) hideMapPlaceCard();
+  }, { passive: true });
 }
 function showMapPlaceCard(pl) {
   if (!pl) return;
@@ -2188,6 +2286,8 @@ function showMapPlaceCard(pl) {
   card.querySelector("#mpcName").textContent = pl.name || "Place";
   card.querySelector("#mpcEta").textContent = eta ? ("ETA · " + formatEta(eta.sec, eta.km)) : "Tap Go for turn-by-turn";
   card.hidden = false;
+  try { overlayPushHistory(); } catch (e) {}
+  try { bindPlaceCardSwipe(card); } catch (e) {}
 }
 function openEditPlace(pl) {
   if (!pl) return;
@@ -2440,17 +2540,123 @@ document.addEventListener("click", function (e) {
 });
 
 // ========== 11. sheets ==========
+/* ========== Overlay dismiss (v4.3): outside tap, swipe down, Esc, history back ========== */
+var OVERLAY = { hist: false, closingFromPop: false, swipeY0: 0, swipeEl: null };
+function anyOverlayOpen() {
+  var sh = $("#sheet"), zap = $("#zapSheet"), card = $("#mapPlaceCard");
+  return (sh && !sh.hidden) || (zap && !zap.hidden) || (card && !card.hidden);
+}
+function showScrim(kind) {
+  var sc = $("#scrim"); if (!sc) return;
+  sc.hidden = false;
+  sc.classList.toggle("zap-open", kind === "zap");
+}
+function hideScrimIfIdle() {
+  var sc = $("#scrim"); if (!sc) return;
+  var sh = $("#sheet"), zap = $("#zapSheet");
+  if ((sh && !sh.hidden) || (zap && !zap.hidden)) return;
+  sc.hidden = true; sc.classList.remove("zap-open");
+}
+function overlayPushHistory() {
+  if (OVERLAY.hist) return;
+  try { history.pushState({ zaposOverlay: 1 }, ""); OVERLAY.hist = true; } catch (e) {}
+}
+function overlayClearHistory() {
+  if (!OVERLAY.hist || OVERLAY.closingFromPop) { OVERLAY.hist = false; return; }
+  OVERLAY.hist = false;
+  try { if (history.state && history.state.zaposOverlay) history.back(); } catch (e) {}
+}
+function dismissTopOverlay(fromPop) {
+  OVERLAY.closingFromPop = !!fromPop;
+  var zap = $("#zapSheet"), sh = $("#sheet"), card = $("#mapPlaceCard");
+  if (zap && !zap.hidden) { try { closeZapAssistant(); } catch (e) {} }
+  else if (sh && !sh.hidden) { try { closeSheet(true); } catch (e) {} }
+  else if (card && !card.hidden) { try { hideMapPlaceCard(); } catch (e) {} }
+  hideScrimIfIdle();
+  if (!anyOverlayOpen()) overlayClearHistory();
+  OVERLAY.closingFromPop = false;
+}
+function dismissAllOverlays(fromPop) {
+  OVERLAY.closingFromPop = !!fromPop;
+  try { closeZapAssistant(); } catch (e) {}
+  try { closeSheet(true); } catch (e) {}
+  try { hideMapPlaceCard(); } catch (e) {}
+  hideScrimIfIdle();
+  if (!fromPop) overlayClearHistory();
+  else OVERLAY.hist = false;
+  OVERLAY.closingFromPop = false;
+}
 function sheet(title, html, bind) {
   // fresh body each time: listeners bound by the previous sheet must not fire here (the music list's
   // [data-m] handler used to close Edit Apps when you tapped ↑/↓/toggle, which also use data-m)
   var old = $("#sheetBody"), nb = old.cloneNode(false); old.parentNode.replaceChild(nb, old);
-  $("#sheetTitle").textContent = title; nb.innerHTML = html; $("#sheet").hidden = false; $("#scrim").hidden = false;
+  $("#sheetTitle").textContent = title; nb.innerHTML = html; $("#sheet").hidden = false;
+  showScrim("sheet");
+  overlayPushHistory();
   if (bind) bind($("#sheetBody"));
 }
-function closeSheet() { $("#sheet").hidden = true; $("#scrim").hidden = true; try { $("#sheet").classList.remove("finder-sheet"); } catch (e) {} }
-$("#sheetClose").addEventListener("click", closeSheet);
-$("#scrim").addEventListener("click", closeSheet);
-document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !$("#sheet").hidden) closeSheet(); });
+function closeSheet(skipHist) {
+  var sh = $("#sheet"); if (sh) { sh.hidden = true; try { sh.classList.remove("finder-sheet"); sh.style.transform = ""; } catch (e) {} }
+  hideScrimIfIdle();
+  if (!skipHist && !anyOverlayOpen()) overlayClearHistory();
+}
+$("#sheetClose").addEventListener("click", function () { dismissTopOverlay(false); });
+/* Scrim: pointerdown closes and blocks the tap from hitting content underneath */
+(function bindScrimDismiss() {
+  var sc = $("#scrim"); if (!sc) return;
+  function eat(e) {
+    if (sc.hidden) return;
+    e.preventDefault(); e.stopPropagation();
+    dismissTopOverlay(false);
+  }
+  sc.addEventListener("pointerdown", eat, { capture: true });
+  sc.addEventListener("click", eat, { capture: true });
+  sc.addEventListener("touchend", function (e) {
+    if (sc.hidden) return;
+    e.preventDefault(); e.stopPropagation();
+    dismissTopOverlay(false);
+  }, { capture: true, passive: false });
+})();
+document.addEventListener("keydown", function (e) {
+  if (e.key !== "Escape") return;
+  if (!anyOverlayOpen()) return;
+  e.preventDefault();
+  dismissTopOverlay(false);
+});
+window.addEventListener("popstate", function () {
+  if (!anyOverlayOpen()) { OVERLAY.hist = false; return; }
+  dismissAllOverlays(true);
+});
+/* Swipe down on sheet / assistant to close (phones) */
+(function bindOverlaySwipe() {
+  function bindSwipe(el) {
+    if (!el || el._zapSwipe) return; el._zapSwipe = true;
+    var y0 = 0, active = false;
+    el.addEventListener("touchstart", function (e) {
+      if (!e.touches || e.touches.length !== 1) return;
+      /* only from header / top area */
+      var t = e.target;
+      if (!(t.closest && (t.closest(".sheet-h") || t.closest(".zap-h") || t === el))) {
+        var rect = el.getBoundingClientRect();
+        if (e.touches[0].clientY > rect.top + 56) return;
+      }
+      y0 = e.touches[0].clientY; active = true;
+    }, { passive: true });
+    el.addEventListener("touchmove", function (e) {
+      if (!active || !e.touches || !e.touches.length) return;
+      var dy = e.touches[0].clientY - y0;
+      if (dy > 0) el.style.transform = "translateY(" + Math.min(dy, 220) + "px)";
+    }, { passive: true });
+    el.addEventListener("touchend", function (e) {
+      if (!active) return; active = false;
+      var dy = (e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientY : y0) - y0;
+      el.style.transform = "";
+      if (dy > 72) dismissTopOverlay(false);
+    }, { passive: true });
+  }
+  bindSwipe($("#sheet"));
+  bindSwipe($("#zapSheet"));
+})();
 $("#dEdit").addEventListener("click", function () { openEditApps(); });
 $("#editMkBtn").addEventListener("click", function () { openEditCoins(); });
 $("#cityBtn").addEventListener("click", function () { openCity(); });
@@ -2772,7 +2978,12 @@ function renderAccounts() {
       '<span class="at-ico" aria-hidden="true">＋</span><span class="at-name">Add</span></button>';
   }
   if (!list.length) {
-    host.innerHTML = addTile();
+    var ghosts = ["Bank", "Broker", "Wallet"].map(function (nm, i) {
+      return '<button type="button" class="acct-tile ghost-empty" data-acct-add="1" role="listitem" aria-label="Add ' + nm + ' account">' +
+        '<span class="at-ico ghost-ico" aria-hidden="true"></span><span class="at-name">' + nm + '</span>' +
+        '<span class="at-val ghost-val">Add</span><span class="at-chg"> </span></button>';
+    }).join("");
+    host.innerHTML = ghosts + addTile();
     return;
   }
   host.innerHTML = list.map(function (a) {
@@ -3229,7 +3440,7 @@ function settingsHtml(sndOn, liteOn, tiltOn, motionOn) {
 function bindSettings(b, closeAfterSave) {
   var sndOn = !!Store.getLocal("uiSounds", false);
   var liteOn = !!Store.getLocal("liteMode", false);
-  var tiltOn = Store.getLocal("tiltCards", null); if (tiltOn == null) tiltOn = true; else tiltOn = !!tiltOn;
+  var tiltOn = Store.getLocal("tiltCards", null); if (tiltOn == null) tiltOn = false; else tiltOn = !!tiltOn;
   var motionOn = !!Store.getLocal("motionTilt", false);
   var u = S.units, snd = sndOn ? "1" : "0", lite = liteOn ? "1" : "0", tilt = tiltOn ? "1" : "0", motion = motionOn ? "1" : "0";
   function seg() { $$("#stU button", b).forEach(function (x) { x.classList.toggle("on", x.getAttribute("data-v") === u); }); }
@@ -3294,7 +3505,7 @@ function mountSettingsScreen() {
 function openSettings() {
   var sndOn = (function () { var v = Store.getLocal("uiSounds", null); return v === null || v === undefined ? true : !!v; })();
   var liteOn = !!Store.getLocal("liteMode", false);
-  var tiltOn = Store.getLocal("tiltCards", null); if (tiltOn == null) tiltOn = true; else tiltOn = !!tiltOn;
+  var tiltOn = Store.getLocal("tiltCards", null); if (tiltOn == null) tiltOn = false; else tiltOn = !!tiltOn;
   var motionOn = !!Store.getLocal("motionTilt", false);
   try { sfxOpen(); } catch (e) {}
   sheet("SETTINGS", settingsHtml(sndOn, liteOn, tiltOn, motionOn), function (b) {
@@ -3958,22 +4169,18 @@ function hasSpeechIn() {
 function openZapAssistant() {
   var sheet = $("#zapSheet"); if (!sheet) return;
   sheet.hidden = false;
+  sheet.style.transform = "";
+  showScrim("zap");
+  overlayPushHistory();
   try { updateZapBadge(); renderZapChips(); refreshZapAiBar(); } catch (e) {}
-  try {
-    if (fx3dWanted()) {
-      loadFx3d().then(function (fx) {
-        if (!fx) return;
-        var fab = $("#zapFab");
-        if (fab) fx.mountOrb(fab);
-        fx.setOrbMood("idle");
-      }).catch(function () {});
-    }
-  } catch (e) {}
+  /* no 3D orb — flat mic button only */
   setTimeout(function () { try { $("#zapIn").focus(); } catch (e) {} }, 40);
 }
 function closeZapAssistant() {
-  var sheet = $("#zapSheet"); if (sheet) sheet.hidden = true;
+  var sheet = $("#zapSheet"); if (sheet) { sheet.hidden = true; sheet.style.transform = ""; }
   try { stopZapListen(); } catch (e) {}
+  hideScrimIfIdle();
+  if (!anyOverlayOpen()) overlayClearHistory();
 }
 function updateZapBadge() {
   var b = $("#zapBadge"); if (!b) return;
@@ -4389,7 +4596,20 @@ function zapHandle(raw) {
 }
 (function bindZapAssistant() {
   var fab = $("#zapFab"); if (fab) fab.addEventListener("click", openZapAssistant);
-  var close = $("#zapClose"); if (close) close.addEventListener("click", closeZapAssistant);
+  (function bindZapHint() {
+    var h = $("#zapHint"); if (!h) return;
+    try {
+      var seen = Store.getLocal("hintGoSeen", false);
+      if (!seen) { h.classList.add("on"); }
+    } catch (e) { h.classList.add("on"); }
+    h.addEventListener("click", function () {
+      try { Store.setLocal("hintGoSeen", true); } catch (e) {}
+      h.classList.remove("on");
+      openZapAssistant();
+      try { zapHandle("directions to home"); } catch (e) {}
+    });
+  })();
+  var close = $("#zapClose"); if (close) close.addEventListener("click", function () { dismissTopOverlay(false); });
   var form = $("#zapForm");
   if (form) form.addEventListener("submit", function (e) { e.preventDefault(); zapHandle(($("#zapIn") && $("#zapIn").value) || ""); });
   var mic = $("#zapMic");
@@ -4461,7 +4681,11 @@ try {
   window.ZAPOS.mapFollow = function (on) { MAP.follow = !!on; if (on) { MAP.offX = 0; MAP.offY = 0; } renderMap(true); };
   window.ZAPOS.openSettings = openSettings;
   window.ZAPOS.openTheme = openTheme;
+  window.ZAPOS.openMenu = openMenu;
   window.ZAPOS.openZap = openZapAssistant;
+  window.ZAPOS.closeZap = closeZapAssistant;
+  window.ZAPOS.closeSheet = closeSheet;
+  window.ZAPOS.dismissOverlay = function () { dismissTopOverlay(false); };
   window.ZAPOS.routeZap = routeZapIntent;
 } catch (e) {}
 if (!Store.getLocal("seenHelp", false) && !(window.navigator.standalone === true)) { Store.setLocal("seenHelp", true); setTimeout(function () { toast("Tip: MENU → Help shows how to add this to your Home Screen"); }, 1500); }

@@ -1,6 +1,6 @@
 /* ZAPWISE//OS v4.2 — one-page cyberpunk HUD + calm 3D city behind hero only */
 html.zw-cine,html.zw-cine body{background:#03040a;min-height:100%}
-html.zw-cine body{overscroll-behavior:none}
+html.zw-cine body{overscroll-behavior-y:auto}
 html.zw-cine .fx-layer,html.zw-cine .grid-bg{opacity:.12;pointer-events:none}
 html.zw-cine .motto{display:none}
 
@@ -113,12 +113,14 @@ html.zw-cine .zw-stage{opacity:.32}
 .sec-apps .h-srch{margin-bottom:10px}
 
 /* Assistant orb — no text label; float above content */
-html.zw-cine .zap-fab{bottom:calc(18px + env(safe-area-inset-bottom));right:12px}
-.zap-fab .zap-lab{display:none!important}
-.zap-fab{z-index:58!important;width:58px;height:58px;border-radius:50%;
-  box-shadow:0 0 0 1px rgba(92,225,230,.45),0 0 28px rgba(92,225,230,.35),0 8px 24px rgba(0,0,0,.45)}
-.zap-sheet:not([hidden]){z-index:55;bottom:calc(84px + env(safe-area-inset-bottom));max-height:min(70vh,560px)}
-.sheet:not([hidden]),#scrim:not([hidden]){z-index:70}
+html.zw-cine .asst-dock{bottom:calc(18px + env(safe-area-inset-bottom));right:max(12px,env(safe-area-inset-right))}
+html.zw-cine .zap-fab{z-index:58!important;width:48px;height:48px;border-radius:14px;
+  box-shadow:0 0 0 1px rgba(92,225,230,.4),0 8px 22px rgba(0,0,0,.45),0 0 14px rgba(92,225,230,.2)}
+.zap-sheet:not([hidden]){z-index:86;bottom:calc(84px + env(safe-area-inset-bottom));max-height:min(70vh,560px)}
+/* overlays above HUD/3D stage; scrim under sheets so sheet stays tappable */
+#scrim:not([hidden]){z-index:80!important}
+.sheet:not([hidden]){z-index:90!important}
+.zap-sheet:not([hidden]){z-index:86!important}
 
 html.zw-cine .card,html.zw-cine .hud-panel,html.zw-cine .xp{color:var(--cream,#f4efe4)}
 html.zw-cine .note,html.zw-cine .hw-advice,html.zw-cine .places-note{color:rgba(244,239,228,.72)}
@@ -196,3 +198,9 @@ main{overflow-x:hidden;-webkit-overflow-scrolling:touch}
 @keyframes dataTick{0%,100%{opacity:1}50%{opacity:.82}}
 .ph-total{animation:dataTick 2.8s ease-in-out infinite}
 @media (prefers-reduced-motion:reduce){.ph-total,.clock-ring .clock-svg,.hud-chip.gps[data-lock="1"] i{animation:none}}
+
+/* v4.3 touch scroll */
+html.zw-cine,html.zw-cine body{overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch}
+html.zw-cine #app,html.zw-cine main,.os-page{touch-action:manipulation;-webkit-overflow-scrolling:touch}
+.sec-map #mapV,.sec-map .map-v{touch-action:pan-y}
+.sec-map #mapV.map-armed,.sec-map .map-v.map-armed{touch-action:none}
