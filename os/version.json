@@ -1,6 +1,6 @@
 {
-  "version": "4.6.0",
+  "version": "4.6.1",
   "released": "2026-11-05",
   "name": "ZAPWISE//OS",
-  "notes": "Restore Weather/Markets card detail sheets (v3.7.1 content + slide-up UX); map card opens overlay; Back/scrim/swipe close"
+  "notes": "Never blank: cards visible by default + watchdog; instant paint; first-tap Weather/Markets; map OPEN only; dark map tiles; app category fixes"
 }

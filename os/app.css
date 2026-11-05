@@ -109,7 +109,7 @@ main{padding:0 var(--padr) 8px var(--pad)}
 .map-v{position:relative;height:168px;margin:0 10px 10px;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:#0b1220;touch-action:none;cursor:grab}
 .map-v:active{cursor:grabbing}
 .map-stage{position:absolute;inset:0}
-.map-tiles{position:absolute;inset:0;background:#0a0f1a;}
+.map-tiles{position:absolute;inset:0;background:#f2efe8;} /* pre-invert cream → dark after filter */
 .map-tiles img{position:absolute;left:0;top:0;width:256px;height:256px;image-rendering:auto;pointer-events:none;user-select:none;-webkit-user-drag:none}
 .map-h-r{display:flex;align-items:center;gap:8px}
 .map-open{border:1px solid rgba(92,225,230,.35);background:rgba(92,225,230,.1);color:var(--cyan);font-size:11px;font-weight:800;letter-spacing:.1em;border-radius:999px;padding:0 14px;min-height:44px}
@@ -405,7 +405,7 @@ html.fx-paused html.fx-paused .mk-ticker .track,html.fx-paused .map-radar,html.f
 .chip.accent{border-color:rgba(92,225,230,.45);color:var(--cyan);background:rgba(92,225,230,.1)}
 .cat-chips{display:flex;gap:8px;overflow:auto;padding:2px 0 10px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .cat-chips::-webkit-scrollbar{display:none}
-.cat-chip{flex:none;padding:10px 14px;min-height:44px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.04em}
+.cat-chip{flex:none;padding:10px 14px;min-height:44px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.04em;white-space:nowrap;max-width:none;overflow:visible;text-overflow:clip}
 .cat-chip.on{border-color:rgba(240,162,2,.55);color:var(--amber);background:rgba(240,162,2,.1);box-shadow:0 0 14px rgba(240,162,2,.15)}
 .pick-hint{font-size:11px;color:var(--dim);letter-spacing:.08em;font-weight:700;margin:0 0 8px}
 .find-field{margin-bottom:8px}
@@ -416,8 +416,8 @@ html.fx-paused html.fx-paused .mk-ticker .track,html.fx-paused .map-radar,html.f
 @keyframes pkPop{0%{transform:scale(.92)}60%{transform:scale(1.04)}100%{transform:scale(1)}}
 .tile.add{grid-column:1 / -1;flex-direction:row;justify-content:center;gap:10px;min-height:52px;border-style:dashed;opacity:.9}
 .tile.add .ic{width:36px;height:36px}
-.card.reveal{opacity:0;transform:translateY(12px);transition:opacity .45s cubic-bezier(.22,1,.36,1),transform .45s cubic-bezier(.22,1,.36,1)}
-.card.reveal.in{opacity:1;transform:none}
+.card,.card.reveal,.card.reveal.in{opacity:1!important;transform:none!important;visibility:visible!important}
+/* v4.6.1: never gate card paint on IntersectionObserver / .in */
 .hero .h-clock{font-variant-numeric:tabular-nums}
 .hero{min-height:156px}.play{min-height:0}
 .hw-top{margin-bottom:2px}
@@ -603,9 +603,11 @@ html[style*="--void:#10040f"]{--muted:rgba(255,245,251,.78)!important;--dim:#d4b
 
 /* v3.7.1 — map follow / accuracy / tiles */
 .map-v{background:#0a0f1a}
-.map-tile{position:absolute;left:0;top:0;width:256px;height:256px;opacity:0;transition:opacity .28s ease;pointer-events:none;user-select:none;-webkit-user-drag:none;image-rendering:auto;will-change:transform,opacity}
+.map-tile{position:absolute;left:0;top:0;width:256px;height:256px;opacity:0;background:#f2efe8;transition:opacity .35s ease;pointer-events:none;user-select:none;-webkit-user-drag:none;image-rendering:auto;will-change:transform,opacity}
 .map-tile.on{opacity:1}
-.map-tile.err{opacity:0}
+.map-tile.err{opacity:0;background:#f2efe8}
+/* parent .map-v keeps a true dark fill so unloaded areas never flash browser-gray */
+#mapV{background:#0a0f1a}
 .map-acc{position:absolute;left:50%;top:50%;border-radius:50%;background:rgba(92,225,230,.12);border:1px solid rgba(92,225,230,.28);pointer-events:none;z-index:2;box-sizing:border-box}
 .map-heading{position:absolute;left:50%;top:50%;width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:18px solid rgba(92,225,230,.95);pointer-events:none;z-index:3;filter:drop-shadow(0 0 4px rgba(92,225,230,.6));transform-origin:50% 50%}
 .map-radar{position:absolute;left:50%;top:50%;width:140%;height:140%;pointer-events:none;z-index:2;margin:0}
@@ -623,7 +625,7 @@ html[style*="--void:#10040f"]{--muted:rgba(255,245,251,.78)!important;--dim:#d4b
 
 
 /* ========== v4.4 calm upgrades on v3.7.1 base ========== */
-html,body{overscroll-behavior-y:auto;-webkit-overflow-scrolling:touch}
+html,body{overscroll-behavior-y:none;overscroll-behavior:none;-webkit-overflow-scrolling:touch}
 #app{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
 .os-page{display:flex;flex-direction:column;gap:12px;padding:0 var(--pad) 8px;padding-right:var(--padr)}
 .row2.hero-row{align-items:stretch}
@@ -792,3 +794,11 @@ button:focus-visible,a:focus-visible,input:focus-visible,.chip:focus-visible,.ti
 .xp.as-detail .wx-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 html.detail-open,html.detail-open body{overflow:hidden}
 #scrim:not([hidden]){z-index:88}
+
+
+/* ===== v4.6.1: never-blank + tap shield + dark map unload ===== */
+#tapShield{position:fixed;inset:0;z-index:2147483000;display:none;touch-action:none;background:transparent}
+#tapShield.on{display:block}
+.card{opacity:1;transform:none}
+html.standalone body,html.standalone{overscroll-behavior-y:none}
+.map-tiles img.map-tile:not(.on){opacity:0}

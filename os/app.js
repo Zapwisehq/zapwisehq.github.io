@@ -1,7 +1,7 @@
-/* ZAPWISE//OS web app v4.6.0 (Nov 5, 2026). One-page HUD — card detail sheets restored. No sound, no tabs. Static, no API keys. */
+/* ZAPWISE//OS web app v4.6.1 (Nov 5, 2026). Cards always visible; pull-overscroll safe; first-tap sheets; map OPEN only; dark tiles; app cats. No sound, no tabs. */
 (function () {
 "use strict";
-var VERSION = "4.6.0";
+var VERSION = "4.6.1";
 var APP_VERSION = VERSION;
 
 // v4.5: default Lite on coarse/mobile unless user already chose
@@ -83,13 +83,13 @@ function initCinematic() {
 // ========== v4.2 one-page HUD (scroll to section; no tab bar) ==========
 var HUD_TABS = ["home","weather","markets","map","music","phone","focus","apps","settings"];
 var HUD_TAB = "home";
-var HUD_SEC = { home:"sec-home", weather:"sec-weather", markets:"sec-markets", map:"sec-map", music:"sec-music", phone:"sec-phone", focus:"sec-focus", apps:"sec-apps", settings:"sec-apps" };
+var HUD_SEC = { home:"heroCard", weather:"hWx", markets:"hMk", map:"hMap", music:"hPlay", phone:"phoneMount", focus:"mFocus", apps:"appsSection", settings:"appsSection" };
 function hudScreen(id) { return document.getElementById(HUD_SEC[id] || ("sec-" + id)) || document.getElementById("screen-" + id); }
 function setHudTab(id, opts) {
   opts = opts || {};
   if (HUD_TABS.indexOf(id) < 0) id = "home";
   HUD_TAB = id;
-  try { if (typeof closeZapAssistant === "function") closeZapAssistant(); } catch (e0) {}
+  try { if (typeof closeZapAssistant === "function") closeZapAssistant(true); } catch (e0) {}
   try { if (window.ZAPCINE && window.ZAPCINE.setTab) window.ZAPCINE.setTab(HUD_TABS.indexOf(id)); } catch (e) {}
   try { Store.setUI({ view: "hud:" + id }); } catch (e1) {}
   if (id === "phone") { try { mountPhoneScreen(); } catch (e) {} }
@@ -97,12 +97,11 @@ function setHudTab(id, opts) {
   if (id === "map") { try { setTimeout(function () { renderMap(true); window.dispatchEvent(new Event("resize")); }, 60); } catch (e) {} }
   if (id === "weather") { try { if (typeof renderConditions === "function") renderConditions(); } catch (e) {} }
   if (id === "markets") { try { if (typeof renderMarkets === "function") renderMarkets(); } catch (e) {} }
-  if (opts.silent) return;
+  if (opts.silent || opts.noScroll) return;
+  /* Never window.scrollTo(0) — missing anchors used to yank the page to the top (first Markets tap). */
   var el = hudScreen(id);
   if (el && el.scrollIntoView) {
-    try { el.scrollIntoView({ behavior: RM ? "auto" : "smooth", block: "start" }); } catch (e) { try { el.scrollIntoView(true); } catch (e2) {} }
-  } else {
-    try { window.scrollTo(0, 0); } catch (e) {}
+    try { el.scrollIntoView({ behavior: "auto", block: "nearest" }); } catch (e) {}
   }
   try { if (typeof sfxTap === "function") sfxTap(); } catch (e3) {}
 }
@@ -117,15 +116,41 @@ function bindHudTabs() {
     setHudTab(go.getAttribute("data-go-tab"));
   });
 }
+function forceCardsVisible() {
+  /* v4.6.1: NEVER leave the home screen blank. Cards must not wait on IO/opacity. */
+  try {
+    document.documentElement.classList.remove("detail-open");
+    /* only clear detail-open if no detail is actually open */
+    if (typeof isCardDetailOpen === "function" && isCardDetailOpen()) document.documentElement.classList.add("detail-open");
+  } catch (e0) {}
+  $$(".card").forEach(function (el) {
+    el.classList.add("in");
+    el.classList.remove("reveal");
+    try {
+      if (el.style.opacity && el.style.opacity !== "1") el.style.opacity = "";
+      if (el.style.transform && el.style.transform.indexOf("translateY") >= 0) el.style.transform = "";
+      if (el.style.visibility === "hidden") el.style.visibility = "";
+    } catch (e1) {}
+  });
+  /* body/html scroll-lock leftovers from a stuck sheet */
+  try {
+    if (!(typeof isCardDetailOpen === "function" && isCardDetailOpen()) && !document.documentElement.classList.contains("map-fs-open")) {
+      document.documentElement.style.overflow = "";
+      document.body.style.overflow = "";
+      document.body.style.pointerEvents = "";
+    }
+  } catch (e2) {}
+}
 function ensurePanelsVisible() {
   // v4.4: one-page calm layout — keep expand panels (xpWx/xpMk) collapsed until tapped
-  ["sec-home","sec-weather","sec-markets","sec-map","sec-music","sec-phone","sec-focus","sec-apps","phoneMount","appsSection","today","hMap","hWx","hMk","mFocus"].forEach(function (id) {
+  ["phoneMount","appsSection","today","hMap","hWx","hMk","mFocus"].forEach(function (id) {
     var el = document.getElementById(id);
     if (el && el.hasAttribute("hidden") && id.indexOf("xp") !== 0) { /* leave intentional hidden alone */ }
   });
   var openKind = (typeof CARD_DETAIL !== "undefined" && CARD_DETAIL && CARD_DETAIL.kind) ? CARD_DETAIL.kind : null;
-  var xpWx = document.getElementById("xpWx"); if (xpWx && openKind !== "wx") { xpWx.hidden = true; xpWx.classList.remove("as-detail"); }
-  var xpMk = document.getElementById("xpMk"); if (xpMk && openKind !== "mk") { xpMk.hidden = true; xpMk.classList.remove("as-detail"); }
+  var xpWx = document.getElementById("xpWx"); if (xpWx && openKind !== "wx") { xpWx.hidden = true; xpWx.classList.remove("as-detail"); xpWx.style.transform = ""; }
+  var xpMk = document.getElementById("xpMk"); if (xpMk && openKind !== "mk") { xpMk.hidden = true; xpMk.classList.remove("as-detail"); xpMk.style.transform = ""; }
+  try { forceCardsVisible(); } catch (eF) {}
   try { mountPhoneScreen(); } catch (e) {}
 }
 
@@ -300,7 +325,15 @@ var DEFAULT_APPS = [
   { id: "calendar", name: "Calendar", url: "calshow://", icon: "/os/icons/calendar.jpg", web: "https://calendar.google.com", glyph: "cal", bg: "#fff", accent: "#ff4d5e" },
   { id: "notes", name: "Notes", url: "mobilenotes://", icon: "/os/icons/notes.jpg", web: "https://keep.google.com", glyph: "notes", bg: "linear-gradient(180deg,#fff6c2 0 28%,#ffd23f 28%)", accent: "#ffd23f" },
   { id: "photos", name: "Photos", url: "photos-redirect://", icon: "/os/icons/photos.jpg", web: "https://photos.google.com", glyph: "letter", letter: "P", bg: "#111827", accent: "#f4efe4" },
-  { id: "gemini", name: "Gemini", url: "googlegemini://", icon: "/os/icons/gemini.jpg", web: "https://gemini.google.com", glyph: "gem", bg: "linear-gradient(135deg,#4f7cff,#a25cff)", accent: "#8b9dff" }
+  { id: "gemini", name: "Gemini", url: "googlegemini://", icon: "/os/icons/gemini.jpg", web: "https://gemini.google.com", glyph: "gem", bg: "linear-gradient(135deg,#4f7cff,#a25cff)", accent: "#8b9dff" },
+  /* v4.6.1: Shopping + Lifestyle defaults — open app/web, never App Store */
+  { id: "amazon", name: "Amazon", url: "https://www.amazon.com", icon: "/os/icons/amazon.jpg", web: "https://www.amazon.com", glyph: "letter", letter: "A", bg: "#111", accent: "#ff9900" },
+  { id: "walmart", name: "Walmart", url: "walmart://", icon: "/os/icons/walmart.jpg", web: "https://www.walmart.com", glyph: "letter", letter: "W", bg: "#0071ce", accent: "#ffc220" },
+  { id: "target", name: "Target", url: "target://", icon: "/os/icons/target.jpg", web: "https://www.target.com", glyph: "letter", letter: "T", bg: "#cc0000", accent: "#fff" },
+  { id: "uber", name: "Uber", url: "uber://", icon: "/os/icons/uber.jpg", web: "https://m.uber.com", glyph: "letter", letter: "U", bg: "#000", accent: "#fff" },
+  { id: "doordash", name: "DoorDash", url: "doordash://", icon: "/os/icons/doordash.jpg", web: "https://www.doordash.com", glyph: "letter", letter: "D", bg: "#ff3008", accent: "#fff" },
+  { id: "strava", name: "Strava", url: "strava://", icon: "/os/icons/strava.jpg", web: "https://www.strava.com", glyph: "letter", letter: "S", bg: "#fc4c02", accent: "#fff" },
+  { id: "fitbit", name: "Fitbit", url: "fitbit://", icon: "/os/icons/fitbit.jpg", web: "https://www.fitbit.com", glyph: "letter", letter: "F", bg: "#00b0b9", accent: "#fff" }
 ];
 DEFAULT_APPS.forEach(function (a) { a.on = true; });
 // music apps live in the PLAY hub only (not duplicated into the apps grid)
@@ -540,21 +573,20 @@ function renderApps() {
     });
   }
   if (cats) {
-    var list = [{ id: "all", name: "All", icon: "▦" }].concat(typeof APP_CATS !== "undefined" ? APP_CATS : []);
+    var present = {};
+    on.forEach(function (a) { try { present[appCatOf(a)] = true; } catch (eP) {} });
+    var list = [{ id: "all", name: "All", icon: "▦" }].concat(
+      (typeof APP_CATS !== "undefined" ? APP_CATS : []).filter(function (c) { return !!present[c.id]; })
+    );
+    if (APPS_CAT !== "all" && !present[APPS_CAT]) APPS_CAT = "all";
     cats.innerHTML = list.map(function (c) {
       var onC = c.id === APPS_CAT;
       return '<button type="button" class="cat-chip' + (onC ? " on" : "") + '" data-cat="' + c.id + '" role="tab" aria-selected="' + onC + '">' + (c.icon ? ('<span class="ci">' + c.icon + "</span>") : "") + esc(c.name) + "</button>";
     }).join("");
   }
   var filtered = on;
-  if (APPS_CAT && APPS_CAT !== "all" && typeof appCatOf === "function") {
+  if (APPS_CAT && APPS_CAT !== "all") {
     filtered = on.filter(function (a) { return appCatOf(a) === APPS_CAT; });
-  } else if (APPS_CAT && APPS_CAT !== "all" && typeof APP_CATS !== "undefined") {
-    filtered = on.filter(function (a) {
-      var hay = ((a.name || "") + " " + (a.id || "") + " " + (a.tags || []).join(" ")).toLowerCase();
-      for (var i = 0; i < APP_CATS.length; i++) if (APP_CATS[i].id === APPS_CAT && APP_CATS[i].match.test(hay)) return true;
-      return false;
-    });
   }
   var box = $("#apps"); if (!box) return; box.innerHTML = "";
   filtered.forEach(function (a) { box.appendChild(mkTile(a)); });
@@ -745,6 +777,8 @@ function setMediaKey(k, open) {
   if (open) openApp(MEDIA[k]);
 }
 $("#hPlay").addEventListener("click", function (e) {
+  if (tapShieldActive()) { e.preventDefault(); e.stopPropagation(); return; }
+  if (e.target.closest("#mapOpen,#hMap,#hWx,#hMk")) return;
   var b = e.target.closest("[data-media-act]");
   if (!b) {
     // Tap empty music card chrome → open chosen app
@@ -752,6 +786,7 @@ $("#hPlay").addEventListener("click", function (e) {
     return;
   }
   e.preventDefault();
+  e.stopPropagation();
   var act = b.getAttribute("data-media-act");
   if (act === "play") openApp(currentMedia());
   else if (act === "pick") openMedia();
@@ -2036,8 +2071,9 @@ function renderMap(force) {
         img.setAttribute("data-tid", id);
         img.className = "map-tile";
         img.loading = "eager";
+        img.style.background = "#f2efe8"; /* inverts to dark — no gray unload flash */
         img.onload = function () { img.classList.add("on"); };
-        img.onerror = function () { img.classList.add("err"); };
+        img.onerror = function () { img.classList.add("err"); img.style.opacity = "0"; };
         img.src = tileUrl(info.z, info.x, info.y);
         // if cached by browser it may already be complete
         if (img.complete && img.naturalWidth) img.classList.add("on");
@@ -2222,6 +2258,7 @@ function closeMapOverlay() {
   var ext = $("#mapFsExt"); if (ext) ext.hidden = true;
   MAP._key = null;
   try { renderMap(true); } catch (e) {}
+  try { armTapShield(450); } catch (e2) {}
 }
 function openMapOverlay() {
   var card = $("#hMap"); if (!card) return;
@@ -2251,7 +2288,7 @@ function openMapOverlay() {
   if (ext) ext.hidden = false;
   MAP._key = null;
   try { renderMap(true); } catch (e) {}
-  try { card.scrollIntoView({ block: "nearest" }); } catch (e2) {}
+  /* v4.6.1: no scrollIntoView — it was shifting layout and letting ghost clicks hit Weather/Music */
 }
 function openMapsExternal() {
   if (!GPS) { toast(GEO_OFF ? "Turn on Location for this app to see where you are" : "Still finding you…"); return; }
@@ -2279,7 +2316,17 @@ function openMapsHere() {
   if (document.documentElement.classList.contains("map-fs-open")) { closeMapOverlay(); return; }
   openMapOverlay();
 }
-var mapOpen = $("#mapOpen"); if (mapOpen) mapOpen.addEventListener("click", function (e) { e.preventDefault(); e.stopPropagation(); openMapsHere(); });
+(function bindMapOpenExclusive() {
+  var mapOpen = $("#mapOpen"); if (!mapOpen) return;
+  function onlyMap(e) {
+    try { e.preventDefault(); e.stopPropagation(); if (e.stopImmediatePropagation) e.stopImmediatePropagation(); } catch (err) {}
+    if (tapShieldActive()) return;
+    openMapsHere();
+  }
+  ["pointerdown", "pointerup", "click", "touchend"].forEach(function (ev) {
+    mapOpen.addEventListener(ev, onlyMap, { capture: true, passive: false });
+  });
+})();
 document.addEventListener("keydown", function (e) {
   if (e.key === "Escape" && document.documentElement.classList.contains("map-fs-open")) closeMapOverlay();
 });
@@ -2662,17 +2709,22 @@ function show(tab) {
   $$(".tab").forEach(function (b) { b.classList.toggle("on", b.getAttribute("data-tab") === tab); });
 }
 $$(".tab").forEach(function (b) { b.addEventListener("click", function () { show(b.getAttribute("data-tab")); }); });
-$("#hWx").addEventListener("click", function () { toggleXp("wx"); });
+$("#hWx").addEventListener("click", function (e) {
+  if (tapShieldActive()) { e.preventDefault(); e.stopPropagation(); return; }
+  e.preventDefault(); e.stopPropagation();
+  toggleXp("wx");
+});
 (function bindHomeMarketsCard() {
   var card = $("#hMk"); if (!card) return;
   function openPort() { toggleXp("mk"); }
   function openAdd(e) {
     if (e) { e.preventDefault(); e.stopPropagation(); }
-    // reveal portfolio panel then open add-account sheet
-    setHudTab("markets");
+    // open add-account sheet without scrolling the page (setHudTab used to jump to top)
     try { openAddAccount(); } catch (err) { openPort(); }
   }
   card.addEventListener("click", function (e) {
+    if (tapShieldActive()) { e.preventDefault(); e.stopPropagation(); return; }
+    e.stopPropagation();
     if (e.target.closest("#hMkAct,[data-hmk-add]")) { openAdd(e); return; }
     if (e.target.closest("[data-hmk-port],.hmk-total,.hmk-val")) { openPort(); return; }
     openPort();
@@ -2711,9 +2763,11 @@ function closeCardDetail(skipHist) {
     var y = CARD_DETAIL.scrollY || 0;
     requestAnimationFrame(function () { try { window.scrollTo(0, y); } catch (e1) {} });
   } catch (e2) {}
+  try { armTapShield(450); } catch (e3) {}
 }
 function openCardDetail(k) {
   if (k !== "wx" && k !== "mk") return;
+  if (tapShieldActive()) return;
   var el = detailPanel(k), btn = detailBtn(k);
   if (!el) return;
   /* toggle closed if same detail already open */
@@ -2724,6 +2778,7 @@ function openCardDetail(k) {
      a popstate that would dismiss the sheet we are about to show. */
   CARD_DETAIL.kind = k;
   CARD_DETAIL.scrollY = window.scrollY || document.documentElement.scrollTop || 0;
+  try { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch (eB) {}
   el.hidden = false;
   el.classList.add("as-detail");
   try { document.documentElement.classList.add("detail-open"); } catch (eD) {}
@@ -2733,9 +2788,10 @@ function openCardDetail(k) {
   try { closeZapAssistant(true); } catch (eZ) {}
   try { closeSheet(true); } catch (eS) {}
   try { hideMapPlaceCard(); } catch (eM) {}
+  try { if (document.documentElement.classList.contains("map-fs-open")) closeMapOverlay(); } catch (eMo) {}
   showScrim("detail");
   overlayPushHistory();
-  /* paint then render so canvas has size */
+  /* paint then render so canvas has size — do NOT scrollIntoView (first-tap jump) */
   requestAnimationFrame(function () {
     try {
       if (k === "wx") { renderWeather(); renderConditions(); }
@@ -2820,6 +2876,27 @@ document.addEventListener("click", function (e) {
 });
 
 // ========== 11. sheets ==========
+
+/* v4.6.1: block tap-through for a beat after any overlay closes */
+var TAP_SHIELD_UNTIL = 0;
+function armTapShield(ms) {
+  TAP_SHIELD_UNTIL = Date.now() + (ms || 420);
+  var sh = document.getElementById("tapShield");
+  if (!sh) {
+    sh = document.createElement("div");
+    sh.id = "tapShield";
+    sh.setAttribute("aria-hidden", "true");
+    document.body.appendChild(sh);
+  }
+  sh.classList.add("on");
+  clearTimeout(armTapShield._t);
+  armTapShield._t = setTimeout(function () {
+    TAP_SHIELD_UNTIL = 0;
+    try { sh.classList.remove("on"); } catch (e) {}
+  }, ms || 420);
+}
+function tapShieldActive() { return Date.now() < TAP_SHIELD_UNTIL; }
+
 /* ========== Overlay dismiss (v4.3): outside tap, swipe down, Esc, history back ========== */
 var OVERLAY = { hist: false, closingFromPop: false, swipeY0: 0, swipeEl: null };
 function anyOverlayOpen() {
@@ -2857,6 +2934,7 @@ function dismissTopOverlay(fromPop) {
   hideScrimIfIdle();
   if (!anyOverlayOpen()) overlayClearHistory();
   OVERLAY.closingFromPop = false;
+  try { armTapShield(450); } catch (eS) {}
 }
 function dismissAllOverlays(fromPop) {
   OVERLAY.closingFromPop = !!fromPop;
@@ -2884,6 +2962,7 @@ function closeSheet(skipHist) {
   var sh = $("#sheet"); if (sh) { sh.hidden = true; try { sh.classList.remove("finder-sheet"); sh.style.transform = ""; } catch (e) {} }
   hideScrimIfIdle();
   if (!skipHist && !anyOverlayOpen()) overlayClearHistory();
+  try { armTapShield(450); } catch (e2) {}
 }
 $("#sheetClose").addEventListener("click", function () { dismissTopOverlay(false); });
 /* Scrim: pointerdown closes and blocks the tap from hitting content underneath */
@@ -3008,23 +3087,48 @@ function openEditApps() {
 
 // ----- + add app: categories + search (v3.3) -----
 var APP_CATS = [
-  { id: "social", name: "Social Media", icon: "💬", match: /instagram|tiktok|facebook|snapchat|threads|reddit|linkedin|pinterest|bluesky|mastodon|tumblr|lemon8|bereal|vsco|x\b|twitter|apollo|redditisfun/i },
-  { id: "entertainment", name: "Entertainment", icon: "🎬", match: /youtube|netflix|twitch|hulu|disney|max|peacock|paramount|primevideo|tubi|crunchyroll|vimeo|roku|appletv|plex|imdb|letterboxd|capcut|canva|adobe|lightroom|photoshop|davinci|descript/i },
-  { id: "lifestyle", name: "Lifestyle", icon: "🌿", match: /fitness|strava|myfitnesspal|fitbit|calm|headspace|duolingo|kindle|goodreads|news|cnn|nytimes|bbc|wikipedia|ring|nest|alexa|findmy|photos|gphotos|camera|clock|weather|translate/i },
-  { id: "music", name: "Music", icon: "🎵", match: /spotify|music|pandora|soundcloud|deezer|tidal|shazam|bandcamp|audible|podcast|ytmusic/i },
-  { id: "shop", name: "Shopping", icon: "🛍️", match: /amazon|ebay|etsy|walmart|target|costco|shein|temu|poshmark|bestbuy|shopify|aliexpress|nike/i },
+  { id: "social", name: "Social", icon: "💬", match: /instagram|tiktok|facebook|snapchat|threads|reddit|linkedin|pinterest|bluesky|mastodon|tumblr|lemon8|bereal|vsco|\bx\b|twitter|apollo|redditisfun/i },
+  { id: "entertainment", name: "Fun", icon: "🎬", match: /youtube|netflix|twitch|hulu|disney|\bmax\b|peacock|paramount|primevideo|tubi|crunchyroll|vimeo|roku|appletv|plex|imdb|letterboxd|capcut|canva|adobe|lightroom|photoshop|davinci|descript/i },
+  { id: "lifestyle", name: "Lifestyle", icon: "🌿", match: /fitness|strava|myfitnesspal|fitbit|calm|headspace|duolingo|kindle|goodreads|news|cnn|nytimes|bbc|wikipedia|ring|nest|alexa|findmy|photos|gphotos|camera|clock|weather|translate|health|uber(?!eats)|doordash/i },
+  { id: "music", name: "Music", icon: "🎵", match: /spotify|(^|[^a-z])music([^a-z]|$)|pandora|soundcloud|deezer|tidal|shazam|bandcamp|audible|podcast|ytmusic|amazonmusic|applemusic/i },
+  { id: "shop", name: "Shopping", icon: "🛍️", match: /amazon(?!music)|ebay|etsy|walmart|target|costco|shein|temu|poshmark|bestbuy|shopify|aliexpress|nike/i },
   { id: "money", name: "Money", icon: "💸", match: /venmo|cash|paypal|zelle|coinbase|binance|robinhood|chase|bank|amex|capital|chime|stripe|mint|creditkarma|wells|quickbooks|applepay|googlepay/i },
   { id: "food", name: "Food", icon: "🍔", match: /doordash|ubereats|grubhub|instacart|starbucks|mcdonald|chipotle|opentable|resy|yelp|toast/i },
-  { id: "travel", name: "Travel", icon: "✈️", match: /uber|lyft|maps|waze|airbnb|booking|expedia|kayak|tripadvisor|delta|united|southwest|american|flightradar|citymapper|tesla|gasbuddy|googlemaps|applemaps/i },
+  { id: "travel", name: "Travel", icon: "✈️", match: /\buber\b|lyft|maps|waze|airbnb|booking|expedia|kayak|tripadvisor|delta|united|southwest|american|flightradar|citymapper|tesla|gasbuddy|googlemaps|applemaps/i },
   { id: "work", name: "Work", icon: "💼", match: /gmail|outlook|drive|docs|sheets|slides|notion|trello|asana|todoist|evernote|dropbox|onedrive|github|gitlab|figma|word|excel|powerpoint|calendar|mail|zoom|meet|slack|teams|keep|chrome|safari|edge|icloud|finder|shortcuts|notes|reminders|stackoverflow/i },
   { id: "ai", name: "AI", icon: "✨", match: /chatgpt|claude|gemini|grok|perplexity|copilot|character|midjourney|runway|eleven|poe|openai|chatgptalt/i },
   { id: "games", name: "Games", icon: "🎮", match: /fortnite|roblox|minecraft|steam|xbox|playstation|twitchigdb|spotifykids/i },
-  { id: "utilities", name: "Utilities", icon: "🛠️", match: /settings|calculator|authenticator|lastpass|bitwarden|1password|phone|messages|whatsapp|messenger|telegram|discord|signal|skype|line|wechat|viber|groupme|zapwise/i }
+  { id: "utilities", name: "Utilities", icon: "🛠️", match: /settings|calculator|authenticator|lastpass|bitwarden|1password|phone|messages|whatsapp|messenger|telegram|discord|signal|skype|line|wechat|viber|groupme|zapwise|web\b/i }
 ];
+/* Explicit one-category map — each catalog/default id appears in exactly one bucket */
+var APP_CAT_BY_ID = {
+  x: "social", twitter: "social", instagram: "social", tiktok: "social", facebook: "social", snapchat: "social",
+  threads: "social", reddit: "social", linkedin: "social", pinterest: "social",
+  youtube: "entertainment", netflix: "entertainment", twitch: "entertainment", hulu: "entertainment",
+  disney: "entertainment", disneyplus: "entertainment", max: "entertainment", hbomax: "entertainment",
+  peacock: "entertainment", paramount: "entertainment", primevideo: "entertainment", tubi: "entertainment",
+  photos: "lifestyle", gphotos: "lifestyle", camera: "lifestyle", weather: "lifestyle", clock: "lifestyle",
+  strava: "lifestyle", fitbit: "lifestyle", myfitnesspal: "lifestyle", calm: "lifestyle", headspace: "lifestyle",
+  duolingo: "lifestyle", health: "lifestyle", fitness: "lifestyle",
+  spotify: "music", music: "music", applemusic: "music", ytmusic: "music", amazonmusic: "music",
+  pandora: "music", soundcloud: "music", tidal: "music", deezer: "music", shazam: "music",
+  amazon: "shop", walmart: "shop", target: "shop", ebay: "shop", etsy: "shop", costco: "shop", bestbuy: "shop",
+  uber: "lifestyle", lyft: "travel", doordash: "lifestyle", ubereats: "food", maps: "travel",
+  chatgpt: "ai", grok: "ai", gemini: "ai", claude: "ai",
+  phone: "utilities", messages: "utilities", mail: "work", calendar: "work", notes: "work", web: "utilities"
+};
 function catOf(c) {
+  var id = String((c && c.id) || "").replace(/^p-/, "").toLowerCase();
+  if (id && APP_CAT_BY_ID[id]) return APP_CAT_BY_ID[id];
   var hay = (c.id || "") + " " + (c.name || "");
   for (var i = 0; i < APP_CATS.length; i++) if (APP_CATS[i].match.test(hay)) return APP_CATS[i].id;
   return "more";
+}
+function appCatOf(a) {
+  if (!a) return "more";
+  var id = String(a.id || "").replace(/^p-/, "").toLowerCase();
+  if (id && APP_CAT_BY_ID[id]) return APP_CAT_BY_ID[id];
+  return catOf({ id: id || a.id, name: a.name });
 }
 function openAddApp(opt) {
   opt = opt || {};
@@ -4059,7 +4163,7 @@ function runSearch(q) {
   });
   document.addEventListener("click", function (e) { if (!f.contains(e.target)) hideDrop(); });
 })();
-window.ZAPOS = { store: Store, version: VERSION, openCardDetail: openCardDetail, closeCardDetail: closeCardDetail, toggleXp: toggleXp, setHudTab: setHudTab, catalog: CATALOG.length, accounts: ACCOUNT_CATALOG.length, openDirectionsTo: openDirectionsTo, placeLL: placeLL, showMapPlaceCard: showMapPlaceCard, loadAccounts: loadAccounts, loadPlaces: loadPlaces, setGPS: function (g) { GPS = g; Store.setLocal("gps", GPS); try { updateGpsLockChip(); } catch (e) {} }, mapFollow: function (on) { MAP.follow = !!on; }, updateSkyline: updateSkyline, setUiSounds: setUiSounds, sfxTap: sfxTap, sfxSuccess: sfxSuccess, sfxError: sfxError, sunPeriodNow: sunPeriodNow }; // for the stage 2 sync add-on + QA
+window.ZAPOS = { store: Store, version: VERSION, openCardDetail: openCardDetail, closeCardDetail: closeCardDetail, toggleXp: toggleXp, setHudTab: setHudTab, forceCardsVisible: forceCardsVisible, armTapShield: armTapShield, openMapsHere: openMapsHere, closeMapOverlay: closeMapOverlay, catalog: CATALOG.length, accounts: ACCOUNT_CATALOG.length, openDirectionsTo: openDirectionsTo, placeLL: placeLL, showMapPlaceCard: showMapPlaceCard, loadAccounts: loadAccounts, loadPlaces: loadPlaces, setGPS: function (g) { GPS = g; Store.setLocal("gps", GPS); try { updateGpsLockChip(); } catch (e) {} }, mapFollow: function (on) { MAP.follow = !!on; }, updateSkyline: updateSkyline, setUiSounds: setUiSounds, sfxTap: sfxTap, sfxSuccess: sfxSuccess, sfxError: sfxError, sunPeriodNow: sunPeriodNow }; // for the stage 2 sync add-on + QA
 
 // ========== v3.1 concept chrome: menu, today ==========
 var menuBtn = $("#menuBtn"); if (menuBtn) menuBtn.addEventListener("click", openMenu);
@@ -4291,17 +4395,40 @@ function placeNeonRing(v, dx, dy) {
 })();
 
 
-(function scrollReveal() {
-  var RM = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  if (RM || !("IntersectionObserver" in window)) {
-    $$(".card").forEach(function (el) { el.classList.add("in"); });
-    return;
+(function cardsAlwaysVisible() {
+  /* v4.6.1 CRITICAL: .card.reveal { opacity:0 } + IntersectionObserver left only
+     in-view Music visible after pull-to-refresh / overscroll. Cards paint instantly. */
+  try { forceCardsVisible(); } catch (e0) {
+    $$(".card").forEach(function (el) { el.classList.add("in"); el.classList.remove("reveal"); });
   }
-  $$(".card").forEach(function (el) { el.classList.add("reveal"); });
-  var io = new IntersectionObserver(function (ents) {
-    ents.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add("in"); io.unobserve(en.target); } });
-  }, { rootMargin: "0px 0px -8% 0px", threshold: 0.08 });
-  $$(".card.reveal").forEach(function (el) { io.observe(el); });
+  function watchdog() {
+    try {
+      var stuck = false;
+      $$(".card").forEach(function (el) {
+        var st = window.getComputedStyle(el);
+        var op = parseFloat(st.opacity);
+        var hidden = st.visibility === "hidden" || st.display === "none";
+        var tr = st.transform || "";
+        var translated = tr.indexOf("matrix") >= 0 && tr !== "none" && /translate/i.test(el.style.transform || "");
+        if ((!hidden && op < 0.5) || el.classList.contains("reveal") && !el.classList.contains("in") || translated) stuck = true;
+      });
+      if (stuck) forceCardsVisible();
+      /* if every major card has ~0 height or opacity, restore */
+      ["hPlay","hWx","hMap","hMk","appsSection"].forEach(function (id) {
+        var el = document.getElementById(id); if (!el) return;
+        var r = el.getBoundingClientRect();
+        var st = window.getComputedStyle(el);
+        if (r.height < 4 || parseFloat(st.opacity) < 0.5) forceCardsVisible();
+      });
+    } catch (e1) {}
+  }
+  setTimeout(watchdog, 200);
+  setTimeout(watchdog, 800);
+  setInterval(watchdog, 2500);
+  window.addEventListener("pageshow", function () { try { forceCardsVisible(); } catch (e) {} });
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible") try { forceCardsVisible(); } catch (e) {}
+  });
 })();
 
 (function stickyTop() {
@@ -4310,6 +4437,8 @@ function placeNeonRing(v, dx, dy) {
   window.addEventListener("scroll", onScroll, { passive: true }); onScroll();
 })();
 // ========== 13. boot ==========
+try { if ("scrollRestoration" in history) history.scrollRestoration = "manual"; } catch (eSR) {}
+try { forceCardsVisible(); } catch (eFV0) {}
 document.body.classList.add("on-home"); applyTheme(THEME.id);
 renderApps(); renderNowPlaying(); try { renderNet(); } catch (e) {}
 tick(); setInterval(tick, 1000);
