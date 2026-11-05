@@ -7,16 +7,29 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="description" content="ZAPWISE//OS: calm glass HUD — clock, weather, map, markets, focus, apps.">
 <meta name="theme-color" content="#070814">
-<meta name="zapos-version" content="4.9.4">
+<meta name="zapos-version" content="4.9.5">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="/os/manifest.webmanifest">
+<link rel="preload" href="/os/fonts/Rajdhani-Bold.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="apple-touch-icon" href="/os/icon-180.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/os/icon-180.png">
+<link rel="apple-touch-icon" sizes="167x167" href="/os/icon-167.png">
+<link rel="apple-touch-icon" sizes="152x152" href="/os/icon-152.png">
+<link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/os/splash/splash-750x1334.png">
+<link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/os/splash/splash-828x1792.png">
+<link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/os/splash/splash-1125x2436.png">
+<link rel="apple-touch-startup-image" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/os/splash/splash-1170x2532.png">
+<link rel="apple-touch-startup-image" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/os/splash/splash-1179x2556.png">
+<link rel="apple-touch-startup-image" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/os/splash/splash-1284x2778.png">
+<link rel="apple-touch-startup-image" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/os/splash/splash-1290x2796.png">
+<link rel="apple-touch-startup-image" media="(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/os/splash/splash-1206x2622.png">
+<link rel="apple-touch-startup-image" media="(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/os/splash/splash-1320x2868.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/os/icon-192.png">
-<link rel="stylesheet" href="/os/app.css?v=4.9.4">
+<link rel="stylesheet" href="/os/app.css?v=4.9.5">
 <style>
-@font-face{font-family:"Rajdhani";font-style:normal;font-weight:600;font-display:swap;src:url("/os/fonts/Rajdhani-SemiBold.ttf") format("truetype")}
-@font-face{font-family:"Rajdhani";font-style:normal;font-weight:700;font-display:swap;src:url("/os/fonts/Rajdhani-Bold.ttf") format("truetype")}
+@font-face{font-family:"Rajdhani";font-style:normal;font-weight:600;font-display:swap;src:url("/os/fonts/Rajdhani-SemiBold.woff2") format("woff2"),url("/os/fonts/Rajdhani-SemiBold.ttf") format("truetype")}
+@font-face{font-family:"Rajdhani";font-style:normal;font-weight:700;font-display:swap;src:url("/os/fonts/Rajdhani-Bold.woff2") format("woff2"),url("/os/fonts/Rajdhani-Bold.ttf") format("truetype")}
 </style>
 <script>
 (function(){try{var raw=localStorage.getItem("zapos.device");var j=raw?JSON.parse(raw):{};if(!j||typeof j!=="object")j={};if(!Object.prototype.hasOwnProperty.call(j,"liteMode")){var m=false;try{m=(window.matchMedia&&(matchMedia("(pointer: coarse)").matches||matchMedia("(max-width: 900px)").matches))||/iPhone|iPad|iPod|Android/i.test(navigator.userAgent||"")||navigator.standalone===true;}catch(e0){}if(m){j.liteMode=true;localStorage.setItem("zapos.device",JSON.stringify(j));}}if(j.liteMode)document.documentElement.classList.add("fx-lite");}catch(e){}
@@ -32,7 +45,7 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
 <div id="app">
 
  <header class="top sticky" id="top">
-  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver" data-app-ver>v4.9.4</span></div>
+  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver" data-app-ver>v4.9.5</span></div>
   <div class="top-r">
    <span class="sync" id="hSync"><i aria-hidden="true"></i>LIVE</span>
    <span class="hud-chip gps" id="hGpsLock" data-lock="0" hidden><i aria-hidden="true"></i>GPS —</span>
@@ -40,6 +53,7 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
    <button type="button" class="zap-fab asst-mic h-mic" id="zapFab" aria-label="Open ZAP AI" title="ZAP AI">
     <svg class="zap-mic-ico" viewBox="0 0 24 24" aria-hidden="true" width="20" height="20"><path fill="currentColor" d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-3.1A7 7 0 0 0 19 11h-2z"/></svg>
    </button>
+   <button type="button" class="h-help" id="tourBtn" aria-label="Page tour and help" title="Tour">?</button>
    <button class="h-theme" data-theme-btn aria-label="Change theme" title="Change theme"><i aria-hidden="true"></i>THEME</button>
    <button class="avatar" id="menuBtn" aria-label="Open settings menu" title="Menu">☰</button>
   </div>
@@ -50,6 +64,7 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
   <div class="row2 hero-row">
    <div class="card br hero" id="heroCard">
     <div class="h-clock hud-clock" id="hClock" data-hud="1" aria-live="off">
+     <i class="holo-sheen" aria-hidden="true"></i>
      <div class="hc-sweep" aria-hidden="true"></div>
      <div class="hc-time"><span class="hc-hm" id="hcHm">--:--</span><span class="hc-ampm" id="hAmpm">--</span></div>
      <div class="hc-sec" id="hcSec" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
@@ -299,8 +314,8 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/os/catalog.js?v=4.9.4"></script>
-<script src="/os/sky.js?v=4.9.4"></script>
-<script src="/os/app.js?v=4.9.4"></script>
+<script src="/os/catalog.js?v=4.9.5"></script>
+<script src="/os/sky.js?v=4.9.5"></script>
+<script src="/os/app.min.js?v=4.9.5"></script>
 </body>
 </html>

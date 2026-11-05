@@ -1,6 +1,6 @@
 {
-  "version": "4.9.4",
+  "version": "4.9.5",
   "built": "2026-11-05",
   "channel": "stable",
-  "notes": "v4.9.4: Map fixed \u2014 OPEN works in one tap without jumping the page, search any place, tap a pin for a card with GO (Apple Maps on iPhone, Google elsewhere), hold a pin or place to edit, drive times labeled as estimates (no live traffic), clear offline and location-off states, GPS dot stays locked while you pan. Sheets no longer throw the page to the top. ZAP AI has a welcome with one-tap starters. Removed unused 3D settings and files."
+  "notes": "v4.9.5: Back closes one layer per press (sheet → pin card → full map). New ? help button with an optional 11-step tour; a one-time welcome card you can ignore. Bank spot in Markets: pick your bank, type a balance if you like (saved only on this phone, never a login), tap to open the bank. Ticker now glides like a market board, with gold and more coins. Map location dot is crisp, with a small direction cone only when your phone gives a real compass. Gentle hologram motion you can switch off in Settings (Motion). Faster load: smaller app file and fonts (about 80% less to download). Maps keep working offline for places you've seen, switch to a backup tile server if the main one is down, and search remembers answers. One Add button per card, Phone card title, Android home-screen icons and iPhone launch screens. The iPhone Scriptable widget is no longer offered."
 }

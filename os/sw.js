@@ -1,16 +1,20 @@
-/* ZAPWISE//OS service worker v4.9.4
+/* ZAPWISE//OS service worker v4.9.5
    - Network-first for navigations + shell (index, app.js/css, catalog, sky, manifest).
    - Cache-first only for icons / images.
    - version.json is NEVER intercepted (always hits network for update checks).
    - skipWaiting on install; clients.claim + delete old caches on activate.
    Live data (weather, markets, cross-origin tiles) is not handled here. */
-const VER = "zapos-v4.9.4";
-const APP_VER = "4.9.4";
+const VER = "zapos-v4.9.5";
+const APP_VER = "4.9.5";
 const SHELL = [
   "/os/",
   "/os/index.html",
   "/os/app.css?v=" + APP_VER,
-  "/os/app.js?v=" + APP_VER,
+  "/os/app.min.js?v=" + APP_VER,
+  "/os/fonts/Rajdhani-Bold.woff2",
+  "/os/fonts/Rajdhani-SemiBold.woff2",
+  "/os/icon-maskable-192.png",
+  "/os/icon-maskable-512.png",
   "/os/catalog.js?v=" + APP_VER,
   "/os/sky.js?v=" + APP_VER,
   "/os/manifest.webmanifest",
@@ -34,7 +38,7 @@ self.addEventListener("activate", function (e) {
   e.waitUntil(
     caches.keys().then(function (ks) {
       return Promise.all(ks.filter(function (k) {
-        return k.indexOf("zapos-") === 0 && k !== VER;
+        return k.indexOf("zapos-") === 0 && k !== VER && k !== TILE_CACHE;
       }).map(function (k) { return caches.delete(k); }));
     }).then(function () { return self.clients.claim(); })
   );
@@ -96,7 +100,7 @@ function networkFirst(req, fallbackUrl) {
 
 function isShellPath(path) {
   if (path === "/os/" || path === "/os/index.html") return true;
-  if (path === "/os/app.js" || path === "/os/app.css") return true;
+  if (path === "/os/app.js" || path === "/os/app.min.js" || path === "/os/app.css") return true;
   if (path === "/os/catalog.js" || path === "/os/sky.js") return true;
   if (path === "/os/manifest.webmanifest") return true;
   return false;
@@ -113,6 +117,8 @@ self.addEventListener("fetch", function (e) {
   if (req.method !== "GET") return;
   var u;
   try { u = new URL(req.url); } catch (err) { return; }
+  // v4.9.5: map tiles — keep a small offline cache (max ~600 tiles, refreshed after 7 days)
+  if (/^tile\.openstreetmap\.(org|de)$/.test(u.hostname) && req.mode === "cors") { e.respondWith(tileFetch(req)); return; }
   if (u.origin !== self.location.origin || u.pathname.indexOf("/os/") !== 0) return;
 
   // Let the browser handle SW script + version.json (always network for updates).
@@ -138,6 +144,26 @@ self.addEventListener("fetch", function (e) {
 
   e.respondWith(networkFirst(req, null));
 });
+
+var TILE_CACHE = "zapos-tiles-v1", TILE_MAX = 600, TILE_AGE = 7 * 864e5;
+function tileFetch(req) {
+  return caches.open(TILE_CACHE).then(function (c) {
+    return c.match(req).then(function (hit) {
+      var at = hit ? Date.parse(hit.headers.get("date") || "") || 0 : 0;
+      var fresh = hit && Date.now() - at < TILE_AGE;
+      var net = fetch(req).then(function (r) {
+        if (r && r.ok) {
+          c.put(req, r.clone()).then(function () { return c.keys(); }).then(function (ks) {
+            if (ks.length > TILE_MAX) return Promise.all(ks.slice(0, ks.length - TILE_MAX).map(function (k) { return c.delete(k); }));
+          }).catch(function () {});
+        }
+        return r;
+      });
+      if (fresh) return hit;
+      return net.then(function (r) { return (r && r.ok) ? r : (hit || r); }).catch(function () { return hit || Response.error(); });
+    });
+  }).catch(function () { return fetch(req); });
+}
 
 self.addEventListener("message", function (e) {
   if (e.data && e.data.type === "SKIP_WAITING") self.skipWaiting();

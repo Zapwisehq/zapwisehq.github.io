@@ -1,7 +1,7 @@
-/* ZAPWISE//OS web app v4.9.4 (Nov 5, 2026). Map: one-tap OPEN (no jump), place search, pin card + GO, hold-to-edit, honest ETAs, offline/denied states; ZAP AI welcome; dead 3D settings removed. Still mode: no wallpaper, no animation loops, no backdrop blur. Weather NOW sheet, rebuilt Focus, battery chip (where the browser allows). No tabs. Voice only from ZAP AI. */
+/* ZAPWISE//OS web app v4.9.5 (Nov 5, 2026). Back closes one layer per press. Help tour (opt-in), Bank spot (manual balance, no logins), marquee ticker, optional hologram motion (Settings → Motion), honest compass cone, map tile cache + backup tile server, search cache + 1/s limit. Source file: edit here, then run os/build.sh to refresh app.min.js (what the page loads). No tabs. Voice only from ZAP AI. */
 (function () {
 "use strict";
-var VERSION = "4.9.4";
+var VERSION = "4.9.5";
 var APP_VERSION = VERSION;
 
 // v4.5: default Lite on coarse/mobile unless user already chose
@@ -228,7 +228,7 @@ function clone(o) { return o == null ? o : JSON.parse(JSON.stringify(o)); }
 var Store = (function () {
   var STATE_KEY = "zapos.state", DEVICE_KEY = "zapos.device", VER = 1;
   var PREF_KEYS = ["settings", "theme", "apps", "coins", "loc", "favs", "places", "holdings", "broker", "wallets", "accounts", "assistant"];                     // shared state (sync-ready)
-  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss", "mediaKey", "skipBoot", "bootDay", "uiSounds", "recentPins", "wxDay", "wxMode", "wxMode2", "portHist", "acctMigrated", "liteMode", "tiltCards", "motionTilt", "callLog", "zapChat", "focusStats", "wallpaper", "zapNotes", "zapReminders"]; // this device only
+  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss", "mediaKey", "skipBoot", "bootDay", "uiSounds", "recentPins", "wxDay", "wxMode", "wxMode2", "portHist", "acctMigrated", "liteMode", "tiltCards", "motionTilt", "callLog", "zapChat", "focusStats", "wallpaper", "zapNotes", "zapReminders", "uiMotion", "welcomeSeen"]; // this device only
   function read(k) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
   function write(k, v) { if (dead) return false; try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
   var state = read(STATE_KEY), dev = read(DEVICE_KEY), subs = [], uiT = null, dead = false; // dead: after a reset, write nothing more
@@ -704,7 +704,7 @@ function minute(d) {
   updateStamps();
   renderNowPlaying();
 }
-// FOCUS: a 25-minute sprint timer (the web can't read battery on iPhone, so this replaces the widget's PWR meter)
+// FOCUS: a 25-minute sprint timer (the web can't read battery on iPhone, so focus time is the main meter)
 var FOC = Store.getLocal("focus", { st: "idle", mins: 25 });
 if (!FOC || typeof FOC !== "object") FOC = { st: "idle", mins: 25 };
 if (!FOC.mins) FOC.mins = 25;
@@ -1616,6 +1616,30 @@ function renderConditions() {
 // ========== 8. weather data ==========
 var WX = Store.getLocal("wx", null);
 function unitQ() { return S.units === "C" ? "&temperature_unit=celsius&wind_speed_unit=kmh" : "&temperature_unit=fahrenheit&wind_speed_unit=mph"; }
+/* v4.9.5: place search — cache answers on this device and keep to 1 request per second (OpenStreetMap search rules) */
+var NOM = { last: 0, mem: {}, q: Promise.resolve() };
+function nomJSON(url, ms) {
+  var key = url.replace(/^https:\/\/nominatim\.openstreetmap\.org\//, "");
+  var hit = NOM.mem[key];
+  if (!hit) { try { var ss = sessionStorage.getItem("zapnom:" + key); if (ss) hit = NOM.mem[key] = JSON.parse(ss); } catch (e) {} }
+  if (hit && Date.now() - hit.t < 7 * 864e5) return Promise.resolve(hit.v);
+  var p = NOM.q.then(function () {
+    var wait = Math.max(0, NOM.last + 1100 - Date.now());
+    return new Promise(function (r) { setTimeout(r, wait); });
+  }).then(function () {
+    NOM.last = Date.now();
+    return getJSON(url, ms).catch(function (e) {
+      if (/HTTP (429|503)/.test(String(e && e.message))) { NOM.last = Date.now() + 4000; try { toast("Map search is busy — try again in a few seconds"); } catch (e2) {} }
+      throw e;
+    });
+  }).then(function (v) {
+    NOM.mem[key] = { t: Date.now(), v: v };
+    try { sessionStorage.setItem("zapnom:" + key, JSON.stringify(NOM.mem[key])); } catch (e) {}
+    return v;
+  });
+  NOM.q = p.catch(function () {});
+  return p;
+}
 function getJSON(url, ms) {
   var ctl = window.AbortController ? new AbortController() : null, to = setTimeout(function () { ctl && ctl.abort(); }, ms || 12000);
   return fetch(url, ctl ? { signal: ctl.signal } : {}).then(function (r) { clearTimeout(to); if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); });
@@ -1842,6 +1866,7 @@ function portfolioStats() {
   });
   // include live wallet-account USD in the big net-worth total / day move
   loadAccounts().forEach(function (a) {
+    if (a.kind === "bank") { if (a.inTotal !== false && a.bal != null && !isNaN(a.bal)) { total += +a.bal; priced++; } return; }
     if (a.kind !== "wallet") return;
     var usd = walletUsd(a);
     if (usd == null || isNaN(usd)) return;
@@ -2020,8 +2045,8 @@ function renderHomeMarkets(stats, accts) {
   if (port) port.hidden = false;
   if (!hasAcct) {
     if (totalEl) totalEl.textContent = "—";
-    if (dayEl) { dayEl.textContent = "＋ Add portfolio"; dayEl.className = "hmk-day dim"; }
-    if (port && !totalEl) port.innerHTML = '<span class="hmk-cta" data-hmk-add="1">＋ Add</span>';
+    if (dayEl) { dayEl.textContent = "No accounts yet"; dayEl.className = "hmk-day dim"; }
+    if (port && !totalEl) port.innerHTML = '<span class="hmk-day dim">No accounts yet</span>';
   } else {
     if (totalEl) totalEl.textContent = money(stats.total);
     else if (port) {
@@ -2086,24 +2111,62 @@ function renderHoldings() {
 }
 
 function renderMkTicker() {
+  /* v4.9.5: market tape — one CSS translateX loop on a duplicated track; prices update in place (no DOM rebuild per tick) */
   var host = $("#mkTicker"), track = $("#mkTickerTrack");
   if (!host || !track) return;
   var d = MK && MK.d || {};
-  var items = [
-    { sym: "BTC", id: "bitcoin" },
-    { sym: "ETH", id: "ethereum" },
-    { sym: "SOL", id: "solana" },
-    { sym: "GOLD", id: "pax-gold" }
-  ];
-  var html = items.map(function (it) {
-    var q = d[it.id];
-    var ch = q ? q.usd_24h_change : null;
+  var items = [], seen = {};
+  function add(id, sym, force) {
+    if (!id || seen[id] || items.length >= 10) return;
+    if (!force && !d[id]) return;
+    seen[id] = 1; items.push({ id: id, sym: String(sym || id).toUpperCase().slice(0, 6) });
+  }
+  add("bitcoin", "BTC", true); add("ethereum", "ETH", true); add("solana", "SOL", true); add("pax-gold", "GOLD", true);
+  try { COINS.forEach(function (c) { add(c.id, c.sym); }); } catch (e) {}
+  try { loadHoldings().forEach(function (h) { if (h.kind !== "stock") add(h.id, h.sym); }); } catch (e) {}
+  try { QUICK_PICKS.forEach(function (c) { add(c.id, c.sym); }); } catch (e) {}
+  var key = items.map(function (it) { return it.id; }).join(",");
+  if (track._key !== key) {
+    track._key = key;
+    var seg = items.map(function (it) {
+      return '<span class="tk" data-tk="' + esc(it.id) + '"><b>' + esc(it.sym) + '</b> <i class="tk-px">--</i> <em class="tk-ch"></em></span>';
+    }).join("");
+    track.innerHTML = '<div class="tape-seg">' + seg + '</div><div class="tape-seg" aria-hidden="true">' + seg + "</div>";
+    track._w = 0;
+    bindTickerPause(host);
+  }
+  items.forEach(function (it) {
+    var q = d[it.id], ch = q ? q.usd_24h_change : null;
+    var px = q ? money(q.usd) : "--";
     var cls = (ch == null || isNaN(ch)) ? "" : (ch >= 0 ? "up" : "dn");
-    var chs = (ch == null || isNaN(ch)) ? "" : (" <span class=\"" + cls + "\">" + (ch >= 0 ? "▲" : "▼") + Math.abs(ch).toFixed(1) + "%</span>");
-    return "<span><b>" + it.sym + "</b> " + (q ? money(q.usd) : "--") + chs + "</span>";
-  }).join("");
-  if (track._last !== html) { track._last = html; track.innerHTML = html; }
+    var cht = (ch == null || isNaN(ch)) ? "" : ((ch >= 0 ? "▲" : "▼") + Math.abs(ch).toFixed(1) + "%");
+    $$('[data-tk="' + it.id + '"]', track).forEach(function (el) {
+      var p = el.querySelector(".tk-px"), c = el.querySelector(".tk-ch");
+      if (p.textContent !== px) p.textContent = px;
+      if (c.textContent !== cht) c.textContent = cht;
+      if (c.className !== "tk-ch " + cls) c.className = "tk-ch " + cls;
+    });
+  });
   host.hidden = false;
+  setTimeout(function () {
+    var s0 = track.querySelector(".tape-seg"); if (!s0) return;
+    var w = s0.offsetWidth; if (!w) return;
+    if (track._w && Math.abs(w - track._w) < 40) return;
+    track._w = w;
+    track.style.setProperty("--tape-dur", Math.max(10, Math.round(w / 48)) + "s"); /* ≈48px/s */
+  }, 60);
+}
+function bindTickerPause(host) {
+  if (host._tp) return; host._tp = true;
+  var t = 0;
+  function pause() { clearTimeout(t); host.classList.add("paused"); }
+  function resume() { clearTimeout(t); t = setTimeout(function () { host.classList.remove("paused"); }, 1500); }
+  host.addEventListener("pointerdown", pause, { passive: true });
+  host.addEventListener("touchstart", pause, { passive: true });
+  host.addEventListener("pointerup", resume, { passive: true });
+  host.addEventListener("pointercancel", resume, { passive: true });
+  host.addEventListener("touchend", resume, { passive: true });
+  host.addEventListener("touchcancel", resume, { passive: true });
 }
 
 function renderMarkets() {
@@ -2161,6 +2224,53 @@ function short12(at) { return t12(new Date(at)).replace(/ ?([AP])M$/, "$1"); }
 
 // ========== 10. map — OSM standard tiles (keyless) + dark filter, pan/zoom/recenter ==========
 // Attribution: © OpenStreetMap contributors. No API key. CARTO basemaps removed (watermarked).
+/* ========== v4.9.5 Motion (hologram accents + market tape) — one switch, default on ========== */
+function motionWanted() {
+  if (Store.getLocal("uiMotion", true) === false) return false;
+  try { if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return false; } catch (e) {}
+  return true;
+}
+function applyMotion() { try { document.documentElement.classList.toggle("motion-on", motionWanted()); } catch (e) {} }
+applyMotion();
+try { var _rmq = matchMedia("(prefers-reduced-motion: reduce)"); if (_rmq.addEventListener) _rmq.addEventListener("change", applyMotion); } catch (e) {}
+
+/* ========== v4.9.5 compass heading (only real data; iOS needs a tap to allow) ========== */
+var COMPASS = { deg: null, at: 0, on: false, t: 0 };
+function currentHeading() {
+  if (COMPASS.deg != null && Date.now() - COMPASS.at < 4000) return COMPASS.deg;
+  if (GPS && GPS.heading != null && !isNaN(GPS.heading) && GPS.headingAt && Date.now() - GPS.headingAt < 20000) return GPS.heading;
+  return null;
+}
+function onCompass(e) {
+  var deg = null;
+  if (e && e.webkitCompassHeading != null && !isNaN(e.webkitCompassHeading)) deg = +e.webkitCompassHeading;
+  else if (e && e.absolute && e.alpha != null && !isNaN(e.alpha)) deg = (360 - e.alpha) % 360;
+  if (deg == null) return;
+  var prev = COMPASS.deg; COMPASS.deg = deg; COMPASS.at = Date.now();
+  var now = Date.now();
+  if (prev != null && Math.abs(((deg - prev + 540) % 360) - 180) < 3 && now - COMPASS.t < 1000) return;
+  if (now - COMPASS.t < 120) return;
+  COMPASS.t = now;
+  var h = document.querySelector("#mapV .map-heading"); if (!h || !(GPS && GPS.lat != null)) return;
+  h.hidden = false;
+  h.style.transform = "translate(-50%, -50%) rotate(" + Math.round(deg) + "deg)";
+}
+function attachCompass() {
+  if (COMPASS.on) return; COMPASS.on = true;
+  /* listening is harmless: iOS sends nothing until the user allows it */
+  if ("ondeviceorientationabsolute" in window) window.addEventListener("deviceorientationabsolute", onCompass, { passive: true });
+  window.addEventListener("deviceorientation", onCompass, { passive: true });
+}
+function startCompass(fromGesture) {
+  var D = window.DeviceOrientationEvent; if (!D) return;
+  attachCompass();
+  if (fromGesture && typeof D.requestPermission === "function" && !COMPASS.asked) {
+    COMPASS.asked = true; /* iOS: ask once, only from a tap; denied = cone stays hidden */
+    try { D.requestPermission().catch(function () {}); } catch (e) {}
+  }
+}
+
+var TOUR = { on: false, i: 0, steps: [], root: null, t: 0 };
 var GPS = Store.getLocal("gps", null), PLACE = Store.getLocal("place", null), GEO_OFF = false, nomBusy = false, nomLast = 0;
 var MAP = { z: 16, offX: 0, offY: 0, dragging: false, moved: false, last: null, follow: true, smoothZ: 16 };
 var _gpsWatch = null, _gpsLastWx = null, _tileCache = {};
@@ -2177,10 +2287,13 @@ function setGPS(lat, lon, meta) {
     MAP.offY += (newW.y - oldW.y);
   }
   if (MAP.follow) { MAP.offX = 0; MAP.offY = 0; }
+  /* v4.9.5: GPS heading counts only when the browser reports one while moving */
+  var _hOk = meta.heading != null && !isNaN(+meta.heading) && +meta.heading >= 0 && (meta.speed == null || +meta.speed > 0.6);
   GPS = {
     lat: lat, lon: lon, at: Date.now(),
     acc: meta.accuracy != null ? +meta.accuracy : (GPS && GPS.acc),
-    heading: (meta.heading != null && !isNaN(+meta.heading) && +meta.heading >= 0) ? +meta.heading : (GPS && GPS.heading),
+    heading: _hOk ? +meta.heading : ((GPS && GPS.headingAt && Date.now() - GPS.headingAt < 20000) ? GPS.heading : null),
+    headingAt: _hOk ? Date.now() : (GPS && GPS.headingAt),
     speed: meta.speed != null ? +meta.speed : (GPS && GPS.speed)
   };
   Store.setLocal("gps", { lat: GPS.lat, lon: GPS.lon, at: GPS.at, acc: GPS.acc });
@@ -2207,7 +2320,7 @@ function geocode() {
   if (!moved && !aged) return;
   if (Date.now() - nomLast < 10000) return; // hard floor
   nomBusy = true; nomLast = Date.now();
-  getJSON("https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=18&addressdetails=1&accept-language=en&lat=" + GPS.lat.toFixed(5) + "&lon=" + GPS.lon.toFixed(5), 10000)
+  nomJSON("https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=18&addressdetails=1&accept-language=en&lat=" + GPS.lat.toFixed(5) + "&lon=" + GPS.lon.toFixed(5), 10000)
     .then(function (j) {
       var a = j && j.address || {};
       var road = a.road || a.pedestrian || a.footway || a.path || a.residential || a.neighbourhood || a.hamlet || "";
@@ -2250,6 +2363,10 @@ function lonLatToWorld(lon, lat, z) {
   var n = Math.pow(2, z), la = lat * Math.PI / 180;
   return { x: (lon + 180) / 360 * n * 256, y: (1 - Math.log(Math.tan(la) + 1 / Math.cos(la)) / Math.PI) / 2 * n * 256, n: n };
 }
+function tileUrlFallback(z, x, y) {
+  /* v4.9.5: community mirror of the same OpenStreetMap style, used only when the main server fails or throttles */
+  return "https://tile.openstreetmap.de/" + z + "/" + x + "/" + y + ".png";
+}
 function tileUrl(z, x, y) {
   // OSM standard raster tiles — free, no key. v4.9.4: single HTTP/2 host (OSM retired a/b/c subdomains).
   return "https://tile.openstreetmap.org/" + z + "/" + x + "/" + y + ".png";
@@ -2287,10 +2404,11 @@ function ensureMapOverlay(v) {
   var acc = ensure("map-acc", true);
   var radar = ensure("map-radar", true);
   var head = ensure("map-heading", true);
+  var holo = ensure("map-holo", true);
   if (head.getAttribute("data-init") !== "1") { head.hidden = true; head.setAttribute("data-init", "1"); }
   var dot = $("#mapDot");
   if (dot && dot.parentNode !== host) host.appendChild(dot);
-  return { host: host, acc: acc, radar: radar, head: head };
+  return { host: host, acc: acc, radar: radar, head: head, holo: holo };
 }
 function placeUserLayers(v, W, H, ox, oy, z) {
   var layers = ensureMapOverlay(v);
@@ -2313,17 +2431,19 @@ function placeUserLayers(v, W, H, ox, oy, z) {
   put(layers.radar, dx, dy);
   put(layers.acc, dx, dy);
   put(layers.head, dx, dy);
-  // accuracy circle
+  put(layers.holo, dx, dy); if (layers.holo) layers.holo.hidden = false;
+  // accuracy circle (v4.9.5: small, tidy)
   if (layers.acc) {
     var accM = (GPS.acc != null && GPS.acc > 0) ? GPS.acc : 25;
-    var px = Math.max(16, Math.min(160, metersToPixels(accM, GPS.lat, z)));
+    var px = Math.max(12, Math.min(44, metersToPixels(accM, GPS.lat, z)));
     layers.acc.style.width = px * 2 + "px";
     layers.acc.style.height = px * 2 + "px";
   }
   if (layers.head) {
-    if (GPS.heading != null && !isNaN(GPS.heading)) {
+    var hd = currentHeading();
+    if (hd != null) {
       layers.head.hidden = false;
-      layers.head.style.transform = "translate(-50%, -50%) rotate(" + GPS.heading + "deg)";
+      layers.head.style.transform = "translate(-50%, -50%) rotate(" + Math.round(hd) + "deg)";
     } else layers.head.hidden = true;
   }
   try {
@@ -2355,6 +2475,7 @@ function renderMap(force) {
   var liveGps = !!(GPS && GPS.lat != null);
   if (!liveGps) {
     if ($("#mapDot")) $("#mapDot").hidden = true;
+    $$(".map-holo,.map-heading", v).forEach(function (x) { x.hidden = true; });
     var rad0 = v.querySelector(".map-radar"); if (rad0) rad0.style.opacity = "0";
     if (msg) {
       msg.hidden = false;
@@ -2414,11 +2535,17 @@ function renderMap(force) {
         img.loading = "eager";
         img.style.background = "#f2efe8"; /* inverts to dark — no gray unload flash */
         img.onload = function () { img.classList.add("on"); };
+        img.crossOrigin = "anonymous"; /* CORS tiles can be cached by the service worker (works offline) */
         img.onerror = function () {
-          /* v4.9.4: one quiet retry, then fall back to the dark base (never a gray hole) */
+          /* v4.9.5: one quiet retry, then the backup tile server, then the dark base (never a gray hole) */
           if (!img._retry && navigator.onLine !== false) {
             img._retry = 1;
             setTimeout(function () { if (img.isConnected) img.src = tileUrl(info.z, info.x, info.y) + "?r=1"; }, 1200);
+            return;
+          }
+          if (img._retry === 1 && navigator.onLine !== false) {
+            img._retry = 2;
+            setTimeout(function () { if (img.isConnected) img.src = tileUrlFallback(info.z, info.x, info.y); }, 300);
             return;
           }
           img.classList.add("err"); img.style.opacity = "0";
@@ -2524,7 +2651,7 @@ function ensureMapSearch(card) {
     var c = MAP.anchor || mapViewLL(), vb = "";
     if (c && c.lat != null) vb = "&viewbox=" + (c.lon - 1.5) + "," + (c.lat + 1) + "," + (c.lon + 1.5) + "," + (c.lat - 1);
     res.hidden = false; res.innerHTML = '<p class="note">Searching…</p>';
-    getJSON("https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&accept-language=en" + vb + "&q=" + encodeURIComponent(q), 10000).then(function (R) {
+    nomJSON("https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&accept-language=en" + vb + "&q=" + encodeURIComponent(q), 10000).then(function (R) {
       if (my !== seq) return;
       R = R || [];
       res.innerHTML = R.length ? R.map(function (r, i) {
@@ -2705,7 +2832,7 @@ function closeMapOverlay() {
   try { portalHome(card); } catch (eP) {}
   var ph = $("#mapPh"); if (ph) ph.remove();
   try { unlockPageScroll(); } catch (eU) {}
-  if (wasOpen && !anyOverlayOpen()) { try { overlayClearHistory(); } catch (eHi) {} }
+  if (wasOpen) { try { overlayClearHistory(); } catch (eHi) {} }
   try { armTapShield(450); } catch (e2) {}
 }
 function openMapOverlay() {
@@ -2749,6 +2876,7 @@ function openMapOverlay() {
   MAP._key = null;
   try { renderMap(true); } catch (e) {}
   try { overlayPushHistory(); } catch (eHi) {}
+  try { startCompass(true); } catch (eC) {}
   /* v4.6.1: no scrollIntoView — it was shifting layout and letting ghost clicks hit Weather/Music */
 }
 function openMapsExternal() {
@@ -2809,14 +2937,12 @@ function openMapsHere() {
   }, { capture: true });
 })();
 document.addEventListener("keydown", function (e) {
-  if (e.key === "Escape" && document.documentElement.classList.contains("map-fs-open")) {
-    var shx = $("#sheet"); if (shx && !shx.hidden) return; /* Esc closes the sheet first, map stays */
-    closeMapOverlay();
-  }
+  /* v4.9.5: Escape on the map is handled by the global one-layer-at-a-time handler (dismissTopOverlay) */
+  return;
 });
 var mapIn = $("#mapIn"); if (mapIn) mapIn.addEventListener("click", function (e) { e.stopPropagation(); mapZoom(1); });
 var mapOut = $("#mapOut"); if (mapOut) mapOut.addEventListener("click", function (e) { e.stopPropagation(); mapZoom(-1); });
-var mapRec = $("#mapRec"); if (mapRec) mapRec.addEventListener("click", function (e) { e.stopPropagation(); mapRecenter(); });
+var mapRec = $("#mapRec"); if (mapRec) mapRec.addEventListener("click", function (e) { e.stopPropagation(); try { startCompass(true); } catch (eC) {} mapRecenter(); });
 // avoid opening Maps when the user just panned
 $("#hMap").addEventListener("click", function (e) {
   if (e.target.closest(".map-tool,.map-attr,.map-open,.map-v,.map-fs-close,.map-fs-ext,.map-place-card,.map-place-pin")) return;
@@ -2893,7 +3019,7 @@ function renderPlacesRow() {
   if (!list.length) {
     host.innerHTML = PLACE_PRESETS.map(function (p) {
       return '<button type="button" class="place-chip" data-place-new="' + p.id + '" role="listitem"><span class="pc-ico" style="background:' + p.color + '">' + p.icon + '</span><span class="pc-name">' + esc(p.name) + '</span><span class="pc-eta">Set up</span></button>';
-    }).join("") + '<button type="button" class="place-chip" data-place-new="custom" role="listitem"><span class="pc-ico" style="background:#8b5cf6">＋</span><span class="pc-name">Custom</span><span class="pc-eta">Add</span></button>';
+    }).join(""); /* v4.9.5: one Add button (＋ ADD in the header) */
     return;
   }
   /* sticky nearest first */
@@ -2909,7 +3035,7 @@ function renderPlacesRow() {
     if (i === 0 && eta) sub = "GO · " + sub;
     var col = pl.color || "#5dade2";
     return '<button type="button" class="place-chip' + (i === 0 ? " nearest" : "") + '" data-place-go="' + esc(pl.id) + '" role="listitem"><span class="pc-ico" style="background:' + col + '">' + (pl.icon || "📍") + '</span><span class="pc-name">' + esc(pl.name) + '</span><span class="pc-eta">' + esc(sub) + "</span></button>";
-  }).join("") + '<button type="button" class="place-chip" data-place-new="custom" role="listitem"><span class="pc-ico" style="background:#8b5cf6">＋</span><span class="pc-name">Add</span><span class="pc-eta">New</span></button>';
+  }).join(""); /* v4.9.5: one Add button (＋ ADD in the header) */
 }
 function placeLL(pl) {
   if (!pl) return null;
@@ -2953,7 +3079,7 @@ function migratePlacesCoords() {
   });
   if (changed) savePlaces(list);
   pending.slice(0, 5).forEach(function (job) {
-    getJSON("https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=" + encodeURIComponent(job.q), 10000).then(function (R) {
+    nomJSON("https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=" + encodeURIComponent(job.q), 10000).then(function (R) {
       if (!R || !R[0]) return;
       var cur = loadPlaces();
       if (!cur[job.i]) return;
@@ -2968,6 +3094,10 @@ var _mapCardPl = null;
     var card = $("#mapPlaceCard");
     if (!card || card.hidden) return;
     if (card.contains(e.target)) return;
+    /* v4.9.5: only when the card is the top layer — taps on a sheet/assistant/detail above it never close it */
+    if (e.target.closest && e.target.closest("#sheet,#zapSheet,.xp.as-detail,#scrim,.toast")) return;
+    var _sh = $("#sheet"), _zp = $("#zapSheet");
+    if ((_sh && !_sh.hidden) || (_zp && !_zp.hidden) || isCardDetailOpen()) return;
     if (e.target.closest && e.target.closest(".map-place-pin")) return;
     hideMapPlaceCard();
   }, { capture: true, passive: true });
@@ -2975,7 +3105,7 @@ var _mapCardPl = null;
 function hideMapPlaceCard() {
   _mapCardPl = null;
   var card = $("#mapPlaceCard"); if (card) { card.hidden = true; try { card.style.transform = ""; } catch (e) {} }
-  try { if (!anyOverlayOpen()) overlayClearHistory(); } catch (e) {}
+  try { overlayClearHistory(); } catch (e) {}
 }
 function bindPlaceCardSwipe(el) {
   if (!el || el._zapSwipe) return; el._zapSwipe = true;
@@ -3022,7 +3152,8 @@ function showMapPlaceCard(pl) {
         hideMapPlaceCard(); refreshPlaceEtas(); renderMap(true); toast(np.name + " saved to Places");
         return;
       }
-      hideMapPlaceCard(); openEditPlace(cur);
+      /* v4.9.5: keep the pin card under the edit sheet so Back closes one layer at a time */
+      openEditPlace(cur);
     });
   }
   var eta = PLACE_ETA[pl.id];
@@ -3055,7 +3186,7 @@ function openEditPlace(pl) {
       b.querySelector("#plQ").addEventListener("input", function (e) {
         clearTimeout(tm); var q = e.target.value.trim(); if (q.length < 3) { b.querySelector("#plRes").innerHTML = ""; return; }
         tm = setTimeout(function () {
-          getJSON("https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&q=" + encodeURIComponent(q), 10000).then(function (R) {
+          nomJSON("https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&q=" + encodeURIComponent(q), 10000).then(function (R) {
             R = R || [];
             b.querySelector("#plRes").innerHTML = R.length ? R.map(function (r, i) {
               return '<button class="res" data-i="' + i + '">' + esc(r.display_name) + '<span class="add">USE</span></button>';
@@ -3128,7 +3259,7 @@ function openPlaceEditor(presetId) {
       b.querySelector("#plQ").addEventListener("input", function (e) {
         clearTimeout(tm); var q = e.target.value.trim(); if (q.length < 3) { b.querySelector("#plRes").innerHTML = ""; return; }
         tm = setTimeout(function () {
-          getJSON("https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&addressdetails=1&accept-language=en&q=" + encodeURIComponent(q), 10000).then(function (R) {
+          nomJSON("https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&addressdetails=1&accept-language=en&q=" + encodeURIComponent(q), 10000).then(function (R) {
             R = R || [];
             b.querySelector("#plRes").innerHTML = R.length ? R.map(function (r, i) {
               return '<button class="res" data-i="' + i + '">' + esc(r.display_name) + '<span class="add">USE</span></button>';
@@ -3557,7 +3688,7 @@ function closeCardDetail(skipHist) {
   if (btn) btn.setAttribute("aria-expanded", "false");
   CARD_DETAIL.kind = null;
   hideScrimIfIdle();
-  if (!skipHist && !anyOverlayOpen()) overlayClearHistory();
+  overlayClearHistory();
   try { unlockPageScroll(); } catch (eU) {}
   try { armTapShield(320); } catch (e3) {}
 }
@@ -3773,7 +3904,7 @@ function tapShieldActive() { return Date.now() < TAP_SHIELD_UNTIL; }
 var OVERLAY = { hist: false, closingFromPop: false, swipeY0: 0, swipeEl: null, expectPops: 0, openedAt: 0 };
 function anyOverlayOpen() {
   var sh = $("#sheet"), zap = $("#zapSheet"), card = $("#mapPlaceCard");
-  return (sh && !sh.hidden) || (zap && !zap.hidden) || (card && !card.hidden) || isCardDetailOpen() || !!(document.documentElement.classList.contains("map-fs-open"));
+  return (typeof TOUR !== "undefined" && TOUR.on) || (sh && !sh.hidden) || (zap && !zap.hidden) || (card && !card.hidden) || isCardDetailOpen() || !!(document.documentElement.classList.contains("map-fs-open"));
 }
 var SCRIM_IGNORE_UNTIL = 0;
 /* v4.9: after a touch opens a sheet/detail, the browser still synthesizes a click at the same
@@ -3804,39 +3935,67 @@ function hideScrimIfIdle() {
   if ((sh && !sh.hidden) || (zap && !zap.hidden) || isCardDetailOpen()) return;
   sc.hidden = true; sc.classList.remove("zap-open");
 }
-function overlayPushHistory() {
-  OVERLAY.openedAt = Date.now();
-  if (OVERLAY.hist) return;
-  try { history.pushState({ zaposOverlay: 1 }, ""); OVERLAY.hist = true; } catch (e) {}
+/* ========== v4.9.5 history stack: one history entry per open layer, one layer per Back ==========
+   Layers (bottom→top): full-screen map, map pin card, weather/markets detail, sheet, ZAP AI.
+   HIST.depth = how many of our entries sit above the base page entry (history.state.d).
+   Every open/close just calls syncOverlayHistory(), which pushes or pops so depth === open layers.
+   X / outside tap / Escape closes → we pop the matching entries ourselves (expected pops are ignored).
+   Back press → popstate lands on depth d → close (depth - d) layers, top first. */
+var HIST = { depth: 0, expect: 0, fb: 0, sched: false };
+try { if (history.state && history.state.zaposOverlay) HIST.depth = history.state.d || 1; } catch (eH0) {}
+function overlayLayers() {
+  var L = [], de = document.documentElement;
+  var sh = $("#sheet"), zap = $("#zapSheet"), card = $("#mapPlaceCard");
+  if (de.classList.contains("map-fs-open")) L.push("map");
+  if (card && !card.hidden) L.push("card");
+  if (isCardDetailOpen()) L.push("detail");
+  if (sh && !sh.hidden) L.push("sheet");
+  if (zap && !zap.hidden) L.push("zap");
+  if (TOUR.on) L.push("tour");
+  return L;
 }
-function reconcileOverlayHistory() {
-  /* Drop a stale overlay history flag when nothing is actually open (QA force-dismiss / crash recovery). */
-  if (!OVERLAY.hist) return;
-  if (anyOverlayOpen()) return;
-  OVERLAY.hist = false;
+function syncOverlayHistory() {
+  if (HIST.expect > 0) return; /* a pop we issued is still in flight — resync when it lands */
+  var want = overlayLayers().length;
   try {
-    if (history.state && history.state.zaposOverlay) {
-      OVERLAY.expectPops++;
-      history.back();
+    while (HIST.depth < want) { HIST.depth++; history.pushState({ zaposOverlay: 1, d: HIST.depth }, ""); }
+    if (HIST.depth > want) {
+      var n = HIST.depth - want;
+      HIST.depth = want; HIST.expect++;
+      clearTimeout(HIST.fb);
+      HIST.fb = setTimeout(function () { /* pop never arrived — trust history.state */
+        if (HIST.expect <= 0) return;
+        HIST.expect = 0;
+        try { HIST.depth = (history.state && history.state.zaposOverlay) ? (history.state.d || 1) : 0; } catch (e) {}
+        syncOverlayHistory();
+      }, 1200);
+      history.go(-n);
     }
   } catch (e) {}
+  OVERLAY.hist = HIST.depth > 0;
 }
-function overlayClearHistory() {
-  if (!OVERLAY.hist || OVERLAY.closingFromPop) { OVERLAY.hist = false; return; }
-  OVERLAY.hist = false;
-  try { if (history.state && history.state.zaposOverlay) { OVERLAY.expectPops++; history.back(); } } catch (e) {}
+function scheduleHistSync() {
+  if (HIST.sched) return; HIST.sched = true;
+  setTimeout(function () { HIST.sched = false; syncOverlayHistory(); }, 0);
+}
+function overlayPushHistory() { OVERLAY.openedAt = Date.now(); scheduleHistSync(); }
+function reconcileOverlayHistory() { scheduleHistSync(); }
+function overlayClearHistory() { scheduleHistSync(); }
+function closeTopLayer() {
+  var L = overlayLayers(), top = L[L.length - 1];
+  if (!top) return false;
+  if (top === "tour") { try { endTour(); } catch (e) {} }
+  else if (top === "zap") { try { closeZapAssistant(true); } catch (e) {} }
+  else if (top === "sheet") { try { closeSheet(true); } catch (e) {} }
+  else if (top === "detail") { try { closeCardDetail(true); } catch (e) {} }
+  else if (top === "card") { try { hideMapPlaceCard(); } catch (e) {} }
+  else if (top === "map") { try { closeMapOverlay(); } catch (e) {} }
+  hideScrimIfIdle();
+  return true;
 }
 function dismissTopOverlay(fromPop) {
-  OVERLAY.closingFromPop = !!fromPop;
-  var zap = $("#zapSheet"), sh = $("#sheet"), card = $("#mapPlaceCard");
-  if (zap && !zap.hidden) { try { closeZapAssistant(); } catch (e) {} }
-  else if (sh && !sh.hidden) { try { closeSheet(true); } catch (e) {} }
-  else if (isCardDetailOpen()) { try { closeCardDetail(true); } catch (e) {} }
-  else if (document.documentElement.classList.contains("map-fs-open")) { try { closeMapOverlay(); } catch (e) {} }
-  else if (card && !card.hidden) { try { hideMapPlaceCard(); } catch (e) {} }
-  hideScrimIfIdle();
-  if (!anyOverlayOpen()) overlayClearHistory();
-  OVERLAY.closingFromPop = false;
+  closeTopLayer();
+  scheduleHistSync();
   try { armTapShield(450); } catch (eS) {}
 }
 function dismissAllOverlays(fromPop) {
@@ -3903,7 +4062,7 @@ function closeSheet(skipHist) {
   try { var ae0 = document.activeElement; if (ae0 && ae0 !== document.body && ae0.blur && ae0.closest && ae0.closest("#sheet,#zapSheet,.xp")) ae0.blur(); } catch (eBl) {}
   var sh = $("#sheet"); if (sh) { sh.hidden = true; try { sh.classList.remove("finder-sheet"); sh.style.transform = ""; } catch (e) {} }
   hideScrimIfIdle();
-  if (!skipHist && !anyOverlayOpen()) overlayClearHistory();
+  overlayClearHistory();
   try { unlockPageScroll(); } catch (eU) {}
   try { armTapShield(450); } catch (e2) {}
 }
@@ -3938,13 +4097,17 @@ document.addEventListener("keydown", function (e) {
   e.preventDefault();
   dismissTopOverlay(false);
 });
-window.addEventListener("popstate", function () {
-  /* v4.9.2: our own history.back() pops arrive async on iOS — never let them close a sheet the user just opened */
-  if (OVERLAY.expectPops > 0) { OVERLAY.expectPops--; return; }
-  if (Date.now() - (OVERLAY.openedAt || 0) < 900) return;
-  if (OVERLAY.closingFromPop) { OVERLAY.hist = false; return; }
-  if (!anyOverlayOpen()) { OVERLAY.hist = false; return; }
-  dismissAllOverlays(true);
+window.addEventListener("popstate", function (ev) {
+  var st = ev && ev.state, d = (st && st.zaposOverlay) ? (st.d || 1) : 0;
+  if (HIST.expect > 0) { HIST.expect--; if (!HIST.expect) clearTimeout(HIST.fb); HIST.depth = d; syncOverlayHistory(); return; }
+  if (d >= HIST.depth) { HIST.depth = d; syncOverlayHistory(); return; } /* forward / no-op */
+  var n = HIST.depth - d; HIST.depth = d;
+  /* v4.9.2 guard kept: a Back within 900ms of opening never closes the layer just opened —
+     its entry is restored instead so history stays in sync */
+  if (Date.now() - (OVERLAY.openedAt || 0) < 900) { syncOverlayHistory(); return; }
+  for (var i = 0; i < n; i++) { if (!closeTopLayer()) break; }
+  try { armTapShield(450); } catch (eS) {}
+  syncOverlayHistory();
 });
 /* Swipe down on sheet / assistant to close (phones) */
 (function bindOverlaySwipe() {
@@ -3989,9 +4152,9 @@ function openMenu() {
     "<h3>APPS</h3>" + row("▦", "Edit apps", "Add, remove, show, hide or reorder apps", "apps") +
     "<h3>WEATHER</h3>" + row("☁", "Weather location", LOC.mode === "city" ? "City: " + esc(LOC.name) : "Using my location", "city") +
     "<h3>MARKETS</h3>" + row("₿", "Edit watchlist", COINS.map(function (c) { return esc(c.sym); }).join(" · ") || "Empty", "coins") +
-    "<h3>SETTINGS</h3>" + row("⚙", "Settings", "Name, units, Lite mode, card tilt", "settings") +
+    "<h3>SETTINGS</h3>" + row("⚙", "Settings", "Name, units, Motion on/off", "settings") +
     row("↻", "Check for updates", "Now running v" + VERSION, "update") +
-    "<h3>HELP</h3>" + row("?", "Add to Home Screen", "3 steps to open it like a real app", "help") +
+    "<h3>HELP</h3>" + row("➜", "Page tour", "A quick walk through every card", "tour") + row("?", "Add to Home Screen", "3 steps to open it like a real app", "help") +
     '<p class="note" style="margin-top:12px">ZAPWISE//OS v' + VERSION + " · Everything you change is saved on this device only.</p>",
     function (b) {
       b.addEventListener("click", function (e) {
@@ -4000,6 +4163,7 @@ function openMenu() {
         else if (k === "city") openCity();
         else if (k === "coins") openEditCoins();
         else if (k === "settings") openSettings();
+        else if (k === "tour") { closeSheet(); setTimeout(startTour, 350); }
         else if (k === "update") { closeSheet(); checkForAppUpdate(true); }
         else openHelp();
       });
@@ -4269,15 +4433,31 @@ var ACCOUNT_CATALOG = [
   { id: "etrade", name: "E*TRADE", kind: "broker", url: "etrade://", web: "https://us.etrade.com", icon: "", bg: "#6633cc", letter: "E" },
   { id: "vanguard", name: "Vanguard", kind: "broker", url: "vanguard://", web: "https://investor.vanguard.com", icon: "", bg: "#c41230", letter: "V" },
   { id: "public", name: "Public", kind: "broker", url: "public://", web: "https://public.com", icon: "", bg: "#111111", letter: "P" },
-  { id: "sofi", name: "SoFi", kind: "broker", url: "sofi://", web: "https://www.sofi.com", icon: "", bg: "#00a1e0", letter: "S" },
-  { id: "cashapp", name: "Cash App", kind: "broker", url: "cashme://", pkg: "com.square.cash", web: "https://cash.app", icon: "/os/icons/cashapp.jpg", bg: "#00d632", letter: "C" },
+  { id: "sofi", name: "SoFi", kind: "bank", url: "sofi://", web: "https://www.sofi.com", icon: "", bg: "#00a1e0", letter: "S" },
+  { id: "cashapp", name: "Cash App", kind: "bank", url: "cashme://", pkg: "com.square.cash", web: "https://cash.app", icon: "/os/icons/cashapp.jpg", bg: "#00d632", letter: "C" },
   { id: "coinbase", name: "Coinbase", kind: "exchange", url: "coinbase://", pkg: "com.coinbase.android", web: "https://www.coinbase.com", icon: "/os/icons/coinbase.jpg", bg: "#0052ff", letter: "C" },
   { id: "kraken", name: "Kraken", kind: "exchange", url: "kraken://", web: "https://www.kraken.com", icon: "", bg: "#5741d9", letter: "K" },
   { id: "binance", name: "Binance", kind: "exchange", url: "bnc://", pkg: "com.binance.dev", web: "https://www.binance.com", icon: "/os/icons/binance.jpg", bg: "#f0b90b", letter: "B" },
   { id: "cryptocom", name: "Crypto.com", kind: "exchange", url: "crypto://", web: "https://crypto.com", icon: "", bg: "#103f68", letter: "C" },
   { id: "gemini", name: "Gemini", kind: "exchange", url: "gemini://", web: "https://www.gemini.com", icon: "/os/icons/gemini.jpg", bg: "#00dcfa", letter: "G" },
-  { id: "paypal", name: "PayPal", kind: "broker", url: "paypal://", pkg: "com.paypal.android.p2pmobile", web: "https://www.paypal.com", icon: "/os/icons/paypal.jpg", bg: "#0070ba", letter: "P" },
-  { id: "chase", name: "Chase", kind: "broker", url: "chase://", pkg: "com.chase.sig.android", web: "https://www.chase.com", icon: "/os/icons/chase.jpg", bg: "#117aca", letter: "C" },
+  { id: "paypal", name: "PayPal", kind: "bank", url: "paypal://", pkg: "com.paypal.android.p2pmobile", web: "https://www.paypal.com", icon: "/os/icons/paypal.jpg", bg: "#0070ba", letter: "P" },
+  { id: "chase", name: "Chase", kind: "bank", url: "chase://", pkg: "com.chase.sig.android", web: "https://www.chase.com", icon: "/os/icons/chase.jpg", bg: "#117aca", letter: "C" },
+  { id: "bofa", name: "Bank of America", kind: "bank", url: "https://www.bankofamerica.com", web: "https://www.bankofamerica.com", icon: "", bg: "#e31837", letter: "B" },
+  { id: "wellsfargo", name: "Wells Fargo", kind: "bank", url: "https://www.wellsfargo.com", web: "https://www.wellsfargo.com", icon: "", bg: "#d71e28", letter: "W" },
+  { id: "capitalone", name: "Capital One", kind: "bank", url: "https://www.capitalone.com", web: "https://www.capitalone.com", icon: "", bg: "#004879", letter: "C" },
+  { id: "citi", name: "Citi", kind: "bank", url: "https://www.citi.com", web: "https://www.citi.com", icon: "", bg: "#056dae", letter: "C" },
+  { id: "usbank", name: "U.S. Bank", kind: "bank", url: "https://www.usbank.com", web: "https://www.usbank.com", icon: "", bg: "#0c2074", letter: "U" },
+  { id: "pnc", name: "PNC", kind: "bank", url: "https://www.pnc.com", web: "https://www.pnc.com", icon: "", bg: "#ef6a00", letter: "P" },
+  { id: "truist", name: "Truist", kind: "bank", url: "https://www.truist.com", web: "https://www.truist.com", icon: "", bg: "#2e1a47", letter: "T" },
+  { id: "usaa", name: "USAA", kind: "bank", url: "https://www.usaa.com", web: "https://www.usaa.com", icon: "", bg: "#12395b", letter: "U" },
+  { id: "navyfederal", name: "Navy Federal", kind: "bank", url: "https://www.navyfederal.org", web: "https://www.navyfederal.org", icon: "", bg: "#00305f", letter: "N" },
+  { id: "chime", name: "Chime", kind: "bank", url: "https://www.chime.com", web: "https://www.chime.com", icon: "", bg: "#1ec677", letter: "C" },
+  { id: "ally", name: "Ally", kind: "bank", url: "https://www.ally.com", web: "https://www.ally.com", icon: "", bg: "#650360", letter: "A" },
+  { id: "discover", name: "Discover", kind: "bank", url: "https://www.discover.com", web: "https://www.discover.com", icon: "", bg: "#ff6000", letter: "D" },
+  { id: "venmo", name: "Venmo", kind: "bank", url: "https://venmo.com", web: "https://venmo.com", icon: "", bg: "#008cff", letter: "V" },
+  { id: "varo", name: "Varo", kind: "bank", url: "https://www.varomoney.com", web: "https://www.varomoney.com", icon: "", bg: "#1c3a5f", letter: "V" },
+  { id: "current", name: "Current", kind: "bank", url: "https://current.com", web: "https://current.com", icon: "", bg: "#1a1a1a", letter: "C" },
+  { id: "bank-custom", name: "Custom bank", kind: "bank", url: "", web: "", icon: "", bg: "#334155", letter: "＋" },
   { id: "metamask", name: "MetaMask", kind: "wallet", chainHint: "eth", url: "https://metamask.app.link/", web: "https://metamask.io", icon: "", bg: "#f6851b", letter: "M" },
   { id: "phantom", name: "Phantom", kind: "wallet", chainHint: "sol", url: "phantom://", web: "https://phantom.app", icon: "", bg: "#ab9ff2", letter: "P" },
   { id: "wallet-btc", name: "Bitcoin wallet", kind: "wallet", chainHint: "btc", url: "", web: "https://mempool.space", icon: "", bg: "#f7931a", letter: "₿" },
@@ -4320,6 +4500,11 @@ function accountIconHTML(a) {
 }
 function accountSubtotal(a) {
   var total = 0, n = 0, priced = 0, day = 0;
+  if (a.kind === "bank") {
+    n++;
+    if (a.bal != null && !isNaN(a.bal)) { total += +a.bal; priced++; }
+    return { total: total, n: n, priced: priced, day: null, bank: true };
+  }
   if (a.kind === "wallet") {
     var usd = walletUsd(a);
     if (usd != null && !isNaN(usd)) {
@@ -4354,13 +4539,15 @@ function renderAccounts() {
         '<span class="at-ico ghost-ico" aria-hidden="true"></span><span class="at-name">' + nm + '</span>' +
         '<span class="at-val ghost-val">Add</span><span class="at-chg"> </span></button>';
     }).join("");
-    host.innerHTML = ghosts + addTile();
+    host.innerHTML = '<p class="note acct-empty" role="listitem">No accounts yet. Tap <b>＋ ACCOUNT</b> to add a bank, broker or wallet.</p>'; /* v4.9.5: one Add button */
     return;
   }
   host.innerHTML = list.map(function (a) {
     var st = accountSubtotal(a);
     var chg = "";
-    if (st.priced && st.day != null && !isNaN(st.day)) {
+    if (st.bank) {
+      chg = '<span class="at-chg bank-upd">' + (a.balAt ? "upd " + esc(bankDateStr(a.balAt)) : "hold to add") + (a.inTotal === false ? " · not in total" : "") + "</span>";
+    } else if (st.priced && st.day != null && !isNaN(st.day)) {
       chg = '<span class="at-chg ' + (st.day >= 0 ? "up" : "dn") + '">' + signedMoney(st.day) + "</span>";
     } else {
       chg = '<span class="at-chg">—</span>';
@@ -4370,7 +4557,7 @@ function renderAccounts() {
       '<span class="at-name">' + esc(a.name) + "</span>" +
       '<span class="at-val">' + (st.priced ? money(st.total) : "—") + "</span>" +
       chg + "</button>";
-  }).join("") + addTile();
+  }).join(""); /* v4.9.5: one Add button (＋ ACCOUNT) */
 }
 function openAccountApp(a) {
   if (!a) return;
@@ -4382,6 +4569,15 @@ function openAccountApp(a) {
     else toast("No link for this wallet");
     return;
   }
+  if (a.kind === "bank") {
+    /* v4.9.5: banks open the official site / universal link (opens the bank app if installed). Never an app store. */
+    var andr = /android/i.test(navigator.userAgent || "");
+    if (andr && a.pkg && a.url) { openApp(a); return; }
+    var bw = a.web || (/^https?:/i.test(a.url || "") ? a.url : "");
+    if (bw) { go(bw); return; }
+    if (a.url) { openApp(a); return; }
+    toast("No link yet — hold the tile to add one"); return;
+  }
   if (!a.url && !a.web) { toast("No app link — long-press to edit"); return; }
   openApp({ id: a.catalogId || a.id, name: a.name, url: a.url || a.web, pkg: a.pkg, web: a.web || a.url });
 }
@@ -4389,6 +4585,7 @@ function openEditAccount(acctId) {
   var list = loadAccounts();
   var a = list.filter(function (x) { return x.id === acctId; })[0];
   if (!a) return;
+  if (a.kind === "bank") { openEditBank(a); return; }
   var isWal = a.kind === "wallet";
   sheet("✎ " + (a.name || "ACCOUNT").toUpperCase(),
     '<label class="field">NAME<input id="acName" maxlength="28" value="' + esc(a.name || "") + '"></label>' +
@@ -4426,9 +4623,9 @@ function openEditAccount(acctId) {
 }
 function openAddAccount() {
   var cats = [
-    { id: "all", name: "All" }, { id: "broker", name: "Brokers" }, { id: "exchange", name: "Exchanges" }, { id: "wallet", name: "Wallets" }
+    { id: "all", name: "All" }, { id: "bank", name: "Banks" }, { id: "broker", name: "Brokers" }, { id: "exchange", name: "Exchanges" }, { id: "wallet", name: "Wallets" }
   ];
-  var html = '<label class="field find-field"><span class="find-label">FIND AN ACCOUNT</span><input id="acFilter" placeholder="Robinhood, Coinbase, MetaMask…" autocomplete="off" autocapitalize="off" spellcheck="false"></label>' +
+  var html = '<label class="field find-field"><span class="find-label">FIND AN ACCOUNT</span><input id="acFilter" placeholder="Chase, Robinhood, Coinbase, MetaMask…" autocomplete="off" autocapitalize="off" spellcheck="false"></label>' +
     '<div class="cat-chips" id="acCats" role="tablist"></div>' +
     '<div class="pick-hint" id="acHint">Tap to add — balances stay on this device</div>' +
     '<div class="pick" id="acGrid"></div>' +
@@ -4464,6 +4661,7 @@ function openAddAccount() {
       if (!c) return;
       closeSheet();
       if (c.kind === "wallet") openAddWalletAccount(c);
+      else if (c.kind === "bank") openAddBank(c);
       else commitAccountFromCatalog(c);
     });
     b.querySelector("#acCustom").addEventListener("click", function () { closeSheet(); openCustomAccount(); });
@@ -4873,6 +5071,7 @@ function settingsHtml(sndOn, liteOn, tiltOn, motionOn) {
   return '<label class="field">YOUR NAME (FOR THE GREETING)<input id="stName" maxlength="20" placeholder="e.g. Sam" value="' + esc(S.name) + '" autocomplete="off"></label>' +
     '<div class="field">TEMPERATURE</div><div class="seg" id="stU"><button type="button" data-v="F">°F · mph</button><button type="button" data-v="C">°C · km/h</button></div>' +
     '<div class="field">ASSISTANT</div><p class="note">Tap the mic in the top bar to talk to ZAP AI (weather, directions, apps, calls). Mute its voice with the speaker button. No account required.</p>' +
+    '<div class="field">MOTION</div><div class="seg" id="stAnim"><button type="button" data-v="1">On</button><button type="button" data-v="0">Off</button></div><p class="note">Hologram shine, map ring and the moving price tape. Off keeps everything still.</p>' +
     '<button class="btn" id="stSave" type="button">SAVE</button>' +
     '<h3>UPDATES</h3><button class="btn" id="stUpdate" type="button">Check for updates</button>' +
     '<p class="note">Running v' + VERSION + '. Theme: tap the color dot in the top bar.</p>' +
@@ -4937,7 +5136,13 @@ function bindSettings(b, closeAfterSave) {
     if (!confirm("Reset apps, watchlist, weather city and settings to the defaults?")) return;
     Store.reset(); location.reload();
   });
-  seg(); segS(); segL(); segT(); segM();
+  function segA() { var on = Store.getLocal("uiMotion", true) !== false; $$("#stAnim button", b).forEach(function (x) { x.classList.toggle("on", x.getAttribute("data-v") === (on ? "1" : "0")); }); }
+  var _stAnim = b.querySelector("#stAnim"); if (_stAnim) _stAnim.addEventListener("click", function (e) {
+    var x = e.target.closest("[data-v]"); if (!x) return;
+    Store.setLocal("uiMotion", x.getAttribute("data-v") === "1"); applyMotion(); segA();
+    toast(x.getAttribute("data-v") === "1" ? (motionWanted() ? "Motion on" : "Motion stays off: your phone asks for reduced motion") : "Motion off");
+  });
+  seg(); segS(); segL(); segT(); segM(); segA();
 }
 function mountSettingsScreen() {
   /* v4.2: settings live in MENU sheet only — keep mount for parity */
@@ -5165,7 +5370,7 @@ function mountPhoneScreen() {
   var host = document.getElementById("phoneMount");
   if (!host) return;
   if (host.dataset.ready === "1") return;
-  host.innerHTML = dialerHtml();
+  host.innerHTML = '<div class="places-h phone-h"><b>PHONE</b><span class="dim" style="letter-spacing:.08em">DIAL · FAVORITES</span></div>' + dialerHtml(); /* v4.9.5: card title */
   host.dataset.ready = "1";
   bindDialer(host);
 }
@@ -5822,7 +6027,7 @@ function closeZapAssistant(skipHist) {
   try { stopZapListen(); } catch (e) {}
   try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e2) {}
   hideScrimIfIdle();
-  if (!skipHist && !anyOverlayOpen()) overlayClearHistory();
+  overlayClearHistory();
   try { unlockPageScroll(); } catch (eU) {}
 }
 function updateZapBadge() {
@@ -5875,6 +6080,8 @@ function zapStreamInto(el, full, done) {
   if (!el) { if (done) done(); return; }
   full = zapSanitize(full);
   var i = 0, step = Math.max(1, Math.floor(String(full).length / 40));
+  /* v4.9.5: typing effect only when Motion is on (Settings) and reduced-motion is off — otherwise show the reply at once */
+  if (!document.documentElement.classList.contains("motion-on")) step = String(full).length || 1;
   el.classList.add("streaming");
   function tick() {
     i = Math.min(String(full).length, i + step);
@@ -6694,5 +6901,227 @@ try {
   /* v4.9.4: read-only QA hooks */
   window.ZAPOS.qa = { map: function () { return { follow: MAP.follow, offX: MAP.offX, offY: MAP.offY, z: MAP.z, gps: GPS ? { lat: GPS.lat, lon: GPS.lon } : null, geoOff: GEO_OFF }; }, savePlaces: savePlaces, refreshPlaceEtas: refreshPlaceEtas, renderMap: renderMap, loadPlaces: loadPlaces };
 } catch (e) {}
-if (!Store.getLocal("seenHelp", false)) { var _sa = false; try { _sa = window.navigator.standalone === true || (window.matchMedia && matchMedia("(display-mode: standalone)").matches); } catch (eTip) {} if (!_sa) { Store.setLocal("seenHelp", true); setTimeout(function () { toast("Add to Home Screen: MENU → Help"); }, 1800); } else { Store.setLocal("seenHelp", true); } }
+
+
+/* ========== v4.9.5 Banks — manual balance only, saved on this device; no logins, no account numbers ========== */
+var BANK_NOTE = "Balance you type in · saved only on this phone · we never ask for your bank login.";
+function parseMoneyInput(v) {
+  v = String(v == null ? "" : v).replace(/[$,\s]/g, "");
+  if (!v) return null;
+  var n = parseFloat(v); return isNaN(n) ? NaN : Math.round(n * 100) / 100;
+}
+function bankDateStr(t) {
+  if (!t) return "";
+  try { return new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric" }); } catch (e) { return ""; }
+}
+function bankFormHtml(a, custom) {
+  var bal = (a && a.bal != null && !isNaN(a.bal)) ? String(a.bal) : "";
+  var inc = !(a && a.inTotal === false);
+  return (custom ? ('<label class="field">BANK NAME<input id="bkName" maxlength="28" placeholder="e.g. Local Credit Union" value="' + esc((a && a.name) || "") + '" autocomplete="off"></label>' +
+      '<label class="field">WEBSITE OR APP LINK<input id="bkUrl" placeholder="mybank.com" autocomplete="off" autocapitalize="off" spellcheck="false" value="' + esc((a && (a.web || a.url)) || "") + '"></label>') :
+      ('<label class="field">NAME<input id="bkName" maxlength="28" value="' + esc((a && a.name) || "") + '" autocomplete="off"></label>')) +
+    '<label class="field">BALANCE (OPTIONAL)<input id="bkBal" type="text" inputmode="decimal" autocomplete="off" autocorrect="off" spellcheck="false" data-form-type="other" data-lpignore="true" placeholder="$0.00" value="' + esc(bal) + '"></label>' +
+    '<div class="field">INCLUDE IN MARKETS TOTAL</div><div class="seg" id="bkInc"><button type="button" data-v="1" class="' + (inc ? "on" : "") + '">Include</button><button type="button" data-v="0" class="' + (inc ? "" : "on") + '">Leave out</button></div>' +
+    '<p class="note bank-note">' + BANK_NOTE + "</p>";
+}
+function readBankForm(b) {
+  var raw = (b.querySelector("#bkBal").value || "").trim();
+  var bal = parseMoneyInput(raw);
+  if (bal !== null && isNaN(bal)) { toast("Balance: numbers only, like 1250.50"); return null; }
+  var incBtn = b.querySelector("#bkInc .on");
+  return { bal: bal, inTotal: !incBtn || incBtn.getAttribute("data-v") === "1", name: (b.querySelector("#bkName").value || "").trim().slice(0, 28),
+    url: b.querySelector("#bkUrl") ? (b.querySelector("#bkUrl").value || "").trim() : null };
+}
+function bindBankForm(b) {
+  b.querySelector("#bkInc").addEventListener("click", function (e) {
+    var x = e.target.closest("[data-v]"); if (!x) return;
+    $$("#bkInc button", b).forEach(function (y) { y.classList.toggle("on", y === x); });
+  });
+  try { b.querySelector("#bkBal").style.fontSize = "16px"; } catch (e) {}
+}
+function normBankUrl(u) {
+  u = (u || "").trim(); if (!u) return "";
+  if (/^javascript:/i.test(u)) return "";
+  if (!/^[a-z][a-z0-9+.-]*:/i.test(u)) u = "https://" + u.replace(/^\/+/, "");
+  return u;
+}
+function openAddBank(c) {
+  var custom = !c || c.id === "bank-custom";
+  sheet("＋ " + (custom ? "CUSTOM BANK" : (c.name || "BANK").toUpperCase()), bankFormHtml(custom ? null : { name: c.name }, custom) +
+    '<button class="btn" id="bkSave" type="button" style="margin-top:12px">ADD BANK</button>',
+    function (b) {
+      bindBankForm(b);
+      b.querySelector("#bkSave").addEventListener("click", function () {
+        var f = readBankForm(b); if (!f) return;
+        if (custom && !f.name) { toast("Type the bank's name"); return; }
+        var cat = custom ? { id: "bank-custom", name: f.name, kind: "bank", icon: "", bg: "#334155", letter: f.name.charAt(0).toUpperCase() } : c;
+        var u = custom ? normBankUrl(f.url) : "";
+        closeSheet();
+        commitAccountFromCatalog(cat, Object.assign({ kind: "bank", name: f.name || cat.name, bal: f.bal, balAt: f.bal != null ? Date.now() : null, inTotal: f.inTotal },
+          custom ? { url: u, web: /^https?:/i.test(u) ? u : "" } : {}));
+      });
+    });
+}
+function openEditBank(a) {
+  var custom = a.catalogId === "bank-custom";
+  sheet("✎ " + (a.name || "BANK").toUpperCase(), bankFormHtml(a, custom) +
+    '<p class="note">' + (a.balAt ? "Last updated " + esc(bankDateStr(a.balAt)) + "." : "No balance yet.") + " Tap the tile to open the bank's app or site.</p>" +
+    '<button class="btn" id="bkSave" type="button" style="margin-top:12px">SAVE</button>' +
+    '<button class="btn warn" id="bkDel" type="button" style="margin-top:8px">Remove bank</button>',
+    function (b) {
+      bindBankForm(b);
+      setTimeout(function () { var i = b.querySelector("#bkBal"); if (i && i.focus) try { i.focus({ preventScroll: true }); } catch (e) {} }, 60);
+      b.querySelector("#bkSave").addEventListener("click", function () {
+        var f = readBankForm(b); if (!f) return;
+        var next = loadAccounts().map(function (x) {
+          if (x.id !== a.id) return x;
+          var r = Object.assign({}, x, { name: f.name || x.name, inTotal: f.inTotal });
+          if (f.bal !== x.bal) { r.bal = f.bal; r.balAt = f.bal != null ? Date.now() : null; }
+          if (custom) { var u = normBankUrl(f.url); r.url = u; r.web = /^https?:/i.test(u) ? u : ""; }
+          return r;
+        });
+        saveAccounts(next); closeSheet(); renderAccounts(); renderHoldings(); toast("Bank saved");
+      });
+      b.querySelector("#bkDel").addEventListener("click", function () {
+        if (!confirm("Remove " + (a.name || "this bank") + "?")) return;
+        saveAccounts(loadAccounts().filter(function (x) { return x.id !== a.id; }));
+        closeSheet(); renderAccounts(); renderHoldings(); toast("Bank removed");
+      });
+    });
+}
+
+/* ========== v4.9.5 page tour ("?" in the top bar) + one-time welcome card ========== */
+function tourSteps() {
+  var S = [
+    ["#heroCard", "Time", "Your clock and date. Your greeting shows under it."],
+    ["#today", "Today", "Today's calendar and notes live here. Tap to add or open them."],
+    ["#hWx", "Weather", "Current weather. Tap the card for hourly, days ahead and Feels Like."],
+    ["#hMap", "Map", "Where you are. Tap OPEN for the big map, search a place, tap a pin for GO."],
+    ["#placesRow", "Places", "Saved spots like Home and Work. Tap for directions, hold to edit."],
+    ["#mkTicker", "Ticker", "Live crypto and gold prices. Touch it to pause."],
+    ["#hMk", "Markets", "Your total. Tap it, then ＋ Add for wallets, brokers and banks."],
+    ["#mFocus", "Focus", "A focus timer. Pick minutes and start."],
+    ["#phoneMount", "Phone", "Dial pad and favorite people. Tap to call."],
+    ["#appsSection", "Apps", "Your app tiles. Use Edit to move or remove, ＋ to add."],
+    [".top-r", "ZAP AI and help", "Tap the mic to ask ZAP AI. Tap ? anytime to see this tour again."]
+  ];
+  return S.filter(function (s) { var el = document.querySelector(s[0]); return el && !el.hidden && el.getClientRects().length; });
+}
+function tourSafe() {
+  var p = document.getElementById("tourSafe");
+  if (!p) { p = document.createElement("div"); p.id = "tourSafe"; p.setAttribute("aria-hidden", "true"); document.body.appendChild(p); }
+  var cs = getComputedStyle(p);
+  return { t: parseFloat(cs.paddingTop) || 0, b: parseFloat(cs.paddingBottom) || 0 };
+}
+function startTour() {
+  if (TOUR.on) return;
+  try { closeZapAssistant(true); } catch (e) {}
+  try { closeSheet(true); } catch (e) {}
+  try { closeCardDetail(true); } catch (e) {}
+  try { if (document.documentElement.classList.contains("map-fs-open")) closeMapOverlay(); } catch (e) {}
+  try { hideMapPlaceCard(); } catch (e) {}
+  try { hideScrimIfIdle(); } catch (e) {}
+  try { dismissWelcome(); } catch (e) {}
+  TOUR.steps = tourSteps(); if (!TOUR.steps.length) return;
+  TOUR.on = true; TOUR.i = 0;
+  var r = document.createElement("div");
+  r.id = "tour"; r.className = "tour"; r.setAttribute("role", "dialog"); r.setAttribute("aria-modal", "true"); r.setAttribute("aria-label", "Page tour");
+  r.innerHTML = '<div class="tour-spot" id="tourSpot" aria-hidden="true"></div>' +
+    '<div class="tour-tip" id="tourTip"><div class="tour-k" id="tourK"></div><b id="tourT"></b><p id="tourP"></p>' +
+    '<div class="tour-btns"><button type="button" class="tour-skip" id="tourSkip">Skip</button><span class="tour-sp"></span>' +
+    '<button type="button" class="tour-b" id="tourBack">Back</button><button type="button" class="tour-b tour-next" id="tourNext">Next</button></div></div>';
+  document.body.appendChild(r);
+  TOUR.root = r;
+  r.querySelector("#tourSkip").addEventListener("click", function (e) { e.stopPropagation(); endTour(); });
+  r.querySelector("#tourBack").addEventListener("click", function (e) { e.stopPropagation(); if (TOUR.i > 0) tourGo(TOUR.i - 1); });
+  r.querySelector("#tourNext").addEventListener("click", function (e) { e.stopPropagation(); if (TOUR.i < TOUR.steps.length - 1) tourGo(TOUR.i + 1); else endTour(); });
+  window.addEventListener("scroll", tourPlace, { passive: true });
+  window.addEventListener("resize", tourPlace, { passive: true });
+  overlayPushHistory();
+  tourGo(0);
+}
+function tourGo(i) {
+  if (!TOUR.on) return;
+  TOUR.i = i;
+  var s = TOUR.steps[i], el = document.querySelector(s[0]); if (!el) { endTour(); return; }
+  var r = TOUR.root;
+  r.querySelector("#tourK").textContent = "Step " + (i + 1) + " of " + TOUR.steps.length;
+  r.querySelector("#tourT").textContent = s[1];
+  r.querySelector("#tourP").textContent = s[2];
+  r.querySelector("#tourBack").disabled = i === 0;
+  r.querySelector("#tourNext").textContent = i === TOUR.steps.length - 1 ? "Done" : "Next";
+  var fixedTop = !!el.closest(".top");
+  if (!fixedTop) {
+    var rect = el.getBoundingClientRect(), vh = window.innerHeight;
+    var y = (window.scrollY || 0) + rect.top - (rect.height > vh * 0.55 ? 76 : Math.max(76, (vh - rect.height) / 2 - 60));
+    var smooth = motionWanted();
+    try { window.scrollTo({ top: Math.max(0, y), behavior: smooth ? "smooth" : "auto" }); } catch (e) { window.scrollTo(0, Math.max(0, y)); }
+  }
+  tourPlace();
+  clearTimeout(TOUR.t); TOUR.t = setTimeout(tourPlace, 500);
+  setTimeout(tourPlace, 900);
+  try { r.querySelector("#tourNext").focus({ preventScroll: true }); } catch (e) {}
+}
+function tourPlace() {
+  if (!TOUR.on || !TOUR.root) return;
+  var s = TOUR.steps[TOUR.i], el = s && document.querySelector(s[0]); if (!el) return;
+  var spot = TOUR.root.querySelector("#tourSpot"), tip = TOUR.root.querySelector("#tourTip");
+  var rc = el.getBoundingClientRect(), pad = 6, vh = window.innerHeight, sf = tourSafe();
+  var top = Math.max(sf.t + 2, rc.top - pad), bot = Math.min(vh - 2, rc.bottom + pad);
+  spot.style.top = top + "px"; spot.style.left = Math.max(2, rc.left - pad) + "px";
+  spot.style.width = Math.min(window.innerWidth - 4, rc.width + pad * 2) + "px"; spot.style.height = Math.max(20, bot - top) + "px";
+  var th = tip.offsetHeight || 150, gap = 12, ty;
+  if (vh - bot - sf.b >= th + gap * 2) ty = bot + gap;
+  else if (top - sf.t >= th + gap * 2) ty = top - gap - th;
+  else ty = vh - sf.b - th - gap;
+  ty = Math.max(sf.t + gap, Math.min(vh - sf.b - th - gap, ty));
+  tip.style.top = Math.round(ty) + "px";
+}
+function endTour() {
+  if (!TOUR.on) return;
+  TOUR.on = false; clearTimeout(TOUR.t);
+  window.removeEventListener("scroll", tourPlace); window.removeEventListener("resize", tourPlace);
+  try { if (TOUR.root) TOUR.root.remove(); } catch (e) {}
+  TOUR.root = null;
+  scheduleHistSync();
+}
+document.addEventListener("keydown", function (e) {
+  if (!TOUR.on) return;
+  if (e.key === "ArrowRight") { e.preventDefault(); $("#tourNext") && $("#tourNext").click(); }
+  else if (e.key === "ArrowLeft") { e.preventDefault(); if (TOUR.i > 0) tourGo(TOUR.i - 1); }
+}, true);
+(function bindTourBtn() {
+  var b = $("#tourBtn"); if (!b) return;
+  b.addEventListener("click", function (e) { e.preventDefault(); e.stopPropagation(); startTour(); });
+})();
+/* one-time welcome: small card, never blocks the page; tour only if they tap it */
+function dismissWelcome() {
+  var w = $("#welcomeCard"); if (!w) return;
+  w.remove();
+  document.removeEventListener("pointerdown", welcomeOutside, true);
+}
+function welcomeOutside(e) {
+  var w = $("#welcomeCard"); if (!w) { document.removeEventListener("pointerdown", welcomeOutside, true); return; }
+  if (!w.contains(e.target)) dismissWelcome();
+}
+function showWelcomeOnce() {
+  if (Store.getLocal("welcomeSeen", false)) return;
+  try { Store.setLocal("welcomeSeen", true); } catch (e) {}
+  var w = document.createElement("div");
+  w.id = "welcomeCard"; w.className = "welcome-card"; w.setAttribute("role", "status");
+  w.innerHTML = '<button type="button" class="wc-x" id="wcClose" aria-label="Close">✕</button>' +
+    '<b>Welcome to ZAPWISE//OS</b><p>Tap <span class="wc-q">?</span> up top anytime for a quick tour.</p>' +
+    '<div class="wc-row"><button type="button" class="chip" id="wcTour">Take the tour</button><button type="button" class="chip" id="wcHome">Set Home &amp; Work</button><button type="button" class="chip" id="wcMusic">Pick music app</button></div>';
+  document.body.appendChild(w);
+  w.querySelector("#wcClose").addEventListener("click", dismissWelcome);
+  w.querySelector("#wcTour").addEventListener("click", function () { dismissWelcome(); startTour(); });
+  w.querySelector("#wcHome").addEventListener("click", function () { dismissWelcome(); try { openPlaceEditor("home"); } catch (e) {} });
+  w.querySelector("#wcMusic").addEventListener("click", function () { dismissWelcome(); try { openMedia(); } catch (e) {} });
+  setTimeout(function () { document.addEventListener("pointerdown", welcomeOutside, true); }, 50);
+}
+
+try { startCompass(false); } catch (e) {}
+try { window.ZAPOS.startTour = startTour; window.ZAPOS.endTour = endTour; window.ZAPOS.qa.compass = function () { return { c: COMPASS, gps: GPS && GPS.lat, hd: currentHeading() }; }; window.ZAPOS.qa.hist = function () { return { depth: HIST.depth, expect: HIST.expect, layers: overlayLayers(), state: history.state, len: history.length }; }; } catch (eQ) {}
+setTimeout(showWelcomeOnce, 1400);
+if (!Store.getLocal("seenHelp", false)) { var _sa = false; try { _sa = window.navigator.standalone === true || (window.matchMedia && matchMedia("(display-mode: standalone)").matches); } catch (eTip) {} if (!_sa) { Store.setLocal("seenHelp", true); } else { Store.setLocal("seenHelp", true); } }
 })();

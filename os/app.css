@@ -1296,9 +1296,10 @@ html:not(.light) .card::after{background:rgba(7,8,20,.55)!important}
 .hw-hrs{overflow:hidden!important;touch-action:manipulation!important}
 
 /* Ticker: static row, swipe to see more, no duplicate */
-.mk-ticker,#mkTicker.mk-ticker{overflow-x:auto!important;-webkit-mask-image:none!important;mask-image:none!important;scrollbar-width:none}
+html:not(.motion-on) .mk-ticker,html:not(.motion-on) #mkTicker.mk-ticker{overflow-x:auto!important;-webkit-mask-image:none!important;mask-image:none!important;scrollbar-width:none}
 .mk-ticker::-webkit-scrollbar{display:none}
-.mk-ticker .track{transform:none!important}
+html:not(.motion-on) .mk-ticker .track{transform:none!important}
+html:not(.motion-on) .mk-ticker .tape-seg[aria-hidden]{display:none!important}
 
 /* Weather detail: NOW first */
 .wx-now{margin:2px 0 14px;padding:14px;border:1px solid rgba(255,42,109,.45);background:rgba(255,42,109,.06);clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,14px 100%,0 calc(100% - 14px))}
@@ -1438,3 +1439,76 @@ html.map-fs-open .scrim:not([hidden]){z-index:88!important}
 .zap-start{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 8px}
 #lcLogCall{min-height:36px;min-width:52px;padding:8px 10px;margin:-8px -6px -8px 0}
 .dl-num.empty{color:rgba(244,239,228,.42)!important;font-size:15px!important;letter-spacing:.08em}
+
+/* ===== v4.9.5: map dot (no radar), market tape, hologram accents, banks, help tour, welcome ===== */
+.map-radar,#mapV .map-radar,.map-v .map-radar{display:none!important}
+.map-acc{background:rgba(92,225,230,.10)!important;border:1px solid rgba(92,225,230,.35)!important;box-shadow:none!important}
+.map-heading{width:40px!important;height:40px!important;border:0!important;background:conic-gradient(from -22deg,rgba(92,225,230,.9) 0 44deg,transparent 44deg)!important;
+  -webkit-mask:radial-gradient(circle,transparent 7px,#000 8px,#000 19px,transparent 20px);mask:radial-gradient(circle,transparent 7px,#000 8px,#000 19px,transparent 20px);
+  opacity:.35!important;filter:none!important;clip-path:none!important;pointer-events:none}
+.map-heading[hidden],.map-holo[hidden]{display:none!important}
+.map-dot{box-shadow:0 0 0 2px #fff,0 0 6px rgba(92,225,230,.55)!important}
+.map-holo{position:absolute;width:16px;height:16px;margin:0;border-radius:50%;border:2px solid rgba(92,225,230,.8);pointer-events:none;opacity:0;transform:translate(-50%,-50%);z-index:2}
+/* market tape: one composited transform loop */
+#mkTicker.mk-ticker{contain:paint}
+.mk-ticker .track{animation:none}
+.mk-ticker .tape-seg{display:inline-flex;gap:22px;padding-right:22px;flex:none;align-items:center}
+.mk-ticker .tk{white-space:nowrap}
+.mk-ticker .tk-px{font-style:normal;color:var(--ink)}
+.mk-ticker .tk-ch{font-style:normal;font-weight:700}
+.mk-ticker .tk-ch.up{color:#22c55e}.mk-ticker .tk-ch.dn{color:#ef4444}
+@keyframes zapTape{from{transform:translate3d(0,0,0)}to{transform:translate3d(-50%,0,0)}}
+@keyframes zapSheen{0%,72%{transform:translate3d(-130%,0,0);opacity:0}76%{opacity:.85}96%{opacity:.85}100%{transform:translate3d(330%,0,0);opacity:0}}
+@keyframes zapBreath{0%,100%{opacity:.6}50%{opacity:1}}
+@keyframes zapRing{0%{transform:translate(-50%,-50%) scale(1);opacity:.55}100%{transform:translate(-50%,-50%) scale(3);opacity:0}}
+@keyframes zapMic{0%,60%{transform:scale(1);opacity:.5}100%{transform:scale(1.45);opacity:0}}
+html.motion-on #mkTicker.mk-ticker{overflow:hidden!important}
+html.motion-on #mkTicker .track{display:inline-flex!important;gap:0!important;padding-left:0!important;width:max-content;animation:zapTape var(--tape-dur,40s) linear infinite!important;will-change:transform!important}
+html.motion-on #mkTicker.paused .track{animation-play-state:paused!important}
+@media (hover:hover){html.motion-on #mkTicker:hover .track{animation-play-state:paused!important}}
+.holo-sheen{display:none}
+html.motion-on #heroCard,html.motion-on #hClock{contain:paint}
+html.motion-on #hClock{position:relative;overflow:hidden}
+html.motion-on .holo-sheen{display:block;position:absolute;top:0;bottom:0;left:0;width:40%;pointer-events:none;
+  background:linear-gradient(100deg,transparent 0,rgba(92,225,230,.18) 35%,rgba(255,42,163,.2) 60%,transparent 100%);
+  animation:zapSheen 9s ease-in-out infinite!important;opacity:0}
+html.motion-on #heroCard.br::before,html.motion-on #heroCard.br::after{animation:zapBreath 5s ease-in-out infinite!important}
+html.motion-on #mapV .map-holo:not([hidden]),html.motion-on .map-holo:not([hidden]){animation:zapRing 3s ease-out infinite!important}
+html.motion-on .top-r .h-mic{position:relative!important}
+html.motion-on .top-r .h-mic::after{content:"";position:absolute;inset:-1px;border-radius:50%;border:1px solid rgba(92,225,230,.7);pointer-events:none;animation:zapMic 4s ease-out infinite!important}
+/* help button */
+.top-r .h-help{width:44px;height:44px;min-width:44px;flex:0 0 44px;border-radius:50%;border:1px solid rgba(255,42,163,.55);background:#070814;color:#ff2aa3;font:800 18px/1 system-ui,sans-serif;display:grid;place-items:center;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.top-r .h-help:focus-visible{outline:2px solid #05d9e8;outline-offset:2px}
+@media (max-width:380px){.top-r{gap:4px!important}.top-r .hud-chip.gps{display:none!important}.brand{font-size:11px!important}}
+/* banks */
+.bank-note{font-size:12px;color:var(--mut,#9aa3b2);margin-top:10px}
+.at-chg.bank-upd{color:var(--mut,#9aa3b2)!important;font-weight:600}
+#bkName,#bkUrl,#bkBal{font-size:16px!important;color:#f4f6fb!important;background:#0b1020!important;border:1px solid rgba(92,225,230,.45)!important;caret-color:#05d9e8}
+#bkName::placeholder,#bkUrl::placeholder,#bkBal::placeholder{color:#7f8aa3!important;opacity:1}
+/* tour */
+.tour{position:fixed;inset:0;z-index:120;pointer-events:auto}
+.tour-spot{position:fixed;border-radius:14px;outline:2px solid #ff2aa3;box-shadow:0 0 0 2px rgba(5,217,232,.55),0 0 0 200vmax rgba(2,3,10,.72);pointer-events:none}
+html.motion-on .tour-spot{transition:top .25s ease,left .25s ease,width .25s ease,height .25s ease!important}
+.tour-tip{position:fixed;left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right));max-width:420px;margin:0 auto;background:#0b0f1e;border:1px solid rgba(255,42,163,.6);border-radius:14px;padding:14px 14px 12px;color:#f4f6fb;box-shadow:0 10px 30px rgba(0,0,0,.6)}
+.tour-k{font-size:11px;letter-spacing:.08em;color:#05d9e8;font-weight:700;text-transform:uppercase}
+.tour-tip b{display:block;font-size:17px;margin:4px 0 4px}
+.tour-tip p{margin:0 0 10px;font-size:14px;line-height:1.45;color:#d6dbea}
+.tour-btns{display:flex;gap:8px;align-items:center}.tour-sp{flex:1}
+.tour-btns button{min-height:44px;min-width:64px;border-radius:999px;border:1px solid rgba(255,255,255,.22);background:#141a2e;color:#f4f6fb;font-weight:700;font-size:14px;padding:0 14px}
+.tour-btns .tour-next{background:#ff2aa3;border-color:#ff2aa3;color:#12030b}
+.tour-btns button:disabled{opacity:.4}
+.tour-btns .tour-skip{background:transparent;border-color:transparent;color:#aab3c8;min-width:44px;padding:0 8px}
+#tourSafe{position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;pointer-events:none;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+/* welcome card: small, never blocks */
+.welcome-card{position:fixed;z-index:85;left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right));bottom:calc(12px + env(safe-area-inset-bottom));max-width:420px;margin:0 auto;
+  background:#0b0f1e;border:1px solid rgba(5,217,232,.5);border-radius:14px;padding:12px 44px 12px 14px;color:#f4f6fb;box-shadow:0 8px 24px rgba(0,0,0,.55)}
+.welcome-card b{font-size:15px}.welcome-card p{margin:4px 0 8px;font-size:13px;line-height:1.4;color:#d6dbea}
+.welcome-card .wc-q{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;border:1px solid #ff2aa3;color:#ff2aa3;font-weight:800;font-size:12px}
+.welcome-card .wc-row{display:flex;flex-wrap:wrap;gap:6px}.welcome-card .chip{font-size:13px}
+.welcome-card .wc-x{position:absolute;top:2px;right:2px;width:44px;height:44px;border:0;background:transparent;color:#aab3c8;font-size:16px}
+.welcome-card{padding:10px 44px 10px 12px}
+.welcome-card p{margin:2px 0 6px;font-size:12.5px}
+.welcome-card .wc-row{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.welcome-card .wc-row::-webkit-scrollbar{display:none}
+.welcome-card .chip{flex:none;white-space:nowrap;padding:0 12px}
+#acctGrid .acct-empty{grid-column:1/-1;margin:4px 0}
