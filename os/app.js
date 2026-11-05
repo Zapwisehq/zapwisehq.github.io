@@ -1,4 +1,4 @@
-/* ZAPWISE//OS web app v4.9.6 (Nov 5, 2026). Bank is its own full-width bar under the ticker (balances + last-4, privacy eye). Markets keeps brokers/wallets/holdings. Back closes one layer per press. Help tour (opt-in), marquee ticker, optional hologram motion (Settings → Motion), honest compass cone, map tile cache + backup tile server, search cache + 1/s limit. Source file: edit here, then run os/build.sh to refresh app.min.js (what the page loads). No tabs. Voice only from ZAP AI. */
+/* ZAPWISE//OS web app v4.9.7 (Nov 5, 2026). Live TomTom traffic colors on the map (proxy tiles, no client API key). Bank bar under ticker (v4.9.6). Back closes one layer per press. Help tour, marquee ticker, hologram motion, compass cone, map tile cache + backup server, search cache. Source: edit app.js, run os/build.sh → app.min.js. No tabs. Voice only from ZAP AI. */
 (function () {
 "use strict";
 var VERSION = "4.9.5";
@@ -228,7 +228,7 @@ function clone(o) { return o == null ? o : JSON.parse(JSON.stringify(o)); }
 var Store = (function () {
   var STATE_KEY = "zapos.state", DEVICE_KEY = "zapos.device", VER = 1;
   var PREF_KEYS = ["settings", "theme", "apps", "coins", "loc", "favs", "places", "holdings", "broker", "wallets", "accounts", "assistant"];                     // shared state (sync-ready)
-  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss", "mediaKey", "skipBoot", "bootDay", "uiSounds", "recentPins", "wxDay", "wxMode", "wxMode2", "portHist", "acctMigrated", "liteMode", "tiltCards", "motionTilt", "callLog", "zapChat", "focusStats", "wallpaper", "zapNotes", "zapReminders", "uiMotion", "welcomeSeen", "bankPrivacy"]; // this device only
+  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss", "mediaKey", "skipBoot", "bootDay", "uiSounds", "recentPins", "wxDay", "wxMode", "wxMode2", "portHist", "acctMigrated", "liteMode", "tiltCards", "motionTilt", "callLog", "zapChat", "focusStats", "wallpaper", "zapNotes", "zapReminders", "uiMotion", "welcomeSeen", "bankPrivacy", "mapTraffic"]; // this device only
   function read(k) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
   function write(k, v) { if (dead) return false; try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
   var state = read(STATE_KEY), dev = read(DEVICE_KEY), subs = [], uiT = null, dead = false; // dead: after a reset, write nothing more
@@ -2238,7 +2238,32 @@ function motionWanted() {
   try { if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return false; } catch (e) {}
   return true;
 }
-function applyMotion() { try { document.documentElement.classList.toggle("motion-on", motionWanted()); } catch (e) {} }
+function applyMotion() {
+  try { document.documentElement.classList.toggle("motion-on", motionWanted()); } catch (e) {}
+  try { ensureCardHolos(); } catch (eH) {}
+}
+function ensureCardHolos() {
+  var nodes = document.querySelectorAll(".card.br, .places-row.card, .mk-ticker.card");
+  if (!motionWanted()) {
+    Array.prototype.forEach.call(nodes, function (el) {
+      var h = el.querySelector(".card-holo"); if (h) try { h.remove(); } catch (e) {}
+    });
+    return;
+  }
+  Array.prototype.forEach.call(nodes, function (el, i) {
+    var h = null;
+    for (var c = el.firstChild; c; c = c.nextSibling) {
+      if (c.nodeType === 1 && c.classList && c.classList.contains("card-holo")) { h = c; break; }
+    }
+    if (!h) {
+      h = document.createElement("i");
+      h.className = "card-holo";
+      h.setAttribute("aria-hidden", "true");
+      el.insertBefore(h, el.firstChild);
+    }
+    h.style.animationDelay = (-(i % 10) * 0.9) + "s";
+  });
+}
 applyMotion();
 try { var _rmq = matchMedia("(prefers-reduced-motion: reduce)"); if (_rmq.addEventListener) _rmq.addEventListener("change", applyMotion); } catch (e) {}
 
@@ -2379,6 +2404,89 @@ function tileUrl(z, x, y) {
   // OSM standard raster tiles — free, no key. v4.9.4: single HTTP/2 host (OSM retired a/b/c subdomains).
   return "https://tile.openstreetmap.org/" + z + "/" + x + "/" + y + ".png";
 }
+/* ===== v4.9.7 live traffic (TomTom flow via zapwise worker — no client API key) ===== */
+var TRAFFIC = { fails: 0, dead: false, lastOk: 0 };
+var TRAFFIC_URL = "https://zapwise-traffic.zapwisehq.workers.dev/flow";
+function trafficWanted() {
+  try { return Store.getLocal("mapTraffic", true) !== false; } catch (e) { return true; }
+}
+function setTrafficWanted(on) {
+  try { Store.setLocal("mapTraffic", !!on); } catch (e) {}
+  TRAFFIC.dead = false; TRAFFIC.fails = 0;
+  syncTrafficUi();
+  try { MAP._trafKey = null; renderMap(true); } catch (e2) {}
+}
+function trafficUrl(z, x, y) {
+  return TRAFFIC_URL + "/" + z + "/" + x + "/" + y + ".png";
+}
+function syncTrafficUi() {
+  var on = trafficWanted() && !TRAFFIC.dead;
+  var chip = document.getElementById("mapTrafChip");
+  var ui = document.getElementById("mapTrafUi");
+  var leg = document.getElementById("mapTrafLeg");
+  if (chip) {
+    chip.classList.toggle("on", trafficWanted());
+    chip.setAttribute("aria-pressed", trafficWanted() ? "true" : "false");
+  }
+  if (ui) ui.classList.toggle("is-off", !trafficWanted());
+  if (leg) leg.hidden = !trafficWanted();
+}
+function hideTrafficLayerQuiet() {
+  var host = document.getElementById("mapTraffic");
+  if (host) { host.hidden = true; host.setAttribute("aria-hidden", "true"); host.innerHTML = ""; }
+  TRAFFIC.dead = true;
+}
+function renderTrafficTiles(needed, z) {
+  var host = document.getElementById("mapTraffic");
+  if (!host) return;
+  var show = trafficWanted() && !TRAFFIC.dead && z >= 6 && z <= 18 && navigator.onLine !== false;
+  if (!show) {
+    host.hidden = true; host.setAttribute("aria-hidden", "true");
+    if (!trafficWanted() || z < 6 || z > 18) { try { host.innerHTML = ""; } catch (e) {} }
+    return;
+  }
+  host.hidden = false; host.setAttribute("aria-hidden", "false");
+  var existing = {};
+  Array.prototype.forEach.call(host.querySelectorAll("img[data-tid]"), function (img) {
+    existing[img.getAttribute("data-tid")] = img;
+  });
+  Object.keys(needed).forEach(function (id) {
+    var info = needed[id];
+    var img = existing[id];
+    if (!img) {
+      img = document.createElement("img");
+      img.alt = "";
+      img.decoding = "async";
+      img.draggable = false;
+      img.setAttribute("data-tid", id);
+      img.className = "map-traf-tile";
+      img.loading = "eager";
+      img.referrerPolicy = "origin";
+      /* CORS so SW can cache on zapwiseai.com; worker allows that Origin */
+      img.crossOrigin = "anonymous";
+      img.onload = function () {
+        img.classList.add("on");
+        TRAFFIC.fails = 0; TRAFFIC.lastOk = Date.now(); TRAFFIC.dead = false;
+      };
+      img.onerror = function () {
+        /* quiet: hide broken tile; if many fail, drop the whole layer */
+        try { img.remove(); } catch (e0) {}
+        TRAFFIC.fails++;
+        if (TRAFFIC.fails >= 6) hideTrafficLayerQuiet();
+      };
+      img.src = trafficUrl(info.z, info.x, info.y);
+      if (img.complete && img.naturalWidth) img.classList.add("on");
+      host.appendChild(img);
+    } else {
+      delete existing[id];
+    }
+    img.style.transform = "translate(" + info.left + "px," + info.top + "px)";
+  });
+  Object.keys(existing).forEach(function (id) {
+    try { existing[id].remove(); } catch (e) {}
+  });
+}
+
 function metersToPixels(m, lat, z) {
   // Web Mercator: meters per pixel at equator ~ 156543.03 / 2^z ; adjust by cos(lat)
   var mpp = 156543.03392 * Math.cos(lat * Math.PI / 180) / Math.pow(2, z);
@@ -2508,9 +2616,27 @@ function renderMap(force) {
   try { map3dLive = !!(window.ZAPFX3D && window.ZAPFX3D.mapReady()); } catch (e) {}
   if (map3dLive) {
     try { window.ZAPFX3D.syncMap({ lat: view.lat, lon: view.lon, z: z, follow: MAP.follow && liveGps, snap: !!force && !!MAP.follow && liveGps }); } catch (e) {}
+    try { hideTrafficLayerQuiet(); TRAFFIC.dead = false; } catch (e3d) {}
   }
   if (!map3dLive && !force && MAP._key === key) {
-    // still refresh pins positions
+    // tiles unchanged — still refresh traffic transforms
+    try {
+      if (trafficWanted() && !TRAFFIC.dead && z >= 6 && z <= 18) {
+        var n2 = Math.pow(2, z), x0b = Math.floor(ox / 256) - 1, x1b = Math.floor((ox + W) / 256) + 1;
+        var y0b = Math.floor(oy / 256) - 1, y1b = Math.floor((oy + H) / 256) + 1, need2 = {};
+        for (var tyb = y0b; tyb <= y1b; tyb++) {
+          if (tyb < 0 || tyb >= n2) continue;
+          for (var txb = x0b; txb <= x1b; txb++) {
+            var xxb = ((txb % n2) + n2) % n2;
+            var idb = z + "/" + xxb + "/" + tyb;
+            need2[idb] = { z: z, x: xxb, y: tyb, left: Math.round(txb * 256 - ox), top: Math.round(tyb * 256 - oy) };
+          }
+        }
+        renderTrafficTiles(need2, z);
+      } else {
+        renderTrafficTiles({}, z);
+      }
+    } catch (eT0) { try { hideTrafficLayerQuiet(); } catch (eT01) {} }
   } else if (!map3dLive) {
     MAP._key = key;
     var n = world.n;
@@ -2571,6 +2697,7 @@ function renderMap(force) {
     Object.keys(existing).forEach(function (id) {
       try { existing[id].remove(); } catch (e) {}
     });
+    try { renderTrafficTiles(needed, z); } catch (eT) { try { hideTrafficLayerQuiet(); } catch (eT2) {} }
   }
   // Saved place pins
   var pinHost = v.querySelector(".map-pins");
@@ -2951,6 +3078,16 @@ document.addEventListener("keydown", function (e) {
 var mapIn = $("#mapIn"); if (mapIn) mapIn.addEventListener("click", function (e) { e.stopPropagation(); mapZoom(1); });
 var mapOut = $("#mapOut"); if (mapOut) mapOut.addEventListener("click", function (e) { e.stopPropagation(); mapZoom(-1); });
 var mapRec = $("#mapRec"); if (mapRec) mapRec.addEventListener("click", function (e) { e.stopPropagation(); try { startCompass(true); } catch (eC) {} mapRecenter(); });
+(function () {
+  var chip = document.getElementById("mapTrafChip");
+  if (!chip || chip._trafBound) return;
+  chip._trafBound = true;
+  syncTrafficUi();
+  chip.addEventListener("click", function (e) {
+    e.stopPropagation(); e.preventDefault();
+    setTrafficWanted(!trafficWanted());
+  });
+})();
 // avoid opening Maps when the user just panned
 $("#hMap").addEventListener("click", function (e) {
   if (e.target.closest(".map-tool,.map-attr,.map-open,.map-v,.map-fs-close,.map-fs-ext,.map-place-card,.map-place-pin")) return;
@@ -2962,8 +3099,7 @@ window.addEventListener("resize", function () { clearTimeout(renderMap.t); rende
 // ----- tabs -----
 
 // ========== 10b. Saved Places (Home / Work / School / custom) ==========
-// No live traffic overlay: free keyless sources either need MapLibre MVT (Earth Traffic is Thailand-only —
-// US tiles return 204) or require paid API keys (Google/TomTom/HERE). Map stays clean OSM + places.
+// v4.9.7: live traffic colors via zapwise-traffic worker (TomTom flow raster). ETA remains an estimate.
 var PLACE_PRESETS = [
   { id: "home", name: "Home", icon: "🏠", color: "#5dade2" },
   { id: "work", name: "Work", icon: "💼", color: "#a0785a" },
@@ -3039,7 +3175,7 @@ function renderPlacesRow() {
   host.innerHTML = list.map(function (pl, i) {
     var eta = PLACE_ETA[pl.id];
     var sub = eta ? formatEta(eta.sec, eta.km) : "…";
-    if (eta && eta.sec != null && /min/.test(sub)) sub = "~" + sub; /* estimate, no live traffic */
+    if (eta && eta.sec != null && /min/.test(sub)) sub = "~" + sub; /* estimate — traffic colors are live, ETA is not */
     if (i === 0 && eta) sub = "GO · " + sub;
     var col = pl.color || "#5dade2";
     return '<button type="button" class="place-chip' + (i === 0 ? " nearest" : "") + '" data-place-go="' + esc(pl.id) + '" role="listitem"><span class="pc-ico" style="background:' + col + '">' + (pl.icon || "📍") + '</span><span class="pc-name">' + esc(pl.name) + '</span><span class="pc-eta">' + esc(sub) + "</span></button>";
@@ -3168,7 +3304,7 @@ function showMapPlaceCard(pl) {
   card.querySelector("#mpcName").textContent = pl.name || "Place";
   card.querySelector("#mpcEd").textContent = pl.id === "__search" ? "SAVE" : "EDIT";
   card.querySelector("#mpcEd").setAttribute("aria-label", pl.id === "__search" ? "Save to Places" : "Edit place");
-  card.querySelector("#mpcEta").textContent = eta ? ((eta.sec != null ? "≈ " + formatEta(eta.sec, eta.km) + " drive" : formatEta(null, eta.km) + " away") + " · est., no live traffic") : "Tap GO for turn-by-turn";
+  card.querySelector("#mpcEta").textContent = eta ? ((eta.sec != null ? "≈ " + formatEta(eta.sec, eta.km) + " drive" : formatEta(null, eta.km) + " away") + " · Traffic colors live from TomTom; ETA is an estimate.") : "Tap GO for turn-by-turn";
   card.hidden = false;
   try { overlayPushHistory(); } catch (e) {}
   try { bindPlaceCardSwipe(card); } catch (e) {}
@@ -3489,7 +3625,7 @@ $$(".tab").forEach(function (b) { b.addEventListener("click", function () { show
       el.addEventListener(ev, stopBubble, false);
     });
   }
-  ["#placeAdd", "#mapOpen", "#focToggle", "#focReset", "#focTap", "#mapIn", "#mapOut", "#mapRec"].forEach(bindStop);
+  ["#placeAdd", "#mapOpen", "#focToggle", "#focReset", "#focTap", "#mapIn", "#mapOut", "#mapRec", "#mapTrafChip"].forEach(bindStop);
   /* Focus presets live inside #mFocus — stop bubble after their click handler via delegation */
   var foc = $("#mFocus");
   if (foc && !foc._focBubbleStop) {
@@ -5166,7 +5302,7 @@ function openHelp() {
     '<ol class="steps"><li><b>iPhone:</b> open <b>zapwiseai.com/os</b> in Safari → Share → Add to Home Screen.</li>' +
     '<li><b>Android:</b> open it in Chrome → menu ⋮ → Install app / Add to Home screen.</li>' +
     '<li><b>Computer:</b> bookmark the page or Install from the browser menu. It works in Chrome, Edge, Firefox and Safari.</li></ol>' +
-    '<h3>GOOD TO KNOW</h3><p class="note">One tap opens an app if it\'s installed. If it isn\'t, its website opens after about a second. On a computer the website opens in a new tab. The live map shows your area from your location (OpenStreetMap tiles); tap it to open Maps. Weather asks for location once; tap Allow, or set a city in the menu. Your choices stay on this device only.</p>',
+    '<h3>GOOD TO KNOW</h3><p class="note">One tap opens an app if it\'s installed. If it isn\'t, its website opens after about a second. On a computer the website opens in a new tab. The live map shows your area (OpenStreetMap) with optional TomTom traffic colors; tap OPEN for turn-by-turn. ETA is an estimate. Weather asks for location once; tap Allow, or set a city in the menu. Your choices stay on this device only.</p>',
     null);
 }
 
@@ -6897,7 +7033,7 @@ try {
   window.ZAPOS.logCall = logCall;
   window.ZAPOS.zapHandle = zapHandle;
   /* v4.9.4: read-only QA hooks */
-  window.ZAPOS.qa = { map: function () { return { follow: MAP.follow, offX: MAP.offX, offY: MAP.offY, z: MAP.z, gps: GPS ? { lat: GPS.lat, lon: GPS.lon } : null, geoOff: GEO_OFF }; }, savePlaces: savePlaces, refreshPlaceEtas: refreshPlaceEtas, renderMap: renderMap, loadPlaces: loadPlaces };
+  window.ZAPOS.qa = { map: function () { return { follow: MAP.follow, offX: MAP.offX, offY: MAP.offY, z: MAP.z, gps: GPS ? { lat: GPS.lat, lon: GPS.lon } : null, geoOff: GEO_OFF, traffic: trafficWanted(), trafficDead: !!TRAFFIC.dead, trafTiles: (document.getElementById("mapTraffic") && !document.getElementById("mapTraffic").hidden) ? document.querySelectorAll("#mapTraffic img").length : 0 }; }, savePlaces: savePlaces, refreshPlaceEtas: refreshPlaceEtas, renderMap: renderMap, loadPlaces: loadPlaces, setTraffic: setTrafficWanted, trafficWanted: trafficWanted };
 } catch (e) {}
 
 
@@ -6909,12 +7045,25 @@ function parseMoneyInput(v) {
   var n = parseFloat(v); return isNaN(n) ? NaN : Math.round(n * 100) / 100;
 }
 function bankMoney(n) {
-  if (n == null || isNaN(n)) return "—";
-  return "$" + (+n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  /* never bare "—" — empty reads as $0.00 */
+  var v = (n == null || isNaN(+n)) ? 0 : +n;
+  return "$" + v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 function bankDateStr(t) {
   if (!t) return "";
   try { return new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric" }); } catch (e) { return ""; }
+}
+function bankAsOfStr(t) {
+  if (!t) return "";
+  try {
+    return "As of " + new Date(t).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  } catch (e) { return ""; }
+}
+function bankAcctLabel(a) {
+  var bank = (a && a.name) || "Bank";
+  var acct = (a && a.acctName) ? String(a.acctName).trim() : "Checking";
+  if (!acct) acct = "Checking";
+  return (bank + " " + acct).toUpperCase();
 }
 function sanitizeLast4(v) {
   var d = String(v == null ? "" : v).replace(/\D/g, "");
@@ -6977,12 +7126,14 @@ function bankFormHtml(a, custom) {
   var bal = (a && a.bal != null && !isNaN(a.bal)) ? String(a.bal) : "";
   var inc = !(a && a.inTotal === false);
   var last4 = sanitizeLast4(a && a.last4);
+  var acctName = (a && a.acctName) ? String(a.acctName) : "Checking";
   return (custom ? ('<label class="field">BANK NAME<input id="bkName" maxlength="28" placeholder="e.g. Local Credit Union" value="' + esc((a && a.name) || "") + '" autocomplete="off"></label>' +
       '<label class="field">WEBSITE OR APP LINK<input id="bkUrl" placeholder="mybank.com" autocomplete="off" autocapitalize="off" spellcheck="false" value="' + esc((a && (a.web || a.url)) || "") + '"></label>') :
       ('<label class="field">NAME<input id="bkName" maxlength="28" value="' + esc((a && a.name) || "") + '" autocomplete="off"></label>')) +
+    '<label class="field">ACCOUNT NAME<input id="bkAcctName" maxlength="32" placeholder="Checking" value="' + esc(acctName) + '" autocomplete="off"></label>' +
     '<label class="field">BALANCE (OPTIONAL)<input id="bkBal" type="text" inputmode="decimal" autocomplete="off" autocorrect="off" spellcheck="false" data-form-type="other" data-lpignore="true" placeholder="$0.00" value="' + esc(bal) + '"></label>' +
     '<label class="field">LAST 4 DIGITS (OPTIONAL)<div class="bank-last4-row"><input id="bkLast4" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" autocorrect="off" spellcheck="false" data-form-type="other" data-lpignore="true" placeholder="1234" value="' + esc(last4) + '"></div><p class="note bank-last4-note">Only the last 4 — never your full number.</p></label>' +
-    '<div class="field">INCLUDE IN MARKETS TOTAL</div><div class="seg" id="bkInc"><button type="button" data-v="1" class="' + (inc ? "on" : "") + '">Include</button><button type="button" data-v="0" class="' + (inc ? "" : "on") + '">Leave out</button></div>' +
+    '<div class="field">INCLUDE IN BANK TOTAL</div><div class="seg" id="bkInc"><button type="button" data-v="1" class="' + (inc ? "on" : "") + '">Include</button><button type="button" data-v="0" class="' + (inc ? "" : "on") + '">Leave out</button></div>' +
     '<p class="note bank-note">' + BANK_NOTE + "</p>";
 }
 function readBankForm(b) {
@@ -6994,9 +7145,12 @@ function readBankForm(b) {
   if ((b.querySelector("#bkLast4") || {}).value && String((b.querySelector("#bkLast4") || {}).value).replace(/\D/g, "").length && last4.length !== 4) {
     /* allow partial clear; if they typed anything non-empty that isn't 4 digits after sanitize of leftover, force digits-only field */
   }
+  var acctEl = b.querySelector("#bkAcctName");
+  var acctName = acctEl ? (acctEl.value || "").trim().slice(0, 32) : "Checking";
+  if (!acctName) acctName = "Checking";
   return { bal: bal, inTotal: !incBtn || incBtn.getAttribute("data-v") === "1", name: (b.querySelector("#bkName").value || "").trim().slice(0, 28),
     url: b.querySelector("#bkUrl") ? (b.querySelector("#bkUrl").value || "").trim() : null,
-    last4: last4.length === 4 ? last4 : null };
+    last4: last4.length === 4 ? last4 : null, acctName: acctName };
 }
 function bindBankForm(b) {
   b.querySelector("#bkInc").addEventListener("click", function (e) {
@@ -7070,7 +7224,7 @@ function openAddBank(c) {
         var cat = custom ? { id: "bank-custom", name: f.name, kind: "bank", icon: "", bg: "#334155", letter: f.name.charAt(0).toUpperCase() } : c;
         var u = custom ? normBankUrl(f.url) : "";
         closeSheet();
-        commitAccountFromCatalog(cat, Object.assign({ kind: "bank", name: f.name || cat.name, bal: f.bal, balAt: f.bal != null ? Date.now() : null, inTotal: f.inTotal, last4: f.last4 },
+        commitAccountFromCatalog(cat, Object.assign({ kind: "bank", name: f.name || cat.name, acctName: f.acctName || "Checking", bal: f.bal, balAt: f.bal != null ? Date.now() : null, inTotal: f.inTotal, last4: f.last4 },
           custom ? { url: u, web: /^https?:/i.test(u) ? u : "" } : {}));
       });
     });
@@ -7088,7 +7242,7 @@ function openEditBank(a) {
         var f = readBankForm(b); if (!f) return;
         var next = loadAccounts().map(function (x) {
           if (x.id !== a.id) return x;
-          var r = Object.assign({}, x, { name: f.name || x.name, inTotal: f.inTotal, last4: f.last4 });
+          var r = Object.assign({}, x, { name: f.name || x.name, acctName: f.acctName || "Checking", inTotal: f.inTotal, last4: f.last4 });
           if (f.bal !== x.bal) { r.bal = f.bal; r.balAt = f.bal != null ? Date.now() : null; }
           if (custom) { var u = normBankUrl(f.url); r.url = u; r.web = /^https?:/i.test(u) ? u : ""; }
           return r;
@@ -7111,29 +7265,35 @@ function renderBanks() {
   setBankPrivacy(priv); /* sync eye */
   var banks = loadAccounts().filter(function (a) { return a.kind === "bank"; });
   var st = bankStats();
-  if (totalEl) totalEl.textContent = priv ? "••••••" : (st.priced ? bankMoney(st.total) : "—");
+  if (totalEl) totalEl.textContent = priv ? "••••••" : bankMoney(st.priced ? st.total : 0);
   if (subEl) {
     if (!banks.length) subEl.textContent = "Add a bank · balances stay on this phone";
-    else subEl.textContent = st.n + " bank" + (st.n === 1 ? "" : "s") + (st.priced ? (" · total " + (priv ? "hidden" : bankMoney(st.total))) : "") + (priv ? " · privacy on" : "");
+    else subEl.textContent = st.n + " account" + (st.n === 1 ? "" : "s") + (priv ? " · privacy on" : "") + (st.priced < st.n && !priv ? " · tap ✎ to add balance" : "");
   }
   if (!banks.length) {
-    host.innerHTML = '<div class="bk-tile empty" data-bk-add="1" role="listitem" tabindex="0" aria-label="Add bank"><span>＋ Add Bank</span></div>';
+    host.innerHTML = '<div class="bk-card empty" data-bk-add="1" role="listitem" tabindex="0" aria-label="Add bank"><span>＋ Add Bank</span></div>';
     return;
   }
   host.innerHTML = banks.map(function (a) {
-    var balTxt = (a.bal != null && !isNaN(a.bal)) ? bankMoney(+a.bal) : "—";
-    if (priv) balTxt = "••••••";
+    var hasBal = a.bal != null && !isNaN(a.bal);
+    var balTxt = priv ? "••••••" : bankMoney(hasBal ? +a.bal : 0);
+    var balCls = (!hasBal && !priv) ? "bk-bal muted" : "bk-bal";
     var l4 = formatLast4(a.last4, !priv);
-    var l4html = l4 ? ('<span class="bk-last4"><span class="bk-last4-digits">' + esc(l4) + "</span></span>") : '<span class="bk-last4" style="opacity:.45">no last 4</span>';
-    var upd = a.balAt ? ("upd " + bankDateStr(a.balAt)) : "hold to edit";
-    if (a.inTotal === false) upd += " · not in Markets total";
-    return '<div class="bk-tile" data-bk="' + esc(a.id) + '" role="listitem" tabindex="0" aria-label="' + esc(a.name) + (a.bal != null && !isNaN(a.bal) ? (", balance " + bankMoney(+a.bal)) : "") + '">' +
-      '<span class="bk-edit" role="button" tabindex="0" data-bk-edit="' + esc(a.id) + '" aria-label="Edit ' + esc(a.name) + '">✎</span>' +
-      accountIconHTML(a) +
-      '<span class="bk-name">' + esc(a.name) + "</span>" +
-      l4html +
-      '<span class="bk-bal">' + esc(balTxt) + "</span>" +
-      '<span class="bk-upd">' + esc(upd) + "</span></div>";
+    var l4html = l4 ? ('<span class="bk-last4"><span class="bk-last4-digits">' + esc(l4) + "</span></span>") : "";
+    var asof = bankAsOfStr(a.balAt) || (hasBal ? "" : "");
+    var asofHtml = asof ? ('<span class="bk-asof">' + esc(asof) + "</span>") : '<span class="bk-asof bk-asof-muted">Tap ✎ to update</span>';
+    var hint = (!hasBal && !priv) ? '<span class="bk-bal-hint">Tap ✎ to add balance</span>' : "";
+    var leftOut = a.inTotal === false ? '<span class="bk-leftout">Not in total</span>' : "";
+    return '<article class="bk-card" data-bk="' + esc(a.id) + '" role="listitem" tabindex="0" aria-label="' + esc(a.name) + ", " + esc(bankMoney(hasBal ? +a.bal : 0)) + '">' +
+      '<header class="bk-card-h">' +
+        '<span class="bk-badge" aria-hidden="true">' + accountIconHTML(a) + "</span>" +
+        '<div class="bk-card-meta"><b class="bk-bank-name">' + esc(a.name) + "</b>" + asofHtml + leftOut + "</div>" +
+        '<span class="bk-edit" role="button" tabindex="0" data-bk-edit="' + esc(a.id) + '" aria-label="Edit ' + esc(a.name) + '" title="Edit">✎</span>' +
+      "</header>" +
+      '<div class="bk-acct-row">' +
+        '<div class="bk-acct-l"><span class="bk-acct-name">' + esc(bankAcctLabel(a)) + "</span>" + l4html + "</div>" +
+        '<div class="bk-acct-r"><span class="' + balCls + '">' + esc(balTxt) + "</span>" + hint + "</div>" +
+      "</div></article>";
   }).join("");
 }
 (function bindBankCard() {
@@ -7185,6 +7345,7 @@ function renderBanks() {
   });
 })();
 try { renderBanks(); } catch (eInitBk) {}
+try { ensureCardHolos(); } catch (eHolo) {}
 
 /* ========== v4.9.5 page tour ("?" in the top bar) + one-time welcome card ========== */
 function tourSteps() {

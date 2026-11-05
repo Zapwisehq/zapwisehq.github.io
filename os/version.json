@@ -1,6 +1,6 @@
 {
-  "version": "4.9.6",
+  "version": "4.9.7",
   "built": "2026-11-05",
   "channel": "stable",
-  "notes": "v4.9.6: Bank is its own full-width bar under the market ticker (flush edges). Each bank shows name, optional last 4 (\u2022\u2022\u2022\u20221234), and a big balance. Eye hides balances and last 4 together. Markets keeps brokers, wallets and holdings. Tour covers the new Bank box. Only last 4 digits are stored \u2014 never full account or routing numbers."
+  "notes": "v4.9.7: Live TomTom traffic colors on the map (toggle + legend, no client API key). Bank cards redesigned like a real bank app (full-width account rows, As of time, no bare dashes). Soft hologram sweep on every card (Motion-aware). ETA stays an honest estimate."
 }

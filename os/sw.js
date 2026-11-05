@@ -1,11 +1,11 @@
-/* ZAPWISE//OS service worker v4.9.6
+/* ZAPWISE//OS service worker v4.9.7
    - Network-first for navigations + shell (index, app.js/css, catalog, sky, manifest).
    - Cache-first only for icons / images.
    - version.json is NEVER intercepted (always hits network for update checks).
    - skipWaiting on install; clients.claim + delete old caches on activate.
-   Live data (weather, markets, cross-origin tiles) is not handled here. */
-const VER = "zapos-v4.9.6";
-const APP_VER = "4.9.6";
+   Traffic tiles use network-first ≤2 min cache. OSM tiles stay longer offline cache. */
+const VER = "zapos-v4.9.7";
+const APP_VER = "4.9.7";
 const SHELL = [
   "/os/",
   "/os/index.html",
@@ -117,7 +117,9 @@ self.addEventListener("fetch", function (e) {
   if (req.method !== "GET") return;
   var u;
   try { u = new URL(req.url); } catch (err) { return; }
-  // v4.9.6: map tiles — keep a small offline cache (max ~600 tiles, refreshed after 7 days)
+  // v4.9.7: live traffic tiles — network-first, cache ≤2 min (never long-cache flow)
+  if (u.hostname === "zapwise-traffic.zapwisehq.workers.dev") { e.respondWith(trafficFetch(req)); return; }
+  // map tiles — keep a small offline cache (max ~600 tiles, refreshed after 7 days)
   if (/^tile\.openstreetmap\.(org|de)$/.test(u.hostname) && req.mode === "cors") { e.respondWith(tileFetch(req)); return; }
   if (u.origin !== self.location.origin || u.pathname.indexOf("/os/") !== 0) return;
 
@@ -146,6 +148,39 @@ self.addEventListener("fetch", function (e) {
 });
 
 var TILE_CACHE = "zapos-tiles-v1", TILE_MAX = 600, TILE_AGE = 7 * 864e5;
+var TRAF_CACHE = "zapos-traffic-v1", TRAF_AGE = 120000; /* 2 min */
+function trafficFetch(req) {
+  return caches.open(TRAF_CACHE).then(function (c) {
+    return c.match(req).then(function (hit) {
+      var aged = false;
+      if (hit) {
+        try {
+          var t0 = hit.headers.get("sw-cached-at");
+          if (t0 && (Date.now() - (+t0)) > TRAF_AGE) aged = true;
+        } catch (e) { aged = true; }
+      }
+      var net = fetch(req).then(function (r) {
+        if (r && r.ok && r.type !== "opaque") {
+          try {
+            var cp = r.clone();
+            var h = new Headers(cp.headers);
+            h.set("sw-cached-at", String(Date.now()));
+            cp.blob().then(function (b) {
+              c.put(req, new Response(b, { status: cp.status, statusText: cp.statusText, headers: h }));
+            }).catch(function () {});
+          } catch (e2) {}
+        }
+        return r;
+      }).catch(function () { return (!aged && hit) ? hit : Response.error(); });
+      if (hit && !aged) {
+        /* network-first: still kick network to refresh, but return fresh-enough cache fast */
+        net.catch(function () {});
+        return hit;
+      }
+      return net;
+    });
+  }).catch(function () { return fetch(req); });
+}
 function tileFetch(req) {
   return caches.open(TILE_CACHE).then(function (c) {
     return c.match(req).then(function (hit) {

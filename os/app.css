@@ -1554,60 +1554,155 @@ html.motion-on .tour-spot{transition:top .25s ease,left .25s ease,width .25s eas
 #hBk .hmk-day{font-size:12px;color:var(--mut,#9aa3b2);font-weight:600}
 #hBk.bk-private .hmk-total,#hBk.bk-private .bk-bal,#hBk.bk-private .bk-last4-digits{filter:none}
 #hBk .bk-grid{
-  display:flex;flex-direction:row;flex-wrap:nowrap;gap:10px;
-  overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;
-  scroll-snap-type:x proximity;padding:2px 2px 6px;margin:0 -2px;
-  scrollbar-width:none;
+  display:flex;flex-direction:column;gap:10px;
+  overflow:visible;padding:2px 0 4px;margin:0;
+  width:100%;
 }
-#hBk .bk-grid::-webkit-scrollbar{display:none}
-#hBk .bk-tile{
-  flex:0 0 auto;scroll-snap-align:start;
-  display:flex;flex-direction:column;align-items:flex-start;gap:6px;
-  min-width:168px;max-width:220px;min-height:112px;padding:12px;
+#hBk .bk-card{
+  position:relative;display:flex;flex-direction:column;gap:0;
+  width:100%;box-sizing:border-box;padding:12px 12px 10px;
   clip-path:var(--hud-clip-sm);border-radius:0;
-  border:1px solid rgba(5,217,232,.22);background:rgba(7,8,20,.78);
+  border:1px solid rgba(5,217,232,.22);background:rgba(7,8,20,.82);
   color:inherit;text-align:left;cursor:pointer;
   -webkit-user-select:none;user-select:none;touch-action:manipulation;
 }
-#hBk .bk-tile:active{transform:scale(.98);box-shadow:inset 0 0 0 1px var(--cyan)}
-#hBk .bk-tile .at-ico{width:36px;height:36px;border-radius:10px;overflow:hidden;display:grid;place-items:center;background:#111827;flex:none}
-#hBk .bk-tile .at-ico img{width:100%;height:100%;object-fit:cover}
-#hBk .bk-tile .at-ico .let{font-weight:900;font-size:16px;color:#fff}
-#hBk .bk-tile .bk-name{font-weight:800;font-size:14px;line-height:1.15;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#hBk .bk-tile .bk-last4{font-size:12px;font-weight:700;letter-spacing:.12em;color:var(--cyan);font-family:var(--mono)}
-#hBk .bk-tile .bk-bal{
-  margin-top:auto;font-size:20px;font-weight:900;letter-spacing:-.02em;
+#hBk .bk-card:active{transform:scale(.995);box-shadow:inset 0 0 0 1px var(--cyan)}
+#hBk .bk-card-h{
+  display:flex;align-items:center;gap:10px;padding:0 0 10px;
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+#hBk .bk-badge{flex:none}
+#hBk .bk-badge .at-ico{width:36px;height:36px;border-radius:10px;overflow:hidden;display:grid;place-items:center;background:#111827}
+#hBk .bk-badge .at-ico img{width:100%;height:100%;object-fit:cover}
+#hBk .bk-badge .at-ico .let{font-weight:900;font-size:16px;color:#fff}
+#hBk .bk-card-meta{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+#hBk .bk-bank-name{font-weight:800;font-size:14px;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#hBk .bk-asof{font-size:11px;font-weight:600;color:var(--mut,#9aa3b2);letter-spacing:.02em}
+#hBk .bk-asof-muted{opacity:.7}
+#hBk .bk-leftout{font-size:10px;font-weight:700;color:var(--amber,#f0a202);letter-spacing:.04em}
+#hBk .bk-edit{
+  flex:none;width:40px;height:40px;min-height:40px;
+  border-radius:10px;border:1px solid rgba(255,255,255,.18);background:rgba(7,8,20,.85);
+  color:var(--ink);font-size:13px;font-weight:800;display:grid;place-items:center;padding:0;z-index:2;
+}
+#hBk .bk-acct-row{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+  padding:12px 0 2px;
+}
+#hBk .bk-acct-l{min-width:0;display:flex;flex-direction:column;gap:4px}
+#hBk .bk-acct-name{
+  font-weight:800;font-size:12px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--ink);line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+#hBk .bk-last4{font-size:12px;font-weight:700;letter-spacing:.14em;color:var(--cyan);font-family:var(--mono)}
+#hBk .bk-acct-r{flex:none;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+#hBk .bk-bal{
+  font-size:22px;font-weight:900;letter-spacing:-.02em;
   font-variant-numeric:tabular-nums;color:var(--ink);line-height:1.1;
 }
-#hBk .bk-tile .bk-upd{font-size:10px;font-weight:600;color:var(--mut,#9aa3b2);letter-spacing:.04em}
-#hBk .bk-tile .bk-edit{
-  position:absolute;top:6px;right:6px;width:36px;height:36px;min-height:36px;
-  border-radius:10px;border:1px solid rgba(255,255,255,.18);background:rgba(7,8,20,.85);
-  color:var(--ink);font-size:12px;font-weight:800;display:grid;place-items:center;padding:0;z-index:2;
-}
-#hBk .bk-tile{position:relative}
-#hBk .bk-tile.empty{
+#hBk .bk-bal.muted{color:var(--mut,#9aa3b2);font-weight:800}
+#hBk .bk-bal-hint{font-size:10px;font-weight:600;color:var(--mut,#9aa3b2);letter-spacing:.02em;max-width:120px}
+#hBk .bk-card.empty{
   align-items:center;justify-content:center;text-align:center;border-style:dashed;opacity:.85;
-  color:var(--muted);font-size:13px;font-weight:700;min-width:140px;
+  color:var(--muted);font-size:13px;font-weight:700;min-height:72px;padding:18px;
 }
 #hBk .mk-add{align-self:flex-start;margin-top:4px}
 #hBk .bk-foot{margin:2px 0 0;font-size:11px;color:var(--mut,#9aa3b2);line-height:1.35}
 #hBk.bk-private .bk-bal,#hBk.bk-private #hBkTotal{letter-spacing:.08em}
 .bank-last4-row{display:flex;align-items:center;gap:8px}
 .bank-last4-row input{flex:1;min-width:0}
-#bkLast4{font-size:16px!important;color:#f4f6fb!important;background:#0b1020!important;border:1px solid rgba(92,225,230,.45)!important;caret-color:#05d9e8;letter-spacing:.2em;font-variant-numeric:tabular-nums}
-#bkLast4::placeholder{color:#7f8aa3!important;opacity:1;letter-spacing:normal}
+#bkLast4,#bkAcctName{font-size:16px!important;color:#f4f6fb!important;background:#0b1020!important;border:1px solid rgba(92,225,230,.45)!important;caret-color:#05d9e8}
+#bkLast4{letter-spacing:.2em;font-variant-numeric:tabular-nums}
+#bkLast4::placeholder,#bkAcctName::placeholder{color:#7f8aa3!important;opacity:1;letter-spacing:normal}
 .bank-last4-note{font-size:11px;color:var(--mut,#9aa3b2);margin:4px 0 0}
 /* Markets home clarity */
 .h-mk .mk-sec{font:700 10px/1 "Rajdhani",var(--mono);letter-spacing:.14em;color:var(--cyan);margin:2px 0 0;opacity:.9}
 .h-mk .mk-row{display:flex;align-items:center;gap:8px}
 .h-mk .hmk-total{font-size:26px;font-weight:900;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
 @media (max-width:360px){
-  #hBk .bk-tile{min-width:148px;padding:10px}
   #hBk .hmk-total{font-size:24px}
-  #hBk .bk-tile .bk-bal{font-size:18px}
+  #hBk .bk-bal{font-size:18px}
+  #hBk .bk-card{padding:10px}
 }
 @media (min-width:768px){
   #mkTicker.mk-ticker,#hBk.h-bk{width:100%}
-  #hBk .bk-tile{min-width:180px}
 }
+
+
+/* ===== v4.9.7: live traffic raster (TomTom via zapwise proxy) ===== */
+.map-tiles{z-index:0}
+.map-traffic{
+  position:absolute;inset:0;z-index:1;pointer-events:none;
+  opacity:.8;overflow:hidden;
+}
+.map-traffic[hidden]{display:none!important}
+.map-traffic img.map-traf-tile{
+  position:absolute;left:0;top:0;width:256px;height:256px;
+  opacity:0;pointer-events:none;user-select:none;-webkit-user-drag:none;
+  image-rendering:auto;will-change:transform,opacity;
+  transition:opacity .18s ease;
+}
+.map-traffic img.map-traf-tile.on{opacity:1}
+.map-markers{position:absolute;inset:0;z-index:2;pointer-events:none}
+.map-traf-ui{
+  position:absolute;left:8px;top:8px;z-index:6;
+  display:flex;flex-direction:column;align-items:flex-start;gap:4px;
+  pointer-events:none;
+}
+.map-traf-chip{
+  pointer-events:auto;min-height:28px;padding:0 10px;border-radius:999px;
+  border:1px solid rgba(5,217,232,.4);background:rgba(7,8,20,.82);
+  color:var(--muted,#9aa3b2);font:800 10px/1 "Rajdhani",var(--mono);
+  letter-spacing:.12em;cursor:pointer;-webkit-tap-highlight-color:transparent;
+}
+.map-traf-chip.on{color:#05d9e8;border-color:rgba(5,217,232,.7);box-shadow:0 0 0 1px rgba(5,217,232,.2)}
+.map-traf-chip:active{transform:scale(.97)}
+.map-traf-leg{
+  display:flex;gap:6px;padding:3px 6px;border-radius:8px;
+  background:rgba(7,8,20,.72);border:1px solid rgba(255,255,255,.1);
+  font-size:9px;font-weight:700;letter-spacing:.04em;color:rgba(244,239,228,.75);
+}
+.map-traf-leg .tl{display:inline-flex;align-items:center;gap:3px}
+.map-traf-leg .tl i{width:8px;height:8px;border-radius:2px;display:inline-block}
+.map-traf-leg .tl.g i{background:#2ecc71}
+.map-traf-leg .tl.y i{background:#f1c40f}
+.map-traf-leg .tl.r i{background:#e74c3c}
+.map-traf-ui.is-off .map-traf-leg{display:none}
+.map-attr{position:absolute;left:8px;bottom:8px;z-index:3;display:flex;gap:6px;flex-wrap:wrap;
+  font-size:9px;background:rgba(7,8,20,.55);padding:2px 6px;border-radius:6px}
+.map-attr a{color:rgba(244,239,228,.55);text-decoration:none}
+.map-attr a:hover{color:rgba(244,239,228,.85)}
+.h-map.map-fs .map-traf-ui{z-index:12;top:max(8px,env(safe-area-inset-top))}
+
+/* ===== v4.9.7: soft hologram sweep on every card (Motion + reduced-motion safe) ===== */
+.card-holo{display:none}
+html.motion-on .card.br,
+html.motion-on .places-row.card,
+html.motion-on .mk-ticker.card{
+  position:relative;
+  overflow:hidden;
+  contain:paint;
+  isolation:isolate;
+}
+html.motion-on .card-holo{
+  display:block;position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:linear-gradient(135deg,rgba(92,225,230,.07),transparent 45%,rgba(255,42,163,.045));
+  overflow:hidden;contain:paint;
+}
+html.motion-on .card-holo::after{
+  content:"";position:absolute;inset:-25% -55%;
+  background:linear-gradient(105deg,transparent 42%,rgba(92,225,230,.12) 50%,rgba(255,255,255,.06) 52%,transparent 60%);
+  animation:hcSweep 8.8s linear infinite;
+  will-change:transform;pointer-events:none;
+}
+@media (prefers-reduced-motion:reduce){
+  .card-holo,.card-holo::after{animation:none!important;opacity:0!important;display:none!important}
+}
+
+html.motion-on #hBk.h-bk::after{z-index:-1}
+html.motion-on #hBk > .card-holo{z-index:0}
+/* weather canvas stays above soft tint */
+html.motion-on .h-wx > .card-holo{z-index:0}
+html.motion-on .h-wx .fx{z-index:0}
+html.motion-on .h-wx .hw-in{z-index:1;position:relative}
+

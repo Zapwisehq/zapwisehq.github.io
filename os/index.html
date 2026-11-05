@@ -7,7 +7,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="description" content="ZAPWISE//OS: calm glass HUD — clock, weather, map, markets, focus, apps.">
 <meta name="theme-color" content="#070814">
-<meta name="zapos-version" content="4.9.6">
+<meta name="zapos-version" content="4.9.7">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="/os/manifest.webmanifest">
@@ -26,7 +26,7 @@
 <link rel="apple-touch-startup-image" media="(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/os/splash/splash-1206x2622.png">
 <link rel="apple-touch-startup-image" media="(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/os/splash/splash-1320x2868.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/os/icon-192.png">
-<link rel="stylesheet" href="/os/app.css?v=4.9.6">
+<link rel="stylesheet" href="/os/app.css?v=4.9.7">
 <style>
 @font-face{font-family:"Rajdhani";font-style:normal;font-weight:600;font-display:swap;src:url("/os/fonts/Rajdhani-SemiBold.woff2") format("woff2"),url("/os/fonts/Rajdhani-SemiBold.ttf") format("truetype")}
 @font-face{font-family:"Rajdhani";font-style:normal;font-weight:700;font-display:swap;src:url("/os/fonts/Rajdhani-Bold.woff2") format("woff2"),url("/os/fonts/Rajdhani-Bold.ttf") format("truetype")}
@@ -45,7 +45,7 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
 <div id="app">
 
  <header class="top sticky" id="top">
-  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver" data-app-ver>v4.9.6</span></div>
+  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver" data-app-ver>v4.9.7</span></div>
   <div class="top-r">
    <span class="sync" id="hSync"><i aria-hidden="true"></i>LIVE</span>
    <span class="hud-chip gps" id="hGpsLock" data-lock="0" hidden><i aria-hidden="true"></i>GPS —</span>
@@ -158,6 +158,7 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
     <div class="map-gl" id="mapGl" hidden aria-hidden="true"></div>
     <div class="map-stage" id="mapStage">
      <div class="map-tiles" id="mapTiles"></div>
+     <div class="map-traffic" id="mapTraffic" aria-hidden="true" hidden></div>
      <div class="map-markers" id="mapMarkers" aria-hidden="true">
       <i class="map-acc" aria-hidden="true"></i>
       <i class="map-radar" aria-hidden="true"></i>
@@ -167,17 +168,28 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
     </div>
     <i class="map-shade" aria-hidden="true"></i>
     <span class="map-msg" id="mapMsg">LOCATING…</span>
+    <div class="map-traf-ui" id="mapTrafUi">
+     <button type="button" class="map-traf-chip on" id="mapTrafChip" aria-pressed="true" aria-label="Toggle live traffic" title="Live traffic">TRAFFIC</button>
+     <div class="map-traf-leg" id="mapTrafLeg" aria-hidden="false">
+      <span class="tl g" title="Clear"><i></i>clear</span>
+      <span class="tl y" title="Slow"><i></i>slow</span>
+      <span class="tl r" title="Jammed"><i></i>jammed</span>
+     </div>
+    </div>
     <div class="map-tools" aria-hidden="false">
      <button type="button" class="map-tool" id="mapIn" aria-label="Zoom in">+</button>
      <button type="button" class="map-tool" id="mapOut" aria-label="Zoom out">−</button>
      <button type="button" class="map-tool map-rec" id="mapRec" aria-label="Recenter on me">◎</button>
     </div>
-    <a class="map-attr" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap</a>
+    <div class="map-attr" id="mapAttr">
+     <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap</a>
+     <a href="https://www.tomtom.com" target="_blank" rel="noopener">© TomTom</a>
+    </div>
    </div>
   </div>
   <div class="places-row card br" id="placesRow">
    <div class="places-h"><b>PLACES</b><button type="button" class="chip" id="placeAdd" aria-label="Add a saved place">＋ ADD</button></div>
-   <small class="places-note">Tap for directions · hold to edit · drive times are estimates (no live traffic)</small>
+   <small class="places-note">Tap for directions · hold to edit · Traffic colors live from TomTom; ETA is an estimate.</small>
    <div class="places-scroller" id="placesList" role="list"></div>
   </div>
 
@@ -188,12 +200,12 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
   <div class="card br h-bk" id="hBk" role="region" aria-label="Banks">
    <div class="mk-h">BANK<span class="mk-t" id="hBkT"></span><button type="button" class="bk-eye" id="hBkEye" aria-label="Hide balances and last 4" aria-pressed="false" title="Privacy: hide balances and last 4">👁</button></div>
    <div class="bk-hero" id="hBkPort">
-    <b class="hmk-total" id="hBkTotal">—</b>
+    <b class="hmk-total" id="hBkTotal">$0.00</b>
     <span class="hmk-day" id="hBkSub">Balances you type · this phone only</span>
    </div>
    <div class="bk-grid" id="hBkGrid" role="list"></div>
    <button type="button" class="mk-add" id="hBkAdd" aria-label="Add bank">＋ Add Bank</button>
-   <p class="note bk-foot">Tap a bank to open it · hold or Edit to change · eye hides balances + last 4 · only last 4 digits, never full numbers</p>
+   <p class="note bk-foot">Tap a bank to open it · ✎ to edit · eye hides balances + last 4 · only last 4 digits, never full numbers</p>
   </div>
 
   <div class="row2">
@@ -326,8 +338,8 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/os/catalog.js?v=4.9.6"></script>
-<script src="/os/sky.js?v=4.9.6"></script>
-<script src="/os/app.min.js?v=4.9.6"></script>
+<script src="/os/catalog.js?v=4.9.7"></script>
+<script src="/os/sky.js?v=4.9.7"></script>
+<script src="/os/app.min.js?v=4.9.7"></script>
 </body>
 </html>
