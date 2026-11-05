@@ -1,5 +1,6 @@
-/* ZAPWISE//OS web app v3.6.1 (Nov 5, 2026). Concept layout + live map. Static, no build step, no API keys.
+/* ZAPWISE//OS web app v3.7.0 (Nov 5, 2026). Concept layout + live map. Static, no build step, no API keys.
    Data: Open-Meteo (weather + city search), api-bdc.io (city name for weather), CoinGecko (crypto + PAX Gold),
+   mempool.space (BTC balance), ethereum.publicnode.com (ETH balance), solana.publicnode.com (SOL balance),
    OSM standard tiles (keyless, CSS dark filter) + Nominatim reverse geocoding (road + city, cached, re-queried only after moving > 40 m).
 
    SECTIONS
@@ -17,7 +18,7 @@
    Store.applyRemote below. */
 (function () {
 "use strict";
-var VERSION = "3.6.1";
+var VERSION = "3.7.0";
 var APP_VERSION = VERSION;
 var STATUS_MSGS = ["> SHORTCUTS ARMED", "> NET SECURE", "> AI LINK STABLE", "> SIGNAL CLEAN", "> APPS READY"];
 var FOCUS_MS = 25 * 60000;
@@ -31,8 +32,8 @@ function clone(o) { return o == null ? o : JSON.parse(JSON.stringify(o)); }
 // ========== 2. STATE: one versioned object + one save/load layer ==========
 var Store = (function () {
   var STATE_KEY = "zapos.state", DEVICE_KEY = "zapos.device", VER = 1;
-  var PREF_KEYS = ["settings", "theme", "apps", "coins", "loc", "favs", "places", "holdings", "broker"];                     // shared state (sync-ready)
-  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss", "mediaKey", "skipBoot", "recentPins", "wxDay", "wxMode"]; // this device only
+  var PREF_KEYS = ["settings", "theme", "apps", "coins", "loc", "favs", "places", "holdings", "broker", "wallets"];                     // shared state (sync-ready)
+  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss", "mediaKey", "skipBoot", "recentPins", "wxDay", "wxMode", "portHist"]; // this device only
   function read(k) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
   function write(k, v) { if (dead) return false; try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
   var state = read(STATE_KEY), dev = read(DEVICE_KEY), subs = [], uiT = null, dead = false; // dead: after a reset, write nothing more
@@ -993,6 +994,12 @@ function getJSON(url, ms) {
   var ctl = window.AbortController ? new AbortController() : null, to = setTimeout(function () { ctl && ctl.abort(); }, ms || 12000);
   return fetch(url, ctl ? { signal: ctl.signal } : {}).then(function (r) { clearTimeout(to); if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); });
 }
+function postJSON(url, body, ms) {
+  var ctl = window.AbortController ? new AbortController() : null, to = setTimeout(function () { ctl && ctl.abort(); }, ms || 12000);
+  var opts = { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) };
+  if (ctl) opts.signal = ctl.signal;
+  return fetch(url, opts).then(function (r) { clearTimeout(to); if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); });
+}
 function getPos() {
   return new Promise(function (res, rej) {
     if (!navigator.geolocation) return rej(new Error("no geo"));
@@ -1109,15 +1116,16 @@ function money(n) {
   return "$" + n.toPrecision(3);
 }
 function refreshMarkets() {
-  var ids = {};
+  var ids = { bitcoin: 1, ethereum: 1, solana: 1 }; // always keep native wallet price feeds warm
   COINS.forEach(function (c) { if (c.id) ids[c.id] = 1; });
   loadHoldings().forEach(function (h) { if (h.kind !== "stock" && h.id) ids[h.id] = 1; });
+  QUICK_PICKS.forEach(function (c) { if (c.id) ids[c.id] = 1; });
   var idList = Object.keys(ids);
-  if (!idList.length) { renderMarkets(); return; }
+  if (!idList.length) { renderMarkets(); try { refreshWallets(false); } catch (e) {} return; }
   getJSON("https://api.coingecko.com/api/v3/simple/price?ids=" + encodeURIComponent(idList.join(",")) + "&vs_currencies=usd&include_24hr_change=true")
     .then(function (j) { MK = { at: Date.now(), d: Object.assign({}, MK && MK.d, j) }; Store.setLocal("mk", MK); mkErr = false; })
     .catch(function () { mkErr = true; })
-    .then(renderMarkets);
+    .then(function () { renderMarkets(); try { refreshWallets(false); } catch (e) {} });
 }
 function chHTML(ch) { if (ch == null || isNaN(ch)) return '<span class="dim">--</span>'; return '<span class="' + (ch >= 0 ? "up" : "dn") + '">' + (ch >= 0 ? "▲" : "▼") + Math.abs(ch).toFixed(2) + "%</span>"; }
 function sparkSVG(ch, seed) {
@@ -1149,6 +1157,19 @@ function holdingChange(h) {
   var q = MK && MK.d && MK.d[h.id];
   return q ? q.usd_24h_change : null;
 }
+var QUICK_PICKS = [
+  { id: "bitcoin", sym: "BTC", name: "Bitcoin", kind: "crypto" },
+  { id: "ethereum", sym: "ETH", name: "Ethereum", kind: "crypto" },
+  { id: "solana", sym: "SOL", name: "Solana", kind: "crypto" },
+  { id: "dogecoin", sym: "DOGE", name: "Dogecoin", kind: "crypto" },
+  { id: "ripple", sym: "XRP", name: "XRP", kind: "crypto" },
+  { id: "pax-gold", sym: "GOLD", name: "Gold (PAX)", kind: "gold" }
+];
+var _dispTotal = null, _animRaf = 0, _lastTickDir = 0;
+function signedMoney(n) {
+  if (n == null || isNaN(n)) return "—";
+  return (n >= 0 ? "+" : "-") + money(Math.abs(n));
+}
 function portfolioStats() {
   var list = loadHoldings(), total = 0, cost = 0, day = 0, priced = 0;
   list.forEach(function (h) {
@@ -1161,7 +1182,46 @@ function portfolioStats() {
     var ch = holdingChange(h);
     if (ch != null && !isNaN(ch)) day += val * (ch / (100 + ch)); // approx day $ from %
   });
+  // include live wallet USD in the big total / day move
+  loadWallets().forEach(function (w) {
+    var usd = walletUsd(w);
+    if (usd == null || isNaN(usd)) return;
+    total += usd; priced++;
+    var ch = walletChange(w);
+    if (ch != null && !isNaN(ch)) day += usd * (ch / (100 + ch));
+  });
   return { total: total, cost: cost, gl: cost > 0 ? total - cost : null, day: day, n: list.length, priced: priced };
+}
+function pushPortHist(total) {
+  var h = Store.getLocal("portHist", null);
+  if (!Array.isArray(h)) h = [];
+  var now = Date.now(), last = h.length ? h[h.length - 1] : null;
+  if (last && now - last.t < 8000) last.v = total;
+  else h.push({ t: now, v: total });
+  if (h.length > 48) h = h.slice(-48);
+  Store.setLocal("portHist", h);
+  return h;
+}
+function animateHoldTotal(to) {
+  var tv = $("#holdTotalV"); if (!tv) return;
+  if (_dispTotal == null || isNaN(_dispTotal)) { _dispTotal = to; tv.textContent = money(to); return; }
+  var prev = _dispTotal;
+  var target = to;
+  if (_animRaf) cancelAnimationFrame(_animRaf);
+  function step() {
+    var d = target - _dispTotal;
+    if (Math.abs(d) < 0.005 + Math.abs(target) * 0.00001) {
+      _dispTotal = target; _animRaf = 0; tv.textContent = money(target);
+      tv.classList.remove("tick-up", "tick-dn");
+      return;
+    }
+    _dispTotal += d * 0.22;
+    tv.textContent = money(_dispTotal);
+    _animRaf = requestAnimationFrame(step);
+  }
+  if (target > prev + 0.01) { tv.classList.add("tick-up"); tv.classList.remove("tick-dn"); }
+  else if (target < prev - 0.01) { tv.classList.add("tick-dn"); tv.classList.remove("tick-up"); }
+  _animRaf = requestAnimationFrame(step);
 }
 function drawHoldChart(cv, stats) {
   if (!cv) return;
@@ -1170,15 +1230,35 @@ function drawHoldChart(cv, stats) {
   cv.width = W * dpr; cv.height = H * dpr;
   var c = cv.getContext("2d"); c.setTransform(dpr, 0, 0, dpr, 0, 0);
   c.clearRect(0, 0, W, H);
-  var up = !(stats.gl < 0);
-  var col = up ? "#3ddc97" : "#ff5c7a";
-  var pts = [], n = 24, base = H * 0.55, amp = H * 0.28;
-  var seed = Math.round((stats.total || 1) % 97);
-  for (var i = 0; i < n; i++) {
-    var wave = Math.sin(i / (n - 1) * Math.PI * 1.2 + seed * 0.1) * amp * (up ? 1 : -1);
-    var y = base - wave * (i / (n - 1));
-    pts.push([2 + i / (n - 1) * (W - 4), Math.max(4, Math.min(H - 4, y))]);
+  var hist = Store.getLocal("portHist", null);
+  var vals = Array.isArray(hist) ? hist.map(function (x) { return +x.v; }).filter(function (v) { return !isNaN(v); }) : [];
+  if (vals.length < 2) {
+    // soft placeholder from current total direction
+    var up0 = !(stats.day < 0);
+    var col0 = up0 ? "#3ddc97" : "#ff5c7a";
+    var pts0 = [], n0 = 24, base0 = H * 0.55, amp0 = H * 0.22;
+    for (var i0 = 0; i0 < n0; i0++) {
+      var wave0 = Math.sin(i0 / (n0 - 1) * Math.PI * 1.15) * amp0 * (up0 ? 1 : -1);
+      pts0.push([2 + i0 / (n0 - 1) * (W - 4), Math.max(4, Math.min(H - 4, base0 - wave0 * (i0 / (n0 - 1))))]);
+    }
+    c.beginPath(); pts0.forEach(function (p, i) { if (i) c.lineTo(p[0], p[1]); else c.moveTo(p[0], p[1]); });
+    c.lineTo(pts0[pts0.length - 1][0], H); c.lineTo(pts0[0][0], H); c.closePath();
+    var g0 = c.createLinearGradient(0, 0, 0, H);
+    g0.addColorStop(0, up0 ? "rgba(61,220,151,.28)" : "rgba(255,92,122,.28)"); g0.addColorStop(1, "rgba(0,0,0,0)");
+    c.fillStyle = g0; c.fill();
+    c.beginPath(); pts0.forEach(function (p, i) { if (i) c.lineTo(p[0], p[1]); else c.moveTo(p[0], p[1]); });
+    c.strokeStyle = col0; c.lineWidth = 2; c.stroke();
+    return;
   }
+  var min = Math.min.apply(null, vals), max = Math.max.apply(null, vals);
+  if (max === min) { max = min + 1; min = min - 1; }
+  var up = vals[vals.length - 1] >= vals[0];
+  var col = up ? "#3ddc97" : "#ff5c7a";
+  var pts = vals.map(function (v, i) {
+    var x = 2 + i / (vals.length - 1) * (W - 4);
+    var y = H - 4 - ((v - min) / (max - min)) * (H - 8);
+    return [x, y];
+  });
   c.beginPath();
   pts.forEach(function (p, i) { if (i) c.lineTo(p[0], p[1]); else c.moveTo(p[0], p[1]); });
   c.lineTo(pts[pts.length - 1][0], H); c.lineTo(pts[0][0], H); c.closePath();
@@ -1190,24 +1270,60 @@ function drawHoldChart(cv, stats) {
   pts.forEach(function (p, i) { if (i) c.lineTo(p[0], p[1]); else c.moveTo(p[0], p[1]); });
   c.strokeStyle = col; c.lineWidth = 2; c.stroke();
 }
+function renderQuickPicks() {
+  var host = $("#qaPicks"); if (!host) return;
+  var have = {};
+  loadHoldings().forEach(function (h) { if (h.id) have[h.id] = 1; if (h.sym) have[String(h.sym).toUpperCase()] = 1; });
+  host.innerHTML = QUICK_PICKS.map(function (p) {
+    var on = !!(have[p.id] || have[p.sym]);
+    return '<button type="button" class="chip' + (on ? " on" : "") + '" data-qa="' + esc(p.id) + '"' + (on ? " disabled" : "") + ">" + esc(p.sym) + (on ? " ✓" : " ＋") + "</button>";
+  }).join("");
+}
+function quickAddHolding(pick) {
+  if (!pick) return;
+  sheet("＋ ADD " + pick.sym,
+    '<p class="note" style="margin-bottom:8px">Live price via CoinGecko. Enter how much you hold.</p>' +
+    '<label class="field">QUANTITY<input id="qaQty" type="number" step="any" min="0" value="1" placeholder="e.g. 0.5"></label>' +
+    '<label class="field">COST BASIS / UNIT (OPTIONAL)<input id="qaCost" type="number" step="any" min="0" placeholder="What you paid"></label>' +
+    '<button class="btn" id="qaSave" style="margin-top:12px">ADD ' + esc(pick.sym) + "</button>",
+    function (b) {
+      setTimeout(function () { var i = b.querySelector("#qaQty"); i && i.focus && i.focus({ preventScroll: true }); }, 40);
+      b.querySelector("#qaSave").addEventListener("click", function () {
+        var qty = parseFloat(b.querySelector("#qaQty").value);
+        var costRaw = b.querySelector("#qaCost").value;
+        var cost = costRaw === "" ? null : parseFloat(costRaw);
+        if (!(qty > 0)) { toast("Enter a quantity"); return; }
+        var list = loadHoldings();
+        var existing = -1;
+        list.forEach(function (h, i) { if (h.id === pick.id) existing = i; });
+        var row = { id: pick.id, sym: pick.sym, name: pick.name, kind: pick.kind, qty: qty, cost: cost };
+        if (existing >= 0) list[existing] = row; else {
+          if (list.length >= 20) { toast("Up to 20 holdings"); return; }
+          list.push(row);
+        }
+        saveHoldings(list); closeSheet(); renderMarkets(); refreshMarkets(); toast(pick.sym + " added");
+      });
+    });
+}
 function renderHoldings() {
   var list = loadHoldings(), stats = portfolioStats();
-  var tv = $("#holdTotalV"); if (tv) tv.textContent = money(stats.total);
+  pushPortHist(stats.total);
+  animateHoldTotal(stats.total);
+  var dv = $("#holdDayV");
+  if (dv) {
+    if (!stats.priced) { dv.textContent = "—"; dv.className = ""; }
+    else { dv.textContent = signedMoney(stats.day); dv.className = stats.day >= 0 ? "up" : "dn"; }
+  }
   var gv = $("#holdGlV");
   if (gv) {
-    if (stats.gl == null) gv.textContent = "—";
-    else {
-      var sign = stats.gl >= 0 ? "+" : "";
-      gv.textContent = sign + money(Math.abs(stats.gl)).replace("$", (stats.gl < 0 ? "-$" : "$"));
-      // money() always prefixes $ — fix:
-      gv.textContent = (stats.gl >= 0 ? "+" : "-") + money(Math.abs(stats.gl));
-      gv.className = stats.gl >= 0 ? "up" : "dn";
-    }
+    if (stats.gl == null) { gv.textContent = "—"; gv.className = ""; }
+    else { gv.textContent = signedMoney(stats.gl); gv.className = stats.gl >= 0 ? "up" : "dn"; }
   }
   drawHoldChart($("#holdChart"), stats);
+  renderQuickPicks();
   var host = $("#holdList");
   if (host) {
-    if (!list.length) host.innerHTML = '<p class="offline">No holdings yet. Tap ＋ HOLDING to track crypto, gold, or a stock with a manual price.</p>';
+    if (!list.length) host.innerHTML = '<p class="offline">No holdings yet. One-tap a pick above, or ＋ HOLDING for any ticker.</p>';
     else host.innerHTML = list.map(function (h, i) {
       var px = holdingPrice(h), ch = holdingChange(h), qty = +h.qty || 0;
       var val = px != null ? px * qty : null;
@@ -1218,13 +1334,15 @@ function renderHoldings() {
         '<div class="acts"><button type="button" class="chip" data-hold-edit="' + i + '">Edit</button><button type="button" class="chip" data-hold-del="' + i + '">Remove</button></div></div>';
     }).join("");
   }
+  try { renderWallets(); } catch (e) {}
   var mini = $("#hMkPort");
   if (mini) {
-    if (!list.length) { mini.hidden = true; mini.innerHTML = ""; }
+    var hasAnything = list.length || loadWallets().length;
+    if (!hasAnything) { mini.hidden = true; mini.innerHTML = ""; }
     else {
       mini.hidden = false;
-      var gl = stats.gl == null ? "" : (' · <span class="' + (stats.gl >= 0 ? "up" : "dn") + '">' + (stats.gl >= 0 ? "+" : "-") + money(Math.abs(stats.gl)) + "</span>");
-      mini.innerHTML = "Portfolio <b>" + money(stats.total) + "</b>" + gl;
+      var day = stats.priced ? (' · <span class="' + (stats.day >= 0 ? "up" : "dn") + '">' + signedMoney(stats.day) + "</span>") : "";
+      mini.innerHTML = "Live <b>" + money(stats.total) + "</b>" + day;
     }
   }
 }
@@ -1635,7 +1753,16 @@ $("#xpCity").addEventListener("click", function () { openCity(); });
 $("#xpMkEdit").addEventListener("click", function () { openEditCoins(); });
 var _xpHoldAdd = $("#xpHoldAdd"); if (_xpHoldAdd) _xpHoldAdd.addEventListener("click", function () { openAddHolding(); });
 var _xpBroker = $("#xpBroker"); if (_xpBroker) _xpBroker.addEventListener("click", function () { openBrokerPicker(); });
+var _xpRh = $("#xpRobinhood"); if (_xpRh) _xpRh.addEventListener("click", function () { openRobinhood(); });
+var _xpWal = $("#xpWalAdd"); if (_xpWal) _xpWal.addEventListener("click", function () { openAddWallet(); });
 document.addEventListener("click", function (e) {
+  var qa = e.target.closest("[data-qa]"); if (qa) {
+    e.preventDefault();
+    var id = qa.getAttribute("data-qa");
+    var pick = QUICK_PICKS.filter(function (p) { return p.id === id; })[0];
+    if (pick) quickAddHolding(pick);
+    return;
+  }
   var ed = e.target.closest("[data-hold-edit]"); if (ed) { e.preventDefault(); openEditHolding(+ed.getAttribute("data-hold-edit")); return; }
   var del = e.target.closest("[data-hold-del]"); if (del) {
     e.preventDefault();
@@ -1643,6 +1770,15 @@ document.addEventListener("click", function (e) {
     if (!list[i]) return;
     if (!confirm("Remove " + list[i].sym + " from holdings?")) return;
     list.splice(i, 1); saveHoldings(list); renderMarkets(); toast("Removed");
+    return;
+  }
+  var we = e.target.closest("[data-wal-edit]"); if (we) { e.preventDefault(); openAddWallet(+we.getAttribute("data-wal-edit")); return; }
+  var wd = e.target.closest("[data-wal-del]"); if (wd) {
+    e.preventDefault();
+    var wl = loadWallets(), wi = +wd.getAttribute("data-wal-del");
+    if (!wl[wi]) return;
+    if (!confirm("Stop tracking " + shortAddr(wl[wi].address) + "?")) return;
+    wl.splice(wi, 1); saveWallets(wl); renderMarkets(); toast("Wallet removed");
   }
 });
 
@@ -1889,6 +2025,157 @@ function openCity() {
     });
 }
 
+
+// ----- wallets (read-only public addresses) -----
+function loadWallets() {
+  var w = Store.get("wallets", null);
+  return Array.isArray(w) ? w : [];
+}
+function saveWallets(list) { Store.set("wallets", list); }
+function shortAddr(a) {
+  a = String(a || "");
+  if (a.length <= 14) return a;
+  return a.slice(0, 6) + "…" + a.slice(-4);
+}
+function detectChain(addr) {
+  addr = String(addr || "").trim();
+  if (/^0x[a-fA-F0-9]{40}$/.test(addr)) return "eth";
+  if (/^(bc1|[13])[a-zA-HJ-NP-Z0-9]{25,62}$/i.test(addr)) return "btc";
+  // Solana base58 (no 0 O I l); exclude obvious BTC bech32 already handled
+  if (/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(addr) && !/^bc1/i.test(addr)) return "sol";
+  return null;
+}
+function walletCoinId(chain) {
+  return chain === "btc" ? "bitcoin" : chain === "eth" ? "ethereum" : chain === "sol" ? "solana" : "";
+}
+function walletUsd(w) {
+  if (!w || w.bal == null || isNaN(+w.bal)) return null;
+  var id = walletCoinId(w.chain);
+  var q = MK && MK.d && MK.d[id];
+  if (!q || q.usd == null) return null;
+  return (+w.bal) * (+q.usd);
+}
+function walletChange(w) {
+  var id = walletCoinId(w && w.chain);
+  var q = MK && MK.d && MK.d[id];
+  return q ? q.usd_24h_change : null;
+}
+function fetchBtcBalance(addr) {
+  return getJSON("https://mempool.space/api/address/" + encodeURIComponent(addr), 12000).then(function (j) {
+    var cs = j && j.chain_stats || {};
+    var sat = (cs.funded_txo_sum || 0) - (cs.spent_txo_sum || 0);
+    return sat / 1e8;
+  });
+}
+function fetchEthBalance(addr) {
+  return postJSON("https://ethereum.publicnode.com", {
+    jsonrpc: "2.0", id: 1, method: "eth_getBalance", params: [addr, "latest"]
+  }, 12000).then(function (j) {
+    if (!j || j.error || j.result == null) throw new Error((j && j.error && j.error.message) || "ETH RPC");
+    // BigInt-safe-ish: parse hex as float via string math for UI (balances fit JS number for typical wallets)
+    var hex = String(j.result);
+    if (typeof BigInt !== "undefined") {
+      try { return Number(BigInt(hex)) / 1e18; } catch (e) {}
+    }
+    var wei = parseInt(hex, 16);
+    if (!isFinite(wei)) throw new Error("ETH parse");
+    return wei / 1e18;
+  });
+}
+function fetchSolBalance(addr) {
+  return postJSON("https://solana.publicnode.com", {
+    jsonrpc: "2.0", id: 1, method: "getBalance", params: [addr]
+  }, 12000).then(function (j) {
+    if (!j || j.error || !j.result) throw new Error((j && j.error && j.error.message) || "SOL RPC");
+    return (j.result.value || 0) / 1e9;
+  });
+}
+function fetchWalletBalance(w) {
+  if (w.chain === "btc") return fetchBtcBalance(w.address);
+  if (w.chain === "eth") return fetchEthBalance(w.address);
+  if (w.chain === "sol") return fetchSolBalance(w.address);
+  return Promise.reject(new Error("unknown chain"));
+}
+var _walBusy = false;
+function refreshWallets(force) {
+  var list = loadWallets();
+  if (!list.length) { renderWallets(); return Promise.resolve(); }
+  if (_walBusy && !force) return Promise.resolve();
+  _walBusy = true;
+  return Promise.all(list.map(function (w, i) {
+    return fetchWalletBalance(w).then(function (bal) {
+      list[i] = Object.assign({}, w, { bal: bal, balAt: Date.now(), err: null });
+    }).catch(function (err) {
+      list[i] = Object.assign({}, w, { err: (err && err.message) || "offline" });
+    });
+  })).then(function () {
+    saveWallets(list); _walBusy = false; renderWallets(); try { renderHoldings(); } catch (e) {}
+  }).catch(function () { _walBusy = false; });
+}
+function renderWallets() {
+  var host = $("#walList"); if (!host) return;
+  var list = loadWallets();
+  if (!list.length) {
+    host.innerHTML = '<p class="offline">No wallets yet. Tap ＋ ADDRESS and paste a public BTC, ETH, or SOL address.</p>';
+    return;
+  }
+  host.innerHTML = list.map(function (w, i) {
+    var usd = walletUsd(w), ch = walletChange(w);
+    var unit = w.chain === "btc" ? "BTC" : w.chain === "eth" ? "ETH" : "SOL";
+    var balTxt = w.bal != null && !isNaN(+w.bal) ? ((+w.bal >= 1 ? (+w.bal).toLocaleString("en-US", { maximumFractionDigits: 6 }) : (+w.bal).toPrecision(4)) + " " + unit) : (w.err ? "—" : "…");
+    var sub = (w.label || unit) + " · " + shortAddr(w.address) + (w.err ? " · " + w.err : "");
+    return '<div class="wal-row" data-wi="' + i + '"><div><div class="sym">' + esc(unit) + (w.label ? " · " + esc(w.label) : "") + '</div><div class="sub">' + esc(sub) + '</div></div>' +
+      '<div><div class="px">' + (usd != null ? money(usd) : "--") + '</div><div class="ch">' + esc(balTxt) + (ch != null ? " · " + ((ch >= 0 ? "+" : "") + (+ch).toFixed(2) + "%") : "") + '</div></div>' +
+      '<div class="acts"><button type="button" class="chip" data-wal-edit="' + i + '">Edit</button><button type="button" class="chip" data-wal-del="' + i + '">Remove</button></div></div>';
+  }).join("");
+}
+function openAddWallet(editIdx) {
+  var editing = editIdx != null ? loadWallets()[editIdx] : null;
+  sheet(editing ? "✎ EDIT WALLET" : "＋ ADD WALLET",
+    '<p class="note" style="margin-bottom:10px;color:#9ff0c8"><b>Read-only.</b> Never enter your seed phrase or private key. Public address only.</p>' +
+    '<label class="field">PUBLIC ADDRESS<input id="walAddr" maxlength="128" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="bc1… / 0x… / Solana" value="' + esc(editing ? editing.address : "") + '"></label>' +
+    '<label class="field">LABEL (OPTIONAL)<input id="walLabel" maxlength="24" placeholder="e.g. Cold, Hot, Exchange" value="' + esc(editing ? (editing.label || "") : "") + '"></label>' +
+    '<p class="note" id="walDetect">Paste an address — we auto-detect BTC, ETH, or SOL.</p>' +
+    '<button class="btn" id="walSave" style="margin-top:12px">' + (editing ? "SAVE" : "TRACK ADDRESS") + "</button>",
+    function (b) {
+      function updateDetect() {
+        var a = (b.querySelector("#walAddr").value || "").trim();
+        var chain = detectChain(a);
+        var el = b.querySelector("#walDetect");
+        if (!a) el.textContent = "Paste an address — we auto-detect BTC, ETH, or SOL.";
+        else if (!chain) el.textContent = "Couldn't detect chain. Use a BTC (bc1/1/3), ETH (0x…), or SOL address.";
+        else el.textContent = "Detected: " + ({ btc: "Bitcoin", eth: "Ethereum", sol: "Solana" }[chain]) + " · read-only balance.";
+      }
+      b.querySelector("#walAddr").addEventListener("input", updateDetect);
+      updateDetect();
+      setTimeout(function () { var i = b.querySelector("#walAddr"); i && i.focus && i.focus({ preventScroll: true }); }, 40);
+      b.querySelector("#walSave").addEventListener("click", function () {
+        var addr = (b.querySelector("#walAddr").value || "").trim();
+        var label = (b.querySelector("#walLabel").value || "").trim().slice(0, 24);
+        var chain = detectChain(addr);
+        if (!chain) { toast("Need a valid BTC, ETH, or SOL address"); return; }
+        if (chain === "eth") addr = "0x" + addr.slice(2); // keep checksum as typed after 0x
+        var list = loadWallets();
+        var dup = list.some(function (w, i) { return w.address.toLowerCase() === addr.toLowerCase() && i !== editIdx; });
+        if (dup) { toast("That address is already tracked"); return; }
+        var row = { id: editing && editing.id ? editing.id : ("w" + Date.now().toString(36)), chain: chain, address: addr, label: label, bal: editing && editing.bal, balAt: editing && editing.balAt, err: null };
+        if (editIdx != null && list[editIdx]) list[editIdx] = row;
+        else {
+          if (list.length >= 10) { toast("Up to 10 wallets"); return; }
+          list.push(row);
+        }
+        saveWallets(list); closeSheet(); renderWallets(); refreshWallets(true); toast(({ btc: "BTC", eth: "ETH", sol: "SOL" })[chain] + " wallet added");
+      });
+    });
+}
+function openRobinhood() {
+  var b = BROKERS.filter(function (r) { return r.id === "robinhood"; })[0];
+  Store.set("broker", "robinhood");
+  // Manual holdings only — never Gmail / account linking
+  toast("Robinhood opens separately — add RH shares as manual holdings here");
+  openApp({ id: b.id, name: b.name, url: b.url, pkg: b.pkg, web: b.web });
+}
+
 // ----- markets edit -----
 function openEditCoins() {
   sheet("₿ EDIT WATCHLIST",
@@ -1947,7 +2234,7 @@ var BROKERS = [
 ];
 function openBrokerPicker() {
   var cur = Store.get("broker", null) || "";
-  var html = '<p class="note" style="margin-bottom:10px">Opens your broker app (or its site). We never link accounts — holdings stay on this device only.</p>' +
+  var html = '<p class="note" style="margin-bottom:10px">Opens your broker app (or its site). We never link accounts or read email — holdings stay on this device only. For Robinhood, track shares as manual holdings.</p>' +
     BROKERS.map(function (b) {
       var on = cur === b.id ? " on" : "";
       var ic = b.icon ? '<img class="mimg" src="' + esc(b.icon) + '" alt="">' : '<span class="mi" aria-hidden="true">↗</span>';
@@ -2404,7 +2691,10 @@ show(Q.get("tab") || Store.ui().view || "home");
 requestAnimationFrame(restoreScroll); setTimeout(restoreScroll, 400); // again after late content (weather, icons) settles
 refreshWeather(); refreshMarkets(); refreshGPS(); setTimeout(function () { try { refreshPlaceEtas(); } catch (e) {} }, 1200);
 setInterval(function () { if (document.visibilityState === "visible") { refreshWeather(); refreshGPS(); } }, 5 * 60000);
-setInterval(function () { if (document.visibilityState === "visible") refreshMarkets(); }, 2 * 60000);
+setInterval(function () { if (document.visibilityState === "visible") refreshMarkets(); }, 15 * 1000);
+document.addEventListener("visibilitychange", function () {
+  if (document.visibilityState === "visible") { try { refreshMarkets(); } catch (e) {} }
+}); // mkVisRefresh: pause polling when hidden (interval no-ops), kick immediately when shown
 window.addEventListener("online", function () { renderNet(); refreshWeather(true); refreshMarkets(); geocode(); });
 (function registerAndWatchUpdates() {
   var canSW = "serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1");
