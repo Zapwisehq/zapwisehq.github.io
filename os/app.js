@@ -1,7 +1,7 @@
-/* ZAPWISE//OS web app v4.10.0 (Nov 5, 2026). Live TomTom traffic colors on the map (proxy tiles, no client API key). Bank bar under ticker (v4.9.6). Back closes one layer per press. Help tour, marquee ticker, hologram motion, compass cone, map tile cache + backup server, search cache. Source: edit app.js, run os/build.sh → app.min.js. No tabs. Voice only from ZAP AI. */
+/* ZAPWISE//OS web app v4.11.0 (Nov 5, 2026). Premium card holograms (foil/sweep/glow/tilt). Live TomTom traffic. Bank Plaid Worker client. Motion toggle. No tabs. Voice only from ZAP AI. Source: edit app.js → build.sh → app.min.js. */
 (function () {
 "use strict";
-var VERSION = '4.10.0';
+var VERSION = '4.11.0';
 var APP_VERSION = VERSION;
 
 // v4.5: default Lite on coarse/mobile unless user already chose
@@ -2049,8 +2049,8 @@ function renderHomeMarkets(stats, accts) {
   if (port) port.hidden = false;
   if (!hasAcct) {
     if (totalEl) totalEl.textContent = "—";
-    if (dayEl) { dayEl.textContent = "No accounts yet"; dayEl.className = "hmk-day dim"; }
-    if (port && !totalEl) port.innerHTML = '<span class="hmk-day dim">No accounts yet</span>';
+    if (dayEl) { dayEl.textContent = "No accounts yet"; dayEl.className = "hmk-day dim empty-state"; dayEl.setAttribute("role","status"); }
+    if (port && !totalEl) port.innerHTML = '<span class="hmk-day dim empty-state" role="status">No accounts yet</span>';
   } else {
     if (totalEl) totalEl.textContent = money(stats.total);
     else if (port) {
@@ -2275,10 +2275,10 @@ function ensureCardHolos() {
       h = document.createElement("i");
       h.className = "card-holo";
       h.setAttribute("aria-hidden", "true");
-      h.innerHTML = '<i class="card-holo-tint"></i><i class="card-holo-sweep"></i>';
+      h.innerHTML = '<i class="card-holo-foil"></i><i class="card-holo-tint"></i><i class="card-holo-sweep"></i><i class="card-holo-glow"></i>';
       el.insertBefore(h, el.firstChild);
-    } else if (!h.querySelector(".card-holo-sweep")) {
-      h.innerHTML = '<i class="card-holo-tint"></i><i class="card-holo-sweep"></i>';
+    } else if (!h.querySelector(".card-holo-foil") || !h.querySelector(".card-holo-glow") || !h.querySelector(".card-holo-sweep")) {
+      h.innerHTML = '<i class="card-holo-foil"></i><i class="card-holo-tint"></i><i class="card-holo-sweep"></i><i class="card-holo-glow"></i>';
     }
     var delay = (-(i % 11) * 0.55) + "s";
     el.style.setProperty("--holo-delay", delay);
@@ -2289,6 +2289,68 @@ function ensureCardHolos() {
 }
 applyMotion();
 try { var _rmq = matchMedia("(prefers-reduced-motion: reduce)"); if (_rmq.addEventListener) _rmq.addEventListener("change", applyMotion); } catch (e) {}
+
+/* ========== v4.11.0 gentle holo tilt (pointer / orientation; motion-on only) ========== */
+var HOLO_TILT = { on: false, raf: 0, tx: 0, ty: 0, mx: 0, my: 0 };
+function holoTiltWanted() {
+  if (!motionWanted()) return false;
+  try { if (Store.getLocal("tiltCards", null) === false) return false; } catch (e) {}
+  return true;
+}
+function applyHoloTiltFrame() {
+  HOLO_TILT.raf = 0;
+  if (!holoTiltWanted()) return;
+  var nodes = document.querySelectorAll(".card.br.is-live, .panel-group.card.is-live");
+  var tx = HOLO_TILT.tx, ty = HOLO_TILT.ty;
+  Array.prototype.forEach.call(nodes, function (el) {
+    el.classList.add("holo-tilt");
+    el.style.setProperty("--tilt-x", (tx * 0.9).toFixed(2) + "deg");
+    el.style.setProperty("--tilt-y", (ty * 0.9).toFixed(2) + "deg");
+  });
+}
+function queueHoloTilt(nx, ny) {
+  /* nx/ny in -1..1 */
+  HOLO_TILT.tx = Math.max(-4, Math.min(4, -ny * 4));
+  HOLO_TILT.ty = Math.max(-5, Math.min(5, nx * 5));
+  if (!HOLO_TILT.raf) HOLO_TILT.raf = requestAnimationFrame(applyHoloTiltFrame);
+}
+function clearHoloTilt() {
+  HOLO_TILT.tx = 0; HOLO_TILT.ty = 0;
+  if (!HOLO_TILT.raf) HOLO_TILT.raf = requestAnimationFrame(function () {
+    HOLO_TILT.raf = 0;
+    document.querySelectorAll(".holo-tilt").forEach(function (el) {
+      el.style.setProperty("--tilt-x", "0deg");
+      el.style.setProperty("--tilt-y", "0deg");
+    });
+  });
+}
+function bindHoloTilt() {
+  if (HOLO_TILT.on) return; HOLO_TILT.on = true;
+  var last = 0;
+  window.addEventListener("pointermove", function (e) {
+    if (!holoTiltWanted()) return;
+    if (e.pointerType === "touch") return; /* avoid fighting scroll */
+    var now = Date.now(); if (now - last < 32) return; last = now;
+    var w = window.innerWidth || 1, h = window.innerHeight || 1;
+    queueHoloTilt((e.clientX / w) * 2 - 1, (e.clientY / h) * 2 - 1);
+  }, { passive: true });
+  window.addEventListener("pointerleave", function () { if (holoTiltWanted()) clearHoloTilt(); }, { passive: true });
+  window.addEventListener("deviceorientation", function (e) {
+    if (!holoTiltWanted()) return;
+    if (e.beta == null || e.gamma == null) return;
+    var nx = Math.max(-1, Math.min(1, e.gamma / 30));
+    var ny = Math.max(-1, Math.min(1, (e.beta - 45) / 30));
+    queueHoloTilt(nx, ny);
+  }, { passive: true });
+  document.addEventListener("visibilitychange", function () {
+    if (document.hidden) clearHoloTilt();
+  });
+}
+bindHoloTilt();
+try { window.ZAPOS = window.ZAPOS || {}; window.ZAPOS.qa = window.ZAPOS.qa || {}; window.ZAPOS.qa.holo = function () {
+  return { motion: motionWanted(), live: document.querySelectorAll(".card.br.is-live .card-holo-foil").length, foil: !!document.querySelector(".card-holo-foil") };
+}; } catch (eHoloQa) {}
+
 
 /* ========== v4.9.5 compass heading (only real data; iOS needs a tap to allow) ========== */
 var COMPASS = { deg: null, at: 0, on: false, t: 0 };
@@ -7781,7 +7843,7 @@ function showWelcomeOnce() {
 }
 
 try { startCompass(false); } catch (e) {}
-try { window.ZAPOS.startTour = startTour; window.ZAPOS.endTour = endTour; window.ZAPOS.renderBanks = renderBanks; window.ZAPOS.openAddBankPicker = openAddBankPicker; window.ZAPOS.sanitizeLast4 = sanitizeLast4; window.ZAPOS.bankPrivacyOn = bankPrivacyOn; window.ZAPOS.setBankPrivacy = setBankPrivacy; window.ZAPOS.qa.compass = function () { return { c: COMPASS, gps: GPS && GPS.lat, hd: currentHeading() }; }; window.ZAPOS.qa.hist = function () { return { depth: HIST.depth, expect: HIST.expect, layers: overlayLayers(), state: history.state, len: history.length }; }; window.ZAPOS.qa.banks = function () { return { n: loadAccounts().filter(function (a) { return a.kind === "bank"; }).length, privacy: bankPrivacyOn(), total: bankStats().total, last4s: loadAccounts().filter(function (a) { return a.kind === "bank"; }).map(function (a) { return a.last4 || null; }) }; }; } catch (eQ) {}
+try { window.ZAPOS.startTour = startTour; window.ZAPOS.endTour = endTour; window.ZAPOS.renderBanks = renderBanks; window.ZAPOS.openAddBankPicker = openAddBankPicker; window.ZAPOS.sanitizeLast4 = sanitizeLast4; window.ZAPOS.bankPrivacyOn = bankPrivacyOn; window.ZAPOS.setBankPrivacy = setBankPrivacy; window.ZAPOS.qa.compass = function () { return { c: COMPASS, gps: GPS && GPS.lat, hd: currentHeading() }; }; window.ZAPOS.qa.hist = function () { return { depth: HIST.depth, expect: HIST.expect, layers: overlayLayers(), state: history.state, len: history.length }; }; window.ZAPOS.qa.banks = function () { return { n: loadAccounts().filter(function (a) { return a.kind === "bank"; }).length, privacy: bankPrivacyOn(), total: bankStats().total, last4s: loadAccounts().filter(function (a) { return a.kind === "bank"; }).map(function (a) { return a.last4 || null; }) }; }; window.ZAPOS.qa.holo = function () { return { motion: motionWanted(), live: document.querySelectorAll(".card.br.is-live .card-holo-foil").length, foil: !!document.querySelector(".card-holo-foil"), glow: !!document.querySelector(".card-holo-glow") }; }; } catch (eQ) {}
 setTimeout(showWelcomeOnce, 1400);
 if (!Store.getLocal("seenHelp", false)) { var _sa = false; try { _sa = window.navigator.standalone === true || (window.matchMedia && matchMedia("(display-mode: standalone)").matches); } catch (eTip) {} if (!_sa) { Store.setLocal("seenHelp", true); } else { Store.setLocal("seenHelp", true); } }
 })();

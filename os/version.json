@@ -1,6 +1,6 @@
 {
-  "version": "4.10.1",
+  "version": "4.11.0",
   "built": "2026-11-05",
   "channel": "stable",
-  "notes": "v4.10.1: Plaid auto-balance Worker wiring \u2014 /os/link/ noindex page, device token + pair codes, Bank settings (link/pair/unlink), manual fallback kept. Includes v4.10.0 phone layout fix."
+  "notes": "v4.11.0: Premium holograms \u2014 layered iridescent foil, diagonal sweep, edge glow, gentle tilt; visual rhythm/empty-state polish. Keeps v4.10.1 Plaid bank wiring."
 }

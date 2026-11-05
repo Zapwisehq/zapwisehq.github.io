@@ -1743,79 +1743,151 @@ html.motion-on .tour-spot{transition:top .25s ease,left .25s ease,width .25s eas
 #app{padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))!important}
 .os-page{padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))!important}
 
-/* ===== v4.9.8: LIVE hologram — !important to beat STILL MODE animation:none ===== */
+/* ===== v4.11.0: PREMIUM card hologram — foil + sweep + edge glow (transform/opacity/bg-pos only) ===== */
 .card-holo{display:none}
-html.motion-on .card.br{
+html.motion-on .card.br,
+html.motion-on .panel-group.card{
   position:relative;
   overflow:hidden;
   contain:paint;
   isolation:isolate;
+  transform-style:preserve-3d;
+  will-change:transform;
 }
 html.motion-on .card-holo{
   display:block!important;position:absolute;inset:0;z-index:0;pointer-events:none;
-  overflow:hidden;contain:paint;
+  overflow:hidden;contain:paint;border-radius:inherit;
+}
+/* Layered iridescent foil */
+html.motion-on .card-holo .card-holo-foil{
+  position:absolute;inset:-20%;
+  background:
+    conic-gradient(from 210deg at 50% 40%,
+      rgba(5,217,232,.14),
+      rgba(255,42,109,.16),
+      rgba(167,139,250,.12),
+      rgba(5,217,232,.1),
+      rgba(255,42,109,.14),
+      rgba(5,217,232,.14)),
+    linear-gradient(125deg,
+      rgba(5,217,232,.18) 0%, transparent 28%,
+      rgba(255,42,109,.14) 52%, transparent 72%,
+      rgba(167,139,250,.12) 100%);
+  background-size:140% 140%, 240% 240%;
+  background-position:30% 40%, 0% 50%;
+  opacity:.42;
+  mix-blend-mode:screen;
+  pointer-events:none;
 }
 html.motion-on .card-holo .card-holo-tint{
-  position:absolute;inset:-8%;
-  background:linear-gradient(125deg,
-    rgba(92,225,230,.16) 0%, transparent 32%,
-    rgba(255,42,163,.12) 58%, transparent 78%,
-    rgba(92,225,230,.1) 100%);
+  position:absolute;inset:-6%;
+  background:linear-gradient(145deg,
+    rgba(5,217,232,.12) 0%, transparent 34%,
+    rgba(255,42,109,.1) 58%, transparent 80%,
+    rgba(5,217,232,.08) 100%);
   background-size:220% 220%;
   background-position:0% 40%;
-  opacity:.55;
+  opacity:.5;
   pointer-events:none;
 }
 html.motion-on .card-holo .card-holo-sweep{
-  position:absolute;top:-30%;bottom:-30%;left:-40%;width:42%;
-  background:linear-gradient(100deg,
+  position:absolute;top:-35%;bottom:-35%;left:-45%;width:38%;
+  background:linear-gradient(105deg,
     transparent 0%,
-    rgba(92,225,230,.22) 32%,
-    rgba(255,255,255,.14) 48%,
-    rgba(255,42,163,.2) 64%,
+    rgba(5,217,232,.28) 30%,
+    rgba(255,255,255,.18) 48%,
+    rgba(255,42,109,.26) 66%,
     transparent 100%);
   opacity:0;
   pointer-events:none;
-  transform:translate3d(-120%,0,0) skewX(-12deg);
+  transform:translate3d(-130%,0,0) skewX(-14deg);
 }
-/* content above hologram layer */
-html.motion-on .card.br > *:not(.card-holo):not(.fx):not(canvas.fx){position:relative;z-index:1}
-html.motion-on .card.br.is-live > .card-holo .card-holo-tint{
-  animation:holoTintDrift 8.5s ease-in-out infinite !important;
+/* Soft edge glow ring */
+html.motion-on .card-holo .card-holo-glow{
+  position:absolute;inset:0;pointer-events:none;
+  box-shadow:
+    inset 0 0 0 1px rgba(5,217,232,.18),
+    inset 0 0 28px rgba(255,42,109,.08),
+    0 0 18px rgba(5,217,232,.12);
+  opacity:.55;
+  border-radius:inherit;
+}
+/* content above hologram — keep readable */
+html.motion-on .card.br > *:not(.card-holo):not(.fx):not(canvas.fx),
+html.motion-on .panel-group.card > *:not(.card-holo){position:relative;z-index:1}
+html.motion-on .card.br.is-live > .card-holo .card-holo-foil{
+  animation:holoFoilDrift 14s ease-in-out infinite !important;
   animation-delay:var(--holo-delay,0s) !important;
   will-change:background-position,opacity !important;
 }
-html.motion-on .card.br.is-live > .card-holo .card-holo-sweep{
-  animation:holoSweepDiag 5.4s linear infinite !important;
+html.motion-on .card.br.is-live > .card-holo .card-holo-tint,
+html.motion-on .panel-group.card.is-live > .card-holo .card-holo-tint{
+  animation:holoTintDrift 9.5s ease-in-out infinite !important;
+  animation-delay:var(--holo-delay,0s) !important;
+  will-change:background-position,opacity !important;
+}
+html.motion-on .card.br.is-live > .card-holo .card-holo-sweep,
+html.motion-on .panel-group.card.is-live > .card-holo .card-holo-sweep{
+  animation:holoSweepDiag 6.2s linear infinite !important;
   animation-delay:var(--holo-delay,0s) !important;
   will-change:transform,opacity !important;
 }
+html.motion-on .card.br.is-live > .card-holo .card-holo-glow,
+html.motion-on .panel-group.card.is-live > .card-holo .card-holo-glow{
+  animation:holoEdgeBreath 4.8s ease-in-out infinite !important;
+  animation-delay:var(--holo-delay,0s) !important;
+  will-change:opacity !important;
+}
 html.motion-on .card.br.is-live::before,
-html.motion-on .card.br.is-live::after{
+html.motion-on .card.br.is-live::after,
+html.motion-on .panel-group.card.is-live::before,
+html.motion-on .panel-group.card.is-live::after{
   animation:holoBracketBreath 4.4s ease-in-out infinite !important;
   animation-delay:var(--holo-delay,0s) !important;
 }
+/* gentle tilt (JS sets --tilt-x/--tilt-y); disabled when motion off */
+html.motion-on .card.br.holo-tilt,
+html.motion-on .panel-group.card.holo-tilt{
+  transition:transform .35s ease-out;
+  transform:perspective(900px) rotateX(var(--tilt-x,0deg)) rotateY(var(--tilt-y,0deg)) translateZ(0);
+}
 @keyframes holoSweepDiag{
-  0%{transform:translate3d(-130%,8%,0) skewX(-12deg);opacity:0}
-  8%{opacity:.85}
-  50%{transform:translate3d(160%,-6%,0) skewX(-12deg);opacity:.9}
-  92%{transform:translate3d(210%,-10%,0) skewX(-12deg);opacity:0}
-  100%{transform:translate3d(-130%,8%,0) skewX(-12deg);opacity:0}
+  0%{transform:translate3d(-140%,10%,0) skewX(-14deg);opacity:0}
+  10%{opacity:.9}
+  48%{transform:translate3d(170%,-8%,0) skewX(-14deg);opacity:.95}
+  90%{transform:translate3d(230%,-12%,0) skewX(-14deg);opacity:0}
+  100%{transform:translate3d(-140%,10%,0) skewX(-14deg);opacity:0}
 }
 @keyframes holoTintDrift{
-  0%,100%{background-position:0% 40%;opacity:.45}
-  35%{background-position:70% 20%;opacity:.7}
-  65%{background-position:30% 80%;opacity:.55}
+  0%,100%{background-position:0% 40%;opacity:.4}
+  40%{background-position:75% 25%;opacity:.68}
+  70%{background-position:25% 85%;opacity:.5}
+}
+@keyframes holoFoilDrift{
+  0%,100%{background-position:20% 30%, 0% 50%;opacity:.36}
+  50%{background-position:70% 60%, 80% 20%;opacity:.55}
+}
+@keyframes holoEdgeBreath{
+  0%,100%{opacity:.4;box-shadow:inset 0 0 0 1px rgba(5,217,232,.14),inset 0 0 22px rgba(255,42,109,.06),0 0 12px rgba(5,217,232,.08)}
+  50%{opacity:.85;box-shadow:inset 0 0 0 1px rgba(255,42,109,.28),inset 0 0 36px rgba(5,217,232,.12),0 0 22px rgba(255,42,109,.18)}
 }
 @keyframes holoBracketBreath{
-  0%,100%{opacity:.55;filter:drop-shadow(0 0 2px rgba(240,162,2,.35))}
-  50%{opacity:1;filter:drop-shadow(0 0 7px rgba(92,225,230,.65))}
+  0%,100%{opacity:.55;filter:drop-shadow(0 0 2px rgba(255,42,109,.35))}
+  50%{opacity:1;filter:drop-shadow(0 0 8px rgba(5,217,232,.7))}
 }
 @media (prefers-reduced-motion:reduce){
-  .card-holo,.card-holo .card-holo-tint,.card-holo .card-holo-sweep{animation:none!important;opacity:0!important;display:none!important}
+  .card-holo,.card-holo *{animation:none!important;opacity:0!important;display:none!important}
   html.motion-on .card.br.is-live::before,
-  html.motion-on .card.br.is-live::after{animation:none!important}
+  html.motion-on .card.br.is-live::after,
+  html.motion-on .panel-group.card.is-live::before,
+  html.motion-on .panel-group.card.is-live::after{animation:none!important}
+  html.motion-on .card.br.holo-tilt,
+  html.motion-on .panel-group.card.holo-tilt{transform:none!important}
 }
+/* STILL MODE / motion-off: no holo animations */
+html:not(.motion-on) .card-holo{display:none!important}
+html:not(.motion-on) .card.br.holo-tilt,
+html:not(.motion-on) .panel-group.card.holo-tilt{transform:none!important}
 
 html.motion-on #hWx > .card-holo{z-index:0}
 html.motion-on #hWx .fx{z-index:0}
@@ -2000,3 +2072,50 @@ html.motion-on .panel-group > .panel-inner{z-index:2}
 .map-v,.map-stage,#mapV{overflow:hidden!important}
 #phoneMount .comms-h{min-width:0;overflow:hidden}
 #phoneMount .comms-title{overflow:hidden;text-overflow:ellipsis;max-width:100%}
+
+
+/* ===== v4.11.0 visual polish — rhythm, empty states, buttons ===== */
+:root{
+  --zw-pink:#ff2a6d;--zw-cyan:#05d9e8;--zw-void:#070814;
+  --space-1:4px;--space-2:8px;--space-3:12px;--space-4:14px;--space-5:18px;--space-6:24px;
+  --radius-card:16px;--gap-cards:12px;
+}
+.card.br,.panel-group.card{padding:var(--space-4);gap:var(--space-3)}
+.panel-h,.panel-sec-lab,.card-h,.h-lab{
+  font:800 11px/1.2 var(--mono);letter-spacing:.14em;text-transform:uppercase;
+  color:rgba(5,217,232,.9);
+}
+.btn,.chip,.mode-chip{min-height:44px}
+.btn{border-radius:12px;font-weight:800;letter-spacing:.04em}
+/* intentional empty states */
+.hmk-day.dim,.acct-empty,.bk-empty,.note.dim,.empty-state{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+  text-align:center;padding:18px 14px;min-height:72px;
+  border:1px dashed rgba(5,217,232,.28);background:rgba(5,217,232,.03);
+  color:rgba(247,240,232,.55);font:600 12px/1.35 var(--mono);letter-spacing:.06em;
+  clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px));
+}
+.hmk-day.dim::before,.bk-empty::before,.empty-state::before{
+  content:"";width:28px;height:28px;border-radius:50%;
+  border:1px solid rgba(255,42,109,.45);box-shadow:0 0 12px rgba(5,217,232,.25);
+  background:radial-gradient(circle at 40% 35%,rgba(5,217,232,.35),transparent 60%);
+}
+#hBk .hmk-day.dim,#hMk .hmk-day.dim{margin:8px 0}
+/* readable text over holo */
+html.motion-on .card.br .hw-in,
+html.motion-on .card.br .np-body,
+html.motion-on .card.br .foc-body,
+html.motion-on .card.br .tile,
+html.motion-on .card.br .dl-pad,
+html.motion-on .card.br .comms-list{
+  text-shadow:0 1px 2px rgba(7,8,20,.85);
+}
+html.motion-on .card.br .card-h,
+html.motion-on .card.br .h-lab,
+html.motion-on .card.br .panel-h{color:#b8f7fb}
+/* consistent corner brackets */
+.br:before,.br:after{width:11px;height:11px;border-color:var(--zw-pink,#ff2a6d);opacity:.9}
+.br:before{top:10px;left:10px}.br:after{bottom:10px;right:10px;border-width:0 2px 2px 0}
+@media (max-width:767px){
+  .card.br,.panel-group.card{padding:14px;gap:12px}
+}
