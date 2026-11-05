@@ -7072,13 +7072,17 @@ function parseMoneyInput(v) {
    Later: set BANK_LINK.endpoint to a Worker that returns
    [{name, balance, asOf, last4}] — never full account/routing, never Plaid secrets in the client. */
 var BANK_LINK = {
-  mode: "manual", /* "manual" | "auto" — auto only when endpoint is configured */
-  endpoint: "",   /* e.g. "" until a Worker URL is set; empty = disabled */
+  mode: "manual", /* flips to auto when device token + Worker respond */
+  endpoint: "https://zapwise-bank.zapwisehq.workers.dev",
+  balancesPath: "/balances",
   labelManual: "Manual",
   labelAuto: "Auto · Plaid"
 };
 function bankLinkConfigured() {
   return !!(BANK_LINK.endpoint && /^https:\/\//i.test(BANK_LINK.endpoint));
+}
+function bankDeviceReady() {
+  try { return !!(window.ZAP_BANK_PLAID && ZAP_BANK_PLAID.hasToken && ZAP_BANK_PLAID.hasToken()); } catch (e) { return false; }
 }
 function normalizeBankRow(a, source) {
   if (!a) return null;
@@ -7118,47 +7122,135 @@ function getBankAccountsLocal() {
 function getBankAccounts() {
   return getBankAccountsLocal();
 }
-/** Optional future: pull masked balances from Worker. No-op until BANK_LINK.endpoint is set. */
-function refreshBankAccountsFromLink() {
-  if (!bankLinkConfigured()) return Promise.resolve(getBankAccounts());
-  return fetch(BANK_LINK.endpoint, { credentials: "omit", cache: "no-store" }).then(function (r) {
-    if (!r.ok) throw new Error("bank link " + r.status);
-    return r.json();
-  }).then(function (rows) {
-    if (!Array.isArray(rows)) return getBankAccounts();
-    /* Merge by name+last4 into local store as source:auto overlays — keep manual as fallback ids */
-    var local = loadAccounts();
-    var byKey = {};
-    local.forEach(function (a) {
-      if (a.kind === "bank") byKey[(a.name || "") + "|" + sanitizeLast4(a.last4)] = a;
-    });
-    rows.forEach(function (row) {
-      var n = normalizeBankRow(row, "auto");
-      if (!n) return;
-      var k = (n.name || "") + "|" + (n.last4 || "");
-      var cur = byKey[k];
-      if (cur) {
-        cur.bal = n.bal; cur.balAt = n.balAt; cur.last4 = n.last4 || cur.last4; cur.source = "auto";
-      } else {
-        local.push(Object.assign({}, n, { source: "auto" }));
-      }
-    });
-    saveAccounts(local);
+/** Pull masked balances from Worker when this device has a token. Falls back to manual/cache. */
+function mergePlaidRowsIntoStore(rows) {
+  if (!Array.isArray(rows)) return;
+  var local = loadAccounts();
+  var byKey = {};
+  local.forEach(function (a) {
+    if (a.kind === "bank") byKey[(a.name || "") + "|" + sanitizeLast4(a.last4)] = a;
+  });
+  rows.forEach(function (row) {
+    var mapped = {
+      name: row.institution || row.name || "Bank",
+      acctName: row.officialName || row.subtype || row.type || "Account",
+      balance: row.balance,
+      asOf: row.asOf,
+      last4: row.last4,
+      inTotal: true
+    };
+    var n = normalizeBankRow(mapped, "auto");
+    if (!n) return;
+    var k = (n.name || "") + "|" + (n.last4 || "");
+    var cur = byKey[k];
+    if (cur) {
+      cur.bal = n.bal; cur.balAt = n.balAt; cur.last4 = n.last4 || cur.last4;
+      cur.acctName = n.acctName || cur.acctName; cur.source = "auto";
+    } else {
+      local.push(Object.assign({}, n, { source: "auto" }));
+      byKey[k] = local[local.length - 1];
+    }
+  });
+  saveAccounts(local);
+}
+function refreshBankAccountsFromLink(opts) {
+  opts = opts || {};
+  if (!bankLinkConfigured() || !bankDeviceReady()) {
+    /* offline / no token: keep last good auto rows if any were cached by bank-plaid */
+    try {
+      var lg = window.ZAP_BANK_PLAID && ZAP_BANK_PLAID.loadLastGood && ZAP_BANK_PLAID.loadLastGood();
+      if (lg && lg.rows && lg.rows.length) mergePlaidRowsIntoStore(lg.rows);
+    } catch (e0) {}
+    return Promise.resolve(getBankAccounts());
+  }
+  return ZAP_BANK_PLAID.fetchBalances(!!opts.refresh).then(function (data) {
+    var rows = (data && data.accounts) || [];
+    mergePlaidRowsIntoStore(rows);
     try { renderBanks(); } catch (e) {}
+    try { renderAccounts(); } catch (e2) {}
+    try { renderHoldings(); } catch (e3) {}
     return getBankAccounts();
-  }).catch(function () { return getBankAccounts(); });
+  }).catch(function () {
+    try {
+      var lg2 = ZAP_BANK_PLAID.loadLastGood && ZAP_BANK_PLAID.loadLastGood();
+      if (lg2 && lg2.rows) mergePlaidRowsIntoStore(lg2.rows);
+    } catch (e4) {}
+    return getBankAccounts();
+  });
 }
 function bankSourceLabel(a) {
   var src = (a && a.source) || "manual";
   return src === "auto" ? BANK_LINK.labelAuto : BANK_LINK.labelManual;
+}
+function openBankSettings() {
+  var ready = bankDeviceReady();
+  var html = '<p class="note">Auto-link uses Plaid. Your bank password stays on their screen. Only balances and last 4 digits are stored on this device.</p>' +
+    '<div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">' +
+    '<button class="btn" type="button" id="bkGoLink">' + (ready ? "Link another bank" : "Link bank (auto)") + "</button>" +
+    '<button class="btn" type="button" id="bkShowPair"' + (ready ? "" : " disabled") + ">Show pair code</button>" +
+    '<button class="btn" type="button" id="bkAddDevice">Add this device</button>' +
+    '<button class="btn" type="button" id="bkRefreshAuto"' + (ready ? "" : " disabled") + ">Refresh balances</button>" +
+    '<button class="btn warn" type="button" id="bkUnlink"' + (ready ? "" : " disabled") + ">Unlink bank</button>" +
+    "</div>" +
+    '<p class="note" id="bkSetStatus" style="margin-top:10px"></p>';
+  sheet("Bank auto-link", html, function (b) {
+    function st(msg) { var el = b.querySelector("#bkSetStatus"); if (el) el.textContent = msg || ""; }
+    b.querySelector("#bkGoLink").addEventListener("click", function () {
+      closeSheet();
+      location.href = (window.ZAP_BANK_PLAID && ZAP_BANK_PLAID.linkPage) || "/os/link/";
+    });
+    b.querySelector("#bkShowPair").addEventListener("click", function () {
+      if (!window.ZAP_BANK_PLAID) return;
+      st("Making a code…");
+      ZAP_BANK_PLAID.pairCode().then(function (d) {
+        st("Code " + (d.code || "") + " · expires in about 10 minutes. Enter it on your other device.");
+      }).catch(function () { st("Could not make a code."); });
+    });
+    b.querySelector("#bkAddDevice").addEventListener("click", function () {
+      var code = prompt("Enter the 8-character pair code from your other device:");
+      if (!code) return;
+      st("Pairing…");
+      ZAP_BANK_PLAID.pairWithCode(code).then(function () {
+        st("This device is paired. Pulling balances…");
+        return refreshBankAccountsFromLink({ refresh: true });
+      }).then(function () {
+        try { renderBanks(); } catch (e) {}
+        toast("Device added");
+        closeSheet();
+      }).catch(function () { st("That code didn’t work. Try a fresh one."); });
+    });
+    b.querySelector("#bkRefreshAuto").addEventListener("click", function () {
+      st("Refreshing…");
+      refreshBankAccountsFromLink({ refresh: true }).then(function () {
+        st("Updated.");
+        try { renderBanks(); } catch (e) {}
+      }).catch(function () { st("Could not refresh."); });
+    });
+    b.querySelector("#bkUnlink").addEventListener("click", function () {
+      if (!confirm("Unlink your bank from Zapwise on all devices?")) return;
+      st("Unlinking…");
+      ZAP_BANK_PLAID.unlink().then(function () {
+        /* demote auto rows back to manual so quick-update still works */
+        var next = loadAccounts().map(function (a) {
+          if (a.kind === "bank" && a.source === "auto") {
+            var c = Object.assign({}, a); c.source = "manual"; return c;
+          }
+          return a;
+        });
+        saveAccounts(next);
+        try { renderBanks(); } catch (e) {}
+        toast("Bank unlinked");
+        closeSheet();
+      }).catch(function () { st("Could not unlink."); });
+    });
+  });
 }
 function openLinkBankStub() {
   if (!bankLinkConfigured()) {
     toast("Bank auto-link isn’t set up — balances stay manual on this phone.");
     return;
   }
-  toast("Connecting…");
-  refreshBankAccountsFromLink();
+  openBankSettings();
 }
 
 function bankMoney(n) {
@@ -7442,10 +7534,12 @@ function renderBanks() {
     else subEl.textContent = st.n + " account" + (st.n === 1 ? "" : "s") + (priv ? " · privacy on" : "") + (!priv ? " · tap balance to update" : "");
   }
   var linkCfg = bankLinkConfigured();
+  var devReady = bankDeviceReady();
+  var linkLabel = devReady ? "Bank auto-link" : "Link bank (auto)";
   var linkHtml = '<button type="button" class="bk-link-auto' + (linkCfg ? "" : " is-unset") + '" id="bkLinkAuto" ' +
-    'aria-disabled="' + (linkCfg ? "false" : "true") + '" title="' + (linkCfg ? "Link a bank automatically" : "Not set up yet") + '">' +
-    "Link bank (auto)" + "</button>" +
-    (linkCfg ? "" : '<span class="bk-link-note">Not set up yet</span>');
+    'aria-disabled="' + (linkCfg ? "false" : "true") + '" title="' + (linkCfg ? "Bank auto-link settings" : "Not set up yet") + '">' +
+    linkLabel + "</button>" +
+    (linkCfg ? (devReady ? '<span class="bk-link-note">Source: Auto · Plaid</span>' : '<span class="bk-link-note">Tap to link on this device</span>') : '<span class="bk-link-note">Not set up yet</span>');
   if (!banks.length) {
     host.innerHTML = '<div class="bk-card empty" data-bk-add="1" role="listitem" tabindex="0" aria-label="Add bank"><span>＋ Add Bank</span></div>' + linkHtml;
     return;
@@ -7537,6 +7631,16 @@ function renderBanks() {
   });
 })();
 try { renderBanks(); } catch (eInitBk) {}
+try {
+  if (bankDeviceReady()) {
+    refreshBankAccountsFromLink().then(function () { try { renderBanks(); } catch (eR) {} });
+  } else if (location.search.indexOf("bank=linked") >= 0) {
+    /* returned from /os/link/ — token should exist now */
+    setTimeout(function () {
+      refreshBankAccountsFromLink({ refresh: true }).then(function () { try { renderBanks(); } catch (eR2) {} toast("Bank linked"); });
+    }, 200);
+  }
+} catch (eAutoBk) {}
 try { ensureCardHolos(); } catch (eHolo) {}
 /* refresh relative "As of … min ago" while Bank is on screen */
 setInterval(function () {

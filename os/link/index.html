@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <meta name="theme-color" content="#070814">
+  <title>Link bank · ZAPWISE//OS</title>
+  <link rel="stylesheet" href="../app.css">
+  <style>
+    :root { color-scheme: dark; }
+    body.link-page {
+      margin: 0; min-height: 100dvh; background: #070814; color: #e8f0ff;
+      font-family: Rajdhani, system-ui, sans-serif;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 24px 18px calc(24px + env(safe-area-inset-bottom));
+      box-sizing: border-box;
+    }
+    .link-card {
+      width: min(420px, 100%);
+      background: rgba(14, 18, 36, 0.92);
+      border: 1px solid rgba(5, 217, 232, 0.35);
+      box-shadow: 0 0 24px rgba(255, 42, 109, 0.12), inset 0 0 0 1px rgba(255,255,255,0.04);
+      border-radius: 14px; padding: 22px 20px 18px;
+    }
+    .link-card h1 {
+      margin: 0 0 6px; font-size: 1.35rem; letter-spacing: 0.08em;
+      color: #05d9e8; text-transform: uppercase;
+    }
+    .link-card .kicker { color: #ff2a6d; font-size: 0.75rem; letter-spacing: 0.16em; margin-bottom: 10px; }
+    .link-card p { margin: 0 0 12px; line-height: 1.35; color: #b8c4e0; font-size: 1rem; }
+    .link-card .note { font-size: 0.85rem; color: #7f8bb0; }
+    .link-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+    .link-actions .btn {
+      appearance: none; border: 1px solid #05d9e8; background: rgba(5,217,232,0.12);
+      color: #e8f0ff; font: inherit; font-weight: 700; letter-spacing: 0.06em;
+      padding: 12px 14px; border-radius: 10px; cursor: pointer; text-align: center;
+    }
+    .link-actions .btn.primary { background: linear-gradient(135deg, rgba(255,42,109,0.35), rgba(5,217,232,0.25)); border-color: #ff2a6d; }
+    .link-actions .btn.ghost { border-color: rgba(127,139,176,0.5); background: transparent; color: #b8c4e0; }
+    .link-status { min-height: 1.3em; margin-top: 12px; font-size: 0.9rem; color: #05d9e8; }
+    .link-status.err { color: #ff2a6d; }
+  </style>
+</head>
+<body class="link-page">
+  <main class="link-card" role="main">
+    <div class="kicker">ZAPWISE // OS</div>
+    <h1>Link your bank</h1>
+    <p>You'll sign in on your bank's own screen. We never see your bank password. Only balances and last 4 digits come back.</p>
+    <p class="note">Free read-only link · USAA and other US banks · stays on this device after you finish.</p>
+    <div class="link-actions">
+      <button type="button" class="btn primary" id="btnLink">Continue to bank login</button>
+      <a class="btn ghost" id="btnBack" href="/os/">Back to OS</a>
+    </div>
+    <div class="link-status" id="status" aria-live="polite"></div>
+  </main>
+  <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
+  <script src="./link.js"></script>
+</body>
+</html>

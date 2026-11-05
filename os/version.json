@@ -1,6 +1,6 @@
 {
-  "version": "4.10.0",
+  "version": "4.10.1",
   "built": "2026-11-05",
   "channel": "stable",
-  "notes": "v4.10.0: Phone layout fix \u2014 Focus+Phone stack full-width under 768px; dial pad fits; weather empty canvas gap gone; music play compact; overflow/overlap QA."
+  "notes": "v4.10.1: Plaid auto-balance Worker wiring \u2014 /os/link/ noindex page, device token + pair codes, Bank settings (link/pair/unlink), manual fallback kept. Includes v4.10.0 phone layout fix."
 }
