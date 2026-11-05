@@ -1,7 +1,7 @@
-/* ZAPWISE//OS web app v4.6.2 (Nov 5, 2026). Crisp opaque fixed sheets in-viewport; no backdrop blur; iOS scroll lock. No sound, no tabs. */
+/* ZAPWISE//OS web app v4.6.3 (Nov 5, 2026). Fix blank ~100vh above header (zw-stage in-flow); harden closed overlays + scroll-lock clear + boot guard. No sound, no tabs. */
 (function () {
 "use strict";
-var VERSION = "4.6.2";
+var VERSION = "4.6.3";
 var APP_VERSION = VERSION;
 
 // v4.5: default Lite on coarse/mobile unless user already chose
@@ -132,12 +132,26 @@ function forceCardsVisible() {
       if (el.style.visibility === "hidden") el.style.visibility = "";
     } catch (e1) {}
   });
-  /* body/html scroll-lock leftovers from a stuck sheet */
+  /* body/html scroll-lock leftovers from a stuck sheet — v4.6.3 also clears position/top/sheet-open */
   try {
-    if (!(typeof isCardDetailOpen === "function" && isCardDetailOpen()) && !document.documentElement.classList.contains("map-fs-open")) {
+    var overlayUp = false;
+    try {
+      overlayUp = (typeof anyOverlayOpen === "function" && anyOverlayOpen())
+        || (typeof isCardDetailOpen === "function" && isCardDetailOpen())
+        || document.documentElement.classList.contains("map-fs-open");
+    } catch (eO) {}
+    if (!overlayUp) {
       document.documentElement.style.overflow = "";
       document.body.style.overflow = "";
       document.body.style.pointerEvents = "";
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.left = "";
+      document.body.style.right = "";
+      document.body.style.width = "";
+      document.documentElement.classList.remove("sheet-open");
+      document.body.classList.remove("sheet-open");
+      try { if (typeof SCROLL_LOCK !== "undefined") { SCROLL_LOCK.locked = false; SCROLL_LOCK.y = 0; } } catch (eL) {}
     }
   } catch (e2) {}
 }
@@ -2749,7 +2763,7 @@ $("#hWx").addEventListener("click", function (e) {
   if (act) act.addEventListener("click", openAdd);
 })();
 
-/* ===== v4.6.2: iOS-safe scroll lock + portal sheets into body ===== */
+/* ===== v4.6.2/v4.6.3: iOS-safe scroll lock + portal sheets into body ===== */
 var SCROLL_LOCK = { y: 0, locked: false };
 function lockPageScroll() {
   if (SCROLL_LOCK.locked) return;
@@ -2783,23 +2797,121 @@ function unlockPageScroll() {
   } catch (e) {}
   try { window.scrollTo(0, y); } catch (e2) {}
 }
+/* v4.6.3: force-clear scroll lock on boot / pageshow / resume (ignore locked flag) */
+function clearScrollLockHard() {
+  try {
+    SCROLL_LOCK.locked = false;
+    SCROLL_LOCK.y = 0;
+    document.documentElement.classList.remove("sheet-open");
+    document.body.classList.remove("sheet-open");
+    document.documentElement.style.overflow = "";
+    document.body.style.position = "";
+    document.body.style.top = "";
+    document.body.style.left = "";
+    document.body.style.right = "";
+    document.body.style.width = "";
+    document.body.style.overflow = "";
+    document.body.style.pointerEvents = "";
+  } catch (e) {}
+}
 function portalToBody(el) {
-  if (!el || !el.parentNode) return;
-  if (el.parentNode === document.body) return;
-  if (!el._zapHome) {
+  if (!el) return;
+  if (!el._zapHome && el.parentNode) {
     el._zapHome = { parent: el.parentNode, next: el.nextSibling };
   }
+  /* Always append at END of body — never insertBefore #app (in-flow risk if position fails) */
   try { document.body.appendChild(el); } catch (e) {}
 }
 function portalHome(el) {
   if (!el || !el._zapHome) return;
   var h = el._zapHome;
+  el._zapHome = null;
   try {
-    if (h.next && h.next.parentNode === h.parent) h.parent.insertBefore(el, h.next);
-    else h.parent.appendChild(el);
+    if (h.parent && h.parent.isConnected) {
+      if (h.next && h.next.parentNode === h.parent) h.parent.insertBefore(el, h.next);
+      else h.parent.appendChild(el);
+    } else if (el.parentNode) {
+      /* home gone — leave on body but ensure hidden + not as-detail */
+    }
   } catch (e) {
-    try { h.parent.appendChild(el); } catch (e2) {}
+    try { if (h.parent) h.parent.appendChild(el); } catch (e2) {}
   }
+}
+/* v4.6.3: if header is pushed down by a leftover spacer / bad lock, snap it back */
+function fixHeaderGap() {
+  try {
+    var topEl = document.getElementById("top") || document.querySelector(".top");
+    if (!topEl) return false;
+    var safe = 0;
+    try {
+      var raw = getComputedStyle(document.documentElement).getPropertyValue("env(safe-area-inset-top)");
+      /* env() in getPropertyValue often empty — use padding on .top as proxy */
+      safe = parseFloat(getComputedStyle(topEl).paddingTop) || 0;
+    } catch (eS) { safe = 0; }
+    if (!safe) safe = 12;
+    var rect = topEl.getBoundingClientRect();
+    if (rect.top <= safe + 20) return false;
+    /* Header too far down — clear locks, kill in-flow stage, scroll to 0 */
+    clearScrollLockHard();
+    try {
+      var stage = document.getElementById("zwStage");
+      if (stage) {
+        stage.style.position = "fixed";
+        stage.style.inset = "0";
+        stage.style.height = "100%";
+        stage.style.width = "100%";
+        stage.style.pointerEvents = "none";
+        stage.style.zIndex = "0";
+        if (stage.parentNode !== document.body) document.body.appendChild(stage);
+        var cs = getComputedStyle(stage);
+        if (cs.position !== "fixed" || stage.getBoundingClientRect().height > window.innerHeight * 0.5 && stage.compareDocumentPosition(document.getElementById("app")) & Node.DOCUMENT_POSITION_FOLLOWING) {
+          /* still contributing? force out of flow via display if fx-lite, else fixed already set */
+          if (document.documentElement.classList.contains("fx-lite")) {
+            stage.setAttribute("hidden", "");
+            stage.style.display = "none";
+          }
+        }
+      }
+    } catch (eSt) {}
+    try {
+      ["sheet", "zapSheet", "scrim", "xpWx", "xpMk"].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        var open = false;
+        try { open = typeof anyOverlayOpen === "function" && anyOverlayOpen(); } catch (eA) {}
+        if (!open) {
+          if (id === "xpWx" || id === "xpMk") {
+            if (!el.classList.contains("as-detail")) { el.hidden = true; }
+          } else if (id !== "scrim" || el.hidden) {
+            /* leave as-is if intentionally open */
+          }
+          if (el.hidden) {
+            el.style.display = "none";
+          }
+        }
+      });
+    } catch (eOv) {}
+    try { window.scrollTo(0, 0); document.documentElement.scrollTop = 0; document.body.scrollTop = 0; } catch (eSc) {}
+    /* If still low, translate #app up is too aggressive — instead zero any body padding/margin */
+    try {
+      document.body.style.paddingTop = "";
+      document.body.style.marginTop = "";
+      var app = document.getElementById("app");
+      if (app) { app.style.marginTop = ""; app.style.paddingTop = ""; app.style.transform = ""; }
+    } catch (eApp) {}
+    return true;
+  } catch (e) { return false; }
+}
+function guardHeaderTop() {
+  try {
+    fixHeaderGap();
+    requestAnimationFrame(function () {
+      fixHeaderGap();
+      setTimeout(fixHeaderGap, 120);
+      setTimeout(fixHeaderGap, 400);
+      setTimeout(fixHeaderGap, 900);
+    });
+  } catch (e) {}
 }
 function crispifyOverlay(el) {
   if (!el) return;
@@ -4442,10 +4554,12 @@ function placeNeonRing(v, dx, dy) {
             document.documentElement.classList.remove("fx-lite");
             document.documentElement.classList.add("fx-3d");
           } catch (eC) {}
+          try { guardHeaderTop(); } catch (eG1) {}
           return;
         }
         initFx3dLayer();
-      });
+        try { guardHeaderTop(); } catch (eG2) {}
+      }).catch(function () { try { guardHeaderTop(); } catch (eG3) {} });
     }, 350);
   } catch (e) {}
   // decode / typing effect on brand
@@ -4530,9 +4644,17 @@ function placeNeonRing(v, dx, dy) {
   setTimeout(watchdog, 200);
   setTimeout(watchdog, 800);
   setInterval(watchdog, 2500);
-  window.addEventListener("pageshow", function () { try { forceCardsVisible(); } catch (e) {} });
+  window.addEventListener("pageshow", function () {
+    try { clearScrollLockHard(); } catch (e0) {}
+    try { forceCardsVisible(); } catch (e) {}
+    try { guardHeaderTop(); } catch (e1) {}
+  });
   document.addEventListener("visibilitychange", function () {
-    if (document.visibilityState === "visible") try { forceCardsVisible(); } catch (e) {}
+    if (document.visibilityState === "visible") {
+      try { clearScrollLockHard(); } catch (e0) {}
+      try { forceCardsVisible(); } catch (e) {}
+      try { guardHeaderTop(); } catch (e1) {}
+    }
   });
 })();
 
@@ -4543,7 +4665,10 @@ function placeNeonRing(v, dx, dy) {
 })();
 // ========== 13. boot ==========
 try { if ("scrollRestoration" in history) history.scrollRestoration = "manual"; } catch (eSR) {}
+try { clearScrollLockHard(); } catch (eCL0) {}
+try { window.scrollTo(0, 0); document.documentElement.scrollTop = 0; document.body.scrollTop = 0; } catch (eSc0) {}
 try { forceCardsVisible(); } catch (eFV0) {}
+try { guardHeaderTop(); } catch (eGH0) {}
 document.body.classList.add("on-home"); applyTheme(THEME.id);
 renderApps(); renderNowPlaying(); try { renderNet(); } catch (e) {}
 tick(); setInterval(tick, 1000);

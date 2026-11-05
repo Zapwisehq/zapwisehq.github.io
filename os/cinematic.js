@@ -62,12 +62,29 @@
       stage.id = "zwStage";
       stage.className = "zw-stage";
       stage.setAttribute("aria-hidden", "true");
-      document.body.insertBefore(stage, document.body.firstChild);
+      /* v4.6.3: NEVER insert an in-flow full-viewport node before #app.
+         Always fixed + append at end of body so a missing stylesheet cannot push the header down. */
+      try {
+        stage.style.cssText = "position:fixed;inset:0;z-index:0;pointer-events:none;margin:0;padding:0;width:100%;height:100%;max-height:100%;";
+      } catch (eS) {}
+      document.body.appendChild(stage);
+    } else {
+      try {
+        stage.style.position = "fixed";
+        stage.style.inset = "0";
+        stage.style.zIndex = "0";
+        stage.style.pointerEvents = "none";
+        stage.style.width = "100%";
+        stage.style.height = "100%";
+        stage.style.margin = "0";
+        if (stage.parentNode !== document.body) document.body.appendChild(stage);
+      } catch (eF) {}
     }
     var canvas = stage.querySelector("canvas");
     if (!canvas) {
       canvas = document.createElement("canvas");
       canvas.id = "zwCanvas";
+      try { canvas.style.cssText = "display:block;width:100%;height:100%;"; } catch (eC) {}
       stage.appendChild(canvas);
     }
     return canvas;

@@ -849,3 +849,30 @@ html.standalone body,html.standalone{overscroll-behavior-y:none}
 .zap-sheet:not([hidden]),.zap-sheet{z-index:94!important}
 .h-map.map-fs{z-index:96!important}
 .toast.on,.toast{z-index:100!important}
+
+
+/* ===== v4.6.3: never leave a full-viewport spacer above the header ===== */
+/* Root cause: cinematic #zwStage was insertBefore(body.firstChild) without position:fixed
+   after cinematic.css was emptied in v4.4 — in-flow ~100vh pushed #app down on every launch. */
+.zw-stage,#zwStage{
+  position:fixed!important;inset:0!important;z-index:0!important;
+  pointer-events:none!important;margin:0!important;padding:0!important;
+  width:100%!important;height:100%!important;max-height:100%!important;
+  background:#03040a;opacity:.38;display:block;
+}
+.zw-stage canvas,#zwStage canvas{display:block;width:100%!important;height:100%!important}
+.zw-stage[hidden],#zwStage[hidden],html.fx-lite .zw-stage,html.fx-lite #zwStage{display:none!important;height:0!important;opacity:0!important}
+html.zw-cine .zw-stage,html.zw-cine #zwStage{opacity:.32}
+.boot.go,.boot[aria-hidden="true"].go{display:none!important;visibility:hidden!important;pointer-events:none!important;opacity:0!important}
+
+/* Closed overlays must never occupy layout (UA [hidden] can lose to display:flex etc.) */
+.sheet[hidden],#sheet[hidden],
+.zap-sheet[hidden],#zapSheet[hidden],
+.scrim[hidden],#scrim[hidden],
+#xpMk[hidden],#xpWx[hidden],
+.h-map.map-fs[hidden]{display:none!important;height:0!important;min-height:0!important;pointer-events:none!important}
+
+/* Open overlays stay out of flow even if a parent transform appears */
+.sheet:not([hidden]),.zap-sheet:not([hidden]),.xp.as-detail,.h-map.map-fs,.scrim:not([hidden]){
+  position:fixed!important;
+}

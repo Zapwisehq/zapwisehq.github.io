@@ -1,0 +1,52 @@
+{
+  "pass": true,
+  "results": [
+    {
+      "label": "390-standalone-liteOff",
+      "pass": true,
+      "maxBrand": 0,
+      "freshBrand": 0,
+      "stage": {
+        "pos": "fixed",
+        "h": 844,
+        "display": "block",
+        "parent": "BODY"
+      },
+      "errs": []
+    },
+    {
+      "label": "360-standalone-liteOff",
+      "pass": true,
+      "maxBrand": 0,
+      "freshBrand": 0,
+      "stage": {
+        "pos": "fixed",
+        "h": 740,
+        "display": "block",
+        "parent": "BODY"
+      },
+      "errs": []
+    },
+    {
+      "label": "390-standalone-liteOn",
+      "pass": true,
+      "maxBrand": 0,
+      "freshBrand": 0,
+      "stage": null,
+      "errs": []
+    },
+    {
+      "label": "1440-desktop-liteOff",
+      "pass": true,
+      "maxBrand": 0,
+      "freshBrand": 0,
+      "stage": {
+        "pos": "fixed",
+        "h": 900,
+        "display": "block",
+        "parent": "BODY"
+      },
+      "errs": []
+    }
+  ]
+}
