@@ -7,12 +7,22 @@
 <meta name="robots" content="noindex,follow">
 <meta name="description" content="ZAPWISE//OS: one full-screen home for your clock, weather, markets, map and apps.">
 <meta name="theme-color" content="#070814">
+<meta name="zapos-version" content="3.6.1">
+<script>
+/* Early update probe — runs even before app.js. Reloads once if /os/version.json is newer. */
+(function(){var V="3.6.1",k="zapos.bootReload";try{if(sessionStorage.getItem(k)===V)return;}catch(e){}
+fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.ok?r.json():null}).then(function(j){
+  if(!j||!j.version||j.version===V)return;
+  try{sessionStorage.setItem(k,j.version);sessionStorage.setItem("zapos.pendingToast","Updated to v"+j.version);}catch(e){}
+  location.reload();
+}).catch(function(){});})();
+</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ZAP//OS">
 <meta name="format-detection" content="telephone=no">
-<link rel="manifest" href="/os/manifest.webmanifest">
+<link rel="manifest" href="/os/manifest.webmanifest?v=3.6.1">
 <link rel="apple-touch-icon" href="/os/icon-180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/os/icon-192.png">
 <link rel="preconnect" href="https://api.open-meteo.com" crossorigin>
@@ -20,7 +30,7 @@
 <link rel="preconnect" href="https://tile.openstreetmap.org" crossorigin>
 <link rel="dns-prefetch" href="https://a.tile.openstreetmap.org">
 <link rel="preconnect" href="https://nominatim.openstreetmap.org" crossorigin>
-<link rel="stylesheet" href="/os/app.css?v=3.6.0">
+<link rel="stylesheet" href="/os/app.css?v=3.6.1">
 <script>try{var z=JSON.parse(localStorage.getItem("zapos.device")||"{}").themeCss;if(z&&z.css){var s=document.createElement("style");s.textContent=z.css;document.head.appendChild(s);if(z.light)document.documentElement.classList.add("light");var m=document.querySelector('meta[name="theme-color"]');if(m&&z.meta)m.setAttribute("content",z.meta);}}catch(e){}</script>
 </head>
 <body class="cyber">
@@ -37,7 +47,7 @@
 <div id="app">
 
  <header class="top sticky" id="top">
-  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver">v3.5</span></div>
+  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver">v3.6.1</span></div>
   <div class="top-r">
    <span class="sync" id="hSync"><i aria-hidden="true"></i>SYNCED</span>
    <button class="h-theme" data-theme-btn aria-label="Change theme" title="Change theme"><i aria-hidden="true"></i>THEME</button>
@@ -234,8 +244,8 @@
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/os/catalog.js?v=3.6.0"></script>
-<script src="/os/sky.js?v=3.6.0"></script>
-<script src="/os/app.js?v=3.6.0"></script>
+<script src="/os/catalog.js?v=3.6.1"></script>
+<script src="/os/sky.js?v=3.6.1"></script>
+<script src="/os/app.js?v=3.6.1"></script>
 </body>
 </html>

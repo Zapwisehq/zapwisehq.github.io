@@ -1,4 +1,4 @@
-/* ZAPWISE//OS web app v3.6.0 (Nov 4, 2026). Concept layout + live map. Static, no build step, no API keys.
+/* ZAPWISE//OS web app v3.6.1 (Nov 5, 2026). Concept layout + live map. Static, no build step, no API keys.
    Data: Open-Meteo (weather + city search), api-bdc.io (city name for weather), CoinGecko (crypto + PAX Gold),
    OSM standard tiles (keyless, CSS dark filter) + Nominatim reverse geocoding (road + city, cached, re-queried only after moving > 40 m).
 
@@ -17,7 +17,8 @@
    Store.applyRemote below. */
 (function () {
 "use strict";
-var VERSION = "3.6.0";
+var VERSION = "3.6.1";
+var APP_VERSION = VERSION;
 var STATUS_MSGS = ["> SHORTCUTS ARMED", "> NET SECURE", "> AI LINK STABLE", "> SIGNAL CLEAN", "> APPS READY"];
 var FOCUS_MS = 25 * 60000;
 var DAY_START = 7, DAY_END = 23;
@@ -1668,12 +1669,18 @@ function openMenu() {
     "<h3>WEATHER</h3>" + row("☁", "Weather location", LOC.mode === "city" ? "City: " + esc(LOC.name) : "Using my location", "city") +
     "<h3>MARKETS</h3>" + row("₿", "Edit watchlist", COINS.map(function (c) { return esc(c.sym); }).join(" · ") || "Empty", "coins") +
     "<h3>SETTINGS</h3>" + row("⚙", "Settings", "Your name, °F / °C, reset", "settings") +
+    row("↻", "Check for updates", "Now running v" + VERSION, "update") +
     "<h3>HELP</h3>" + row("?", "Add to Home Screen", "3 steps to open it like a real app", "help") +
     '<p class="note" style="margin-top:12px">ZAPWISE//OS v' + VERSION + " · Everything you change is saved on this device only.</p>",
     function (b) {
       b.addEventListener("click", function (e) {
         var g = e.target.closest("[data-go]"); if (!g) return; var k = g.getAttribute("data-go");
-        if (k === "apps") openEditApps(); else if (k === "city") openCity(); else if (k === "coins") openEditCoins(); else if (k === "settings") openSettings(); else openHelp();
+        if (k === "apps") openEditApps();
+        else if (k === "city") openCity();
+        else if (k === "coins") openEditCoins();
+        else if (k === "settings") openSettings();
+        else if (k === "update") { closeSheet(); checkForAppUpdate(true); }
+        else openHelp();
       });
     });
 }
@@ -2399,8 +2406,102 @@ refreshWeather(); refreshMarkets(); refreshGPS(); setTimeout(function () { try {
 setInterval(function () { if (document.visibilityState === "visible") { refreshWeather(); refreshGPS(); } }, 5 * 60000);
 setInterval(function () { if (document.visibilityState === "visible") refreshMarkets(); }, 2 * 60000);
 window.addEventListener("online", function () { renderNet(); refreshWeather(true); refreshMarkets(); geocode(); });
-if ("serviceWorker" in navigator && location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1") {
-  if ("serviceWorker" in navigator) navigator.serviceWorker.register("/os/sw.js", { scope: "/os/" }).catch(function () {});
+(function registerAndWatchUpdates() {
+  var canSW = "serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1");
+  if (!canSW) return;
+  navigator.serviceWorker.register("/os/sw.js", { scope: "/os/", updateViaCache: "none" }).then(function (reg) {
+    try { reg.update(); } catch (e) {}
+  }).catch(function () {});
+})();
+// Live update check: compare /os/version.json to running APP_VERSION
+var _updBusy = false;
+function waitForNewSW(reg, ms) {
+  return new Promise(function (resolve) {
+    var done = false;
+    function finish() { if (done) return; done = true; resolve(); }
+    setTimeout(finish, ms || 2500);
+    if (!reg) { finish(); return; }
+    function track(worker) {
+      if (!worker) return;
+      try { if (worker.state === "installed") worker.postMessage({ type: "SKIP_WAITING" }); } catch (e) {}
+      worker.addEventListener("statechange", function () {
+        try { if (worker.state === "installed") worker.postMessage({ type: "SKIP_WAITING" }); } catch (e) {}
+        if (worker.state === "activated") finish();
+      });
+    }
+    track(reg.installing); track(reg.waiting);
+    reg.addEventListener("updatefound", function () { track(reg.installing); });
+    var onCtrl = function () { navigator.serviceWorker.removeEventListener("controllerchange", onCtrl); finish(); };
+    navigator.serviceWorker.addEventListener("controllerchange", onCtrl);
+  });
 }
+function checkForAppUpdate(manual) {
+  if (_updBusy && !manual) return;
+  var guardKey = "zapos.reloadedFor";
+  var url = "/os/version.json?t=" + Date.now();
+  _updBusy = true;
+  fetch(url, { cache: "no-store", headers: { "Cache-Control": "no-cache", Pragma: "no-cache" } }).then(function (r) {
+    if (!r.ok) throw new Error("version " + r.status);
+    return r.json();
+  }).then(function (j) {
+    var remote = String((j && j.version) || "").trim();
+    if (!remote) throw new Error("no version");
+    if (remote === APP_VERSION) {
+      if (manual) toast("You're on v" + APP_VERSION + " — up to date");
+      return null;
+    }
+    try {
+      if (sessionStorage.getItem(guardKey) === remote) {
+        if (manual) toast("Update v" + remote + " ready — fully close & reopen the app once");
+        return null;
+      }
+    } catch (e) {}
+    function doReload() {
+      try { sessionStorage.setItem(guardKey, remote); } catch (e) {}
+      try { sessionStorage.setItem("zapos.pendingToast", "Updated to v" + remote); } catch (e) {}
+      location.reload();
+    }
+    // Kick SW update, but never block reload more than ~2.5s
+    var swKick = Promise.resolve();
+    if ("serviceWorker" in navigator) {
+      swKick = navigator.serviceWorker.getRegistration("/os/").then(function (reg) {
+        if (!reg) return;
+        var upd = Promise.resolve();
+        try { upd = reg.update(); } catch (e) {}
+        return Promise.race([
+          Promise.resolve(upd).then(function () { return waitForNewSW(reg, 2500); }).catch(function () {}),
+          new Promise(function (r) { setTimeout(r, 2500); })
+        ]);
+      }).catch(function () {});
+    }
+    return Promise.race([
+      swKick,
+      new Promise(function (r) { setTimeout(r, 2800); })
+    ]).then(doReload, doReload);
+  }).catch(function () {
+    if (manual) toast("Couldn't check right now — try again online");
+  }).then(function () { _updBusy = false; });
+}
+// Fire after reload toast
+try {
+  var pt = sessionStorage.getItem("zapos.pendingToast");
+  if (pt) { sessionStorage.removeItem("zapos.pendingToast"); setTimeout(function () { toast(pt); }, 600); }
+} catch (e) {}
+function scheduleUpdateChecks() {
+  checkForAppUpdate(false);
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible") checkForAppUpdate(false);
+  });
+  window.addEventListener("pageshow", function () { checkForAppUpdate(false); });
+  window.addEventListener("focus", function () { checkForAppUpdate(false); });
+  setInterval(function () {
+    if (document.visibilityState === "visible") checkForAppUpdate(false);
+  }, 5 * 60 * 1000);
+}
+scheduleUpdateChecks();
+try {
+  window.checkForAppUpdate = checkForAppUpdate;
+  if (window.ZAPOS) window.ZAPOS.checkForUpdate = function (m) { checkForAppUpdate(!!m); };
+} catch (e) {}
 if (!Store.getLocal("seenHelp", false) && !(window.navigator.standalone === true)) { Store.setLocal("seenHelp", true); setTimeout(function () { toast("Tip: MENU → Help shows how to add this to your Home Screen"); }, 1500); }
 })();
