@@ -7,13 +7,13 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="description" content="ZAPWISE//OS: calm glass HUD — clock, weather, map, markets, focus, apps.">
 <meta name="theme-color" content="#070814">
-<meta name="zapos-version" content="4.4.0">
+<meta name="zapos-version" content="4.4.1">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="/os/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/os/icon-180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/os/icon-192.png">
-<link rel="stylesheet" href="/os/app.css?v=4.4.0">
+<link rel="stylesheet" href="/os/app.css?v=4.4.1">
 <script>
 (function(){try{var l=localStorage.getItem("zapos.device");if(l){var j=JSON.parse(l);if(j&&j.liteMode)document.documentElement.classList.add("fx-lite");}}catch(e){}
 try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.themeCss){var s=document.createElement("style");s.id="themeBoot";s.textContent=p.themeCss;document.head.appendChild(s);}}}catch(e){}})();
@@ -29,7 +29,7 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
 <div id="app">
 
  <header class="top sticky" id="top">
-  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver">v4.4.0</span></div>
+  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver">v4.4.1</span></div>
   <div class="top-r">
    <span class="sync" id="hSync"><i aria-hidden="true"></i>SYNCED</span>
    <span class="hud-chip gps" id="hGpsLock" data-lock="0" hidden><i aria-hidden="true"></i>GPS —</span>
@@ -52,7 +52,7 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
      <button type="button" class="np-live" id="npLive" data-media-act="pick" aria-label="Choose music app">SWITCH ▾</button>
     </div>
     <div class="np-body">
-     <button type="button" class="np-pick" data-media-act="pick" aria-label="Choose music app">
+     <button type="button" class="np-pick" data-media-act="play" aria-label="Open music app">
       <img class="np-art" id="npArt" src="/os/icons/music.jpg" alt="">
       <span class="np-meta"><b id="npTitle">Choose a music app</b><small id="npArtist">Tap ▶ to open</small></span>
      </button>
@@ -211,7 +211,7 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
    <div class="sec-h">APPS <span class="sec-actions"><button class="chip" id="dEdit" type="button">✎ EDIT</button></span></div>
    <form class="h-srch in-apps" id="srch" role="search" autocomplete="off">
     <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M15.5 15.5L21 21" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
-    <input id="srchQ" type="search" enterkeyhint="go" placeholder="Find an app" aria-label="Search apps or the web" autocapitalize="off" spellcheck="false" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="srchDrop" aria-autocomplete="list">
+    <input id="srchQ" type="search" enterkeyhint="go" placeholder="Find an app" inputmode="search" aria-label="Search apps or the web" autocapitalize="off" spellcheck="false" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="srchDrop" aria-autocomplete="list">
     <div class="srch-drop" id="srchDrop" role="listbox" hidden></div>
    </form>
    <div class="cat-chips" id="appsCats" role="tablist" aria-label="App categories"></div>
@@ -275,8 +275,8 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/os/catalog.js?v=4.4.0"></script>
-<script src="/os/sky.js?v=4.4.0"></script>
-<script src="/os/app.js?v=4.4.0"></script>
+<script src="/os/catalog.js?v=4.4.1"></script>
+<script src="/os/sky.js?v=4.4.1"></script>
+<script src="/os/app.js?v=4.4.1"></script>
 </body>
 </html>

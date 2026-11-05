@@ -1,6 +1,6 @@
 {
-  "version": "4.4.0",
+  "version": "4.4.1",
   "released": "2026-11-05",
   "name": "ZAPWISE//OS",
-  "notes": "Calm v3.7.1 glass style; no UI sounds; compact music/focus/holdings/favorites; quiet market retries; money format; mic-only assistant; one-page"
+  "notes": "Weather sky behind hours; music main opens app; map OPEN in-page overlay (no PWA reload); markets no duplicate; follow badge on map; one Find-an-app search; search focus safe + 16px"
 }

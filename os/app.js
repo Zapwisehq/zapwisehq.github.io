@@ -1,7 +1,7 @@
-/* ZAPWISE//OS web app v4.3.0 (Nov 5, 2026). One-page cyberpunk HUD matching concept — sound on, no tab bar, desktop command-center. Static, no API keys. */
+/* ZAPWISE//OS web app v4.4.1 (Nov 5, 2026). One-page cyberpunk HUD matching concept — sound on, no tab bar, desktop command-center. Static, no API keys. */
 (function () {
 "use strict";
-var VERSION = "4.4.0";
+var VERSION = "4.4.1";
 var APP_VERSION = VERSION;
 
 // ========== v3.12 3D FX (lazy) ==========
@@ -372,7 +372,29 @@ var IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform ==
 var MOBILE = IOS || /Android|Mobi/i.test(navigator.userAgent);
 var MAC = !MOBILE && /Mac/i.test(navigator.platform || navigator.userAgent);
 // new tab for websites. (window.open with "noopener" always returns null, which used to ALSO send this page away.)
-function go(u) { var w = null; try { w = window.open(u, "_blank"); } catch (e) {} if (w) { try { w.opener = null; } catch (e) {} } else location.href = u; }
+function isStandalonePwa() {
+  try {
+    return window.navigator.standalone === true || (window.matchMedia && matchMedia("(display-mode: standalone)").matches);
+  } catch (e) { return false; }
+}
+// Open https/schemes without navigating the standalone PWA document (iOS black-flash/reload).
+function go(u) {
+  if (!u) return;
+  var w = null;
+  try { w = window.open(u, "_blank"); } catch (e) {}
+  if (w) { try { w.opener = null; } catch (e) {} return; }
+  try {
+    var a = document.createElement("a");
+    a.href = u; a.target = "_blank"; a.rel = "noopener noreferrer";
+    a.style.cssText = "position:fixed;left:-9999px;top:0;opacity:0";
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { try { a.remove(); } catch (e2) {} }, 0);
+    return;
+  } catch (e) {}
+  // Last resort: never assign https location.href inside a home-screen PWA (replaces the app).
+  if (isStandalonePwa() && /^https?:/i.test(u)) return;
+  try { location.href = u; } catch (e3) {}
+}
 function openApp(a) {
   if (a.dial || a.id === "phone") { openDial(); return; }
   var url = a.url || "";
@@ -401,7 +423,7 @@ function openApp(a) {
   }
   if (IOS && a.ios) url = a.ios;
   var fb = a.web;
-  if (!fb) { location.href = url; return; }
+  if (!fb) { if (/^https?:/i.test(url)) go(url); else try { location.href = url; } catch (e) {} return; }
   // Android intent with browser fallback baked in (no second timer needed)
   if (ANDROID && !/^https?:/i.test(url) && !/^tel:|^sms:|^mailto:/i.test(url)) {
     try {
@@ -448,14 +470,23 @@ function openApp(a) {
   window.addEventListener("pagehide", onPageHide);
   window.addEventListener("blur", onBlur);
   window.addEventListener("pageshow", onPageShow);
-  try { location.href = url; } catch (e) { left = false; }
+  // Launch scheme without permanently navigating the PWA shell when possible.
+  try {
+    var la = document.createElement("a");
+    la.href = url; la.rel = "noopener"; la.style.cssText = "position:fixed;left:-9999px;opacity:0";
+    document.body.appendChild(la); la.click();
+    setTimeout(function () { try { la.remove(); } catch (e0) {} }, 0);
+  } catch (e) {
+    try { location.href = url; } catch (e2) { left = false; }
+  }
   openApp._fbTimer = setTimeout(function () {
     openApp._fbTimer = null;
     cleanup(); openApp._cleanup = null;
     if (openApp._tok !== token) return;
-    // In-app browsers / soft launches: only fall back if still fully visible and never blurred.
+    // Soft launch: only fall back if still fully visible and never blurred.
     if (!left && document.visibilityState === "visible" && document.hasFocus && document.hasFocus()) {
-      try { location.href = fb; } catch (e) {}
+      // Never location.href https inside standalone — that black-flashes and reloads the PWA.
+      go(fb);
     }
   }, 1500);
 }
@@ -506,8 +537,8 @@ function renderApps() {
   var box = $("#apps"); if (!box) return; box.innerHTML = "";
   filtered.forEach(function (a) { box.appendChild(mkTile(a)); });
   var ad = document.createElement("button");
-  ad.className = "tile add"; ad.type = "button"; ad.id = "addApp"; ad.setAttribute("role", "listitem"); ad.setAttribute("aria-label", "Find and add an app");
-  ad.innerHTML = '<span class="ic" aria-hidden="true">⌕</span><span class="lb">Find an app</span>';
+  ad.className = "tile add"; ad.type = "button"; ad.id = "addApp"; ad.setAttribute("role", "listitem"); ad.setAttribute("aria-label", "Add an app");
+  ad.innerHTML = '<span class="ic" aria-hidden="true">＋</span><span class="lb">Add</span>';
   ad.addEventListener("click", function () { openAddApp({ focusSearch: true }); });
   box.appendChild(ad);
 }
@@ -692,7 +723,12 @@ function setMediaKey(k, open) {
   if (open) openApp(MEDIA[k]);
 }
 $("#hPlay").addEventListener("click", function (e) {
-  var b = e.target.closest("[data-media-act]"); if (!b) return;
+  var b = e.target.closest("[data-media-act]");
+  if (!b) {
+    // Tap empty music card chrome → open chosen app
+    if (e.target.closest("#hPlay")) { e.preventDefault(); openApp(currentMedia()); }
+    return;
+  }
   e.preventDefault();
   var act = b.getAttribute("data-media-act");
   if (act === "play") openApp(currentMedia());
@@ -876,7 +912,12 @@ function paintCelestialSky(fx, c, W, H, t, kind) {
   // constellation lines
   if (period === "night" || period === "twilight" || period === "dusk") {
     c.lineWidth = 1; c.strokeStyle = "rgba(244,239,228,.22)";
+    var skyCut = H * 0.55;
     sky.lines.forEach(function (ln) {
+      // Skip strokes that live entirely in the hourly-forecast band
+      var maxY = 0; ln.pts.forEach(function (pt) { if (pt.y > maxY) maxY = pt.y; });
+      if (maxY > skyCut) c.strokeStyle = "rgba(244,239,228,.08)";
+      else c.strokeStyle = "rgba(244,239,228,.18)";
       c.beginPath();
       ln.pts.forEach(function (pt, i) { if (i) c.lineTo(pt.x, pt.y); else c.moveTo(pt.x, pt.y); });
       c.stroke();
@@ -888,13 +929,13 @@ function paintCelestialSky(fx, c, W, H, t, kind) {
       c.beginPath(); c.arc(s.x, s.y, r, 0, 6.283); c.fill();
     });
     c.globalAlpha = 1;
-    if (!RM) {
-      c.fillStyle = "rgba(92,225,230,.75)"; c.font = "600 10px ui-sans-serif,system-ui,sans-serif";
-      sky.labels.forEach(function (lb) { c.fillText(lb.name, lb.x, lb.y); });
-    } else {
-      c.fillStyle = "rgba(92,225,230,.85)"; c.font = "600 10px ui-sans-serif,system-ui,sans-serif";
-      sky.labels.forEach(function (lb) { c.fillText(lb.name, lb.x, lb.y); });
-    }
+    // v4.4.1: keep labels in the upper sky only so they never cover hourly forecast text
+    var labelMaxY = H * 0.38;
+    c.fillStyle = "rgba(92,225,230,.42)"; c.font = "600 10px ui-sans-serif,system-ui,sans-serif";
+    sky.labels.forEach(function (lb) {
+      if (lb.y > labelMaxY) return;
+      c.fillText(lb.name, lb.x, Math.min(lb.y, labelMaxY - 2));
+    });
   }
 
   // ONE sun
@@ -1607,17 +1648,9 @@ function renderHomeMarkets(stats, accts) {
       port.innerHTML = '<span class="hmk-total" data-hmk-port="1">' + money(stats.total) + "</span>" + dayHtml;
     }
   }
-  if (quotes) {
-    var d = (MK && MK.d) || {};
-    function qRow(sym, id) {
-      var q = d[id], ch = q ? q.usd_24h_change : null;
-      var chCls = (ch == null || isNaN(ch)) ? "" : (ch >= 0 ? "up" : "dn");
-      var chTxt = (ch == null || isNaN(ch)) ? "--" : ((ch >= 0 ? "+" : "") + Number(ch).toFixed(2) + "%");
-      return '<span class="hmk-q" data-sym="' + sym + '"><b>' + sym + '</b> <span class="px">' + (q ? money(q.usd) : "--") + '</span> <i class="ch ' + chCls + '">' + chTxt + "</i></span>";
-    }
-    quotes.innerHTML = qRow("BTC", "bitcoin") + qRow("GOLD", "pax-gold");
-  }
-  if (body) body.hidden = false;
+  if (quotes) quotes.innerHTML = "";
+  // v4.4.1: BTC/GOLD already render in #hMkList — keep #hMkBody hidden to avoid the squished duplicate block
+  if (body) body.hidden = true;
 }
 
 function renderHoldings() {
@@ -2022,11 +2055,31 @@ function renderMap(force) {
     rec.setAttribute("aria-label", MAP.follow ? "Following your location" : "Recenter on me");
   }
 }
+function showMapFollowBadge() {
+  var b = $("#mapFollowBadge");
+  if (!b) {
+    var tools = document.querySelector("#mapV .map-tools");
+    if (!tools) return;
+    b = document.createElement("span");
+    b.id = "mapFollowBadge";
+    b.className = "map-follow-badge";
+    b.setAttribute("role", "status");
+    b.textContent = "Following you";
+    tools.appendChild(b);
+  }
+  b.hidden = false;
+  b.classList.add("on");
+  clearTimeout(showMapFollowBadge._t);
+  showMapFollowBadge._t = setTimeout(function () {
+    b.classList.remove("on");
+    b.hidden = true;
+  }, 1600);
+}
 function mapRecenter() {
   MAP.follow = true; MAP.offX = 0; MAP.offY = 0; MAP.z = 16; MAP._key = null;
   var rec = $("#mapRec"); if (rec) { rec.hidden = true; rec.classList.remove("on"); }
   renderMap(true);
-  toast("Following you");
+  showMapFollowBadge();
   try { startGpsWatch(); } catch (e) {}
 }
 function mapZoom(d) {
@@ -2138,14 +2191,75 @@ function mapCenterLL() {
   var world = lonLatToWorld(GPS.lon, GPS.lat, z);
   return worldToLonLat(world.x + MAP.offX, world.y + MAP.offY, z);
 }
-function openMapsHere() {
+function closeMapOverlay() {
+  var card = $("#hMap");
+  if (!card) return;
+  card.classList.remove("map-fs");
+  document.documentElement.classList.remove("map-fs-open");
+  var xb = $("#mapFsClose"); if (xb) xb.hidden = true;
+  var ext = $("#mapFsExt"); if (ext) ext.hidden = true;
+  MAP._key = null;
+  try { renderMap(true); } catch (e) {}
+}
+function openMapOverlay() {
+  var card = $("#hMap"); if (!card) return;
+  card.classList.add("map-fs");
+  document.documentElement.classList.add("map-fs-open");
+  var head = card.querySelector(".map-h-r");
+  var xb = $("#mapFsClose");
+  if (!xb && head) {
+    xb = document.createElement("button");
+    xb.type = "button"; xb.id = "mapFsClose"; xb.className = "map-open map-fs-close";
+    xb.setAttribute("aria-label", "Close map"); xb.textContent = "CLOSE";
+    head.appendChild(xb);
+    xb.addEventListener("click", function (e) { e.stopPropagation(); closeMapOverlay(); });
+  }
+  if (xb) xb.hidden = false;
+  var ext = $("#mapFsExt");
+  if (!ext && head) {
+    ext = document.createElement("button");
+    ext.type = "button"; ext.id = "mapFsExt"; ext.className = "map-open map-fs-ext";
+    ext.setAttribute("aria-label", "Open in Apple Maps"); ext.textContent = "MAPS";
+    head.appendChild(ext);
+    ext.addEventListener("click", function (e) {
+      e.stopPropagation();
+      openMapsExternal();
+    });
+  }
+  if (ext) ext.hidden = false;
+  MAP._key = null;
+  try { renderMap(true); } catch (e) {}
+  try { card.scrollIntoView({ block: "nearest" }); } catch (e2) {}
+}
+function openMapsExternal() {
   if (!GPS) { toast(GEO_OFF ? "Turn on Location for this app to see where you are" : "Still finding you…"); return; }
   var c = mapCenterLL() || GPS;
   var ll = (+c.lat).toFixed(6) + "," + (+c.lon).toFixed(6);
   var q = (PLACE && (PLACE.road || PLACE.city)) ? [PLACE.road, PLACE.city].filter(Boolean).join(", ") : ll;
+  if (IOS) {
+    var mapsUrl = "maps://?ll=" + ll + "&q=" + encodeURIComponent(q);
+    var web = "https://maps.apple.com/?ll=" + ll + "&q=" + encodeURIComponent(q);
+    try {
+      var a = document.createElement("a");
+      a.href = mapsUrl; a.rel = "noopener"; a.style.cssText = "position:fixed;left:-9999px;opacity:0";
+      document.body.appendChild(a); a.click();
+      setTimeout(function () { try { a.remove(); } catch (e0) {} }, 0);
+    } catch (e) {}
+    setTimeout(function () {
+      if (document.visibilityState === "visible") go(web);
+    }, 900);
+    return;
+  }
   openApp({ id: "maps", mapsHere: true, ll: ll, q: q, name: "Maps" });
 }
-var mapOpen = $("#mapOpen"); if (mapOpen) mapOpen.addEventListener("click", function (e) { e.stopPropagation(); openMapsHere(); });
+function openMapsHere() {
+  // v4.4.1: in-page large map — never navigate the standalone PWA away
+  openMapOverlay();
+}
+var mapOpen = $("#mapOpen"); if (mapOpen) mapOpen.addEventListener("click", function (e) { e.preventDefault(); e.stopPropagation(); openMapsHere(); });
+document.addEventListener("keydown", function (e) {
+  if (e.key === "Escape" && document.documentElement.classList.contains("map-fs-open")) closeMapOverlay();
+});
 var mapIn = $("#mapIn"); if (mapIn) mapIn.addEventListener("click", function (e) { e.stopPropagation(); mapZoom(1); });
 var mapOut = $("#mapOut"); if (mapOut) mapOut.addEventListener("click", function (e) { e.stopPropagation(); mapZoom(-1); });
 var mapRec = $("#mapRec"); if (mapRec) mapRec.addEventListener("click", function (e) { e.stopPropagation(); mapRecenter(); });
@@ -3759,6 +3873,7 @@ function runSearch(q) {
   var f = $("#srch"), inp = $("#srchQ"), hint = $("#srchHint"), drop = $("#srchDrop");
   if (!f || !inp || !drop) return;
   var active = -1, lastHits = [];
+  function setHint(t) { if (hint) hint.textContent = t || ""; }
   function hideDrop() {
     drop.classList.remove("on"); drop.hidden = true; drop.innerHTML = ""; active = -1; lastHits = [];
     f.classList.remove("focus"); inp.setAttribute("aria-expanded", "false");
@@ -3769,7 +3884,7 @@ function runSearch(q) {
   }
   function renderDrop(q) {
     q = (q || "").trim();
-    if (!q) { hideDrop(); hint.textContent = ""; return; }
+    if (!q) { hideDrop(); setHint(""); return; }
     lastHits = findApps(q, 10);
     var html = lastHits.map(function (a, i) {
       var pinned = isPinned(a);
@@ -3787,14 +3902,15 @@ function runSearch(q) {
     drop.hidden = false; drop.classList.add("on"); f.classList.add("focus");
     inp.setAttribute("aria-expanded", "true");
     active = lastHits.length ? 0 : -1; paintActive();
-    hint.textContent = lastHits[0] ? ("↵ " + lastHits[0].name.toUpperCase()) : "↵ WEB";
+    setHint(lastHits[0] ? ("↵ " + lastHits[0].name.toUpperCase()) : "↵ WEB");
   }
+  try { f.setAttribute("action", "javascript:void(0)"); f.setAttribute("novalidate", ""); } catch (e0) {}
   f.addEventListener("submit", function (e) {
-    e.preventDefault();
+    e.preventDefault(); e.stopPropagation();
     var v = inp.value;
     if (active >= 0 && lastHits[active]) openApp(lastHits[active]);
     else runSearch(v);
-    inp.blur(); inp.value = ""; hideDrop(); hint.textContent = "";
+    inp.blur(); inp.value = ""; hideDrop(); setHint("");
   });
   var tmr;
   inp.addEventListener("input", function () {
@@ -4177,14 +4293,23 @@ try {
   if (pt) { sessionStorage.removeItem("zapos.pendingToast"); setTimeout(function () { toast(pt); }, 600); }
 } catch (e) {}
 function scheduleUpdateChecks() {
-  checkForAppUpdate(false);
+  function safeCheck() {
+    // Never auto-reload while typing or map overlay open (iOS PWA focus/keyboard false positives).
+    var ae = document.activeElement;
+    if (ae && (ae.tagName === "INPUT" || ae.tagName === "TEXTAREA" || ae.isContentEditable)) return;
+    if (document.documentElement.classList.contains("map-fs-open")) return;
+    checkForAppUpdate(false);
+  }
+  safeCheck();
   document.addEventListener("visibilitychange", function () {
-    if (document.visibilityState === "visible") checkForAppUpdate(false);
+    if (document.visibilityState === "visible") setTimeout(safeCheck, 400);
   });
-  window.addEventListener("pageshow", function () { checkForAppUpdate(false); });
-  window.addEventListener("focus", function () { checkForAppUpdate(false); });
+  // pageshow only for bfcache restores — not every focus (keyboard open used to flash-reload)
+  window.addEventListener("pageshow", function (ev) {
+    if (ev && ev.persisted) setTimeout(safeCheck, 400);
+  });
   setInterval(function () {
-    if (document.visibilityState === "visible") checkForAppUpdate(false);
+    if (document.visibilityState === "visible") safeCheck();
   }, 5 * 60 * 1000);
 }
 
