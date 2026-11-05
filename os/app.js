@@ -1,7 +1,7 @@
-/* ZAPWISE//OS web app v4.1.0 (Nov 5, 2026). Tabbed cyberpunk HUD + calm Three.js city backdrop; keeps MapLibre/Lite/Smart/honest traffic. Static, no API keys. */
+/* ZAPWISE//OS web app v4.2.0 (Nov 5, 2026). One-page cyberpunk HUD matching concept — sound on, no tab bar, desktop command-center. Static, no API keys. */
 (function () {
 "use strict";
-var VERSION = "4.1.0";
+var VERSION = "4.2.0";
 var APP_VERSION = VERSION;
 
 // ========== v3.12 3D FX (lazy) ==========
@@ -59,67 +59,36 @@ function initCinematic() {
 }
 
 
-// ========== v4.1 HUD tabs (one screen per section, nothing hidden) ==========
-var HUD_TABS = ["home","apps","map","markets","weather","phone","music","settings"];
+// ========== v4.2 one-page HUD (scroll to section; no tab bar) ==========
+var HUD_TABS = ["home","weather","markets","map","music","phone","focus","apps","settings"];
 var HUD_TAB = "home";
-function hudScreen(id) { return document.getElementById("screen-" + id); }
+var HUD_SEC = { home:"sec-home", weather:"sec-weather", markets:"sec-markets", map:"sec-map", music:"sec-music", phone:"sec-phone", focus:"sec-focus", apps:"sec-apps", settings:"sec-apps" };
+function hudScreen(id) { return document.getElementById(HUD_SEC[id] || ("sec-" + id)) || document.getElementById("screen-" + id); }
 function setHudTab(id, opts) {
   opts = opts || {};
   if (HUD_TABS.indexOf(id) < 0) id = "home";
   HUD_TAB = id;
   try { if (typeof closeZapAssistant === "function") closeZapAssistant(); } catch (e0) {}
-  HUD_TABS.forEach(function (k) {
-    var el = hudScreen(k);
-    if (!el) return;
-    var on = k === id;
-    el.classList.toggle("on", on);
-    if (on) el.removeAttribute("hidden"); else el.setAttribute("hidden", "");
-  });
-  var tabs = document.getElementById("hudTabs");
-  if (tabs) {
-    tabs.querySelectorAll("[data-tab]").forEach(function (b) {
-      var on = b.getAttribute("data-tab") === id;
-      b.classList.toggle("on", on);
-      if (on) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
-    });
-  }
   try { if (window.ZAPCINE && window.ZAPCINE.setTab) window.ZAPCINE.setTab(HUD_TABS.indexOf(id)); } catch (e) {}
-  try { Store.setUI({ view: "hud:" + id }); } catch (e1) { try { Store.setUI({ view: "hud:" + id }); } catch (e2) {} }
+  try { Store.setUI({ view: "hud:" + id }); } catch (e1) {}
   if (id === "phone") { try { mountPhoneScreen(); } catch (e) {} }
-  if (id === "settings") { try { mountSettingsScreen(); } catch (e) {} }
+  if (id === "settings") { try { openSettings(); } catch (e) {} return; }
   if (id === "map") { try { setTimeout(function () { renderMap(true); window.dispatchEvent(new Event("resize")); }, 60); } catch (e) {} }
   if (id === "weather") { try { if (typeof renderConditions === "function") renderConditions(); } catch (e) {} }
   if (id === "markets") { try { if (typeof renderMarkets === "function") renderMarkets(); } catch (e) {} }
-  if (!opts.silent) {
-    try { var main = document.querySelector("main"); if (main) main.scrollTop = 0; window.scrollTo(0, 0); } catch (e) {}
+  if (opts.silent) return;
+  var el = hudScreen(id);
+  if (el && el.scrollIntoView) {
+    try { el.scrollIntoView({ behavior: RM ? "auto" : "smooth", block: "start" }); } catch (e) { try { el.scrollIntoView(true); } catch (e2) {} }
+  } else {
+    try { window.scrollTo(0, 0); } catch (e) {}
   }
+  try { if (typeof sfxTap === "function") sfxTap(); } catch (e3) {}
 }
 function bindHudTabs() {
-  var tabs = document.getElementById("hudTabs");
-  if (!tabs || tabs._bound) return;
-  tabs._bound = true;
-  tabs.addEventListener("click", function (e) {
-    var b = e.target.closest("[data-tab]");
-    if (!b) return;
-    setHudTab(b.getAttribute("data-tab"));
-  });
-  var startX = 0, startY = 0, tracking = false;
-  var root = document.getElementById("v-home") || document.querySelector("main");
-  if (!root) return;
-  root.addEventListener("touchstart", function (e) {
-    if (!e.touches || !e.touches[0]) return;
-    if (e.target.closest("input,textarea,select,.map-v,.dl-pad,.apps,.sheet,.zap-sheet")) { tracking = false; return; }
-    startX = e.touches[0].clientX; startY = e.touches[0].clientY; tracking = true;
-  }, { passive: true });
-  root.addEventListener("touchend", function (e) {
-    if (!tracking) return; tracking = false;
-    var touch = e.changedTouches && e.changedTouches[0]; if (!touch) return;
-    var dx = touch.clientX - startX, dy = touch.clientY - startY;
-    if (Math.abs(dx) < 56 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
-    var i = HUD_TABS.indexOf(HUD_TAB);
-    if (dx < 0 && i < HUD_TABS.length - 1) setHudTab(HUD_TABS[i + 1]);
-    else if (dx > 0 && i > 0) setHudTab(HUD_TABS[i - 1]);
-  }, { passive: true });
+  // No tab bar in v4.2 — keep data-go-tab as in-page scroll anchors
+  if (document.documentElement._hudGoBound) return;
+  document.documentElement._hudGoBound = true;
   document.addEventListener("click", function (e) {
     var go = e.target.closest("[data-go-tab]");
     if (!go) return;
@@ -128,10 +97,11 @@ function bindHudTabs() {
   });
 }
 function ensurePanelsVisible() {
-  ["xpWx","xpMk"].forEach(function (id) {
+  ["xpWx","xpMk","sec-home","sec-weather","sec-markets","sec-map","sec-music","sec-phone","sec-focus","sec-apps"].forEach(function (id) {
     var el = document.getElementById(id);
     if (el) { el.hidden = false; el.removeAttribute("hidden"); }
   });
+  try { mountPhoneScreen(); } catch (e) {}
 }
 
 function initFx3dLayer() {
@@ -492,6 +462,7 @@ function accentOf(a) {
   var h = m[0], l = parseInt(h.slice(1, 3), 16) * .3 + parseInt(h.slice(3, 5), 16) * .59 + parseInt(h.slice(5, 7), 16) * .11;
   return l < 60 ? "#f4efe4" : h;
 }
+var APPS_CAT = "all";
 function renderApps() {
   var on = APPS.filter(function (a) { return a.on; });
   function mkTile(a) {
@@ -499,11 +470,38 @@ function renderApps() {
     b.className = "tile"; b.type = "button"; b.setAttribute("role", "listitem");
     b.setAttribute("aria-label", "Open " + a.name); b.title = a.name;
     b.innerHTML = '<span class="ic">' + iconHTML(a) + '</span><span class="lb">' + esc(a.name) + '</span>';
-    b.addEventListener("click", function () { openApp(a); });
+    b.addEventListener("click", function () { try { sfxTap(); } catch (e) {} openApp(a); });
     return b;
   }
+  var cats = document.getElementById("appsCats");
+  if (cats && !cats._bound) {
+    cats._bound = true;
+    cats.addEventListener("click", function (e) {
+      var c = e.target.closest("[data-cat]"); if (!c) return;
+      APPS_CAT = c.getAttribute("data-cat") || "all";
+      renderApps();
+      try { sfxTap(); } catch (e2) {}
+    });
+  }
+  if (cats) {
+    var list = [{ id: "all", name: "All", icon: "▦" }].concat(typeof APP_CATS !== "undefined" ? APP_CATS : []);
+    cats.innerHTML = list.map(function (c) {
+      var onC = c.id === APPS_CAT;
+      return '<button type="button" class="cat-chip' + (onC ? " on" : "") + '" data-cat="' + c.id + '" role="tab" aria-selected="' + onC + '">' + (c.icon ? ('<span class="ci">' + c.icon + "</span>") : "") + esc(c.name) + "</button>";
+    }).join("");
+  }
+  var filtered = on;
+  if (APPS_CAT && APPS_CAT !== "all" && typeof appCatOf === "function") {
+    filtered = on.filter(function (a) { return appCatOf(a) === APPS_CAT; });
+  } else if (APPS_CAT && APPS_CAT !== "all" && typeof APP_CATS !== "undefined") {
+    filtered = on.filter(function (a) {
+      var hay = ((a.name || "") + " " + (a.id || "") + " " + (a.tags || []).join(" ")).toLowerCase();
+      for (var i = 0; i < APP_CATS.length; i++) if (APP_CATS[i].id === APPS_CAT && APP_CATS[i].match.test(hay)) return true;
+      return false;
+    });
+  }
   var box = $("#apps"); if (!box) return; box.innerHTML = "";
-  on.forEach(function (a) { box.appendChild(mkTile(a)); });
+  filtered.forEach(function (a) { box.appendChild(mkTile(a)); });
   var ad = document.createElement("button");
   ad.className = "tile add"; ad.type = "button"; ad.id = "addApp"; ad.setAttribute("role", "listitem"); ad.setAttribute("aria-label", "Find and add an app");
   ad.innerHTML = '<span class="ic" aria-hidden="true">⌕</span><span class="lb">Find an app</span>';
@@ -941,7 +939,7 @@ function paintCelestialSky(fx, c, W, H, t, kind) {
 
 var WX_DAY = 0, WX_MODE = "actual";
 try { WX_DAY = +Store.getLocal("wxDay", 0) || 0; } catch (e) {}
-try { WX_MODE = Store.getLocal("wxMode", "actual") || "actual"; } catch (e) {}
+try { WX_MODE = Store.getLocal("wxMode", "feels") || "actual"; } catch (e) {}
 
 function hoursForDay(j, dayIdx) {
   var day = j.daily.time[dayIdx];
@@ -2178,7 +2176,7 @@ function showMapPlaceCard(pl) {
   if (!card) {
     card = document.createElement("div");
     card.id = "mapPlaceCard"; card.className = "map-place-card"; card.hidden = true;
-    card.innerHTML = '<div class="mpc-meta"><b id="mpcName"></b><small id="mpcEta"></small></div><button type="button" class="mpc-go" id="mpcGo">Go</button><button type="button" class="mpc-x" id="mpcX" aria-label="Close">✕</button>';
+    card.innerHTML = '<div class="mpc-meta"><b id="mpcName"></b><small id="mpcEta"></small></div><button type="button" class="mpc-go" id="mpcGo">GO</button><button type="button" class="mpc-x" id="mpcX" aria-label="Close">✕</button>';
     v.appendChild(card);
     card.querySelector("#mpcGo").addEventListener("click", function (e) {
       e.stopPropagation();
@@ -3290,23 +3288,19 @@ function bindSettings(b, closeAfterSave) {
   seg(); segS(); segL(); segT(); segM();
 }
 function mountSettingsScreen() {
-  var host = document.getElementById("settingsMount");
-  if (!host) return;
-  var sndOn = !!Store.getLocal("uiSounds", false);
-  var liteOn = !!Store.getLocal("liteMode", false);
-  var tiltOn = Store.getLocal("tiltCards", null); if (tiltOn == null) tiltOn = true; else tiltOn = !!tiltOn;
-  var motionOn = !!Store.getLocal("motionTilt", false);
-  host.innerHTML = settingsHtml(sndOn, liteOn, tiltOn, motionOn);
-  bindSettings(host, false);
+  /* v4.2: settings live in MENU sheet only — keep mount for parity */
+  openSettings();
 }
 function openSettings() {
-  var host = document.getElementById("settingsMount");
-  if (host) { setHudTab("settings"); mountSettingsScreen(); return; }
-  var sndOn = !!Store.getLocal("uiSounds", false);
+  var sndOn = (function () { var v = Store.getLocal("uiSounds", null); return v === null || v === undefined ? true : !!v; })();
   var liteOn = !!Store.getLocal("liteMode", false);
   var tiltOn = Store.getLocal("tiltCards", null); if (tiltOn == null) tiltOn = true; else tiltOn = !!tiltOn;
   var motionOn = !!Store.getLocal("motionTilt", false);
-  sheet("SETTINGS", settingsHtml(sndOn, liteOn, tiltOn, motionOn), function (b) { bindSettings(b, true); });
+  try { sfxOpen(); } catch (e) {}
+  sheet("SETTINGS", settingsHtml(sndOn, liteOn, tiltOn, motionOn), function (b) {
+    bindSettings(b, true);
+    try { bindMuteBtn(); } catch (e2) {}
+  });
 }
 
 // ----- help -----
@@ -3407,7 +3401,7 @@ function mountPhoneScreen() {
 }
 function openDial() {
   var host = document.getElementById("phoneMount");
-  if (host) { setHudTab("phone"); mountPhoneScreen(); return; }
+  if (host) { mountPhoneScreen(); try { setHudTab("phone", { silent: true }); } catch (e) {} return; }
   sheet("PHONE", dialerHtml(), function (b) { bindDialer(b); });
 }
 
@@ -3543,7 +3537,7 @@ function runSearch(q) {
   });
   document.addEventListener("click", function (e) { if (!f.contains(e.target)) hideDrop(); });
 })();
-window.ZAPOS = { store: Store, version: VERSION, setHudTab: setHudTab, catalog: CATALOG.length, accounts: ACCOUNT_CATALOG.length, openDirectionsTo: openDirectionsTo, placeLL: placeLL, showMapPlaceCard: showMapPlaceCard, loadAccounts: loadAccounts, loadPlaces: loadPlaces, setGPS: function (g) { GPS = g; Store.setLocal("gps", GPS); try { updateGpsLockChip(); } catch (e) {} }, mapFollow: function (on) { MAP.follow = !!on; }, updateSkyline: updateSkyline, setUiSounds: setUiSounds, sunPeriodNow: sunPeriodNow }; // for the stage 2 sync add-on + QA
+window.ZAPOS = { store: Store, version: VERSION, setHudTab: setHudTab, catalog: CATALOG.length, accounts: ACCOUNT_CATALOG.length, openDirectionsTo: openDirectionsTo, placeLL: placeLL, showMapPlaceCard: showMapPlaceCard, loadAccounts: loadAccounts, loadPlaces: loadPlaces, setGPS: function (g) { GPS = g; Store.setLocal("gps", GPS); try { updateGpsLockChip(); } catch (e) {} }, mapFollow: function (on) { MAP.follow = !!on; }, updateSkyline: updateSkyline, setUiSounds: setUiSounds, sfxTap: sfxTap, sfxSuccess: sfxSuccess, sfxError: sfxError, sunPeriodNow: sunPeriodNow }; // for the stage 2 sync add-on + QA
 
 // ========== v3.1 concept chrome: menu, today ==========
 var menuBtn = $("#menuBtn"); if (menuBtn) menuBtn.addEventListener("click", openMenu);
@@ -3557,7 +3551,7 @@ var menuBtn = $("#menuBtn"); if (menuBtn) menuBtn.addEventListener("click", open
 
 
 // ========== v3.8 cyberpunk pack (original designs) ==========
-var UI_SOUNDS = !!Store.getLocal("uiSounds", false);
+var UI_SOUNDS = (function () { var v = Store.getLocal("uiSounds", null); return v === null || v === undefined ? true : !!v; })();
 function setUiSounds(on) {
   UI_SOUNDS = !!on;
   try { Store.setLocal("uiSounds", UI_SOUNDS); } catch (e) {}
@@ -3580,7 +3574,40 @@ function sfxTone(freq, dur, type, gain) {
   } catch (e) {}
 }
 function sfxTap() { sfxTone(640, 0.07, "triangle", 0.03); sfxTone(920, 0.05, "sine", 0.02); }
+function sfxOpen() { sfxTone(420, 0.08, "sine", 0.025); sfxTone(680, 0.1, "triangle", 0.03); }
+function sfxBoot() { sfxTone(220, 0.12, "sine", 0.02); setTimeout(function () { sfxTone(330, 0.1, "triangle", 0.025); }, 80); setTimeout(function () { sfxTone(440, 0.14, "sine", 0.03); }, 160); }
+function sfxSuccess() { sfxTone(520, 0.08, "sine", 0.03); sfxTone(780, 0.12, "triangle", 0.035); }
+function sfxError() { sfxTone(180, 0.14, "sawtooth", 0.025); sfxTone(140, 0.16, "triangle", 0.02); }
+function sfxChime() { sfxTone(523, 0.18, "sine", 0.028); setTimeout(function () { sfxTone(784, 0.22, "sine", 0.022); }, 120); }
 function sfxCharge() { sfxTone(280, 0.1, "sawtooth", 0.018); sfxTone(560, 0.12, "triangle", 0.028); }
+var _sfxPrimed = false;
+function primeUiAudio() {
+  if (_sfxPrimed) return;
+  _sfxPrimed = true;
+  try {
+    var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+    if (!_sfxCtx) _sfxCtx = new AC();
+    if (_sfxCtx.state === "suspended") _sfxCtx.resume().catch(function () {});
+    if (UI_SOUNDS) setTimeout(function () { try { sfxChime(); } catch (e) {} }, 40);
+  } catch (e) {}
+}
+function bindMuteBtn() {
+  var b = document.getElementById("muteBtn"); if (!b || b._bound) return; b._bound = true;
+  function sync() {
+    b.setAttribute("aria-pressed", UI_SOUNDS ? "false" : "true");
+    b.textContent = UI_SOUNDS ? "🔊" : "🔇";
+    b.title = UI_SOUNDS ? "Mute UI sounds" : "Unmute UI sounds";
+    b.setAttribute("aria-label", b.title);
+  }
+  sync();
+  b.addEventListener("click", function () {
+    setUiSounds(!UI_SOUNDS);
+    sync();
+    if (UI_SOUNDS) { primeUiAudio(); sfxTap(); }
+  });
+  document.addEventListener("pointerdown", function () { primeUiAudio(); }, { once: true, capture: true });
+  document.addEventListener("keydown", function () { primeUiAudio(); }, { once: true, capture: true });
+}
 function bindChargeUp() {
   var root = $("#app"); if (!root || root._chargeBound) return;
   root._chargeBound = true;
@@ -3711,7 +3738,7 @@ function placeNeonRing(v, dx, dy) {
   }
   try { bindChargeUp(); updateSkyline(); buildClockTicks(); ensureHudTicks(); initBatteryHud(); updateGpsLockChip(); startZapWave(); } catch (e) {}
 
-  try { bindHudTabs(); ensurePanelsVisible(); } catch (e) {}
+  try { bindHudTabs(); try { bindMuteBtn(); } catch (eMute) {} try { if (Store.getLocal("uiSounds", null) === null) Store.setLocal("uiSounds", true); } catch (eSnd) {} ensurePanelsVisible(); } catch (e) {}
   try {
     var uv = (Store.ui() || {}).view || "";
     if (String(uv).indexOf("hud:") === 0) setHudTab(String(uv).slice(4), { silent: true });

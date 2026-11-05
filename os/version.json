@@ -1,1 +1,6 @@
-{"version": "4.1.0", "released": "2026-11-05", "name": "ZAPWISE//OS", "notes": "Tabbed cyberpunk HUD: one screen per section, calm 3D city backdrop, Assistant (no ZAP label), Lite auto-drops 3D"}
+{
+  "version": "4.2.0",
+  "released": "2026-11-05",
+  "name": "ZAPWISE//OS",
+  "notes": "One-page cyberpunk HUD matching concept: ring clock, feels-like weather, markets, map GO, music, dial, focus, apps; sound ON; no tab bar; desktop command-center"
+}

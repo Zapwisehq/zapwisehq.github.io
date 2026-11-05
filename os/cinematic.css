@@ -1,104 +1,198 @@
-/* ZAPWISE//OS v4.1 — calm 3D city backdrop + tabbed cyberpunk HUD shell */
-html.zw-cine,html.zw-cine body{background:#03040a;min-height:100%;}
+/* ZAPWISE//OS v4.2 — one-page cyberpunk HUD + calm 3D city behind hero only */
+html.zw-cine,html.zw-cine body{background:#03040a;min-height:100%}
 html.zw-cine body{overscroll-behavior:none}
-html.zw-cine .fx-layer,html.zw-cine .grid-bg{opacity:.15;pointer-events:none}
+html.zw-cine .fx-layer,html.zw-cine .grid-bg{opacity:.12;pointer-events:none}
 html.zw-cine .motto{display:none}
-#app{position:relative;z-index:2;max-width:720px;margin:0 auto;min-height:100dvh;padding-bottom:calc(72px + env(safe-area-inset-bottom))}
-html.zw-cine #app{background:transparent}
-@media (min-width:900px){#app{margin-right:92px;padding-bottom:24px}}
-html.zw-cine .top.sticky{background:rgba(3,4,10,.55);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(92,225,230,.14)}
 
-.zw-stage{position:fixed;inset:0;z-index:0;pointer-events:none;background:#03040a;opacity:.55}
+#app{position:relative;z-index:2;max-width:720px;margin:0 auto;min-height:100dvh;padding-bottom:calc(88px + env(safe-area-inset-bottom))}
+html.zw-cine #app{background:transparent;max-width:none}
+@media (min-width:1100px){#app{padding-bottom:32px}}
+
+html.zw-cine .top.sticky{
+  background:rgba(3,4,10,.62);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border-bottom:1px solid rgba(92,225,230,.18);
+  max-width:1400px;margin:0 auto;width:100%;
+}
+
+.zw-stage{position:fixed;inset:0;z-index:0;pointer-events:none;background:#03040a;opacity:.38}
 .zw-stage canvas{display:block;width:100%;height:100%}
 html.fx-lite .zw-stage,html.fx-lite .zw-rail,html.fx-lite .zw-hint,html.fx-lite .zw-back{display:none!important}
-html.zw-cine .zw-stage{opacity:.42}
-@media (min-width:900px){html.zw-cine .zw-stage{opacity:.5}}
+html.zw-cine .zw-stage{opacity:.32}
+@media (min-width:900px){html.zw-cine .zw-stage{opacity:.4}}
+.zw-rail,.zw-hint,.zw-back,.hud-tabs{display:none!important}
 
-/* Hide v4.0 fly UI if leftover */
-.zw-rail,.zw-hint,.zw-back{display:none!important}
-
-/* ===== Tab bar ===== */
-.hud-tabs{
-  position:fixed;left:0;right:0;bottom:0;z-index:60;
-  display:flex;gap:2px;justify-content:space-around;align-items:stretch;
-  padding:6px 4px calc(6px + env(safe-area-inset-bottom));
-  background:rgba(3,4,10,.88);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
-  border-top:1px solid rgba(92,225,230,.28);
-  box-shadow:0 -8px 28px rgba(0,0,0,.45);
+/* ===== One-page sections ===== */
+.os-page{
+  display:flex;flex-direction:column;gap:12px;
+  padding:10px 12px 24px;
+  max-width:720px;margin:0 auto;
 }
-.hud-tabs button{
-  flex:1;min-width:0;min-height:48px;max-width:96px;margin:0;padding:4px 2px 6px;
-  border:0;border-radius:10px;background:transparent;color:rgba(244,239,228,.55);
-  font:700 9px/1.1 var(--mono,ui-monospace,monospace);letter-spacing:.08em;text-transform:uppercase;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;
-}
-.hud-tabs button .ti{font-size:16px;line-height:1;opacity:.85}
-.hud-tabs button.on{color:var(--cyan,#5ce1e6);background:rgba(92,225,230,.1);box-shadow:inset 0 0 0 1px rgba(92,225,230,.35)}
-.hud-tabs button:focus-visible{outline:2px solid var(--amber,#f0a202);outline-offset:2px}
+.panel-sec{display:block;animation:hudIn .38s ease-out both}
+.panel-sec:nth-child(1){animation-delay:.02s}
+.panel-sec:nth-child(2){animation-delay:.06s}
+.panel-sec:nth-child(3){animation-delay:.1s}
+.panel-sec:nth-child(4){animation-delay:.14s}
+.panel-sec:nth-child(5){animation-delay:.18s}
+.panel-sec:nth-child(6){animation-delay:.22s}
+.panel-sec:nth-child(7){animation-delay:.26s}
+.panel-sec:nth-child(8){animation-delay:.3s}
+@keyframes hudIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.panel-sec{animation:none}}
 
-@media (min-width:900px){
-  .hud-tabs{
-    left:auto;right:max(12px,env(safe-area-inset-right));top:50%;bottom:auto;
-    transform:translateY(-50%);flex-direction:column;width:72px;padding:10px 6px;gap:4px;
-    border:1px solid rgba(92,225,230,.28);border-radius:16px;border-top:1px solid rgba(92,225,230,.28);
-    box-shadow:0 12px 40px rgba(0,0,0,.5);
-  }
-  .hud-tabs button{max-width:none;width:100%;min-height:52px}
-}
-
-/* ===== Screens ===== */
-.hud-screens{position:relative}
-.hud-screen{display:none;padding:10px 12px 18px;animation:hudIn .22s ease-out}
-.hud-screen.on{display:block}
-@keyframes hudIn{from{opacity:.55;transform:translateY(6px)}to{opacity:1;transform:none}}
-@media (prefers-reduced-motion:reduce){.hud-screen{animation:none}}
-
-.hud-screen .card.br,.hud-screen .hud-panel,.hud-screen .xp,.hud-screen .places-row{
-  background:linear-gradient(160deg,rgba(20,28,48,.72),rgba(8,10,22,.82));
-  border:1px solid rgba(92,225,230,.28);
-  box-shadow:0 12px 36px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.05);
+.panel-sec .card.br,.panel-sec .hud-panel,.panel-sec .xp,.panel-sec .places-row{
+  background:linear-gradient(160deg,rgba(20,28,48,.78),rgba(8,10,22,.88));
+  border:1px solid rgba(92,225,230,.3);
+  box-shadow:0 12px 36px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.05),0 0 24px rgba(92,225,230,.06);
   backdrop-filter:blur(14px) saturate(1.15);-webkit-backdrop-filter:blur(14px) saturate(1.15);
+  margin-bottom:10px;
 }
-.hud-screen .sec-title{
-  font:800 11px/1 var(--mono,ui-monospace,monospace);letter-spacing:.18em;color:var(--cyan,#5ce1e6);
-  margin:4px 2px 10px;display:flex;align-items:center;gap:8px
+.panel-sec .xp{display:block!important;margin:0 0 10px;padding:12px;border-radius:var(--r,16px)}
+
+/* Amber corner brackets + cyan HUD ticks */
+.panel-sec .card.br{position:relative}
+.panel-sec .card.br:before,.panel-sec .card.br:after{opacity:1}
+.hud-h{display:flex;align-items:center;gap:8px;font:800 11px/1 var(--mono,ui-monospace,monospace);letter-spacing:.14em;color:var(--cyan,#5ce1e6);margin-bottom:8px}
+.hud-ticks{position:absolute;inset:8px;pointer-events:none;border:1px solid rgba(92,225,230,.12);border-radius:12px;opacity:.7}
+.hud-ticks:before,.hud-ticks:after{
+  content:"";position:absolute;width:14px;height:14px;border-color:var(--amber,#f0a202);border-style:solid;opacity:.9;
+  filter:drop-shadow(0 0 4px rgba(240,162,2,.55));
 }
-.hud-screen .sec-title:before{content:"";flex:0 0 18px;height:1px;background:rgba(92,225,230,.55)}
+.hud-ticks:before{top:-1px;left:-1px;border-width:2px 0 0 2px}
+.hud-ticks:after{top:-1px;right:-1px;border-width:2px 2px 0 0}
+.hero .hud-ticks{inset:10px}
 
-/* Always-visible expand panels on dedicated screens */
-.hud-screen .xp{display:block!important;margin:10px 0;padding:12px;border-radius:var(--r,16px)}
-#screen-home #hWx,#screen-home #hMk{cursor:pointer}
-#hudTabs button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+/* Top bar mute + MENU text */
+.h-mute{
+  min-width:36px;height:36px;padding:0 8px;border-radius:10px;border:1px solid rgba(92,225,230,.28);
+  background:rgba(92,225,230,.08);color:var(--cyan,#5ce1e6);font-size:14px;cursor:pointer;
+  box-shadow:0 0 12px rgba(92,225,230,.12);
+}
+.h-mute[aria-pressed="true"]{color:rgba(244,239,228,.45);border-color:rgba(255,255,255,.14);background:rgba(255,255,255,.04);box-shadow:none}
+.avatar,#menuBtn{
+  min-height:36px;padding:0 12px;border-radius:10px;border:1px solid rgba(240,162,2,.4);
+  background:rgba(240,162,2,.1);color:var(--amber,#f0a202);font:800 11px/1 var(--mono,ui-monospace,monospace);
+  letter-spacing:.12em;cursor:pointer;
+}
+.h-theme{letter-spacing:.1em}
 
-/* Assistant FAB — sit above tabs on phones */
-html.zw-cine .zap-fab{bottom:calc(78px + env(safe-area-inset-bottom));right:12px}
-@media (min-width:900px){html.zw-cine .zap-fab{bottom:calc(18px + env(safe-area-inset-bottom));right:calc(96px + env(safe-area-inset-right))}}
-.zap-lab{letter-spacing:.06em!important;font-size:9px!important;max-width:56px;text-align:center;line-height:1.1}
-.zap-fab.asst .zap-lab{font-size:8px!important;letter-spacing:.04em!important}
+/* Hero clock ring sweep */
+.sec-hero .hero{min-height:220px;overflow:hidden}
+.clock-ring{color:var(--cyan,#5ce1e6);filter:drop-shadow(0 0 12px rgba(92,225,230,.45))}
+.clock-ring .clock-svg{animation:ringSweep 12s linear infinite}
+@keyframes ringSweep{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.clock-ring .clock-svg{animation:none}}
+.h-clock{text-shadow:0 0 24px rgba(92,225,230,.35),0 0 48px rgba(168,85,247,.2)}
 
-/* Compact home weather line */
-.home-wx-line{display:flex;align-items:center;gap:10px;padding:12px 14px;min-height:52px}
-.home-wx-line .hw-temp{font-size:28px;font-weight:800}
-.home-port-line{padding:12px 14px}
-.home-port-line .hmk-quotes{display:flex;gap:12px;flex-wrap:wrap;margin-top:6px}
+/* GPS pulse */
+.hud-chip.gps[data-lock="1"] i{
+  display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--cyan,#5ce1e6);
+  box-shadow:0 0 0 0 rgba(92,225,230,.55);animation:gpsPulse 1.8s ease-out infinite;margin-right:6px;vertical-align:middle;
+}
+@keyframes gpsPulse{0%{box-shadow:0 0 0 0 rgba(92,225,230,.55)}70%{box-shadow:0 0 0 8px rgba(92,225,230,0)}100%{box-shadow:0 0 0 0 rgba(92,225,230,0)}}
+.hud-chip.sync i{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ok,#3ddc97);margin-right:6px;vertical-align:middle;box-shadow:0 0 8px rgba(61,220,151,.55)}
 
-/* Map taller on its own screen */
-#screen-map #mapV{height:min(52vh,420px)}
-#screen-phone #phoneMount{min-height:280px}
-#screen-settings #settingsMount{min-height:200px}
+/* Markets big total */
+.sec-markets .port-hero{padding:8px 4px 12px;text-align:left}
+.sec-markets .ph-total{font-size:clamp(28px,8vw,40px);font-weight:900;letter-spacing:-.02em;color:var(--cream,#f4efe4);text-shadow:0 0 20px rgba(92,225,230,.2)}
+.sec-markets .ph-m b{color:var(--ok,#3ddc97)}
+.hmk-quotes{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.hmk-q{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid rgba(92,225,230,.28);background:rgba(92,225,230,.06);font:700 11px/1 var(--mono,ui-monospace,monospace)}
+.hmk-act,.chip.accent{box-shadow:0 0 14px rgba(240,162,2,.2)}
 
-/* Readable text over city */
+/* Map taller on page */
+.sec-map #mapV{height:min(42vh,360px);border-radius:14px;overflow:hidden}
+.map-tool.map-rec{min-width:auto;padding:0 10px;font-size:10px;letter-spacing:.06em;white-space:nowrap}
+.map-place-card .mpc-go{text-transform:uppercase;letter-spacing:.08em}
+
+/* Focus ring glow */
+.focus-card .foc-ring{filter:drop-shadow(0 0 6px rgba(92,225,230,.45))}
+.focus-card.running .foc-time{color:var(--cyan,#5ce1e6);text-shadow:0 0 12px rgba(92,225,230,.4)}
+
+/* Apps cats on page */
+#appsCats{margin:4px 0 8px}
+.sec-apps .h-srch{margin-bottom:10px}
+
+/* Assistant orb — no text label; float above content */
+html.zw-cine .zap-fab{bottom:calc(18px + env(safe-area-inset-bottom));right:12px}
+.zap-fab .zap-lab{display:none!important}
+.zap-fab{z-index:58!important;width:58px;height:58px;border-radius:50%;
+  box-shadow:0 0 0 1px rgba(92,225,230,.45),0 0 28px rgba(92,225,230,.35),0 8px 24px rgba(0,0,0,.45)}
+.zap-sheet:not([hidden]){z-index:55;bottom:calc(84px + env(safe-area-inset-bottom));max-height:min(70vh,560px)}
+.sheet:not([hidden]),#scrim:not([hidden]){z-index:70}
+
 html.zw-cine .card,html.zw-cine .hud-panel,html.zw-cine .xp{color:var(--cream,#f4efe4)}
 html.zw-cine .note,html.zw-cine .hw-advice,html.zw-cine .places-note{color:rgba(244,239,228,.72)}
-
-/* Thin cyan frame + amber corner brackets (simple HUD) */
-.hud-screen .card.br:before,.hud-screen .card.br:after{opacity:.95}
-.hud-tabs button.on .ti{color:var(--amber,#f0a202);text-shadow:0 0 8px rgba(240,162,2,.55)}
 main{overflow-x:hidden;-webkit-overflow-scrolling:touch}
-.hud-screen.on{min-height:calc(100dvh - 140px)}
 
-/* Keep Assistant sheet above content but below always-visible HUD tabs */
-.zap-sheet:not([hidden]){z-index:55;bottom:calc(64px + env(safe-area-inset-bottom));max-height:min(70vh,560px)}
-@media (min-width:900px){.zap-sheet:not([hidden]){bottom:80px;max-height:min(78vh,640px)}}
-.zap-fab{z-index:58!important}
-.sheet:not([hidden]),#scrim:not([hidden]){z-index:70}
+/* Subtle live readout tick */
+.ph-total,.h-clock,#hwTemp{font-variant-numeric:tabular-nums}
+
+/* ===== Desktop command-center multi-column ===== */
+@media (min-width:1100px){
+  .os-page{
+    display:grid;
+    grid-template-columns:minmax(280px,1fr) minmax(380px,1.5fr) minmax(300px,1.1fr);
+    grid-template-areas:
+      "hero hero hero"
+      "phone map markets"
+      "music map markets"
+      "weather focus markets"
+      "apps apps apps";
+    gap:14px;
+    max-width:1400px;
+    padding:14px 18px 40px;
+    align-items:start;
+  }
+  .sec-hero{grid-area:hero}
+  .sec-weather{grid-area:weather}
+  .sec-map{grid-area:map}
+  .sec-markets{grid-area:markets}
+  .sec-phone{grid-area:phone}
+  .sec-music{grid-area:music}
+  .sec-focus{grid-area:focus}
+  .sec-apps{grid-area:apps}
+  .sec-hero .hero{min-height:260px}
+  .sec-map #mapV{height:min(52vh,480px)}
+  .sec-weather{max-height:520px;overflow:auto;scrollbar-width:thin}
+  .sec-markets{max-height:none}
+  .panel-sec .card.br,.panel-sec .xp,.panel-sec .places-row{margin-bottom:0}
+  .sec-weather .h-wx{margin-bottom:10px}
+  .sec-markets #hMk{margin-bottom:10px}
+  .sec-map #hMap{margin-bottom:10px}
+  .sec-phone #phoneMount{min-height:320px}
+}
+
+@media (min-width:900px) and (max-width:1099px){
+  .os-page{max-width:900px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .sec-hero,.sec-apps{grid-column:1/-1}
+  .sec-map{grid-column:1/-1}
+}
+
+/* v4.2 polish pass — closer to concept HUD */
+.sec-hero .skyline[data-period="night"] .sky-wash{
+  background:linear-gradient(180deg,#1a0a2e 0%,#2a1450 28%,#0b1024 62%,#05060ef2 100%)!important;
+}
+.sec-hero .hero{
+  box-shadow:0 0 40px rgba(168,85,247,.12),0 12px 36px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.05);
+}
+.sec-hero .h-clock{font-size:clamp(42px,12vw,64px);font-weight:900;letter-spacing:-.03em}
+.sec-map .map-v{
+  background:#050814;
+  box-shadow:inset 0 0 40px rgba(92,225,230,.08);
+}
+.sec-map .map-tiles{filter:saturate(1.35) contrast(1.08) brightness(.92) hue-rotate(-8deg)}
+.sec-map .map-msg{color:var(--cyan,#5ce1e6);text-shadow:0 0 12px rgba(92,225,230,.4)}
+.acct-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+@media (max-width:420px){.acct-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.sec-weather .wx-temp-chart{max-height:140px;width:100%}
+.sec-weather .wx-precip-chart{max-height:72px;width:100%}
+@media (max-width:520px){
+  .hud-status{order:3;flex:1 1 100%}
+  .top-r{margin-left:auto}
+  .brand .ver{display:inline}
+  .h-mute{min-width:34px}
+}
+/* Live data tick shimmer on portfolio */
+@keyframes dataTick{0%,100%{opacity:1}50%{opacity:.82}}
+.ph-total{animation:dataTick 2.8s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.ph-total,.clock-ring .clock-svg,.hud-chip.gps[data-lock="1"] i{animation:none}}
