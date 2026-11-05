@@ -5,220 +5,150 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>ZAPWISE//OS</title>
 <meta name="robots" content="noindex,nofollow">
-<meta name="description" content="ZAPWISE//OS: one-page cyberpunk HUD — clock, weather, markets, map, music, phone, focus, apps.">
+<meta name="description" content="ZAPWISE//OS: calm glass HUD — clock, weather, map, markets, focus, apps.">
 <meta name="theme-color" content="#070814">
+<meta name="zapos-version" content="4.4.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="/os/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/os/icon-180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/os/icon-192.png">
-<link rel="stylesheet" href="/os/app.css?v=4.3.0">
-<link rel="stylesheet" href="/os/cinematic.css?v=4.3.0">
+<link rel="stylesheet" href="/os/app.css?v=4.4.0">
 <script>
 (function(){try{var l=localStorage.getItem("zapos.device");if(l){var j=JSON.parse(l);if(j&&j.liteMode)document.documentElement.classList.add("fx-lite");}}catch(e){}
 try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.themeCss){var s=document.createElement("style");s.id="themeBoot";s.textContent=p.themeCss;document.head.appendChild(s);}}}catch(e){}})();
 </script>
 </head>
-<body>
+<body class="cyber">
 <div id="boot" class="boot" aria-hidden="true">
  <div class="boot-logo">ZAPWISE<b>//OS</b></div>
  <div class="boot-bar"><i></i></div>
- <div class="boot-msg" id="bootMsg">SYSTEMS ONLINE</div>
+ <div class="boot-msg" id="bootMsg">INITIALIZING…</div>
 </div>
 <div class="grid-bg" aria-hidden="true"></div>
 <div id="app">
 
- <header class="top sticky hud-top" id="top">
-  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver">v4.3.0</span></div>
-  <div class="hud-status" id="hudStatus" aria-label="System status">
-   <span class="hud-chip sync" id="hSync"><i aria-hidden="true"></i>SYNCED</span>
-   <span class="hud-chip gps" id="hGpsLock" data-lock="0"><i aria-hidden="true"></i>GPS —</span>
-   <span class="hud-chip bat" id="hBat" hidden title="Battery"><span class="bat-meter" id="hBatMeter" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span><span id="hBatPct"></span></span>
-  </div>
+ <header class="top sticky" id="top">
+  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver">v4.4.0</span></div>
   <div class="top-r">
-   <button type="button" class="h-mute" id="muteBtn" aria-pressed="false" aria-label="Mute UI sounds" title="Sound">🔊</button>
+   <span class="sync" id="hSync"><i aria-hidden="true"></i>SYNCED</span>
+   <span class="hud-chip gps" id="hGpsLock" data-lock="0" hidden><i aria-hidden="true"></i>GPS —</span>
+   <span class="hud-chip bat" id="hBat" hidden title="Battery"><span class="bat-meter" id="hBatMeter" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span><span id="hBatPct"></span></span>
    <button class="h-theme" data-theme-btn aria-label="Change theme" title="Change theme"><i aria-hidden="true"></i>THEME</button>
-   <button class="avatar" id="menuBtn" aria-label="Open settings menu" title="Menu">MENU</button>
+   <button class="avatar" id="menuBtn" aria-label="Open settings menu" title="Menu">☰</button>
   </div>
  </header>
 
  <main class="os-page" id="osPage">
 
-  <!-- HERO: ring clock over neon skyline -->
-  <section class="panel-sec sec-hero" id="sec-home" data-screen="home">
-   <div class="card br hero hud-panel" id="heroCard">
-    <div class="hud-ticks" aria-hidden="true"></div>
-    <div class="skyline" id="skyline" aria-hidden="true" data-period="night" data-wx="">
-     <div class="sky-wash"></div>
-     <div class="sky-buildings"></div>
-     <div class="sky-parallax" aria-hidden="true"><i class="sky-p far"></i><i class="sky-p mid"></i><i class="sky-p near"></i></div>
-     <div class="sky-wx" id="skyWx"></div>
-    </div>
-    <div class="clock-wrap">
-     <div class="clock-ring" aria-hidden="true">
-      <svg viewBox="0 0 120 120" class="clock-svg"><circle cx="60" cy="60" r="54" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".35"/>
-       <g class="clock-ticks" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"></g>
-      </svg>
-     </div>
-     <div class="h-clock" id="hClock" aria-live="off">--:--<em id="hAmpm"></em></div>
-    </div>
+  <div class="row2 hero-row">
+   <div class="card br hero" id="heroCard">
+    <div class="h-clock" id="hClock" aria-live="off">--:--<em id="hAmpm"></em></div>
     <div class="h-date" id="hDate">—</div>
-    <div class="hero-bot">
-     <span class="greet" id="greet">Systems online</span>
-    </div>
+    <div class="hero-bot"><span class="greet" id="greet"></span></div>
    </div>
-  </section>
-
-  <!-- WEATHER: feels-like chart panel -->
-  <section class="panel-sec sec-weather" id="sec-weather" data-screen="weather">
-   <button class="card br h-wx hud-panel" id="hWx" type="button" aria-label="Weather summary">
-    <canvas class="fx" id="fxHud" aria-hidden="true"></canvas>
-    <span class="hw-in">
-     <span class="hw-top">
-      <span>
-       <span class="hw-temp" id="hwTemp">--°</span>
-       <span class="hw-cond" id="hwNow">Weather loading…</span>
-       <span class="hw-advice" id="hwAdvice">Tap to set your city or allow location</span>
-      </span>
-      <span class="hw-ic" id="hwIc" aria-hidden="true">·</span>
-     </span>
-     <span class="hw-hrs" id="hwHrs" role="list"></span>
-     <span class="hw-meta"><span id="hwHL"></span><span id="hwFeels"></span><span id="hwRain"></span><span class="hw-upd" id="hwUpd">UPD --</span></span>
-    </span>
-   </button>
-   <div class="xp wx-cond card br hud-panel" id="xpWx">
-    <div class="xp-h hud-h"><b id="xpPlace">FEELS LIKE</b><button class="chip" id="xpCity" type="button">◎ CITY</button></div>
-    <div class="wx-days" id="wxDayPick" role="tablist" aria-label="Forecast days"></div>
-    <div class="wx-day-label" id="wxDayLabel">—</div>
-    <div class="wx-chart-head"><span class="wx-hl" id="wxChartHL">--°</span><span class="wx-unit" id="wxUnitLbl">Fahrenheit (°F)</span></div>
-    <div class="wx-icons" id="wxHourIcons" aria-hidden="true"></div>
-    <canvas class="wx-temp-chart" id="wxTempChart" width="720" height="220" aria-label="Hourly feels-like chart"></canvas>
-    <div class="wx-xlabels" id="wxXLabels"><span>12AM</span><span>6AM</span><span>12PM</span><span>6PM</span></div>
-    <div class="wx-tog" role="group" aria-label="Temperature type">
-     <button type="button" class="wx-tog-b" data-wxmode="actual" id="wxModeActual">Actual</button>
-     <button type="button" class="wx-tog-b on" data-wxmode="feels" id="wxModeFeels">Feels Like</button>
-    </div>
-    <p class="wx-tog-cap" id="wxModeCap">Feels-like temperature.</p>
-    <div class="wx-precip-h">Chance of Precipitation</div>
-    <div class="wx-precip-sum" id="wxPrecipSum">—</div>
-    <canvas class="wx-precip-chart" id="wxPrecipChart" width="720" height="120" aria-label="Precipitation chance chart"></canvas>
-    <div class="wx-scrub" id="wxScrub">
-     <span class="wx-scrub-t" id="wxScrubT">—</span>
-     <span class="wx-scrub-v" id="wxScrubV">—</span>
-    </div>
-    <p class="wx-summary" id="wxSummary">—</p>
-    <div class="wx-grid" id="wxGrid" aria-label="Weather details"></div>
-    <p class="note" id="xpNote"></p>
-   </div>
-  </section>
-
-  <!-- MARKETS + accounts -->
-  <section class="panel-sec sec-markets" id="sec-markets" data-screen="markets">
-   <div class="card br h-mk hud-panel" id="hMk" aria-label="Markets">
-    <div class="mk-h hud-h">MARKETS<span class="mk-t" id="hMkT">Updated --</span>
-     <button type="button" class="hmk-act" id="hMkAct" aria-label="Add or change account">＋ ADD</button>
-    </div>
-    <div class="port-hero" id="portHero" aria-label="Portfolio net worth">
-     <div class="ph-kicker">PORTFOLIO · LIVE</div>
-     <b class="ph-total" id="holdTotalV">$0</b>
-     <div class="ph-metrics">
-      <div class="ph-m"><span class="lbl">Today</span><b id="holdDayV">—</b><small id="holdDayPct"></small></div>
-      <div class="ph-m"><span class="lbl">All-time G/L</span><b id="holdGlV">—</b></div>
-     </div>
-     <canvas class="hold-chart" id="holdChart" width="560" height="96" aria-label="Portfolio sparkline"></canvas>
-    </div>
-    <div class="hmk-body" id="hMkBody">
-     <div class="hmk-val" id="hMkPort" hidden><span class="hmk-cta" data-hmk-add="1">Add your first account</span></div>
-     <div class="hmk-quotes" id="hMkQuotes">
-      <span class="hmk-q" data-sym="BTC"><b>BTC</b> <span class="px">--</span> <i class="ch">--</i></span>
-      <span class="hmk-q" data-sym="GOLD"><b>GOLD</b> <span class="px">--</span> <i class="ch">--</i></span>
-     </div>
-    </div>
-    <div class="mk-items" id="hMkList" hidden></div>
-   </div>
-   <div class="xp" id="xpMk">
-    <div class="xp-h hud-h"><b>ACCOUNTS</b><button class="chip accent" id="xpAcctAdd" type="button">＋ ACCOUNT</button></div>
-    <div class="acct-grid" id="acctGrid" role="list"></div>
-    <p class="note acct-note">Tap an account to open it. Long-press to edit. Balances stay on this device.</p>
-    <div class="xp-h" style="margin-top:12px"><b>HOLDINGS</b><button class="chip" id="xpHoldAdd" type="button">＋ HOLDING</button></div>
-    <div class="quick-add" id="quickAdd">
-     <div class="qa-h">ONE-TAP ADD</div>
-     <div class="qa-row" id="qaPicks" role="list"></div>
-    </div>
-    <div class="hold-list" id="holdList"></div>
-    <div class="hold-actions">
-     <button type="button" class="chip" id="xpMkEdit">✎ WATCHLIST</button>
-    </div>
-    <div class="xp-h" style="margin-top:14px"><b>WATCHLIST</b></div>
-    <div class="mk" id="xpMkList"></div>
-    <div class="stamp" id="xpMkStamp">UPDATED --</div>
-   </div>
-  </section>
-
-  <!-- MAP -->
-  <section class="panel-sec sec-map" id="sec-map" data-screen="map">
-   <div class="card br h-map hud-panel" id="hMap">
-    <div class="map-h hud-h">
-     <b id="hPlace">&gt; LOCATING…</b>
-     <span class="map-h-r"><span id="hGps">GPS --</span>
-      <button type="button" class="map-open" id="mapOpen" aria-label="Open in Maps">OPEN</button>
-     </span>
-    </div>
-    <div class="map-v" id="mapV" aria-label="Live map">
-     <div class="map-gl" id="mapGl" hidden aria-hidden="true"></div>
-     <div class="map-stage" id="mapStage">
-      <div class="map-tiles" id="mapTiles"></div>
-      <div class="map-markers" id="mapMarkers" aria-hidden="true">
-       <i class="map-acc" aria-hidden="true"></i>
-       <i class="map-radar" aria-hidden="true"></i>
-       <i class="map-heading" aria-hidden="true" hidden></i>
-       <i class="map-dot" id="mapDot" hidden></i>
-      </div>
-     </div>
-     <i class="map-shade" aria-hidden="true"></i>
-     <span class="map-msg" id="mapMsg">LOCATING…</span>
-     <div class="map-tools" aria-hidden="false">
-      <button type="button" class="map-tool" id="mapIn" aria-label="Zoom in">+</button>
-      <button type="button" class="map-tool" id="mapOut" aria-label="Zoom out">−</button>
-      <button type="button" class="map-tool map-rec" id="mapRec" aria-label="Recenter on me">◎ RECENTER</button>
-     </div>
-     <a class="map-attr" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap</a>
-     <span class="map-traffic-note" id="mapTrafficNote" title="No free live jam tiles for most regions">ETA via OSRM · no live jam colors</span>
-    </div>
-   </div>
-   <div class="places-row card br hud-panel" id="placesRow">
-    <div class="places-h hud-h"><b>PLACES</b><button type="button" class="chip" id="placeAdd" aria-label="Add a saved place">＋ ADD</button></div>
-    <div class="places-scroller" id="placesList" role="list"></div>
-    <p class="note places-note" id="placesNote">Save Home, Work, Gym. Tap a place for directions / GO.</p>
-   </div>
-  </section>
-
-  <!-- MUSIC -->
-  <section class="panel-sec sec-music" id="sec-music" data-screen="music">
-   <div class="card br play hud-panel" id="hPlay">
-    <div class="np-top hud-h">
-     <span>MUSIC</span>
+   <div class="card br play" id="hPlay">
+    <div class="np-top"><span>MUSIC</span>
      <button type="button" class="np-live" id="npLive" data-media-act="pick" aria-label="Choose music app">SWITCH ▾</button>
     </div>
     <div class="np-body">
      <button type="button" class="np-pick" data-media-act="pick" aria-label="Choose music app">
       <img class="np-art" id="npArt" src="/os/icons/music.jpg" alt="">
-      <span class="np-meta"><b id="npTitle">Choose a music app</b><small id="npArtist">Tap to open in your music app</small></span>
+      <span class="np-meta"><b id="npTitle">Choose a music app</b><small id="npArtist">Tap ▶ to open</small></span>
      </button>
      <button type="button" class="np-play" data-media-act="play" aria-label="Open music app">▶</button>
     </div>
    </div>
-  </section>
+  </div>
 
-  <!-- PHONE -->
-  <section class="panel-sec sec-phone" id="sec-phone" data-screen="phone">
-   <div class="card br" id="phoneMount" aria-label="Dial pad and favorites"></div>
-  </section>
+  <button class="card br h-wx" id="hWx" type="button" aria-label="Show more weather" aria-expanded="false" aria-controls="xpWx">
+   <canvas class="fx" id="fxHud" aria-hidden="true"></canvas>
+   <span class="hw-in">
+    <span class="hw-top">
+     <span>
+      <span class="hw-temp" id="hwTemp">--°</span>
+      <span class="hw-cond" id="hwNow">Weather loading…</span>
+      <span class="hw-advice" id="hwAdvice">Tap to set your city or allow location</span>
+     </span>
+     <span class="hw-ic" id="hwIc" aria-hidden="true">·</span>
+    </span>
+    <span class="hw-hrs" id="hwHrs" role="list"></span>
+    <span class="hw-meta"><span id="hwHL"></span><span id="hwFeels"></span><span id="hwRain"></span><span class="hw-upd" id="hwUpd">UPD --</span></span>
+   </span>
+  </button>
+  <div class="xp wx-cond" id="xpWx" hidden>
+   <div class="xp-h"><b id="xpPlace">CONDITIONS</b><button class="chip" id="xpCity" type="button">◎ CHANGE CITY</button></div>
+   <div class="wx-days" id="wxDayPick" role="tablist" aria-label="Forecast days"></div>
+   <div class="wx-day-label" id="wxDayLabel">—</div>
+   <div class="wx-chart-head"><span class="wx-hl" id="wxChartHL">--°</span><span class="wx-unit" id="wxUnitLbl">Fahrenheit (°F)</span></div>
+   <div class="wx-icons" id="wxHourIcons" aria-hidden="true"></div>
+   <canvas class="wx-temp-chart" id="wxTempChart" width="720" height="220" aria-label="Hourly temperature chart"></canvas>
+   <div class="wx-xlabels" id="wxXLabels"><span>12AM</span><span>6AM</span><span>12PM</span><span>6PM</span></div>
+   <div class="wx-tog" role="group" aria-label="Temperature type">
+    <button type="button" class="wx-tog-b on" data-wxmode="actual" id="wxModeActual">Actual</button>
+    <button type="button" class="wx-tog-b" data-wxmode="feels" id="wxModeFeels">Feels Like</button>
+   </div>
+   <p class="wx-tog-cap" id="wxModeCap">The actual temperature.</p>
+   <div class="wx-precip-h">Chance of Precipitation</div>
+   <div class="wx-precip-sum" id="wxPrecipSum">—</div>
+   <canvas class="wx-precip-chart" id="wxPrecipChart" width="720" height="120" aria-label="Precipitation chance chart"></canvas>
+   <div class="wx-scrub" id="wxScrub" hidden>
+    <span class="wx-scrub-t" id="wxScrubT">—</span>
+    <span class="wx-scrub-v" id="wxScrubV">—</span>
+   </div>
+   <p class="wx-summary" id="wxSummary">—</p>
+   <div class="wx-grid" id="wxGrid" aria-label="Weather details"></div>
+   <p class="note" id="xpNote"></p>
+  </div>
 
-  <!-- FOCUS -->
-  <section class="panel-sec sec-focus" id="sec-focus" data-screen="focus">
+  <div class="card br h-map" id="hMap">
+   <div class="map-h">
+    <b id="hPlace">&gt; LOCATING…</b>
+    <span class="map-h-r"><span id="hGps">GPS --</span>
+     <button type="button" class="map-open" id="mapOpen" aria-label="Open in Maps">OPEN</button>
+    </span>
+   </div>
+   <div class="map-v" id="mapV" aria-label="Live map">
+    <div class="map-gl" id="mapGl" hidden aria-hidden="true"></div>
+    <div class="map-stage" id="mapStage">
+     <div class="map-tiles" id="mapTiles"></div>
+     <div class="map-markers" id="mapMarkers" aria-hidden="true">
+      <i class="map-acc" aria-hidden="true"></i>
+      <i class="map-radar" aria-hidden="true"></i>
+      <i class="map-heading" aria-hidden="true" hidden></i>
+      <i class="map-dot" id="mapDot" hidden></i>
+     </div>
+    </div>
+    <i class="map-shade" aria-hidden="true"></i>
+    <span class="map-msg" id="mapMsg">LOCATING…</span>
+    <div class="map-tools" aria-hidden="false">
+     <button type="button" class="map-tool" id="mapIn" aria-label="Zoom in">+</button>
+     <button type="button" class="map-tool" id="mapOut" aria-label="Zoom out">−</button>
+     <button type="button" class="map-tool map-rec" id="mapRec" aria-label="Recenter on me">◎</button>
+    </div>
+    <a class="map-attr" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap</a>
+   </div>
+  </div>
+  <div class="places-row card br" id="placesRow">
+   <div class="places-h"><b>PLACES</b><button type="button" class="chip" id="placeAdd" aria-label="Add a saved place">＋ ADD</button></div>
+   <div class="places-scroller" id="placesList" role="list"></div>
+  </div>
+
+  <div class="mk-ticker card br" id="mkTicker" aria-label="Market ticker" hidden>
+   <div class="track" id="mkTickerTrack"></div>
+  </div>
+
+  <div class="row2">
+   <button class="card br h-mk" id="hMk" type="button" aria-label="Show markets" aria-expanded="false" aria-controls="xpMk">
+    <div class="mk-h">MARKETS<span class="mk-t" id="hMkT">Updated --</span></div>
+    <div class="mk-items" id="hMkList"><span class="dim">Markets loading…</span></div>
+    <div class="mk-port" id="hMkPort" hidden></div>
+    <div class="hmk-body" id="hMkBody" hidden>
+     <div class="hmk-quotes" id="hMkQuotes"></div>
+    </div>
+   </button>
    <button class="card br focus-card" id="mFocus" type="button" aria-label="Focus timer: tap to start or pause">
-    <div class="mk-h hud-h">FOCUS</div>
+    <div class="mk-h">FOCUS</div>
     <div class="foc-wrap">
      <svg class="foc-svg" viewBox="0 0 120 120" aria-hidden="true">
       <circle class="foc-track" cx="60" cy="60" r="52"/>
@@ -234,37 +164,61 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
     <span id="mDayV" hidden></span>
     <span id="mDayL" hidden></span>
    </button>
-  </section>
+  </div>
 
-  <!-- APPS + search + category chips -->
-  <section class="panel-sec sec-apps" id="sec-apps" data-screen="apps">
-   <form class="h-srch" id="srch" role="search" autocomplete="off">
+  <div class="xp" id="xpMk" hidden>
+   <div class="port-hero" id="portHero" aria-label="Portfolio net worth">
+    <div class="ph-kicker">PORTFOLIO · LIVE</div>
+    <b class="ph-total" id="holdTotalV">$0</b>
+    <div class="ph-metrics">
+     <div class="ph-m"><span class="lbl">Today</span><b id="holdDayV">—</b><small id="holdDayPct"></small></div>
+     <div class="ph-m"><span class="lbl">All-time G/L</span><b id="holdGlV">—</b></div>
+    </div>
+    <canvas class="hold-chart" id="holdChart" width="560" height="96" aria-label="Portfolio sparkline"></canvas>
+   </div>
+   <div class="xp-h"><b>ACCOUNTS</b><button class="chip accent" id="xpAcctAdd" type="button">＋ ACCOUNT</button></div>
+   <div class="acct-grid" id="acctGrid" role="list"></div>
+   <p class="note acct-note">Tap an account to open it. Long-press to edit.</p>
+   <div class="xp-h" style="margin-top:12px"><b>HOLDINGS</b><button class="chip" id="xpHoldAdd" type="button">＋ Add holding</button></div>
+   <div class="quick-add" id="quickAdd" hidden>
+    <div class="qa-h">ONE-TAP ADD</div>
+    <div class="qa-row" id="qaPicks" role="list"></div>
+   </div>
+   <div class="hold-list" id="holdList"></div>
+   <div class="hold-actions">
+    <button type="button" class="chip" id="xpMkEdit">✎ WATCHLIST</button>
+   </div>
+   <div class="xp-h" style="margin-top:14px"><b>WATCHLIST</b></div>
+   <div class="mk" id="xpMkList"></div>
+   <div class="stamp" id="xpMkStamp">UPDATED --</div>
+  </div>
+
+  <div class="card br" id="phoneMount" aria-label="Dial pad and favorites"></div>
+
+  <div class="card br today" id="today">
+   <div class="td-ico" aria-hidden="true"><small>TODAY</small><b id="tdDay">—</b></div>
+   <button type="button" class="td-item" id="tdCal" aria-label="Open Calendar">
+    <span class="td-k">Calendar</span>
+    <span class="td-v" id="tdCalV">Open today’s schedule</span>
+   </button>
+   <button type="button" class="td-item" id="tdNote" aria-label="Open Notes">
+    <span class="td-k">Note</span>
+    <span class="td-v" id="tdNoteV">Open Notes</span>
+   </button>
+  </div>
+
+  <div class="card br apps-card apps-wrap" id="appsSection">
+   <div class="sec-h">APPS <span class="sec-actions"><button class="chip" id="dEdit" type="button">✎ EDIT</button></span></div>
+   <form class="h-srch in-apps" id="srch" role="search" autocomplete="off">
     <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M15.5 15.5L21 21" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
-    <input id="srchQ" type="search" enterkeyhint="go" placeholder="Search any app or the web." aria-label="Search apps or the web" autocapitalize="off" spellcheck="false" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="srchDrop" aria-autocomplete="list">
-    <span class="srch-h" id="srchHint" aria-hidden="true"><kbd>⌘</kbd>K</span>
+    <input id="srchQ" type="search" enterkeyhint="go" placeholder="Find an app" aria-label="Search apps or the web" autocapitalize="off" spellcheck="false" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="srchDrop" aria-autocomplete="list">
     <div class="srch-drop" id="srchDrop" role="listbox" hidden></div>
    </form>
-   <div class="card br apps-card apps-wrap" id="appsSection">
-    <div class="sec-h hud-h">APPS <span class="sec-actions"><button class="chip accent" id="findApp" type="button">⌕ FIND</button><button class="chip" id="dEdit" type="button">✎ EDIT</button></span></div>
-    <div class="cat-chips" id="appsCats" role="tablist" aria-label="App categories"></div>
-    <div class="apps" id="apps" role="list"></div>
-   </div>
-   <div class="card br today" id="today">
-    <div class="td-ico" aria-hidden="true"><small>TODAY</small><b id="tdDay">—</b></div>
-    <button type="button" class="td-item" id="tdCal" aria-label="Open Calendar">
-     <span class="td-k">Calendar</span>
-     <span class="td-v" id="tdCalV">Open today’s schedule</span>
-    </button>
-    <button type="button" class="td-item" id="tdNote" aria-label="Open Notes">
-     <span class="td-k">Note</span>
-     <span class="td-v" id="tdNoteV">Open Notes</span>
-    </button>
-   </div>
-  </section>
+   <div class="cat-chips" id="appsCats" role="tablist" aria-label="App categories"></div>
+   <div class="apps" id="apps" role="list"></div>
+  </div>
 
-  <!-- settings host kept for MENU sheet mount parity; not a separate screen -->
   <div id="settingsMount" hidden aria-hidden="true"></div>
-
   <div hidden>
    <canvas class="fx" id="fxMain" aria-hidden="true"></canvas>
    <div id="wxPlace"></div><div id="wxTemp"></div><div id="wxIcon"></div><div id="wxCond"></div>
@@ -272,15 +226,13 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
    <div id="wxSun"></div><div id="wxStamp"></div><div id="wxHours"></div><div id="wxDays"></div><div id="wxNote"></div>
    <div id="mkList"></div><div id="mkStamp"></div><div id="editMkBtn"></div><div id="cityBtn"></div>
    <div id="hSunset"></div><div id="hWind"></div><div id="hStatus"></div>
-   <div id="v-home"></div>
+   <div id="v-home"></div><div id="hMkAct"></div><button id="findApp" type="button" hidden></button>
+   <span id="srchHint" hidden></span><div id="skyline"></div><div id="skyWx"></div>
+   <div id="hudStatus"></div>
   </div>
-
  </main>
-
 <footer class="motto" hidden>Shortcuts.</footer>
 </div>
-
-<!-- no 8-tab bar — MENU opens settings only -->
 
 <div class="scrim" id="scrim" hidden></div>
 <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" hidden>
@@ -289,7 +241,6 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
 </div>
 
 <div class="asst-dock" id="asstDock">
- <button type="button" class="zap-hint" id="zapHint" aria-label="Ask assistant for directions home">Directions home? Say GO.</button>
  <button type="button" class="zap-fab asst-mic" id="zapFab" aria-label="Open Assistant" title="Assistant">
   <svg class="zap-mic-ico" viewBox="0 0 24 24" aria-hidden="true" width="22" height="22"><path fill="currentColor" d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-3.1A7 7 0 0 0 19 11h-2z"/></svg>
  </button>
@@ -298,7 +249,6 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
  <div class="zap-h">
   <b id="zapTitle">Assistant</b>
   <span class="zap-badge" id="zapBadge">OFFLINE</span>
-  <button type="button" class="zap-mute" id="zapMute" aria-pressed="false" title="Mute voice">🔊</button>
   <button type="button" class="chip" id="zapClose" aria-label="Close">✕</button>
  </div>
  <div class="zap-log" id="zapLog" aria-live="polite"></div>
@@ -311,7 +261,7 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
  <div class="zap-ai" id="zapAiBar" hidden>
   <div class="zap-smart" id="zapSmartRow">
    <label class="zap-smart-lab"><input type="checkbox" id="zapSmart" checked> Smart mode</label>
-   <small class="zap-smart-note" id="zapSmartNote">Free-form questions go to Pollinations (no key). Actions stay on-device. Off = offline commands only.</small>
+   <small class="zap-smart-note" id="zapSmartNote">Free-form via Pollinations. Actions stay on-device.</small>
   </div>
   <div class="zap-ai-row">
    <small id="zapAiStatus">Private AI off</small>
@@ -325,8 +275,8 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/os/catalog.js?v=4.3.0"></script>
-<script src="/os/sky.js?v=4.3.0"></script>
-<script src="/os/app.js?v=4.3.0"></script>
+<script src="/os/catalog.js?v=4.4.0"></script>
+<script src="/os/sky.js?v=4.4.0"></script>
+<script src="/os/app.js?v=4.4.0"></script>
 </body>
 </html>

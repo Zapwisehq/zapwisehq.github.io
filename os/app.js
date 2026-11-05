@@ -1,7 +1,7 @@
 /* ZAPWISE//OS web app v4.3.0 (Nov 5, 2026). One-page cyberpunk HUD matching concept — sound on, no tab bar, desktop command-center. Static, no API keys. */
 (function () {
 "use strict";
-var VERSION = "4.3.0";
+var VERSION = "4.4.0";
 var APP_VERSION = VERSION;
 
 // ========== v3.12 3D FX (lazy) ==========
@@ -97,10 +97,13 @@ function bindHudTabs() {
   });
 }
 function ensurePanelsVisible() {
-  ["xpWx","xpMk","sec-home","sec-weather","sec-markets","sec-map","sec-music","sec-phone","sec-focus","sec-apps"].forEach(function (id) {
+  // v4.4: one-page calm layout — keep expand panels (xpWx/xpMk) collapsed until tapped
+  ["sec-home","sec-weather","sec-markets","sec-map","sec-music","sec-phone","sec-focus","sec-apps","phoneMount","appsSection","today","hMap","hWx","hMk","mFocus"].forEach(function (id) {
     var el = document.getElementById(id);
-    if (el) { el.hidden = false; el.removeAttribute("hidden"); }
+    if (el && el.hasAttribute("hidden") && id.indexOf("xp") !== 0) { /* leave intentional hidden alone */ }
   });
+  var xpWx = document.getElementById("xpWx"); if (xpWx) { xpWx.hidden = true; }
+  var xpMk = document.getElementById("xpMk"); if (xpMk) { xpMk.hidden = true; }
   try { mountPhoneScreen(); } catch (e) {}
 }
 
@@ -525,8 +528,8 @@ function tick() {
 function minute(d) {
   var h = d.getHours();
   $("#hDate").textContent = DOW[d.getDay()] + " " + MON[d.getMonth()] + " " + d.getDate();
-  var nm = (S.name || "").trim() || "operator";
-  $("#greet").textContent = "Systems online, " + nm;
+  var nm = (S.name || "").trim();
+  var gre = $("#greet"); if (gre) gre.textContent = nm ? ("Hello, " + nm) : "";
   try { updateSkyline(); } catch (e) {}
   var td = $("#tdDay"); if (td) td.textContent = pad2(d.getDate());
   $$(".ico .cal").forEach(function (c) { c.innerHTML = '<i>' + DOW[d.getDay()] + '</i><b>' + d.getDate() + '</b>'; });
@@ -537,22 +540,23 @@ function minute(d) {
 var FOC = Store.getLocal("focus", { st: "idle" });
 function renderFocus() {
   var now = Date.now(), left = FOCUS_MS, line;
-  if (FOC.st === "run") { left = FOC.end - now; if (left <= 0) { FOC = { st: "done" }; Store.setLocal("focus", FOC); left = 0; toast("Focus sprint done. Take 5."); try { navigator.vibrate && navigator.vibrate([200, 100, 200]); } catch (e) {} } }
+  if (FOC.st === "run") { left = FOC.end - now; if (left <= 0) { FOC = { st: "idle" }; Store.setLocal("focus", FOC); left = FOCUS_MS; toast("Focus sprint done. Take 5."); try { navigator.vibrate && navigator.vibrate([200, 100, 200]); } catch (e) {} } }
   else if (FOC.st === "pause") left = FOC.left;
-  else if (FOC.st === "done") left = 0;
+  else if (FOC.st === "done") { FOC = { st: "idle" }; Store.setLocal("focus", FOC); left = FOCUS_MS; }
+  else left = FOCUS_MS;
   var pct = FOC.st === "idle" ? 0 : (1 - left / FOCUS_MS), s = Math.ceil(left / 1000);
   var C = 2 * Math.PI * 52; // r=52
   var ring = $("#focRing");
   if (ring) {
     ring.style.strokeDasharray = String(C);
     ring.style.strokeDashoffset = String(C * (1 - pct));
-    ring.style.stroke = FOC.st === "pause" ? "var(--amber)" : FOC.st === "done" ? "var(--ok)" : FOC.st === "run" ? "var(--cyan)" : "var(--amber)";
+    ring.style.stroke = FOC.st === "pause" ? "var(--amber)" : FOC.st === "run" ? "var(--cyan)" : "var(--amber)";
   }
-  $("#mFocV").textContent = Math.floor(s / 60) + ":" + pad2(s % 60);
-  line = FOC.st === "run" ? "FOCUSING" : FOC.st === "pause" ? "PAUSED" : FOC.st === "done" ? "DONE · TAP AGAIN" : "TAP TO START";
-  if ($("#mFocL").textContent !== line) $("#mFocL").textContent = line;
+  var tv = $("#mFocV"); if (tv) tv.textContent = Math.floor(s / 60) + ":" + pad2(s % 60);
+  line = FOC.st === "run" ? "FOCUSING" : FOC.st === "pause" ? "PAUSED" : "TAP TO START";
+  var fl = $("#mFocL"); if (fl && fl.textContent !== line) fl.textContent = line;
   var card = $("#mFocus");
-  if (card) { card.classList.toggle("running", FOC.st === "run"); card.classList.toggle("done", FOC.st === "done"); }
+  if (card) { card.classList.toggle("running", FOC.st === "run"); card.classList.remove("done"); }
 }
 (function bindFocus() {
   var b = $("#mFocus"), hold = null, held = false;
@@ -1351,21 +1355,53 @@ function renderWeather() {
 var MK = Store.getLocal("mk", null), mkErr = false, mkPage = 0;
 function money(n) {
   if (n == null || isNaN(n)) return "--";
-  if (n >= 1000) return "$" + Math.round(n).toLocaleString("en-US");
-  if (n >= 1) return "$" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  return "$" + n.toPrecision(3);
+  var x = +n;
+  if (Math.abs(x) >= 1000) return "$" + Math.round(x).toLocaleString("en-US");
+  if (Math.abs(x) >= 1) return "$" + x.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (Math.abs(x) >= 0.01) return "$" + x.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (Math.abs(x) > 0) return "$" + x.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+  return "$0.00";
+}
+var _mkFailStreak = 0, _mkRetryT = 0;
+function mkApplyPrices(j) {
+  if (!j || typeof j !== "object") return false;
+  MK = { at: Date.now(), d: Object.assign({}, MK && MK.d, j) }; Store.setLocal("mk", MK); mkErr = false; _mkFailStreak = 0;
+  return true;
+}
+function mkFetchCoinGecko(idList) {
+  return getJSON("https://api.coingecko.com/api/v3/simple/price?ids=" + encodeURIComponent(idList.join(",")) + "&vs_currencies=usd&include_24hr_change=true");
+}
+function mkFetchBinance(idList) {
+  var map = { bitcoin: "BTCUSDT", ethereum: "ETHUSDT", solana: "SOLUSDT", dogecoin: "DOGEUSDT", ripple: "XRPUSDT" };
+  var want = idList.filter(function (id) { return map[id]; });
+  if (!want.length) return Promise.reject(new Error("no binance ids"));
+  return Promise.all(want.map(function (id) {
+    return getJSON("https://api.binance.com/api/v3/ticker/24hr?symbol=" + map[id]).then(function (t) {
+      var o = {}; o[id] = { usd: +t.lastPrice, usd_24h_change: +t.priceChangePercent }; return o;
+    });
+  })).then(function (arr) {
+    var out = {}; arr.forEach(function (x) { Object.assign(out, x); }); return out;
+  });
+}
+function scheduleMkRetry() {
+  clearTimeout(_mkRetryT);
+  var delay = Math.min(120000, 4000 * Math.pow(2, Math.min(5, _mkFailStreak)));
+  _mkRetryT = setTimeout(function () { try { refreshMarkets(); } catch (e) {} }, delay);
 }
 function refreshMarkets() {
-  var ids = { bitcoin: 1, ethereum: 1, solana: 1 }; // always keep native wallet price feeds warm
+  var ids = { bitcoin: 1, ethereum: 1, solana: 1 };
   COINS.forEach(function (c) { if (c.id) ids[c.id] = 1; });
   loadHoldings().forEach(function (h) { if (h.kind !== "stock" && h.id) ids[h.id] = 1; });
   QUICK_PICKS.forEach(function (c) { if (c.id) ids[c.id] = 1; });
   var idList = Object.keys(ids);
   if (!idList.length) { renderMarkets(); try { refreshWallets(false); } catch (e) {} return; }
-  getJSON("https://api.coingecko.com/api/v3/simple/price?ids=" + encodeURIComponent(idList.join(",")) + "&vs_currencies=usd&include_24hr_change=true")
-    .then(function (j) { MK = { at: Date.now(), d: Object.assign({}, MK && MK.d, j) }; Store.setLocal("mk", MK); mkErr = false; })
-    .catch(function () { mkErr = true; })
-    .then(function () { renderMarkets(); try { refreshWallets(false); } catch (e) {} });
+  mkFetchCoinGecko(idList)
+    .then(function (j) { if (!mkApplyPrices(j)) throw new Error("empty"); })
+    .catch(function () {
+      return mkFetchBinance(idList).then(function (j) { if (!mkApplyPrices(j)) throw new Error("empty2"); });
+    })
+    .catch(function () { mkErr = true; _mkFailStreak++; scheduleMkRetry(); })
+    .then(function () { renderMarkets(); try { refreshWallets(false); } catch (e) {} try { renderMkTicker(); } catch (e2) {} });
 }
 function chHTML(ch) { if (ch == null || isNaN(ch)) return '<span class="dim">--</span>'; return '<span class="' + (ch >= 0 ? "up" : "dn") + '">' + (ch >= 0 ? "▲" : "▼") + Math.abs(ch).toFixed(2) + "%</span>"; }
 function sparkSVG(ch, seed) {
@@ -1604,13 +1640,13 @@ function renderHoldings() {
     else { gv.textContent = signedMoney(stats.gl); gv.className = stats.gl >= 0 ? "up" : "dn"; }
   }
   drawHoldChart($("#holdChart"), stats);
-  renderQuickPicks();
+  try { var qa = $("#quickAdd"); if (qa) qa.hidden = true; } catch (e0) {}
   try { renderAccounts(); } catch (e) {}
   var byAcct = {};
   accts.forEach(function (a) { byAcct[a.id] = a; });
   var host = $("#holdList");
   if (host) {
-    if (!list.length) host.innerHTML = '<p class="offline">No holdings yet. One-tap a pick above, or ＋ HOLDING for any ticker. Assign each to an account.</p>';
+    if (!list.length) host.innerHTML = '<div class="hold-empty"><button type="button" class="chip accent" id="holdEmptyAdd">＋ Add holding</button></div>';
     else host.innerHTML = list.map(function (h, i) {
       var px = holdingPrice(h), ch = holdingChange(h), qty = +h.qty || 0;
       var val = px != null ? px * qty : null;
@@ -1625,6 +1661,28 @@ function renderHoldings() {
   }
   try { renderHomeMarkets(stats, accts); } catch (e) {}
 }
+
+function renderMkTicker() {
+  var host = $("#mkTicker"), track = $("#mkTickerTrack");
+  if (!host || !track) return;
+  var d = MK && MK.d || {};
+  var items = [
+    { sym: "BTC", id: "bitcoin" },
+    { sym: "ETH", id: "ethereum" },
+    { sym: "SOL", id: "solana" },
+    { sym: "GOLD", id: "pax-gold" }
+  ];
+  var html = items.map(function (it) {
+    var q = d[it.id];
+    var ch = q ? q.usd_24h_change : null;
+    var cls = (ch == null || isNaN(ch)) ? "" : (ch >= 0 ? "up" : "dn");
+    var chs = (ch == null || isNaN(ch)) ? "" : (" <span class=\"" + cls + "\">" + (ch >= 0 ? "▲" : "▼") + Math.abs(ch).toFixed(1) + "%</span>");
+    return "<span><b>" + it.sym + "</b> " + (q ? money(q.usd) : "--") + chs + "</span>";
+  }).join("");
+  track.innerHTML = html + html;
+  host.hidden = false;
+}
+
 function renderMarkets() {
   var d = MK && MK.d || {}, list = "", mini = "";
   COINS.forEach(function (c, i) {
@@ -1639,13 +1697,13 @@ function renderMarkets() {
       ((ch == null || isNaN(ch)) ? "--" : ((ch >= 0 ? "+" : "") + ch.toFixed(2) + "%")) + "</span></div>";
   });
   if (!COINS.length) { list = '<p class="offline">Your watchlist is empty. Tap ✎ WATCHLIST to add a coin.</p>'; if (!loadHoldings().length) mini = '<span class="dim">WATCHLIST EMPTY · TAP TO ADD</span>'; }
-  if (mkErr && !(MK && MK.at)) { list = '<p class="offline">Markets offline. We\'ll retry in 2 minutes.</p>'; mini = '<span class="dim">MARKETS OFFLINE · RETRYING</span>'; }
-  else if (mkErr) list += '<p class="offline">Couldn\'t refresh. Showing the last prices we saved.</p>';
+  /* v4.4: quiet retry — never show error copy on the watchlist */
   var mk = $("#mkList"); if (mk) mk.innerHTML = list;
   if ($("#hMkList")) $("#hMkList").innerHTML = mini || $("#hMkList").innerHTML;
   if ($("#xpMkList")) $("#xpMkList").innerHTML = list;
   try { renderHoldings(); } catch (e) {}
   try { renderHomeMarkets(); } catch (e) {}
+  try { renderMkTicker(); } catch (e3) {}
   updateStamps();
 }
 
@@ -1657,8 +1715,9 @@ function updateStamps() {
   try { updateSkyline(); } catch (e) {} // after wx
   var hMkT = $("#hMkT");
   if (hMkT) {
-    if (MK && MK.at) hMkT.textContent = "Updated " + t12(new Date(MK.at)).replace(/([AP])$/, " $1M");
-    else hMkT.textContent = "Updated --";
+    if (MK && MK.at) hMkT.textContent = short12(MK.at);
+    else hMkT.textContent = "";
+    hMkT.classList.add("tiny");
     hMkT.classList.toggle("old", !(MK && MK.at) || Date.now() - MK.at > 30 * 60000);
   }
   var last = Math.max(WX && WX.at || 0, MK && MK.at || 0);
@@ -2522,6 +2581,7 @@ var _xpAcctAdd = $("#xpAcctAdd"); if (_xpAcctAdd) _xpAcctAdd.addEventListener("c
   });
 })();
 document.addEventListener("click", function (e) {
+  if (e.target.closest("#holdEmptyAdd")) { e.preventDefault(); openAddHolding(); return; }
   var qa = e.target.closest("[data-qa]"); if (qa) {
     e.preventDefault();
     var id = qa.getAttribute("data-qa");
@@ -3319,7 +3379,8 @@ function openAddHolding(editIdx) {
   var editing = editIdx != null ? loadHoldings()[editIdx] : null;
   var title = editing ? "✎ EDIT HOLDING" : "＋ ADD HOLDING";
   sheet(title,
-    '<p class="note" style="margin-bottom:8px">Crypto &amp; gold price live via CoinGecko. Stocks: enter a manual price — no free keyless stock feed works from the browser (Yahoo/Stooq CORS blocked).</p>' +
+    '<p class="note" style="margin-bottom:8px">Crypto &amp; gold price live via CoinGecko. Stocks: enter a manual price.</p>' +
+    (editing ? "" : '<div class="qa-h" style="margin-bottom:6px">QUICK PICKS</div><div class="qa-row" id="holdQuick" role="list" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px"></div>') +
     (editing ? "" : '<label class="field">SEARCH TICKER<input id="holdQ" placeholder="BTC, ETH, PAXG, AAPL…" autocomplete="off" autocapitalize="characters"></label><div id="holdRes"></div>') +
     '<div id="holdForm"' + (editing ? "" : ' hidden') + '>' +
     '<label class="field">SYMBOL<input id="holdSym" maxlength="12" value="' + esc(editing ? editing.sym : "") + '" ' + (editing ? "readonly" : "") + '></label>' +
@@ -3333,6 +3394,22 @@ function openAddHolding(editIdx) {
     '<button class="btn" id="holdSave" style="margin-top:12px">' + (editing ? "SAVE" : "ADD HOLDING") + "</button></div>",
     function (b) {
       var picked = editing ? { id: editing.id, sym: editing.sym, name: editing.name, kind: editing.kind } : null;
+      (function fillQuick() {
+        var hq = b.querySelector("#holdQuick"); if (!hq) return;
+        var have = {};
+        loadHoldings().forEach(function (h) { if (h.id) have[h.id] = 1; if (h.sym) have[String(h.sym).toUpperCase()] = 1; });
+        hq.innerHTML = QUICK_PICKS.map(function (p) {
+          var on = !!(have[p.id] || have[p.sym]);
+          return '<button type="button" class="chip' + (on ? " on" : "") + '" data-hq="' + esc(p.id) + '"' + (on ? " disabled" : "") + '>' + esc(p.sym) + "</button>";
+        }).join("");
+        hq.addEventListener("click", function (e) {
+          var x = e.target.closest("[data-hq]"); if (!x || x.disabled) return;
+          var p = QUICK_PICKS.filter(function (q) { return q.id === x.getAttribute("data-hq"); })[0];
+          if (!p) return;
+          closeSheet();
+          try { quickAddHolding(p); } catch (err) {}
+        });
+      })();
       (function fillAccts() {
         var sel = b.querySelector("#holdAcct"); if (!sel) return;
         var cur = editing && editing.accountId || "";
@@ -3424,8 +3501,6 @@ function openEditHolding(i) { openAddHolding(i); }
 function settingsHtml(sndOn, liteOn, tiltOn, motionOn) {
   return '<label class="field">YOUR NAME (FOR THE GREETING)<input id="stName" maxlength="20" placeholder="e.g. Sam" value="' + esc(S.name) + '" autocomplete="off"></label>' +
     '<div class="field">TEMPERATURE</div><div class="seg" id="stU"><button type="button" data-v="F">°F · mph</button><button type="button" data-v="C">°C · km/h</button></div>' +
-    '<div class="field">SOFT UI SOUNDS</div><div class="seg" id="stSnd"><button type="button" data-v="0">OFF</button><button type="button" data-v="1">ON</button></div>' +
-    '<p class="note">Soft synth taps when you press cards. Off by default.</p>' +
     '<div class="field">LITE MODE</div><div class="seg" id="stLite"><button type="button" data-v="0">3D ON</button><button type="button" data-v="1">LITE</button></div>' +
     '<p class="note">Lite skips WebGL (city backdrop), tilt, and particle boot. Auto-on for low-end / Reduce Motion.</p>' +
     '<div class="field">CARD TILT</div><div class="seg" id="stTilt"><button type="button" data-v="0">OFF</button><button type="button" data-v="1">ON</button></div>' +
@@ -3444,12 +3519,12 @@ function bindSettings(b, closeAfterSave) {
   var motionOn = !!Store.getLocal("motionTilt", false);
   var u = S.units, snd = sndOn ? "1" : "0", lite = liteOn ? "1" : "0", tilt = tiltOn ? "1" : "0", motion = motionOn ? "1" : "0";
   function seg() { $$("#stU button", b).forEach(function (x) { x.classList.toggle("on", x.getAttribute("data-v") === u); }); }
-  function segS() { $$("#stSnd button", b).forEach(function (x) { x.classList.toggle("on", x.getAttribute("data-v") === snd); }); }
+  function segS() {}
   function segL() { $$("#stLite button", b).forEach(function (x) { x.classList.toggle("on", x.getAttribute("data-v") === lite); }); }
   function segT() { $$("#stTilt button", b).forEach(function (x) { x.classList.toggle("on", x.getAttribute("data-v") === tilt); }); }
   function segM() { $$("#stMotion button", b).forEach(function (x) { x.classList.toggle("on", x.getAttribute("data-v") === motion); }); }
   b.querySelector("#stU").addEventListener("click", function (e) { var x = e.target.closest("[data-v]"); if (x) { u = x.getAttribute("data-v"); seg(); } });
-  b.querySelector("#stSnd").addEventListener("click", function (e) { var x = e.target.closest("[data-v]"); if (x) { snd = x.getAttribute("data-v"); segS(); if (snd === "1") { setUiSounds(true); sfxTap(); } } });
+  /* v4.4: UI sounds removed */
   b.querySelector("#stLite").addEventListener("click", function (e) { var x = e.target.closest("[data-v]"); if (x) { lite = x.getAttribute("data-v"); segL(); } });
   b.querySelector("#stTilt").addEventListener("click", function (e) { var x = e.target.closest("[data-v]"); if (x) { tilt = x.getAttribute("data-v"); segT(); } });
   b.querySelector("#stMotion").addEventListener("click", function (e) {
@@ -3466,7 +3541,7 @@ function bindSettings(b, closeAfterSave) {
   });
   b.querySelector("#stSave").addEventListener("click", function () {
     var uc = u !== S.units; S.name = b.querySelector("#stName").value.trim().slice(0, 20); S.units = u; Store.set("settings", S);
-    setUiSounds(snd === "1");
+    setUiSounds(false);
     try {
       Store.setLocal("liteMode", lite === "1");
       Store.setLocal("tiltCards", tilt === "1");
@@ -3582,7 +3657,7 @@ function bindDialer(b) {
         '<button type="button" class="sq" data-f="text" data-i="' + i + '" aria-label="Text ' + esc(f.name) + '">💬</button>' +
         '<button type="button" class="sq" data-f="call" data-i="' + i + '" aria-label="Call ' + esc(f.name) + '" style="color:var(--green)">📞</button>' +
         '<button type="button" class="sq" data-f="del" data-i="' + i + '" aria-label="Remove ' + esc(f.name) + '" style="color:var(--red)">✕</button></div>';
-    }).join("") : '<p class="note">No favorites yet. Type a number and tap ☆ to save it.</p>';
+    }).join("") : '<button type="button" class="fav-add-tile" id="favEmptyAdd">＋ Add favorite</button>';
   }
   var pad = b.querySelector("#dlPad");
   if (pad) pad.addEventListener("click", function (e) { var k = e.target.closest("[data-k]"); if (!k || num.length >= 20) return; num += k.getAttribute("data-k"); draw(); });
@@ -3595,6 +3670,13 @@ function bindDialer(b) {
   });
   var favs = b.querySelector("#dlFavs");
   if (favs) favs.addEventListener("click", function (e) {
+    if (e.target.closest("#favEmptyAdd")) {
+      e.preventDefault();
+      if (!cleanNum(num)) { toast("Type a number, then tap ☆ or ＋ Add favorite"); return; }
+      var nm = (prompt("Name for this favorite?") || "").trim().slice(0, 24); if (!nm) return;
+      FAVS.push({ name: nm, num: cleanNum(num) }); saveFavs(); drawFavs(); toast(nm + " saved to favorites");
+      return;
+    }
     var x = e.target.closest("[data-f]"); if (!x) return; var f = FAVS[+x.getAttribute("data-i")], m = x.getAttribute("data-f"); if (!f) return;
     if (m === "call") callNum(f.num); else if (m === "text") textNum(f.num);
     else if (confirm("Remove " + f.name + " from favorites?")) { FAVS.splice(+x.getAttribute("data-i"), 1); saveFavs(); drawFavs(); }
@@ -3762,63 +3844,18 @@ var menuBtn = $("#menuBtn"); if (menuBtn) menuBtn.addEventListener("click", open
 
 
 // ========== v3.8 cyberpunk pack (original designs) ==========
-var UI_SOUNDS = (function () { var v = Store.getLocal("uiSounds", null); return v === null || v === undefined ? true : !!v; })();
-function setUiSounds(on) {
-  UI_SOUNDS = !!on;
-  try { Store.setLocal("uiSounds", UI_SOUNDS); } catch (e) {}
-}
-var _sfxCtx = null;
-function sfxTone(freq, dur, type, gain) {
-  if (!UI_SOUNDS || RM) return;
-  if (document.visibilityState === "hidden") return;
-  try {
-    var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
-    if (!_sfxCtx) _sfxCtx = new AC();
-    if (_sfxCtx.state === "suspended") _sfxCtx.resume().catch(function () {});
-    var t0 = _sfxCtx.currentTime, o = _sfxCtx.createOscillator(), g = _sfxCtx.createGain();
-    o.type = type || "sine"; o.frequency.value = freq || 520;
-    g.gain.setValueAtTime(0.0001, t0);
-    g.gain.exponentialRampToValueAtTime(gain || 0.04, t0 + 0.02);
-    g.gain.exponentialRampToValueAtTime(0.0001, t0 + (dur || 0.12));
-    o.connect(g); g.connect(_sfxCtx.destination);
-    o.start(t0); o.stop(t0 + (dur || 0.12) + 0.02);
-  } catch (e) {}
-}
-function sfxTap() { sfxTone(640, 0.07, "triangle", 0.03); sfxTone(920, 0.05, "sine", 0.02); }
-function sfxOpen() { sfxTone(420, 0.08, "sine", 0.025); sfxTone(680, 0.1, "triangle", 0.03); }
-function sfxBoot() { sfxTone(220, 0.12, "sine", 0.02); setTimeout(function () { sfxTone(330, 0.1, "triangle", 0.025); }, 80); setTimeout(function () { sfxTone(440, 0.14, "sine", 0.03); }, 160); }
-function sfxSuccess() { sfxTone(520, 0.08, "sine", 0.03); sfxTone(780, 0.12, "triangle", 0.035); }
-function sfxError() { sfxTone(180, 0.14, "sawtooth", 0.025); sfxTone(140, 0.16, "triangle", 0.02); }
-function sfxChime() { sfxTone(523, 0.18, "sine", 0.028); setTimeout(function () { sfxTone(784, 0.22, "sine", 0.022); }, 120); }
-function sfxCharge() { sfxTone(280, 0.1, "sawtooth", 0.018); sfxTone(560, 0.12, "triangle", 0.028); }
-var _sfxPrimed = false;
-function primeUiAudio() {
-  if (_sfxPrimed) return;
-  _sfxPrimed = true;
-  try {
-    var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
-    if (!_sfxCtx) _sfxCtx = new AC();
-    if (_sfxCtx.state === "suspended") _sfxCtx.resume().catch(function () {});
-    if (UI_SOUNDS) setTimeout(function () { try { sfxChime(); } catch (e) {} }, 40);
-  } catch (e) {}
-}
-function bindMuteBtn() {
-  var b = document.getElementById("muteBtn"); if (!b || b._bound) return; b._bound = true;
-  function sync() {
-    b.setAttribute("aria-pressed", UI_SOUNDS ? "false" : "true");
-    b.textContent = UI_SOUNDS ? "🔊" : "🔇";
-    b.title = UI_SOUNDS ? "Mute UI sounds" : "Unmute UI sounds";
-    b.setAttribute("aria-label", b.title);
-  }
-  sync();
-  b.addEventListener("click", function () {
-    setUiSounds(!UI_SOUNDS);
-    sync();
-    if (UI_SOUNDS) { primeUiAudio(); sfxTap(); }
-  });
-  document.addEventListener("pointerdown", function () { primeUiAudio(); }, { once: true, capture: true });
-  document.addEventListener("keydown", function () { primeUiAudio(); }, { once: true, capture: true });
-}
+var UI_SOUNDS = false;
+function setUiSounds() { UI_SOUNDS = false; try { Store.setLocal("uiSounds", false); } catch (e) {} }
+function sfxTone() {}
+function sfxTap() {}
+function sfxOpen() {}
+function sfxBoot() {}
+function sfxSuccess() {}
+function sfxError() {}
+function sfxChime() {}
+function sfxCharge() {}
+function primeUiAudio() {}
+function bindMuteBtn() {}
 function bindChargeUp() {
   var root = $("#app"); if (!root || root._chargeBound) return;
   root._chargeBound = true;
@@ -3915,7 +3952,7 @@ function placeNeonRing(v, dx, dy) {
       boot.setAttribute("aria-hidden", "false");
       var nm = ((S && S.name) || "").trim() || "operator";
       var msgs = [
-        "Systems online, " + nm,
+        nm ? ("Hello, " + nm + ".") : "Ready.",
         "SENSORS LINKED",
         "READY"
       ];
@@ -3949,7 +3986,7 @@ function placeNeonRing(v, dx, dy) {
   }
   try { bindChargeUp(); updateSkyline(); buildClockTicks(); ensureHudTicks(); initBatteryHud(); updateGpsLockChip(); startZapWave(); } catch (e) {}
 
-  try { bindHudTabs(); try { bindMuteBtn(); } catch (eMute) {} try { if (Store.getLocal("uiSounds", null) === null) Store.setLocal("uiSounds", true); } catch (eSnd) {} ensurePanelsVisible(); } catch (e) {}
+  try { bindHudTabs(); try { bindMuteBtn(); } catch (eMute) {} try { Store.setLocal("uiSounds", false); } catch (eSnd) {} ensurePanelsVisible(); } catch (e) {}
   try {
     var uv = (Store.ui() || {}).view || "";
     if (String(uv).indexOf("hud:") === 0) setHudTab(String(uv).slice(4), { silent: true });
@@ -4597,7 +4634,7 @@ function zapHandle(raw) {
 (function bindZapAssistant() {
   var fab = $("#zapFab"); if (fab) fab.addEventListener("click", openZapAssistant);
   (function bindZapHint() {
-    var h = $("#zapHint"); if (!h) return;
+    var h = $("#zapHint"); if (!h) return; h.hidden = true; h.classList.remove("on"); return;
     try {
       var seen = Store.getLocal("hintGoSeen", false);
       if (!seen) { h.classList.add("on"); }

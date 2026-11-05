@@ -1,6 +1,6 @@
 {
-  "version": "4.3.0",
+  "version": "4.4.0",
   "released": "2026-11-05",
   "name": "ZAPWISE//OS",
-  "notes": "Touch scroll fix; overlay dismiss (outside/swipe/Esc/back); flat mic assistant (no 3D orb); device polish; tilt off by default"
+  "notes": "Calm v3.7.1 glass style; no UI sounds; compact music/focus/holdings/favorites; quiet market retries; money format; mic-only assistant; one-page"
 }
