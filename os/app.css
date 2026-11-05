@@ -804,8 +804,7 @@ body.sheet-open{position:fixed;left:0;right:0;width:100%;overflow:hidden}
 
 
 /* ===== v4.6.1: never-blank + tap shield + dark map unload ===== */
-#tapShield{position:fixed;inset:0;z-index:2147483000;display:none;touch-action:none;background:transparent}
-#tapShield.on{display:block}
+#tapShield,#tapShield.on{position:fixed;inset:0;z-index:0;display:none!important;pointer-events:none!important;touch-action:none;background:transparent;visibility:hidden!important}
 .card{opacity:1;transform:none}
 html.standalone body,html.standalone{overscroll-behavior-y:none}
 .map-tiles img.map-tile:not(.on){opacity:0}
@@ -941,12 +940,16 @@ html.zw-cine .zw-stage,html.zw-cine #zwStage{opacity:.32}
 .zap-foot{display:block;margin-top:8px;letter-spacing:.06em}
 
 /* ========== v4.8.0 — wallpaper, HUD clock, COMMS LOG, wallet paste ========== */
-.wp-canvas{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.85}
+.wp-canvas{position:fixed;inset:0;z-index:0!important;pointer-events:none!important;opacity:.95;touch-action:none}
 .wp-lite{display:none;position:fixed;inset:0;z-index:0;pointer-events:none;
   background:radial-gradient(120% 80% at 50% 20%,rgba(92,225,230,.08),transparent 55%),
              linear-gradient(180deg,#0a0c1c 0%,#070814 55%,#05060e 100%)}
-html.fx-lite .wp-canvas,html[data-wallpaper="off"] .wp-canvas{display:none!important}
-html.fx-lite .wp-lite,html[data-wallpaper="off"] .wp-lite{display:block}
+html[data-wallpaper="off"] .wp-canvas{display:none!important}
+/* v4.9: Lite keeps the animated canvas (dimmer) — only Off hides it */
+html.fx-lite .wp-canvas{opacity:.78}
+html.fx-lite .wp-lite{display:none}
+html[data-wallpaper="off"] .wp-lite{display:block}
+html[data-wallpaper="off"] .wp-canvas{display:none!important}
 html[data-wallpaper="off"] .wp-lite{opacity:.35}
 #app,.grid-bg{position:relative;z-index:1}
 .grid-bg{opacity:.35}
@@ -1021,3 +1024,146 @@ html[data-wallpaper="off"] .wp-lite{opacity:.35}
 .wal-paste{flex:0 0 auto;letter-spacing:.08em;font:700 11px/1 var(--mono);padding:0 12px;min-height:44px}
 .wal-detect.ok{color:#9ff0c8}
 .wal-detect.bad{color:#ff8f8f}
+
+
+/* ===== v4.9.0 angular HUD language (site-wide) ===== */
+:root{
+  --void:#070814;--panel:#12081a;--panel2:#1a0c24;--cream:#f7f0e8;
+  --amber:#ff2a6d;--cyan:#05d9e8;--magenta:#ff2a6d;
+  --hud-clip:polygon(0 10px,10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%);
+  --hud-clip-sm:polygon(0 6px,6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%);
+}
+.card,.sheet,.zap-sheet,.xp.as-detail,.thm,.acct-tile,.tile,.comms-log,.port-hero,.h-map{
+  font-family:"Rajdhani",var(--font);
+}
+.card{
+  clip-path:var(--hud-clip);
+  border-radius:0;
+  background:linear-gradient(155deg,rgba(255,42,109,.07),rgba(7,8,20,.28) 42%,rgba(5,217,232,.05)),
+    rgba(var(--panel-rgb,18,8,26),.52);
+  border:1px solid rgba(5,217,232,.2);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  box-shadow:0 12px 32px rgba(0,0,0,.32);
+  overflow:hidden;
+}
+.card > *{position:relative;z-index:1}
+.card::after{
+  content:"";position:absolute;inset:6px;z-index:0;pointer-events:none;
+  background:rgba(7,8,20,.55);
+  clip-path:var(--hud-clip-sm);
+  border:1px solid rgba(244,239,228,.06);
+}
+/* solid inner panel so text stays readable over wallpaper */
+.card .mk-h,.card .np-top,.card .comms-title,.card .ph-kicker,
+.h-wx .wx-top,.focus-card .mk-h,.apps-h,.lc-h{
+  font-family:"Rajdhani",var(--mono);font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+}
+.card .mk-h,.np-top,.focus-card .mk-h{
+  font-size:11px;color:var(--cyan);
+}
+/* stacked angled tags utility */
+.hud-tag{
+  display:inline-block;padding:4px 8px 3px;font:700 11px/1 "Rajdhani",var(--mono);letter-spacing:.12em;
+  color:var(--cyan);border:1px solid rgba(5,217,232,.28);background:rgba(7,8,20,.5);
+  clip-path:var(--hud-clip-sm);text-transform:uppercase;
+}
+/* thin animated accent line */
+.card .hud-accent,.card > .hc-bar{height:2px;margin-top:8px;background:rgba(244,239,228,.1);overflow:hidden;position:relative;z-index:1}
+.card .hud-accent > i,.card > .hc-bar i{
+  display:block;height:100%;width:35%;
+  background:linear-gradient(90deg,transparent,var(--amber),transparent);
+  animation:hcBar 4.8s ease-in-out infinite;
+}
+/* light sweep via box glow — do NOT use ::before (reserved for .br corner ticks) */
+.card{isolation:isolate;transition:box-shadow .2s ease,border-color .2s ease}
+.card:hover,.card:active,.card:focus-visible{
+  border-color:rgba(5,217,232,.4);
+  box-shadow:0 12px 32px rgba(0,0,0,.32),0 0 24px rgba(255,42,109,.12),inset 0 0 24px rgba(5,217,232,.05);
+}
+@media (prefers-reduced-motion:reduce){
+  .card .hud-accent > i,.hc-bar i{animation:none!important;opacity:.35}
+}
+.br:before,.br:after{z-index:3;border-color:var(--amber)}
+
+/* Markets + Add — large touch target, not nested-button */
+.h-mk{cursor:pointer;-webkit-user-select:none;user-select:none}
+.mk-add{
+  position:relative;z-index:4;align-self:flex-start;margin-top:auto;
+  min-height:44px;min-width:96px;padding:10px 14px;
+  clip-path:var(--hud-clip-sm);border-radius:0;
+  border:1px solid rgba(5,217,232,.45);color:var(--cyan);
+  font:700 12px/1 "Rajdhani",var(--mono);letter-spacing:.14em;
+  background:rgba(5,217,232,.1);cursor:pointer;
+  -webkit-touch-callout:none;touch-action:manipulation;
+}
+.mk-add:active{background:rgba(5,217,232,.22);transform:scale(.98)}
+
+/* Weather card: ensure whole surface is tappable above wallpaper */
+.h-wx{position:relative;z-index:2;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+.h-wx .fx{pointer-events:none!important}
+
+/* Detail sheets / ZAP AI / notes — same angular language */
+.sheet,.zap-sheet,.xp.as-detail{
+  clip-path:var(--hud-clip);
+  border-radius:0!important;
+  border:1px solid rgba(5,217,232,.22)!important;
+  background:linear-gradient(160deg,rgba(255,42,109,.06),rgba(7,8,20,.92) 45%,rgba(5,217,232,.04))!important;
+  font-family:"Rajdhani",var(--font);
+}
+.sheet-h,.zap-h,.xp-h.detail-head,.detail-head{
+  font-family:"Rajdhani",var(--mono)!important;letter-spacing:.12em;text-transform:uppercase;
+}
+.sheet-h:after,.zap-h:after,.detail-head:after{
+  content:"";display:block;height:2px;margin-top:8px;
+  background:linear-gradient(90deg,var(--amber),transparent 70%);
+}
+.port-hero{
+  clip-path:var(--hud-clip-sm);
+  border:1px solid rgba(5,217,232,.2);
+  background:linear-gradient(145deg,rgba(255,42,109,.08),rgba(7,8,20,.55));
+}
+.ph-kicker{font:700 11px/1 "Rajdhani",var(--mono);letter-spacing:.16em;color:var(--cyan)}
+.tile,.acct-tile{
+  clip-path:var(--hud-clip-sm);
+  border:1px solid rgba(5,217,232,.16);
+  background:rgba(7,8,20,.55);
+}
+.tile:active,.acct-tile:active{box-shadow:inset 0 0 0 1px var(--cyan)}
+.thm{
+  clip-path:var(--hud-clip-sm);
+  border:1px solid rgba(5,217,232,.2)!important;
+}
+.thm.on{box-shadow:inset 0 0 0 1px var(--amber),0 0 16px rgba(255,42,109,.2)}
+
+/* Segment readouts */
+.segs,.hmk-day,#hMkT,.foc-status,.sync{
+  font-family:"Rajdhani",var(--mono);letter-spacing:.1em;
+}
+
+/* Header version chip */
+.brand .ver{
+  display:inline-block;padding:2px 6px;margin-left:6px;
+  border:1px solid rgba(5,217,232,.25);color:var(--cyan);
+  clip-path:var(--hud-clip-sm);font:700 9px/1 "Rajdhani",var(--mono);letter-spacing:.14em;
+}
+
+/* Slightly more transparent cards; inner ::after holds text contrast */
+html:not(.light) .card{background:linear-gradient(155deg,rgba(255,42,109,.08),rgba(7,8,20,.22) 40%,rgba(5,217,232,.05)),
+  rgba(18,8,26,.42)}
+
+/* Map / places / calendar / notes / apps share the language */
+.h-map,.apps-section,#appsSection,.notes-card,.cal-card,.phone-mount,#phoneMount{
+  /* inherit card rules when .card present */
+}
+#appsSection .apps-h, .apps-h{
+  font:700 11px/1 "Rajdhani",var(--mono);letter-spacing:.14em;color:var(--cyan);text-transform:uppercase;
+}
+
+/* Focus ring matches neon pink default */
+:focus-visible{outline:2px solid var(--magenta,#ff2a6d);outline-offset:2px}
+
+/* Ensure wallpaper stays under everything interactive */
+.grid-bg,.wp-canvas,.wp-lite,#zwStage,.zw-stage{z-index:0!important;pointer-events:none!important}
+#app,header.top,main,.asst-dock,.toast{position:relative}/* v4.9: do NOT force relative on sheet/scrim/xp.as-detail — breaks fixed overlay stacking on iPhone */
+#app{z-index:1}
+header.top{z-index:50}

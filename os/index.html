@@ -7,14 +7,14 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="description" content="ZAPWISE//OS: calm glass HUD — clock, weather, map, markets, focus, apps.">
 <meta name="theme-color" content="#070814">
-<meta name="zapos-version" content="4.8.0">
+<meta name="zapos-version" content="4.9.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="/os/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/os/icon-180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/os/icon-192.png">
-<link rel="stylesheet" href="/os/app.css?v=4.8.0">
-<link rel="stylesheet" href="/os/cinematic.css?v=4.8.0">
+<link rel="stylesheet" href="/os/app.css?v=4.9.0">
+<link rel="stylesheet" href="/os/cinematic.css?v=4.9.0">
 <style>
 @font-face{font-family:"Rajdhani";font-style:normal;font-weight:600;font-display:swap;src:url("/os/fonts/Rajdhani-SemiBold.ttf") format("truetype")}
 @font-face{font-family:"Rajdhani";font-style:normal;font-weight:700;font-display:swap;src:url("/os/fonts/Rajdhani-Bold.ttf") format("truetype")}
@@ -36,7 +36,7 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
 <div id="app">
 
  <header class="top sticky" id="top">
-  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver">v4.8.0</span></div>
+  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver" data-app-ver>v4.9.0</span></div>
   <div class="top-r">
    <span class="sync" id="hSync"><i aria-hidden="true"></i>LIVE</span>
    <span class="hud-chip gps" id="hGpsLock" data-lock="0" hidden><i aria-hidden="true"></i>GPS —</span>
@@ -155,7 +155,7 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
   </div>
 
   <div class="row2">
-   <button class="card br h-mk" id="hMk" type="button" aria-label="Open markets detail" aria-expanded="false" aria-controls="xpMk">
+   <div class="card br h-mk" id="hMk" role="button" tabindex="0" aria-label="Open markets detail" aria-expanded="false" aria-controls="xpMk">
     <div class="mk-h">MARKETS<span class="mk-t" id="hMkT">--</span></div>
     <div class="mk-hero" id="hMkPort">
       <b class="hmk-total" data-hmk-port="1" id="hMkTotal">—</b>
@@ -163,8 +163,8 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
     </div>
     <canvas class="mk-mini-spark" id="hMkSpark" width="280" height="40" aria-hidden="true"></canvas>
     <div class="mk-items" id="hMkList"><span class="dim">Markets loading…</span></div>
-    <span class="mk-add" data-hmk-add="1" id="hMkAct" role="button" tabindex="0">＋ Add</span>
-   </button>
+    <button type="button" class="mk-add" data-hmk-add="1" id="hMkAct" aria-label="Add account or holding">＋ Add</button>
+   </div>
    <div class="card br focus-card" id="mFocus" role="group" aria-label="Focus timer">
     <div class="mk-h">FOCUS <span class="foc-sess" id="focSess">0 TODAY</span></div>
     <div class="foc-wrap" id="focTap" role="button" tabindex="0" aria-label="Start or pause focus">
@@ -306,9 +306,9 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/os/wallpaper.js?v=4.8.0"></script>
-<script src="/os/catalog.js?v=4.8.0"></script>
-<script src="/os/sky.js?v=4.8.0"></script>
-<script src="/os/app.js?v=4.8.0"></script>
+<script src="/os/wallpaper.js?v=4.9.0"></script>
+<script src="/os/catalog.js?v=4.9.0"></script>
+<script src="/os/sky.js?v=4.9.0"></script>
+<script src="/os/app.js?v=4.9.0"></script>
 </body>
 </html>

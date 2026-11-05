@@ -1,7 +1,7 @@
-/* ZAPWISE//OS web app v4.8.0 (Nov 5, 2026). Wallet paste iOS, Weather first-tap, COMMS LOG, ZAP AI tools, neon-city wallpaper, HUD clock. No tabs. Voice only from ZAP AI. */
+/* ZAPWISE//OS web app v4.9.0 (Nov 5, 2026). iOS touch fixes, WebKit-grade QA, angular HUD site-wide, neon-pink themes, brighter live wallpaper. No tabs. Voice only from ZAP AI. */
 (function () {
 "use strict";
-var VERSION = "4.8.0";
+var VERSION = "4.9.0";
 var APP_VERSION = VERSION;
 
 // v4.5: default Lite on coarse/mobile unless user already chose
@@ -276,16 +276,10 @@ var Store = (function () {
 
 // ========== 3. themes: applied instantly from the THEME button ==========
 var THEMES = [
-  { id: "zapwise", name: "ZAPWISE", sub: "Default · void, cream, amber, cyan", v: { void: "#070814", panel: "#0d1226", panel2: "#111833", cream: "#f4efe4", amber: "#f0a202", cyan: "#5ce1e6", magenta: "#ff4fd8", dim: "#6b7896", on: "#070814" } },
-  { id: "neon", name: "NEON PINK", sub: "Hot pink and violet on deep plum", v: { void: "#10040f", panel: "#1d0a1f", panel2: "#28102b", cream: "#fff5fb", amber: "#ffd166", cyan: "#7ef0ff", magenta: "#ff4fd8", dim: "#c9a8c8", on: "#10040f" } },
-  { id: "terminal", name: "TERMINAL GREEN", sub: "Green phosphor on black", v: { void: "#020a05", panel: "#07170d", panel2: "#0b2013", cream: "#d8ffe2", amber: "#c6ff3d", cyan: "#3dff7e", magenta: "#7affc8", dim: "#57805f", on: "#020a05" } },
-  { id: "arctic", name: "ARCTIC BLUE", sub: "Ice blue on midnight navy", v: { void: "#03101d", panel: "#081c30", panel2: "#0c253d", cream: "#eaf6ff", amber: "#a8e1ff", cyan: "#47a8ff", magenta: "#b9a6ff", dim: "#6d88a3", on: "#03101d" } },
-  { id: "sunset", name: "SUNSET ORANGE", sub: "Warm orange and coral on dusk", v: { void: "#140806", panel: "#22100b", panel2: "#2d160f", cream: "#fff0e3", amber: "#ffc04d", cyan: "#ff7a3d", magenta: "#ff4f7b", dim: "#94705f", on: "#140806" } },
-  { id: "mono", name: "MONO", sub: "Black, white and grey", v: { void: "#0a0a0b", panel: "#161618", panel2: "#1f1f22", cream: "#f2f2f2", amber: "#ffffff", cyan: "#cfcfd4", magenta: "#9a9aa2", dim: "#76767e", on: "#0a0a0b" } },
-  { id: "light", name: "LIGHT", sub: "Dark text on a bright page", light: true, v: { void: "#f1efe9", panel: "#ffffff", panel2: "#e7e4dc", cream: "#16181e", amber: "#b45a00", cyan: "#0a6f8c", magenta: "#b0186e", dim: "#666c79", on: "#ffffff" } },
-  { id: "neon-night", name: "NEON NIGHT", sub: "Void · cyan · magenta", v: { void: "#05060e", panel: "#0b1024", panel2: "#121a36", cream: "#e8f7ff", amber: "#5ce1e6", cyan: "#5ce1e6", magenta: "#ff4fd8", dim: "#6a7aa0", on: "#05060e" } },
-  { id: "amber-ops", name: "AMBER OPS", sub: "Void · amber tactical", v: { void: "#0a0804", panel: "#16110a", panel2: "#1f180e", cream: "#ffe9c4", amber: "#f0a202", cyan: "#ffc04d", magenta: "#ff7a3d", dim: "#8a7348", on: "#0a0804" } },
-  { id: "ghost-white", name: "GHOST WHITE", sub: "Light void · soft ink", light: true, v: { void: "#f7f8fc", panel: "#ffffff", panel2: "#eceef6", cream: "#12141c", amber: "#5b4cff", cyan: "#0a8c9e", magenta: "#c2186e", dim: "#6b7280", on: "#ffffff" } }
+  { id: "zapwise", name: "ZAPWISE NEON PINK", sub: "Hot pink + cyan on deep void · default", v: { void: "#070814", panel: "#12081a", panel2: "#1a0c24", cream: "#f7f0e8", amber: "#ff2a6d", cyan: "#05d9e8", magenta: "#ff2a6d", dim: "#8a7a96", on: "#070814" } },
+  { id: "amber-cyan", name: "AMBER / CYAN", sub: "Classic neon-city amber + cyan", v: { void: "#070814", panel: "#0d1226", panel2: "#111833", cream: "#f4efe4", amber: "#f0a202", cyan: "#5ce1e6", magenta: "#ff4fd8", dim: "#6b7896", on: "#070814" } },
+  { id: "acid", name: "ACID YELLOW", sub: "Acid #fcee0a on pure black", v: { void: "#050505", panel: "#10100a", panel2: "#18180c", cream: "#f6f6e8", amber: "#fcee0a", cyan: "#a8ff3e", magenta: "#fcee0a", dim: "#7a7a4a", on: "#050505" } },
+  { id: "ice", name: "ICE BLUE", sub: "Ice blue + white on midnight", v: { void: "#030b14", panel: "#071824", panel2: "#0c2233", cream: "#eaf6ff", amber: "#7ec8ff", cyan: "#47e0ff", magenta: "#b8d4ff", dim: "#6d88a3", on: "#030b14" } }
 ];
 function hexRgb(h) { var n = parseInt(h.slice(1), 16); return (n >> 16 & 255) + "," + (n >> 8 & 255) + "," + (n & 255); }
 var THEME = THEMES[0];
@@ -295,7 +289,7 @@ function applyTheme(id) {
   // v3.1 layout tokens
   st.setProperty("--bg", t.v.void); st.setProperty("--ink", t.v.cream);
   // Readable secondary text — neon/purple especially needs stronger muted/dim
-  var muteA = (t.id === "neon" || t.id === "neon-night") ? .78 : .62, dimA = (t.id === "neon" || t.id === "neon-night") ? .55 : .42;
+  var muteA = (t.id === "zapwise" || t.id === "acid") ? .78 : .62, dimA = (t.id === "zapwise" || t.id === "acid") ? .55 : .42;
   st.setProperty("--muted", "rgba(" + hexRgb(t.v.cream) + "," + muteA + ")");
   st.setProperty("--dim", t.v.dim || ("rgba(" + hexRgb(t.v.cream) + "," + dimA + ")"));
   document.documentElement.classList.toggle("light", !!t.light);
@@ -307,14 +301,20 @@ function applyTheme(id) {
   Store.setLocal("themeCss", { light: !!t.light, css: css, meta: t.v.void });
   try {
     if (document.body) {
-      document.body.classList.toggle("theme-neon-night", t.id === "neon-night");
-      document.body.classList.toggle("theme-amber-ops", t.id === "amber-ops");
-      document.body.classList.toggle("theme-ghost", t.id === "ghost-white");
+      document.body.classList.toggle("theme-zapwise", t.id === "zapwise");
+      document.body.classList.toggle("theme-amber-cyan", t.id === "amber-cyan");
+      document.body.classList.toggle("theme-acid", t.id === "acid");
+      document.body.classList.toggle("theme-ice", t.id === "ice");
       document.body.classList.add("pack-cyber");
     }
   } catch (e) {}
 }
-applyTheme(Store.get("theme", "zapwise"));
+(function migrateThemeId() {
+  var tid = Store.get("theme", "zapwise");
+  var map = { neon: "zapwise", "neon-night": "zapwise", "amber-ops": "amber-cyan", arctic: "ice", terminal: "acid", sunset: "amber-cyan", mono: "ice", light: "ice", "ghost-white": "ice" };
+  if (map[tid]) { tid = map[tid]; try { Store.set("theme", tid); } catch (e) {} }
+  applyTheme(tid);
+})();
 try {
   if (window.ZAPWALL) {
     window.ZAPWALL.init(document.getElementById("wpCanvas"));
@@ -2884,30 +2884,36 @@ function show(tab) {
   $$(".tab").forEach(function (b) { b.classList.toggle("on", b.getAttribute("data-tab") === tab); });
 }
 $$(".tab").forEach(function (b) { b.addEventListener("click", function () { show(b.getAttribute("data-tab")); }); });
-$("#hWx").addEventListener("click", function (e) {
-  e.preventDefault(); e.stopPropagation();
-  openCardDetail("wx", { fromUser: true });
-});
+(function bindHomeWeatherCard() {
+  var wx = $("#hWx"); if (!wx) return;
+  bindUserTap(wx, function () { openCardDetail("wx", { fromUser: true }); });
+})();
 (function bindHomeMarketsCard() {
   var card = $("#hMk"); if (!card) return;
-  function openPort() { toggleXp("mk"); }
-  function openAdd(e) {
-    if (e) { e.preventDefault(); e.stopPropagation(); }
-    // open add-account sheet without scrolling the page (setHudTab used to jump to top)
+  function openPort() { openCardDetail("mk", { fromUser: true }); }
+  function openAdd() {
+    clearTapShieldNow();
     try { openAddAccount(); } catch (err) { openPort(); }
   }
-  card.addEventListener("click", function (e) {
-    e.stopPropagation();
-    if (e.target.closest("#hMkAct,[data-hmk-add]")) { openAdd(e); return; }
-    if (e.target.closest("[data-hmk-port],.hmk-total,.hmk-val")) { openCardDetail("mk", { fromUser: true }); return; }
-    openCardDetail("mk", { fromUser: true });
-  });
-  card.addEventListener("keydown", function (e) {
-    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openPort(); }
-  });
+  /* + Add is a real <button> sibling-safe control — bind FIRST so it wins over card */
   var act = $("#hMkAct");
-  if (act) act.addEventListener("click", openAdd);
+  if (act) {
+    bindUserTap(act, function () { openAdd(); });
+  }
+  bindUserTap(card, function (e) {
+    var t = e && e.target;
+    if (t && t.closest && t.closest("#hMkAct,[data-hmk-add]")) { openAdd(); return; }
+    openPort();
+  }, { ignore: function (e) {
+    return !!(e && e.target && e.target.closest && e.target.closest("#hMkAct,[data-hmk-add]"));
+  }});
 })();
+/* Clear shield as soon as the user touches any home card (prevents ghost-block) */
+document.addEventListener("pointerdown", function (e) {
+  var t = e.target;
+  if (!t || !t.closest) return;
+  if (t.closest("#hWx,#hMk,#hMkAct,#hMap,#mapOpen,#mFocus,#heroCard,.tile,[data-hmk-add]")) clearTapShieldNow();
+}, { capture: true, passive: true });
 
 /* ===== v4.6.2/v4.6.3: iOS-safe scroll lock + portal sheets into body ===== */
 var SCROLL_LOCK = { y: 0, locked: false };
@@ -3114,20 +3120,22 @@ function openCardDetail(k, opts) {
   opts = opts || {};
   /* v4.8.0: explicit user taps bypass a lingering tap-shield (root cause of Weather first-tap miss after close). */
   if (tapShieldActive() && !opts.fromUser) return;
-  if (opts.fromUser && tapShieldActive()) {
-    try {
-      TAP_SHIELD_UNTIL = 0;
-      var _sh = document.getElementById("tapShield");
-      if (_sh) _sh.classList.remove("on");
-      clearTimeout(armTapShield._t);
-    } catch (eClr) {}
-  }
+  if (opts.fromUser) { try { clearTapShieldNow(); } catch (eClr) {} }
   var el = detailPanel(k), btn = detailBtn(k);
   if (!el) return;
   /* toggle closed if same detail already open and actually visible */
   var already = CARD_DETAIL.kind === k && !el.hidden && el.classList.contains("as-detail");
-  if (already) { closeCardDetail(false); return; }
-  if (CARD_DETAIL.kind && CARD_DETAIL.kind !== k) closeCardDetail(true);
+  if (already) {
+    if (overlayGuardActive()) return; /* ghost click must not toggle-close a just-opened detail */
+    closeCardDetail(false); return;
+  }
+  /* If a prior detail kind is stale (DOM already hidden) just clear state — a full closeCardDetail
+     + leftover OVERLAY.hist was racing popstate and dismissing the panel we are about to open. */
+  if (CARD_DETAIL.kind && CARD_DETAIL.kind !== k) {
+    if (isCardDetailOpen()) closeCardDetail(true);
+    else CARD_DETAIL.kind = null;
+  }
+  try { reconcileOverlayHistory(); } catch (eRec) {}
   CARD_DETAIL.kind = k;
   CARD_DETAIL.scrollY = window.scrollY || document.documentElement.scrollTop || 0;
   try { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch (eB) {}
@@ -3157,6 +3165,7 @@ function openCardDetail(k, opts) {
   if (btn) btn.setAttribute("aria-expanded", "true");
   lockPageScroll();
   showScrim("detail");
+  armOverlayGuard(480);
   overlayPushHistory();
   requestAnimationFrame(function () {
     try { el.scrollTop = 0; } catch (eT) {}
@@ -3195,8 +3204,8 @@ $("#xpCity").addEventListener("click", function (e) { e.stopPropagation(); openC
   ensure("#xpWx"); ensure("#xpMk");
 })();
 $("#xpMkEdit").addEventListener("click", function () { openEditCoins(); });
-var _xpHoldAdd = $("#xpHoldAdd"); if (_xpHoldAdd) _xpHoldAdd.addEventListener("click", function () { openAddHolding(); });
-var _xpAcctAdd = $("#xpAcctAdd"); if (_xpAcctAdd) _xpAcctAdd.addEventListener("click", function () { openAddAccount(); });
+var _xpHoldAdd = $("#xpHoldAdd"); if (_xpHoldAdd) bindUserTap(_xpHoldAdd, function () { openAddHolding(); });
+var _xpAcctAdd = $("#xpAcctAdd"); if (_xpAcctAdd) bindUserTap(_xpAcctAdd, function () { openAddAccount(); });
 (function bindAccounts() {
   var host = $("#acctGrid"); if (!host) return;
   var holdT = null, held = false, heldId = null;
@@ -3247,22 +3256,70 @@ document.addEventListener("click", function (e) {
 // ========== 11. sheets ==========
 
 /* v4.6.1: block tap-through for a beat after any overlay closes */
+
+/* v4.9.0: real touch taps for iOS Safari / standalone PWA.
+   Nested <button> controls and click-only listeners miss touches; also clear tap-shield. */
+function clearTapShieldNow() {
+  try {
+    TAP_SHIELD_UNTIL = 0;
+    var sh = document.getElementById("tapShield");
+    if (sh) { sh.classList.remove("on"); sh.style.display = "none"; sh.style.pointerEvents = "none"; }
+    clearTimeout(armTapShield._t);
+  } catch (e) {}
+}
+function bindUserTap(el, fn, opts) {
+  if (!el || el._zapUserTap) return;
+  el._zapUserTap = true;
+  opts = opts || {};
+  var last = 0;
+  function fire(e) {
+    if (opts.ignore && opts.ignore(e)) {
+      try { e.stopPropagation(); } catch (err0) {}
+      return;
+    }
+    var now = Date.now();
+    if (now - last < 380) { try { e.preventDefault(); e.stopPropagation(); } catch (err) {} return; }
+    last = now;
+    clearTapShieldNow();
+    try { if (e && e.preventDefault && e.type !== "click") e.preventDefault(); } catch (e0) {}
+    try { if (e && e.stopPropagation) e.stopPropagation(); } catch (e1) {}
+    try { fn(e); } catch (err) { console.warn("bindUserTap", err); }
+  }
+  el.addEventListener("pointerup", function (e) {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    /* prefer pointerup for touch/pen; mouse uses click to avoid double */
+    if (e.pointerType === "mouse") return;
+    fire(e);
+  }, { passive: false });
+  el.addEventListener("touchend", function (e) {
+    /* Safari sometimes skips pointer events on nested controls */
+    if (el._zapPtrHandled && Date.now() - el._zapPtrHandled < 400) return;
+    fire(e);
+  }, { passive: false });
+  el.addEventListener("pointerup", function (e) {
+    if (e.pointerType === "touch" || e.pointerType === "pen") el._zapPtrHandled = Date.now();
+  }, { passive: true });
+  el.addEventListener("click", function (e) { fire(e); });
+  el.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fire(e); }
+  });
+}
+
 var TAP_SHIELD_UNTIL = 0;
 function armTapShield(ms) {
-  TAP_SHIELD_UNTIL = Date.now() + (ms || 420);
+  /* v4.9: time-gate only — never put a full-screen capture layer over the UI.
+     The old #tapShield.on (z-index 2147483000) ate Weather/Markets taps on iPhone. */
+  TAP_SHIELD_UNTIL = Date.now() + Math.min(ms || 220, 280);
   var sh = document.getElementById("tapShield");
-  if (!sh) {
-    sh = document.createElement("div");
-    sh.id = "tapShield";
-    sh.setAttribute("aria-hidden", "true");
-    document.body.appendChild(sh);
+  if (sh) {
+    sh.classList.remove("on");
+    sh.style.display = "none";
+    sh.style.pointerEvents = "none";
   }
-  sh.classList.add("on");
   clearTimeout(armTapShield._t);
   armTapShield._t = setTimeout(function () {
     TAP_SHIELD_UNTIL = 0;
-    try { sh.classList.remove("on"); } catch (e) {}
-  }, ms || 420);
+  }, Math.min(ms || 220, 280));
 }
 function tapShieldActive() { return Date.now() < TAP_SHIELD_UNTIL; }
 
@@ -3272,11 +3329,23 @@ function anyOverlayOpen() {
   var sh = $("#sheet"), zap = $("#zapSheet"), card = $("#mapPlaceCard");
   return (sh && !sh.hidden) || (zap && !zap.hidden) || (card && !card.hidden) || isCardDetailOpen() || !!(document.documentElement.classList.contains("map-fs-open"));
 }
+var SCRIM_IGNORE_UNTIL = 0;
+/* v4.9: after a touch opens a sheet/detail, the browser still synthesizes a click at the same
+   coordinates. That ghost click was landing on the first .pk tile in ADD ACCOUNT (or scrim)
+   and instantly closing/committing. Block UI activation for a beat. */
+var OVERLAY_GUARD_UNTIL = 0;
+function armOverlayGuard(ms) {
+  var until = Date.now() + (ms || 450);
+  if (until > OVERLAY_GUARD_UNTIL) OVERLAY_GUARD_UNTIL = until;
+  if (until > SCRIM_IGNORE_UNTIL) SCRIM_IGNORE_UNTIL = until;
+}
+function overlayGuardActive() { return Date.now() < OVERLAY_GUARD_UNTIL; }
 function showScrim(kind) {
   var sc = $("#scrim"); if (!sc) return;
   try { portalToBody(sc); } catch (eP) {}
   sc.hidden = false;
   sc.classList.toggle("zap-open", kind === "zap");
+  armOverlayGuard(480);
   try {
     sc.style.backdropFilter = "none";
     sc.style.webkitBackdropFilter = "none";
@@ -3292,6 +3361,19 @@ function hideScrimIfIdle() {
 function overlayPushHistory() {
   if (OVERLAY.hist) return;
   try { history.pushState({ zaposOverlay: 1 }, ""); OVERLAY.hist = true; } catch (e) {}
+}
+function reconcileOverlayHistory() {
+  /* Drop a stale overlay history flag when nothing is actually open (QA force-dismiss / crash recovery). */
+  if (!OVERLAY.hist) return;
+  if (anyOverlayOpen()) return;
+  OVERLAY.hist = false;
+  try {
+    if (history.state && history.state.zaposOverlay) {
+      OVERLAY.closingFromPop = true;
+      history.back();
+      OVERLAY.closingFromPop = false;
+    }
+  } catch (e) {}
 }
 function overlayClearHistory() {
   if (!OVERLAY.hist || OVERLAY.closingFromPop) { OVERLAY.hist = false; return; }
@@ -3332,16 +3414,45 @@ function sheet(title, html, bind) {
   $("#sheetTitle").textContent = title; nb.innerHTML = html;
   if (sh) {
     try { portalToBody(sh); } catch (eP) {}
+    /* clear any stale inline display/pointer-events (QA dismiss or prior close paths) */
+    try {
+      sh.style.display = "";
+      sh.style.visibility = "";
+      sh.style.opacity = "";
+      sh.style.pointerEvents = "";
+      sh.style.transform = "";
+      sh.removeAttribute("aria-hidden");
+    } catch (eSt) {}
     sh.hidden = false;
     sh.scrollTop = 0;
     crispifyOverlay(sh);
   }
   lockPageScroll();
   showScrim("sheet");
+  armOverlayGuard(480);
   overlayPushHistory();
   if (bind) bind($("#sheetBody"));
   try { if (sh) sh.scrollTop = 0; } catch (eS) {}
 }
+/* Eat the ghost click that follows the opening gesture so it cannot activate sheet/detail controls
+   (Markets: ghost click was landing on #holdChart / .pk and dismissing or committing). */
+(function bindOverlayGhostGuard() {
+  function bind(el) {
+    if (!el || el._ghostGuard) return; el._ghostGuard = true;
+    function guard(e) {
+      if (el.hidden) return;
+      if (!overlayGuardActive()) return;
+      try { e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); } catch (err) {}
+    }
+    el.addEventListener("click", guard, true);
+    el.addEventListener("pointerup", guard, true);
+    el.addEventListener("touchend", guard, true);
+  }
+  bind($("#sheet"));
+  bind($("#xpMk"));
+  bind($("#xpWx"));
+  bind($("#zapSheet"));
+})();
 function closeSheet(skipHist) {
   var sh = $("#sheet"); if (sh) { sh.hidden = true; try { sh.classList.remove("finder-sheet"); sh.style.transform = ""; } catch (e) {} }
   hideScrimIfIdle();
@@ -3355,6 +3466,10 @@ $("#sheetClose").addEventListener("click", function () { dismissTopOverlay(false
   var sc = $("#scrim"); if (!sc) return;
   function eat(e) {
     if (sc.hidden) return;
+    if (Date.now() < SCRIM_IGNORE_UNTIL) {
+      try { e.preventDefault(); e.stopPropagation(); } catch (err) {}
+      return;
+    }
     e.preventDefault(); e.stopPropagation();
     dismissTopOverlay(false);
   }
@@ -3362,6 +3477,10 @@ $("#sheetClose").addEventListener("click", function () { dismissTopOverlay(false
   sc.addEventListener("click", eat, { capture: true });
   sc.addEventListener("touchend", function (e) {
     if (sc.hidden) return;
+    if (Date.now() < SCRIM_IGNORE_UNTIL) {
+      try { e.preventDefault(); e.stopPropagation(); } catch (err) {}
+      return;
+    }
     e.preventDefault(); e.stopPropagation();
     dismissTopOverlay(false);
   }, { capture: true, passive: false });
@@ -3373,6 +3492,7 @@ document.addEventListener("keydown", function (e) {
   dismissTopOverlay(false);
 });
 window.addEventListener("popstate", function () {
+  if (OVERLAY.closingFromPop) { OVERLAY.hist = false; return; }
   if (!anyOverlayOpen()) { OVERLAY.hist = false; return; }
   dismissAllOverlays(true);
 });
@@ -3650,9 +3770,9 @@ function openTheme() {
     }).join("");
   }
   sheet("◐ THEME",
-    '<p class="note" style="margin-bottom:10px">Tap a theme to switch. It changes right away and is saved on this device.</p>' +
+    '<p class="note" style="margin-bottom:10px">ZAPWISE//OS <b>v' + VERSION + '</b> · tap a theme to switch. Saved on this device.</p>' +
     '<div class="wp-block"><div class="wp-lab">WALLPAPER</div><div class="wp-row" id="wpRow">' + wpHTML() + "</div>" +
-    '<p class="note">Neon City is an original low-contrast skyline behind your cards. Lite / reduced-motion uses a static wash.</p></div>' +
+    '<p class="note">Neon City skyline stays animated (30fps). Reduced-motion freezes one frame. Lite keeps the motion, just lighter.</p></div>' +
     '<div id="thList">' + rowsHTML() + "</div>",
     function (b) {
       b.querySelector("#thList").addEventListener("click", function (e) {
@@ -4437,7 +4557,12 @@ window.addEventListener("pageshow", function (e) { if (e.persisted) onReturn(); 
 function rehydrate() {
   S = Object.assign({}, DEFAULT_SET, Store.get("settings", {})); APPS = Store.get("apps", null); migrateApps();
   COINS = Store.get("coins", null) || clone(DEFAULT_COINS); LOC = readLoc();
-  applyTheme(Store.get("theme", "zapwise")); renderApps(); renderMarkets(); minute(new Date()); refreshWeather(); refreshMarkets();
+  (function migrateThemeId() {
+  var tid = Store.get("theme", "zapwise");
+  var map = { neon: "zapwise", "neon-night": "zapwise", "amber-ops": "amber-cyan", arctic: "ice", terminal: "acid", sunset: "amber-cyan", mono: "ice", light: "ice", "ghost-white": "ice" };
+  if (map[tid]) { tid = map[tid]; try { Store.set("theme", tid); } catch (e) {} }
+  applyTheme(tid);
+})(); renderApps(); renderMarkets(); minute(new Date()); refreshWeather(); refreshMarkets();
 }
 Store.onChange(function (k, v, src) { if (src === "remote") rehydrate(); });
 window.addEventListener("storage", function (e) { if (e.key === "zapos.state" && e.newValue) { try { Store.applyRemote(JSON.parse(e.newValue)); } catch (x) {} } });
@@ -4978,6 +5103,11 @@ function placeNeonRing(v, dx, dy) {
   var st = window.navigator.standalone === true || (window.matchMedia && matchMedia("(display-mode: standalone)").matches);
   document.documentElement.classList.toggle("standalone", !!st);
   document.documentElement.classList.toggle("in-browser", !st);
+  try {
+    $$(".ver,[data-app-ver]").forEach(function (el) { el.textContent = "v" + VERSION; });
+    var meta = document.querySelector('meta[name="zapos-version"]');
+    if (meta) meta.setAttribute("content", VERSION);
+  } catch (eV) {}
 })();
 
 
@@ -5382,16 +5512,10 @@ function startZapListen() {
 }
 function setThemeByQuery(q) {
   var map = [
-    { re: /neon\s*night|neon/, id: "neon-night" },
-    { re: /amber/, id: "amber-ops" },
-    { re: /ghost/, id: "ghost-white" },
-    { re: /\blight\b/, id: "light" },
-    { re: /zapwise|default|classic/, id: "zapwise" },
-    { re: /sunset/, id: "sunset" },
-    { re: /terminal|green/, id: "terminal" },
-    { re: /arctic|blue/, id: "arctic" },
-    { re: /mono/, id: "mono" },
-    { re: /pink/, id: "neon" }
+    { re: /pink|magenta|zapwise|default|classic|neon/, id: "zapwise" },
+    { re: /amber|cyan|classic\s*neon/, id: "amber-cyan" },
+    { re: /acid|yellow/, id: "acid" },
+    { re: /ice|blue|arctic/, id: "ice" }
   ];
   for (var i = 0; i < map.length; i++) {
     if (map[i].re.test(q)) {
@@ -5399,7 +5523,7 @@ function setThemeByQuery(q) {
       return { skill: "theme.set", text: "Theme set to " + THEME.name + ".", action: { label: "Themes", run: function () { closeZapAssistant(); openTheme(); } } };
     }
   }
-  var order = ["neon-night", "amber-ops", "ghost-white"];
+  var order = ["zapwise", "amber-cyan", "acid", "ice"];
   var cur = THEME && THEME.id, idx = order.indexOf(cur);
   var next = order[(idx + 1) % order.length];
   applyTheme(next); Store.set("theme", THEME.id);

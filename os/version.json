@@ -1,6 +1,6 @@
 {
-  "version": "4.8.0",
+  "version": "4.9.0",
   "built": "2026-11-05",
   "channel": "stable",
-  "notes": "v4.8.0: iOS wallet paste + PASTE btn; Weather first-tap fix; COMMS LOG HUD; ZAP AI tools (math/FX/notes/reminders/wx); neon-city live wallpaper; angular HUD clock (Rajdhani)."
+  "notes": "v4.9.0: iOS touch root-causes \u2014 (1) ghost click after open landed on ADD ACCOUNT .pk / holdChart or scrim and instantly closed/committed (overlay guard + sheet/detail capture); (2) nested #hMkAct was inside <button #hMk> + click-only listeners; (3) full-screen #tapShield ate taps; (4) stale OVERLAY.hist after dismiss raced popstate and closed Markets detail; (5) Lite hid wallpaper \u2014 now animates under lite. WebKit/iPhone+Pixel touch QA (page.tap, standalone, SW 4.7\u21924.9). Angular HUD site-wide; 4 themes default ZAPWISE NEON PINK; brighter live wallpaper; version in header+THEME; cache-bust."
 }
