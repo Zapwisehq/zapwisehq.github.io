@@ -20,7 +20,7 @@
 <link rel="preconnect" href="https://tile.openstreetmap.org" crossorigin>
 <link rel="dns-prefetch" href="https://a.tile.openstreetmap.org">
 <link rel="preconnect" href="https://nominatim.openstreetmap.org" crossorigin>
-<link rel="stylesheet" href="/os/app.css?v=3.3.0">
+<link rel="stylesheet" href="/os/app.css?v=3.4.0">
 <script>try{var z=JSON.parse(localStorage.getItem("zapos.device")||"{}").themeCss;if(z&&z.css){var s=document.createElement("style");s.textContent=z.css;document.head.appendChild(s);if(z.light)document.documentElement.classList.add("light");var m=document.querySelector('meta[name="theme-color"]');if(m&&z.meta)m.setAttribute("content",z.meta);}}catch(e){}</script>
 </head>
 <body class="cyber">
@@ -66,16 +66,20 @@
    </div>
 
    <div class="card br play" id="hPlay">
-    <div class="np-top"><span>NOW PLAYING</span><span class="np-live" id="npLive">MUSIC</span></div>
-    <div class="np-body">
-     <img class="np-art" id="npArt" src="/os/icons/music.jpg" alt="">
-     <div class="np-meta"><b id="npTitle">Choose a music app</b><small id="npArtist">Tap play to open</small></div>
+    <div class="np-top">
+     <span>NOW PLAYING</span>
+     <button type="button" class="np-live" id="npLive" data-media-act="pick" aria-label="Choose music app">MUSIC ▾</button>
     </div>
-    <div class="np-bar"><i id="npBar" style="width:0%"></i></div>
+    <div class="np-body" data-media-act="pick" role="button" tabindex="0" aria-label="Choose music app">
+     <img class="np-art" id="npArt" src="/os/icons/music.jpg" alt="">
+     <div class="np-meta"><b id="npTitle">Choose a music app</b><small id="npArtist">Tap to switch · play opens it</small></div>
+     <button type="button" class="np-switch" id="npSwitch" data-media-act="pick" aria-label="Switch music app">⇄</button>
+    </div>
+    <div class="np-bar" aria-hidden="true"><i id="npBar" style="width:0%"></i></div>
     <div class="np-ctrl">
      <span class="np-t" id="npCur">0:00</span>
      <div class="np-btns">
-      <button type="button" data-media-act="prev" aria-label="Previous / switch app">⏮</button>
+      <button type="button" data-media-act="prev" aria-label="Previous music app">⏮</button>
       <button type="button" class="np-play" data-media-act="play" aria-label="Open music app">▶</button>
       <button type="button" data-media-act="next" aria-label="Next music app">⏭</button>
      </div>
@@ -196,12 +200,7 @@
  <section class="view" id="v-weather" aria-label="Weather" hidden></section>
  <section class="view" id="v-markets" aria-label="Markets" hidden></section>
  </main>
-
- <nav class="dock" id="hDock" aria-label="Dock">
-  <span class="d-tiles" id="dTiles"></span>
- </nav>
- <div class="home-ind" aria-hidden="true"></div>
- <footer class="motto">No face. No hours. Just the shortcut.</footer>
+<footer class="motto">No face. No hours. Just the shortcut.</footer>
 </div>
 
 <div class="scrim" id="scrim" hidden></div>
@@ -211,7 +210,7 @@
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/os/catalog.js?v=3.3.0"></script>
-<script src="/os/app.js?v=3.3.0"></script>
+<script src="/os/catalog.js?v=3.4.0"></script>
+<script src="/os/app.js?v=3.4.0"></script>
 </body>
 </html>

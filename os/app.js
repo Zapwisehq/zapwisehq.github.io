@@ -1,4 +1,4 @@
-/* ZAPWISE//OS web app v3.3.0 (Nov 4, 2026). Concept layout + live map. Static, no build step, no API keys.
+/* ZAPWISE//OS web app v3.4.0 (Nov 4, 2026). Concept layout + live map. Static, no build step, no API keys.
    Data: Open-Meteo (weather + city search), api-bdc.io (city name for weather), CoinGecko (crypto + PAX Gold),
    OSM standard tiles (keyless, CSS dark filter) + Nominatim reverse geocoding (road + city, cached, re-queried only after moving > 40 m).
 
@@ -17,9 +17,9 @@
    Store.applyRemote below. */
 (function () {
 "use strict";
-var VERSION = "3.3.0";
+var VERSION = "3.4.0";
 var STATUS_MSGS = ["> SHORTCUTS ARMED", "> NET SECURE", "> AI LINK STABLE", "> SIGNAL CLEAN", "> APPS READY"];
-var FOCUS_MS = 25 * 60000, DOCK_N = 5;
+var FOCUS_MS = 25 * 60000;
 var DAY_START = 7, DAY_END = 23;
 var $ = function (s, r) { return (r || document).querySelector(s); };
 var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
@@ -157,16 +157,26 @@ var DEFAULT_APPS = [
   { id: "gemini", name: "Gemini", url: "googlegemini://", icon: "/os/icons/gemini.jpg", web: "https://gemini.google.com", glyph: "gem", bg: "linear-gradient(135deg,#4f7cff,#a25cff)", accent: "#8b9dff" }
 ];
 DEFAULT_APPS.forEach(function (a) { a.on = true; });
-// music apps live in the PLAY hub only (not in the dock or app grid, so nothing shows twice)
+// music apps live in the PLAY hub only (not duplicated into the apps grid)
 var MEDIA = {
-  music: { name: "Apple Music", url: "music://", web: "https://music.apple.com", icon: "/os/icons/music.jpg" },
-  spotify: { name: "Spotify", url: "spotify://", web: "https://open.spotify.com", icon: "/os/icons/spotify.jpg" },
-  ytmusic: { name: "YouTube Music", url: "youtubemusic://", web: "https://music.youtube.com", icon: "/os/icons/ytmusic.jpg" },
-  podcasts: { name: "Podcasts", url: "podcasts://", web: "https://podcasts.apple.com", icon: "/os/icons/podcasts.jpg" },
-  pandora: { name: "Pandora", url: "pandora://", web: "https://www.pandora.com", icon: "/os/icons/pandora.jpg" },
-  soundcloud: { name: "SoundCloud", url: "soundcloud://", web: "https://soundcloud.com", icon: "/os/icons/soundcloud.jpg" }
+  music: { name: "Apple Music", url: "music://", pkg: "com.apple.android.music", web: "https://music.apple.com", icon: "/os/icons/music.jpg" },
+  spotify: { name: "Spotify", url: "spotify://", pkg: "com.spotify.music", web: "https://open.spotify.com", icon: "/os/icons/spotify.jpg" },
+  ytmusic: { name: "YouTube Music", url: "youtubemusic://", pkg: "com.google.android.apps.youtube.music", web: "https://music.youtube.com", icon: "/os/icons/ytmusic.jpg" },
+  amazonmusic: { name: "Amazon Music", url: "amznmp3://", pkg: "com.amazon.mp3", web: "https://music.amazon.com", icon: "/os/icons/amazonmusic.jpg" },
+  soundcloud: { name: "SoundCloud", url: "soundcloud://", pkg: "com.soundcloud.android", web: "https://soundcloud.com", icon: "/os/icons/soundcloud.jpg" },
+  pandora: { name: "Pandora", url: "pandora://", pkg: "com.pandora.android", web: "https://www.pandora.com", icon: "/os/icons/pandora.jpg" },
+  tidal: { name: "TIDAL", url: "tidal://", pkg: "com.aspiro.tidal", web: "https://tidal.com", icon: "/os/icons/tidal.jpg" },
+  deezer: { name: "Deezer", url: "deezer://", pkg: "deezer.android.app", web: "https://www.deezer.com", icon: "/os/icons/deezer.jpg" }
 };
-var HUB = ["music", "spotify", "ytmusic"];
+var HUB = ["music", "spotify", "ytmusic", "amazonmusic", "soundcloud", "pandora", "tidal", "deezer"];
+function defaultMediaKey() {
+  var ua = (navigator.userAgent || "").toLowerCase();
+  var isiOS = /iphone|ipad|ipod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  var isAndroid = /android/.test(ua);
+  if (isiOS) return "music";
+  if (isAndroid) return "spotify";
+  return "ytmusic";
+}
 // + ADD APP / live search: large bundled catalog (v3.2). Icons at /os/icons/<id>.jpg. Never App Store.
 var CATALOG = (typeof window !== "undefined" && Array.isArray(window.ZAPOS_CATALOG) && window.ZAPOS_CATALOG.length)
   ? window.ZAPOS_CATALOG.map(function (c) {
@@ -195,7 +205,7 @@ function migrateApps() {
   APPS.forEach(function (a) { var d = DEFAULT_APPS.filter(function (x) { return x.id === a.id; })[0]; if (d && !a.custom) { var on = a.on; delete a.ios; delete a.mac; delete a.desk; Object.keys(d).forEach(function (k) { a[k] = d[k]; }); delete a.fb; delete a.store; a.on = on; } });
   var curOrder = APPS.map(function (a) { return a.id; }).join(",");
   if (curOrder === OLD_ORDER || curOrder === OLD_ORDER2 || curOrder.indexOf("photos") < 0) {
-    // pull photos in and sort built-ins toward the concept dock/grid order once
+    // pull photos in and sort built-ins toward the concept grid order once
     APPS.sort(function (p, q) {
       var pi = DEFAULT_APPS.findIndex(function (d) { return d.id === p.id; });
       var qi = DEFAULT_APPS.findIndex(function (d) { return d.id === q.id; });
@@ -306,16 +316,9 @@ function accentOf(a) {
   var h = m[0], l = parseInt(h.slice(1, 3), 16) * .3 + parseInt(h.slice(3, 5), 16) * .59 + parseInt(h.slice(5, 7), 16) * .11;
   return l < 60 ? "#f4efe4" : h;
 }
-function dockGlyph(a) {
-  if (a.glyph === "cal") return '<span class="dcal"><i>' + DOW[new Date().getDay()] + '</i><b>' + new Date().getDate() + "</b></span>";
-  if (a.icon) return '<img class="dimg" src="' + esc(a.icon) + '" alt="">';
-  if (a.glyph === "letter" || !G[a.glyph]) return '<b class="dlet">' + esc((a.letter || a.name || "?").trim().charAt(0).toUpperCase()) + "</b>";
-  return '<svg viewBox="0 0 24 24" aria-hidden="true">' + G[a.glyph].replace(/#fff|#5a4500/g, "currentColor") + "</svg>";
-}
 function renderApps() {
   var on = APPS.filter(function (a) { return a.on; });
-  var dock = on.slice(0, DOCK_N), rest = on.slice(DOCK_N);
-  function mkTile(a, dockMode) {
+  function mkTile(a) {
     var b = document.createElement("button");
     b.className = "tile"; b.type = "button"; b.setAttribute("role", "listitem");
     b.setAttribute("aria-label", "Open " + a.name); b.title = a.name;
@@ -323,16 +326,13 @@ function renderApps() {
     b.addEventListener("click", function () { openApp(a); });
     return b;
   }
-  var dt = $("#dTiles"); dt.innerHTML = "";
-  dock.forEach(function (a) { dt.appendChild(mkTile(a, true)); });
-  var box = $("#apps"); box.innerHTML = "";
-  rest.forEach(function (a) { box.appendChild(mkTile(a, false)); });
+  var box = $("#apps"); if (!box) return; box.innerHTML = "";
+  on.forEach(function (a) { box.appendChild(mkTile(a)); });
   var ad = document.createElement("button");
   ad.className = "tile add"; ad.type = "button"; ad.id = "addApp"; ad.setAttribute("role", "listitem"); ad.setAttribute("aria-label", "Find and add an app");
   ad.innerHTML = '<span class="ic" aria-hidden="true">⌕</span><span class="lb">Find an app</span>';
   ad.addEventListener("click", function () { openAddApp({ focusSearch: true }); });
   box.appendChild(ad);
-  if (!dock.length) dt.innerHTML = '<span class="dim" style="grid-column:1/-1;text-align:center;font-size:11px">NO APPS ON · TAP EDIT</span>';
 }
 
 // ========== 6. clock, date, status, meters, focus ==========
@@ -398,37 +398,57 @@ function renderFocus() {
 function renderNet() { var on = navigator.onLine !== false; var el = $("#hSync"); if (el) { el.classList.toggle("off", !on); if (!on) el.innerHTML = "<i aria-hidden=\"true\"></i>OFFLINE"; } }
 
 // NOW PLAYING hub: honest music-app launcher (no fake track audio in a browser)
-var MEDIA_KEY = Store.getLocal("mediaKey", null) || HUB[0];
-function currentMedia() { return MEDIA[MEDIA_KEY] || MEDIA.music; }
+var _savedMedia = Store.getLocal("mediaKey", null);
+var MEDIA_KEY = (_savedMedia && MEDIA[_savedMedia]) ? _savedMedia : defaultMediaKey();
+try { if (!_savedMedia || !MEDIA[_savedMedia]) Store.setLocal("mediaKey", MEDIA_KEY); } catch (e) {}
+function currentMedia() { return MEDIA[MEDIA_KEY] || MEDIA[defaultMediaKey()] || MEDIA.spotify; }
 function renderNowPlaying() {
   var m = currentMedia();
   var art = $("#npArt"), title = $("#npTitle"), artist = $("#npArtist"), live = $("#npLive");
-  if (art) art.src = m.icon || "/os/icons/music.jpg";
+  if (art) { art.src = m.icon || "/os/icons/music.jpg"; art.alt = m.name; }
   if (title) title.textContent = m.name;
-  if (artist) artist.textContent = "Tap play to open";
-  if (live) live.textContent = "MUSIC";
+  if (artist) artist.textContent = "Tap to switch · ▶ opens app";
+  if (live) live.textContent = "MUSIC ▾";
   var bar = $("#npBar"); if (bar) bar.style.width = "0%";
   var cur = $("#npCur"); if (cur) cur.textContent = "0:00";
   var dur = $("#npDur"); if (dur) dur.textContent = "—";
 }
+function setMediaKey(k, open) {
+  if (!MEDIA[k]) return;
+  MEDIA_KEY = k;
+  try { Store.setLocal("mediaKey", MEDIA_KEY); } catch (e) {}
+  renderNowPlaying();
+  toast(MEDIA[k].name);
+  if (open) openApp(MEDIA[k]);
+}
 function cycleMedia(dir) {
   var i = HUB.indexOf(MEDIA_KEY); if (i < 0) i = 0;
-  i = (i + dir + HUB.length) % HUB.length; MEDIA_KEY = HUB[i];
-  try { Store.setLocal("mediaKey", MEDIA_KEY); } catch (e) {}
-  renderNowPlaying(); toast(currentMedia().name);
+  i = (i + dir + HUB.length) % HUB.length;
+  setMediaKey(HUB[i], false);
 }
 $("#hPlay").addEventListener("click", function (e) {
   var b = e.target.closest("[data-media-act]"); if (!b) return;
+  e.preventDefault();
   var act = b.getAttribute("data-media-act");
   if (act === "prev") cycleMedia(-1);
   else if (act === "next") cycleMedia(1);
   else if (act === "play") openApp(currentMedia());
-  else openMedia();
+  else if (act === "pick") openMedia();
 });
 function openMedia() {
-  var html = '<p class="note" style="margin-bottom:10px">Opens the app if it\'s on this phone, otherwise its website (on a computer, the website opens right away).</p>' +
-    Object.keys(MEDIA).map(function (k) { return '<button class="mrow" data-m="' + k + '"><img class="mimg" src="' + esc(MEDIA[k].icon) + '" alt=""><span class="grow">' + esc(MEDIA[k].name) + '</span><span aria-hidden="true">↗</span></button>'; }).join("");
-  sheet("♪ MUSIC APPS", html, function (b) { b.addEventListener("click", function (e) { var x = e.target.closest("[data-m]"); if (x) { MEDIA_KEY = x.getAttribute("data-m"); try { Store.setLocal("mediaKey", MEDIA_KEY); } catch (err) {} renderNowPlaying(); closeSheet(); openApp(MEDIA[MEDIA_KEY]); } }); });
+  var html = '<p class="note" style="margin-bottom:10px">Pick your music app. We open the app on your phone if it\'s installed, otherwise its website — never the App Store.</p>' +
+    HUB.map(function (k) {
+      var on = k === MEDIA_KEY ? " on" : "";
+      var mark = k === MEDIA_KEY ? '<span class="mcheck" aria-hidden="true">✓</span>' : '<span aria-hidden="true">↗</span>';
+      return '<button class="mrow' + on + '" data-m="' + k + '" type="button"><img class="mimg" src="' + esc(MEDIA[k].icon) + '" alt=""><span class="grow">' + esc(MEDIA[k].name) + "</span>" + mark + "</button>";
+    }).join("");
+  sheet("♪ MUSIC APPS", html, function (b) {
+    b.addEventListener("click", function (e) {
+      var x = e.target.closest("[data-m]"); if (!x) return;
+      setMediaKey(x.getAttribute("data-m"), true);
+      closeSheet();
+    });
+  });
 }
 
 // ========== 7. weather FX (canvas only) ==========
@@ -948,7 +968,7 @@ function openMenu() {
 // ----- edit apps -----
 function openEditApps() {
   var html = '<button class="btn" id="eAdd" style="margin-bottom:12px">＋ ADD APP</button>' +
-    '<p class="note" style="margin-bottom:10px">Switch an app on or off, use ▲ ▼ to move it, and ✕ to remove an app you added. The first 5 apps that are on sit in the dock; the rest show under MORE APPS. Music apps live in the PLAY box.</p><div id="eList"></div>' +
+    '<p class="note" style="margin-bottom:10px">Switch an app on or off, use ▲ ▼ to move it, and ✕ to remove an app you added. Turn apps on or off and reorder them — they all show in the APPS grid. Music apps live in the NOW PLAYING card.</p><div id="eList"></div>' +
     '<button class="btn alt" id="appsReset" style="margin-top:12px">Reset apps to default</button>';
   sheet("▦ EDIT APPS", html, function (b) {
     function drawList() {
@@ -1506,7 +1526,7 @@ function paintTicker(rows) {
 (function () {
   var b = $("#findApp");
   if (b) b.addEventListener("click", function () { openAddApp({ focusSearch: true }); });
-  // mark standalone for CSS dock/safe-area
+  // mark standalone for CSS Safari/safe-area padding
   var st = window.navigator.standalone === true || (window.matchMedia && matchMedia("(display-mode: standalone)").matches);
   document.documentElement.classList.toggle("standalone", !!st);
   document.documentElement.classList.toggle("in-browser", !st);
