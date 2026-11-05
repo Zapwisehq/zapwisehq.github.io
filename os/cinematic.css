@@ -102,3 +102,8 @@ main{overflow-x:hidden;-webkit-overflow-scrolling:touch}
 @media (min-width:900px){.zap-sheet:not([hidden]){bottom:80px;max-height:min(78vh,640px)}}
 .zap-fab{z-index:58!important}
 .sheet:not([hidden]),#scrim:not([hidden]){z-index:70}
+
+/* Account sync */
+.sync-box{margin:0 0 14px;padding:12px;border-radius:14px;border:1px solid rgba(92,225,230,.28);background:rgba(8,12,28,.55)}
+.sync-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.sync-box .btn{margin:0}

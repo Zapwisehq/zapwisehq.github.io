@@ -7,10 +7,10 @@
 <meta name="robots" content="noindex,follow">
 <meta name="description" content="ZAPWISE//OS: simple cyberpunk HUD — Home, Apps, Map, Markets, Weather, Phone. Shortcuts first.">
 <meta name="theme-color" content="#070814">
-<meta name="zapos-version" content="4.1.0">
+<meta name="zapos-version" content="4.2.0">
 <script>
 /* Early update probe — runs even before app.js. Reloads once if /os/version.json is newer. */
-(function(){var V="4.1.0",k="zapos.bootReload";try{if(sessionStorage.getItem(k)===V)return;}catch(e){}
+(function(){var V="4.2.0",k="zapos.bootReload";try{if(sessionStorage.getItem(k)===V)return;}catch(e){}
 fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.ok?r.json():null}).then(function(j){
   if(!j||!j.version||j.version===V)return;
   try{sessionStorage.setItem(k,j.version);sessionStorage.setItem("zapos.pendingToast","Updated to v"+j.version);}catch(e){}
@@ -22,7 +22,7 @@ fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){retu
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="OS">
 <meta name="format-detection" content="telephone=no">
-<link rel="manifest" href="/os/manifest.webmanifest?v=4.1.0">
+<link rel="manifest" href="/os/manifest.webmanifest?v=4.2.0">
 <link rel="apple-touch-icon" href="/os/icon-180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/os/icon-192.png">
 <link rel="preconnect" href="https://api.open-meteo.com" crossorigin>
@@ -32,8 +32,8 @@ fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){retu
 <link rel="preconnect" href="https://nominatim.openstreetmap.org" crossorigin>
 <link rel="dns-prefetch" href="https://tiles.openfreemap.org">
 <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
-<link rel="stylesheet" href="/os/app.css?v=4.1.0">
-<link rel="stylesheet" href="/os/cinematic.css?v=4.1.0">
+<link rel="stylesheet" href="/os/app.css?v=4.2.0">
+<link rel="stylesheet" href="/os/cinematic.css?v=4.2.0">
 <script>try{var z=JSON.parse(localStorage.getItem("zapos.device")||"{}").themeCss;if(z&&z.css){var s=document.createElement("style");s.textContent=z.css;document.head.appendChild(s);if(z.light)document.documentElement.classList.add("light");var m=document.querySelector('meta[name="theme-color"]');if(m&&z.meta)m.setAttribute("content",z.meta);}}catch(e){}</script>
 </head>
 <body class="cyber">
@@ -52,7 +52,7 @@ fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){retu
 <div id="app">
 
  <header class="top sticky hud-top" id="top">
-  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver">v4.1.0</span></div>
+  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver">v4.2.0</span></div>
   <div class="hud-status" id="hudStatus" aria-label="System status">
    <span class="hud-chip sync" id="hSync"><i aria-hidden="true"></i>SYNCED</span>
    <span class="hud-chip gps" id="hGpsLock" data-lock="0"><i aria-hidden="true"></i>GPS —</span>
@@ -361,8 +361,9 @@ fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){retu
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/os/catalog.js?v=4.1.0"></script>
-<script src="/os/sky.js?v=4.1.0"></script>
-<script src="/os/app.js?v=4.1.0"></script>
+<script src="/os/catalog.js?v=4.2.0"></script>
+<script src="/os/sky.js?v=4.2.0"></script>
+<script src="/os/app.js?v=4.2.0"></script>
+<script src="/os/sync.js?v=4.2.0"></script>
 </body>
 </html>

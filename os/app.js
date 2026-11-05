@@ -1,7 +1,7 @@
-/* ZAPWISE//OS web app v4.1.0 (Nov 5, 2026). Tabbed cyberpunk HUD + calm Three.js city backdrop; keeps MapLibre/Lite/Smart/honest traffic. Static, no API keys. */
+/* ZAPWISE//OS web app v4.2.0 (Nov 5, 2026). Tabbed HUD + Firebase Google account sync (prefs only, no GPS/keys). */
 (function () {
 "use strict";
-var VERSION = "4.1.0";
+var VERSION = "4.2.0";
 var APP_VERSION = VERSION;
 
 // ========== v3.12 3D FX (lazy) ==========
@@ -3213,7 +3213,17 @@ function openEditHolding(i) { openAddHolding(i); }
 
 // ----- settings -----
 function settingsHtml(sndOn, liteOn, tiltOn, motionOn) {
-  return '<label class="field">YOUR NAME (FOR THE GREETING)<input id="stName" maxlength="20" placeholder="e.g. Sam" value="' + esc(S.name) + '" autocomplete="off"></label>' +
+  return '<h3>ACCOUNT SYNC</h3>' +
+    '<div class="sync-box" id="stSyncBox">' +
+    '<p class="note" id="stSyncNote">Sign in with Google to sync apps, favorites, places, theme, accounts/holdings (values only — never wallet keys), and settings across your devices. Free. Live GPS stays on this device only. Works signed out and offline.</p>' +
+    '<div class="sync-row" id="stSyncRow">' +
+    '<button class="btn" id="stSignIn" type="button">Sign in with Google</button>' +
+    '<button class="btn" id="stSignOut" type="button" hidden>Sign out</button>' +
+    '<button class="chip" id="stSyncNow" type="button" hidden>Sync now</button>' +
+    '</div>' +
+    '<p class="note" id="stSyncStatus" aria-live="polite">Signed out · local only</p>' +
+    '</div>' +
+    '<label class="field">YOUR NAME (FOR THE GREETING)<input id="stName" maxlength="20" placeholder="e.g. Sam" value="' + esc(S.name) + '" autocomplete="off"></label>' +
     '<div class="field">TEMPERATURE</div><div class="seg" id="stU"><button type="button" data-v="F">°F · mph</button><button type="button" data-v="C">°C · km/h</button></div>' +
     '<div class="field">SOFT UI SOUNDS</div><div class="seg" id="stSnd"><button type="button" data-v="0">OFF</button><button type="button" data-v="1">ON</button></div>' +
     '<p class="note">Soft synth taps when you press cards. Off by default.</p>' +
@@ -3234,6 +3244,43 @@ function bindSettings(b, closeAfterSave) {
   var tiltOn = Store.getLocal("tiltCards", null); if (tiltOn == null) tiltOn = true; else tiltOn = !!tiltOn;
   var motionOn = !!Store.getLocal("motionTilt", false);
   var u = S.units, snd = sndOn ? "1" : "0", lite = liteOn ? "1" : "0", tilt = tiltOn ? "1" : "0", motion = motionOn ? "1" : "0";
+  function paintSync() {
+    var box = b.querySelector("#stSyncBox"); if (!box) return;
+    var st = (window.ZAPSYNC && window.ZAPSYNC.status) ? window.ZAPSYNC.status() : { signedIn: false, status: "off" };
+    var note = b.querySelector("#stSyncStatus");
+    var si = b.querySelector("#stSignIn"), so = b.querySelector("#stSignOut"), sn = b.querySelector("#stSyncNow");
+    if (si) si.hidden = !!st.signedIn;
+    if (so) so.hidden = !st.signedIn;
+    if (sn) sn.hidden = !st.signedIn;
+    if (note) {
+      if (!st.signedIn) note.textContent = "Signed out · local only";
+      else if (st.status === "syncing") note.textContent = "Syncing… " + (st.email || "");
+      else if (st.status === "error") note.textContent = "Sync error: " + (st.lastError || "try again") + (st.email ? " · " + st.email : "");
+      else if (st.status === "offline") note.textContent = "Offline · will sync when back · " + (st.email || "");
+      else note.textContent = "Signed in · " + (st.email || "Google") + (st.lastSyncAt ? " · last sync " + new Date(st.lastSyncAt).toLocaleTimeString() : "");
+    }
+  }
+  paintSync();
+  if (window.ZAPSYNC && window.ZAPSYNC.onChange) window.ZAPSYNC.onChange(function () { paintSync(); });
+  var stSignIn = b.querySelector("#stSignIn");
+  if (stSignIn) stSignIn.addEventListener("click", function () {
+    if (!window.ZAPSYNC) { toast("Sync module not loaded"); return; }
+    stSignIn.disabled = true; toast("Opening Google…");
+    window.ZAPSYNC.signIn().then(function () { toast("Signed in — syncing"); paintSync(); })
+      .catch(function (e) { toast((e && e.message) || "Sign-in failed"); })
+      .then(function () { stSignIn.disabled = false; paintSync(); });
+  });
+  var stSignOut = b.querySelector("#stSignOut");
+  if (stSignOut) stSignOut.addEventListener("click", function () {
+    if (!window.ZAPSYNC) return;
+    window.ZAPSYNC.signOut().then(function () { toast("Signed out"); paintSync(); });
+  });
+  var stSyncNow = b.querySelector("#stSyncNow");
+  if (stSyncNow) stSyncNow.addEventListener("click", function () {
+    if (!window.ZAPSYNC) return;
+    window.ZAPSYNC.syncNow().then(function () { toast("Synced"); paintSync(); })
+      .catch(function () { toast("Sync failed"); paintSync(); });
+  });
   function seg() { $$("#stU button", b).forEach(function (x) { x.classList.toggle("on", x.getAttribute("data-v") === u); }); }
   function segS() { $$("#stSnd button", b).forEach(function (x) { x.classList.toggle("on", x.getAttribute("data-v") === snd); }); }
   function segL() { $$("#stLite button", b).forEach(function (x) { x.classList.toggle("on", x.getAttribute("data-v") === lite); }); }
@@ -3543,7 +3590,7 @@ function runSearch(q) {
   });
   document.addEventListener("click", function (e) { if (!f.contains(e.target)) hideDrop(); });
 })();
-window.ZAPOS = { store: Store, version: VERSION, setHudTab: setHudTab, catalog: CATALOG.length, accounts: ACCOUNT_CATALOG.length, openDirectionsTo: openDirectionsTo, placeLL: placeLL, showMapPlaceCard: showMapPlaceCard, loadAccounts: loadAccounts, loadPlaces: loadPlaces, setGPS: function (g) { GPS = g; Store.setLocal("gps", GPS); try { updateGpsLockChip(); } catch (e) {} }, mapFollow: function (on) { MAP.follow = !!on; }, updateSkyline: updateSkyline, setUiSounds: setUiSounds, sunPeriodNow: sunPeriodNow }; // for the stage 2 sync add-on + QA
+window.ZAPOS = { store: Store, version: VERSION, setHudTab: setHudTab, rehydrate: function () { try { rehydrate(); } catch (e) {} }, catalog: CATALOG.length, accounts: ACCOUNT_CATALOG.length, openDirectionsTo: openDirectionsTo, placeLL: placeLL, showMapPlaceCard: showMapPlaceCard, loadAccounts: loadAccounts, loadPlaces: loadPlaces, setGPS: function (g) { GPS = g; Store.setLocal("gps", GPS); try { updateGpsLockChip(); } catch (e) {} }, mapFollow: function (on) { MAP.follow = !!on; }, updateSkyline: updateSkyline, setUiSounds: setUiSounds, sunPeriodNow: sunPeriodNow }; // for the stage 2 sync add-on + QA
 
 // ========== v3.1 concept chrome: menu, today ==========
 var menuBtn = $("#menuBtn"); if (menuBtn) menuBtn.addEventListener("click", openMenu);
@@ -3712,6 +3759,7 @@ function placeNeonRing(v, dx, dy) {
   try { bindChargeUp(); updateSkyline(); buildClockTicks(); ensureHudTicks(); initBatteryHud(); updateGpsLockChip(); startZapWave(); } catch (e) {}
 
   try { bindHudTabs(); ensurePanelsVisible(); } catch (e) {}
+  try { if (window.ZAPSYNC) window.ZAPSYNC.start(); } catch (e) {}
   try {
     var uv = (Store.ui() || {}).view || "";
     if (String(uv).indexOf("hud:") === 0) setHudTab(String(uv).slice(4), { silent: true });
