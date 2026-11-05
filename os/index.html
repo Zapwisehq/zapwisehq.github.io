@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>ZAPWISE//OS</title>
 <meta name="robots" content="noindex,follow">
-<meta name="description" content="ZAPWISE//OS: one full-screen home for your clock, weather, markets and your apps.">
+<meta name="description" content="ZAPWISE//OS: one full-screen home for your clock, weather, markets, map and apps.">
 <meta name="theme-color" content="#070814">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -17,154 +17,174 @@
 <link rel="icon" type="image/png" sizes="192x192" href="/os/icon-192.png">
 <link rel="preconnect" href="https://api.open-meteo.com" crossorigin>
 <link rel="preconnect" href="https://api.coingecko.com" crossorigin>
-<link rel="preconnect" href="https://tile.openstreetmap.org" crossorigin>
-<link rel="stylesheet" href="/os/app.css?v=3.0.1">
-<script>/* paint the saved theme on the first frame */try{var z=JSON.parse(localStorage.getItem("zapos.device")||"{}").themeCss;if(z&&z.css){var s=document.createElement("style");s.textContent=z.css;document.head.appendChild(s);if(z.light)document.documentElement.classList.add("light");var m=document.querySelector('meta[name="theme-color"]');if(m&&z.meta)m.setAttribute("content",z.meta);}}catch(e){}</script>
+<link rel="preconnect" href="https://basemaps.cartocdn.com" crossorigin>
+<link rel="preconnect" href="https://nominatim.openstreetmap.org" crossorigin>
+<link rel="stylesheet" href="/os/app.css?v=3.1.0">
+<script>try{var z=JSON.parse(localStorage.getItem("zapos.device")||"{}").themeCss;if(z&&z.css){var s=document.createElement("style");s.textContent=z.css;document.head.appendChild(s);if(z.light)document.documentElement.classList.add("light");var m=document.querySelector('meta[name="theme-color"]');if(m&&z.meta)m.setAttribute("content",z.meta);}}catch(e){}</script>
 </head>
 <body>
 <div class="grid-bg" aria-hidden="true"></div>
 <div id="app">
 
  <header class="top" id="top">
-  <div class="brand"><span class="bolt" aria-hidden="true">⚡</span>ZAPWISE<b>//OS</b></div>
-  <button class="h-theme" data-theme-btn aria-label="Change theme" title="Change theme"><i aria-hidden="true"></i>THEME</button>
+  <div class="brand">ZAPWISE<b>//OS</b> <span class="ver">v3.1</span></div>
+  <div class="top-r">
+   <span class="sync" id="hSync"><i aria-hidden="true"></i>SYNCED</span>
+   <button class="h-theme" data-theme-btn aria-label="Change theme" title="Change theme"><i aria-hidden="true"></i>THEME</button>
+   <button class="avatar" id="menuBtn" aria-label="Open menu" title="Menu">☰</button>
+  </div>
  </header>
 
  <main>
- <!-- HOME: HUD panel (matches the Scriptable widget v7.2 look), then shortcuts + all apps below -->
  <section class="view" id="v-home" aria-label="Home">
-  <div class="hud" id="hud">
-   <i class="cb tl" aria-hidden="true"></i><i class="cb tr" aria-hidden="true"></i><i class="cb bl" aria-hidden="true"></i><i class="cb brr" aria-hidden="true"></i>
-   <div class="h-hdr">
-    <span class="h-tag">ZAPWISE//OS</span><span class="h-sync" id="hSync">SYNC --</span>
-    <button class="h-theme" data-theme-btn aria-label="Change theme" title="Change theme"><i aria-hidden="true"></i>THEME</button>
-    <span class="h-net" id="hNet"><i></i><b>ONLINE</b></span>
+
+  <form class="h-srch" id="srch" role="search" autocomplete="off">
+   <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M15.5 15.5L21 21" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+   <input id="srchQ" type="search" enterkeyhint="go" placeholder="Search apps or the web." aria-label="Search apps or the web" autocapitalize="off" spellcheck="false">
+   <span class="srch-h" id="srchHint" aria-hidden="true"><kbd>⌘</kbd>K</span>
+  </form>
+
+  <div class="row2">
+   <div class="card br hero">
+    <div class="h-clock" id="hClock" aria-live="off">--:--<em id="hAmpm"></em></div>
+    <div class="h-date" id="hDate">—</div>
+    <div class="hero-bot">
+     <span class="greet" id="greet">Good evening</span>
+     <button class="mode-chip" id="workMode" type="button" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h16v11H4zM8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" fill="none" stroke="currentColor" stroke-width="2"/></svg>WORK MODE</button>
+    </div>
    </div>
 
-   <form class="h-srch" id="srch" role="search" autocomplete="off">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" style="stroke:var(--cyan)" stroke-width="2.2"/><path d="M15.5 15.5L21 21" style="stroke:var(--cyan)" stroke-width="2.4" stroke-linecap="round"/></svg>
-    <input id="srchQ" type="search" enterkeyhint="go" placeholder="Search apps or Google" aria-label="Search apps or Google" autocapitalize="off" spellcheck="false">
-    <span class="srch-h" id="srchHint" aria-hidden="true"></span>
-   </form>
-
-   <div class="h-main">
-    <div class="h-left">
-     <div class="h-clock" id="hClock" aria-live="off">--:--<em id="hAmpm"></em></div>
-     <div class="h-date"><span id="hDate">—</span> <span class="h-status" id="hStatus">&gt; SIGNAL CLEAN</span></div>
-     <div class="h-info"><span class="h-ss"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18h16M7 14.5a5 5 0 0 1 10 0" fill="none" style="stroke:var(--amber)" stroke-width="2.2" stroke-linecap="round"/><path d="M12 3.5v4M9.6 6.5L12 9l2.4-2.5" fill="none" style="stroke:var(--amber)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.5 11l1.8 1M20.5 11l-1.8 1" style="stroke:var(--amber)" stroke-width="2" stroke-linecap="round"/></svg><span id="hSunset">SUNSET --</span></span>
-      <span class="h-wd"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9h11a3 3 0 1 0-3-3M3 13h15a3 3 0 1 1-3 3M3 17h7" fill="none" style="stroke:var(--cyan)" stroke-width="2" stroke-linecap="round"/></svg><span id="hWind">-- MPH</span></span></div>
+   <div class="card br play" id="hPlay">
+    <div class="np-top"><span>NOW PLAYING</span><span class="np-live" id="npLive">MUSIC</span></div>
+    <div class="np-body">
+     <img class="np-art" id="npArt" src="/os/icons/music.jpg" alt="">
+     <div class="np-meta"><b id="npTitle">Choose a music app</b><small id="npArtist">Tap play to open</small></div>
     </div>
-    <div class="h-play" id="hPlay">
-     <div class="hp-top"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 17.5V5.5l10-2v11.5" fill="none" style="stroke:var(--cyan)" stroke-width="2.2"/><circle cx="6.8" cy="17.6" r="2.7" style="fill:var(--cyan)"/><circle cx="16.8" cy="15.4" r="2.7" style="fill:var(--cyan)"/></svg><span><b>PLAY</b><small>Select Music App &gt;</small></span></div>
-     <div class="hp-row">
-      <button data-media="music" aria-label="Open Apple Music"><img src="/os/icons/music.jpg" alt=""></button>
-      <button data-media="spotify" aria-label="Open Spotify"><img src="/os/icons/spotify.jpg" alt=""></button>
-      <button data-media="ytmusic" aria-label="Open YouTube Music"><img src="/os/icons/ytmusic.jpg" alt=""></button>
-      <button data-media="more" aria-label="More music apps"><svg viewBox="0 0 24 24"><g style="fill:var(--dim)"><circle cx="5.5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18.5" cy="12" r="2"/></g></svg></button>
+    <div class="np-bar"><i id="npBar" style="width:0%"></i></div>
+    <div class="np-ctrl">
+     <span class="np-t" id="npCur">0:00</span>
+     <div class="np-btns">
+      <button type="button" data-media-act="prev" aria-label="Previous / switch app">⏮</button>
+      <button type="button" class="np-play" data-media-act="play" aria-label="Open music app">▶</button>
+      <button type="button" data-media-act="next" aria-label="Next music app">⏭</button>
      </div>
+     <span class="np-t" id="npDur">—</span>
     </div>
    </div>
+  </div>
 
-   <button class="h-panel h-wx" id="hWx" aria-label="Show more weather" aria-expanded="false" aria-controls="xpWx">
-    <canvas class="fx" id="fxHud" aria-hidden="true"></canvas>
-    <span class="hw-in">
-     <span class="hw-r1"><span class="hw-ic" id="hwIc" aria-hidden="true">·</span><b id="hwNow">WEATHER LOADING…</b><span class="hw-hl" id="hwHL"></span></span>
-     <span class="hw-r2"><span id="hwFeels">FEELS --</span><span class="hw-rain"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 0 1 18 0z" style="fill:var(--magenta)"/><path d="M12 12v6.5a2 2 0 0 1-4 0" fill="none" style="stroke:var(--magenta)" stroke-width="2" stroke-linecap="round"/></svg><span id="hwRain">RAIN --</span></span><span class="hw-upd" id="hwUpd">UPD --</span></span>
-     <span class="hw-hrs" id="hwHrs"></span>
+  <button class="card br h-wx" id="hWx" type="button" aria-label="Show more weather" aria-expanded="false" aria-controls="xpWx">
+   <canvas class="fx" id="fxHud" aria-hidden="true"></canvas>
+   <span class="hw-in">
+    <span class="hw-top">
+     <span>
+      <span class="hw-temp" id="hwTemp">--°</span>
+      <span class="hw-cond" id="hwNow">Weather loading…</span>
+      <span class="hw-advice" id="hwAdvice">Tap to set your city or allow location</span>
+     </span>
+     <span class="hw-ic" id="hwIc" aria-hidden="true">·</span>
     </span>
+    <span class="hw-hrs" id="hwHrs" role="list"></span>
+    <span class="hw-meta"><span id="hwHL"></span><span id="hwFeels"></span><span id="hwRain"></span><span class="hw-upd" id="hwUpd">UPD --</span></span>
+   </span>
+  </button>
+
+  <div class="xp" id="xpWx" hidden>
+   <div class="xp-h"><b id="xpPlace">WEATHER</b><button class="chip" id="xpCity" type="button">◎ CHANGE CITY</button></div>
+   <div class="hours" id="xpHours"></div>
+   <div class="days" id="xpDays"></div>
+   <p class="note" id="xpNote"></p>
+  </div>
+
+  <div class="card br h-map" id="hMap" role="button" tabindex="0" aria-label="Open Maps at my location">
+   <div class="map-h"><b id="hPlace">&gt; LOCATING…</b><span id="hGps">GPS --</span></div>
+   <div class="map-v" id="mapV">
+    <div class="map-tiles" id="mapTiles"></div>
+    <i class="map-shade"></i>
+    <i class="map-dot" id="mapDot" hidden></i>
+    <span class="map-msg" id="mapMsg">LOCATING…</span>
+    <a class="map-attr" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap · © CARTO</a>
+   </div>
+  </div>
+
+  <div class="row2">
+   <button class="card br h-mk" id="hMk" type="button" aria-label="Show markets" aria-expanded="false" aria-controls="xpMk">
+    <div class="mk-h">MARKETS</div>
+    <div class="mk-items" id="hMkList"><span class="dim">Markets loading…</span></div>
+    <span class="mk-t" id="hMkT">--</span>
    </button>
 
-   <div class="xp" id="xpWx" hidden>
-    <div class="xp-h"><b id="xpPlace">WEATHER</b><button class="chip" id="xpCity">◎ CHANGE CITY</button></div>
-    <div class="hours" id="xpHours"></div>
-    <div class="days" id="xpDays"></div>
-    <p class="note" id="xpNote"></p>
-   </div>
-
-   <div class="h-meters">
-    <div class="meter" aria-label="Day progress"><span class="m-l">DAY</span><span class="segs" id="mDay"></span><span class="m-v c-cyan" id="mDayV">--%</span></div>
-    <div class="m-line" id="mDayL">—</div>
-    <button class="meter m-focus" id="mFocus" aria-label="Focus timer: tap to start or pause"><span class="m-l">FOCUS</span><span class="segs" id="mFoc"></span><span class="m-v" id="mFocV">25:00</span></button>
-    <div class="m-line" id="mFocL">TAP FOCUS TO START A 25-MIN SPRINT</div>
-   </div>
-
-   <button class="h-mk" id="hMk" aria-label="Show markets" aria-expanded="false" aria-controls="xpMk"><span class="mk-items" id="hMkList"><span class="dim">MARKETS LOADING…</span></span><span class="mk-t" id="hMkT">--</span></button>
-
-   <div class="xp" id="xpMk" hidden>
-    <div class="xp-h"><b>WATCHLIST</b><button class="chip" id="xpMkEdit">✎ EDIT</button></div>
-    <div class="mk" id="xpMkList"></div>
-    <div class="stamp" id="xpMkStamp">UPDATED --</div>
-   </div>
-
-   <div class="h-panel h-map" id="hMap" role="button" tabindex="0" aria-label="Open Maps at my location">
-    <div class="map-h"><b id="hPlace">&gt; LOCATING…</b><span id="hGps">GPS --</span></div>
-    <div class="map-v" id="mapV"><div class="map-tiles" id="mapTiles"></div><i class="map-shade"></i><i class="map-dot" id="mapDot" hidden></i>
-     <span class="map-msg" id="mapMsg">LOCATING…</span>
-     <a class="map-attr" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a></div>
-   </div>
-
-   <div class="h-dock" id="hDock">
-    <button class="d-edit" id="dEdit"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7zm8.4 5l-1.7-.4a6.9 6.9 0 0 1-.6 1.5l1 1.5-1.8 1.8-1.5-1a6.9 6.9 0 0 1-1.5.6l-.4 1.7h-2.6l-.4-1.7a6.9 6.9 0 0 1-1.5-.6l-1.5 1-1.8-1.8 1-1.5a6.9 6.9 0 0 1-.6-1.5l-1.7-.4v-2.6l1.7-.4a6.9 6.9 0 0 1 .6-1.5l-1-1.5 1.8-1.8 1.5 1a6.9 6.9 0 0 1 1.5-.6l.4-1.7h2.6l.4 1.7a6.9 6.9 0 0 1 1.5.6l1.5-1 1.8 1.8-1 1.5c.3.5.5 1 .6 1.5l1.7.4z" style="fill:var(--cyan)"/></svg>EDIT APPS</button>
-    <span class="d-tiles" id="dTiles"></span>
-   </div>
+   <button class="card br focus-card" id="mFocus" type="button" aria-label="Focus timer: tap to start or pause">
+    <div class="mk-h">FOCUS</div>
+    <div class="foc-wrap">
+     <svg class="foc-svg" viewBox="0 0 120 120" aria-hidden="true">
+      <circle class="foc-track" cx="60" cy="60" r="52"/>
+      <circle class="foc-ring" id="focRing" cx="60" cy="60" r="52"/>
+     </svg>
+     <div class="foc-mid">
+      <span class="foc-time" id="mFocV">25:00</span>
+      <span class="foc-status" id="mFocL">TAP TO START</span>
+     </div>
+    </div>
+    <span class="segs" id="mFoc" hidden></span>
+    <span class="segs" id="mDay" hidden></span>
+    <span id="mDayV" hidden></span>
+    <span id="mDayL" hidden></span>
+   </button>
   </div>
 
-  <div class="below">
-   <div class="sec-h" id="appsHead"><span id="greet">&gt; HELLO</span><small>MORE APPS</small></div>
+  <div class="xp" id="xpMk" hidden>
+   <div class="xp-h"><b>WATCHLIST</b><button class="chip" id="xpMkEdit" type="button">✎ EDIT</button></div>
+   <div class="mk" id="xpMkList"></div>
+   <div class="stamp" id="xpMkStamp">UPDATED --</div>
+  </div>
+
+  <div class="card br today" id="today">
+   <div class="td-ico" aria-hidden="true"><small>TODAY</small><b id="tdDay">—</b></div>
+   <button type="button" class="td-item" id="tdCal" aria-label="Open Calendar">
+    <span class="td-k">Calendar</span>
+    <span class="td-v" id="tdCalV">Open today’s schedule</span>
+   </button>
+   <button type="button" class="td-item" id="tdNote" aria-label="Open Notes">
+    <span class="td-k">Note</span>
+    <span class="td-v" id="tdNoteV">Open Notes</span>
+   </button>
+  </div>
+
+  <div class="card br apps-card">
+   <div class="sec-h">APPS <button class="chip" id="dEdit" type="button">✎ EDIT</button></div>
    <div class="apps" id="apps" role="list"></div>
   </div>
- </section>
 
- <!-- WEATHER -->
- <section class="view" id="v-weather" aria-label="Weather" hidden>
-  <div class="wx-card card br">
+  <!-- kept for expand/detail parity; hidden full pages unused in v3.1 one-screen -->
+  <div hidden>
    <canvas class="fx" id="fxMain" aria-hidden="true"></canvas>
-   <div class="wx-in">
-    <div class="wx-place"><span id="wxPlace">LOCATING…</span><button class="chip" id="cityBtn">◎ CHANGE</button></div>
-    <div class="wx-now">
-     <div class="wx-temp" id="wxTemp">--°</div>
-     <div class="wx-cond"><span id="wxIcon" class="wx-ic" aria-hidden="true">·</span><b id="wxCond">—</b><span id="wxHL">H -- · L --</span></div>
-    </div>
-    <div class="wx-stats">
-     <div><small>FEELS</small><b id="wxFeels">--</b></div>
-     <div><small>RAIN</small><b id="wxRain">--</b></div>
-     <div><small>WIND</small><b id="wxWind">--</b></div>
-     <div><small>SUNSET</small><b id="wxSun">--</b></div>
-    </div>
-    <div class="stamp" id="wxStamp">UPDATED --</div>
-   </div>
+   <div id="wxPlace"></div><div id="wxTemp"></div><div id="wxIcon"></div><div id="wxCond"></div>
+   <div id="wxHL"></div><div id="wxFeels"></div><div id="wxRain"></div><div id="wxWind"></div>
+   <div id="wxSun"></div><div id="wxStamp"></div><div id="wxHours"></div><div id="wxDays"></div><div id="wxNote"></div>
+   <div id="mkList"></div><div id="mkStamp"></div><div id="editMkBtn"></div><div id="cityBtn"></div>
+   <div id="hSunset"></div><div id="hWind"></div><div id="hStatus"></div>
   </div>
-  <div class="sec-h">NEXT 12 HOURS <small>swipe →</small></div>
-  <div class="hours" id="wxHours"></div>
-  <div class="sec-h">5-DAY OUTLOOK</div>
-  <div class="days card" id="wxDays"></div>
-  <p class="note" id="wxNote"></p>
  </section>
 
- <!-- MARKETS -->
- <section class="view" id="v-markets" aria-label="Markets" hidden>
-  <div class="sec-h big-h">WATCHLIST <button class="chip" id="editMkBtn">✎ EDIT</button></div>
-  <div class="mk card br" id="mkList"></div>
-  <div class="stamp" id="mkStamp">UPDATED --</div>
-  <p class="note">Crypto and gold (PAX Gold token) prices from CoinGecko, in US dollars. 24-hour change. Not financial advice.</p>
- </section>
+ <section class="view" id="v-weather" aria-label="Weather" hidden></section>
+ <section class="view" id="v-markets" aria-label="Markets" hidden></section>
  </main>
 
- <nav class="tabs" aria-label="Sections">
-  <button class="tab on" data-tab="home"><span aria-hidden="true">⌂</span>HOME</button>
-  <button class="tab" data-tab="menu"><span aria-hidden="true">☰</span>MENU</button>
+ <nav class="dock" id="hDock" aria-label="Dock">
+  <span class="d-tiles" id="dTiles"></span>
  </nav>
+ <div class="home-ind" aria-hidden="true"></div>
  <footer class="motto">No face. No hours. Just the shortcut.</footer>
 </div>
 
-<!-- SHEET (menu, edit apps, edit markets, city) -->
 <div class="scrim" id="scrim" hidden></div>
 <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" hidden>
- <div class="sheet-h"><b id="sheetTitle">MENU</b><button class="chip" id="sheetClose" aria-label="Close">✕ CLOSE</button></div>
+ <div class="sheet-h"><b id="sheetTitle">MENU</b><button class="chip" id="sheetClose" aria-label="Close" type="button">✕ CLOSE</button></div>
  <div class="sheet-b" id="sheetBody"></div>
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/os/app.js?v=3.0.1"></script>
+<script src="/os/app.js?v=3.1.0"></script>
 </body>
 </html>

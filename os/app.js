@@ -1,4 +1,4 @@
-/* ZAPWISE//OS web app v2.1 (Nov 2, 2026). Static, no build step, no API keys.
+/* ZAPWISE//OS web app v3.1.0 (Nov 4, 2026). Concept layout + live map. Static, no build step, no API keys.
    Data: Open-Meteo (weather + city search), api-bdc.io (city name for weather), CoinGecko (crypto + PAX Gold),
    OpenStreetMap tiles + Nominatim reverse geocoding (road + city, cached, re-queried only after moving > 40 m).
 
@@ -17,7 +17,7 @@
    Store.applyRemote below. */
 (function () {
 "use strict";
-var VERSION = "3.0.1";
+var VERSION = "3.1.0";
 var STATUS_MSGS = ["> SHORTCUTS ARMED", "> NET SECURE", "> AI LINK STABLE", "> SIGNAL CLEAN", "> APPS READY"];
 var FOCUS_MS = 25 * 60000, DOCK_N = 5;
 var DAY_START = 7, DAY_END = 23;
@@ -31,7 +31,7 @@ function clone(o) { return o == null ? o : JSON.parse(JSON.stringify(o)); }
 var Store = (function () {
   var STATE_KEY = "zapos.state", DEVICE_KEY = "zapos.device", VER = 1;
   var PREF_KEYS = ["settings", "theme", "apps", "coins", "loc", "favs"];                     // shared state (sync-ready)
-  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss"]; // this device only
+  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss", "mediaKey", "workMode"]; // this device only
   function read(k) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
   function write(k, v) { if (dead) return false; try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
   var state = read(STATE_KEY), dev = read(DEVICE_KEY), subs = [], uiT = null, dead = false; // dead: after a reset, write nothing more
@@ -95,12 +95,17 @@ var THEME = THEMES[0];
 function applyTheme(id) {
   var t = THEMES.filter(function (x) { return x.id === id; })[0] || THEMES[0], st = document.documentElement.style;
   Object.keys(t.v).forEach(function (k) { st.setProperty("--" + k, t.v[k]); st.setProperty("--" + k + "-rgb", hexRgb(t.v[k])); });
+  // v3.1 layout tokens
+  st.setProperty("--bg", t.v.void); st.setProperty("--ink", t.v.cream);
+  st.setProperty("--muted", "rgba(" + hexRgb(t.v.cream) + ",.58)");
+  st.setProperty("--dim", "rgba(" + hexRgb(t.v.cream) + ",.38)");
   document.documentElement.classList.toggle("light", !!t.light);
   if (document.body) document.body.classList.toggle("light", !!t.light);
   var m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute("content", t.v.void);
   THEME = t;
-  // a copy of the colors for the tiny script in <head>, so the saved theme paints on the first frame (no flash)
-  Store.setLocal("themeCss", { light: !!t.light, css: ":root{" + Object.keys(t.v).map(function (k) { return "--" + k + ":" + t.v[k] + ";--" + k + "-rgb:" + hexRgb(t.v[k]); }).join(";") + "}", meta: t.v.void });
+  var css = ":root{" + Object.keys(t.v).map(function (k) { return "--" + k + ":" + t.v[k] + ";--" + k + "-rgb:" + hexRgb(t.v[k]); }).join(";") +
+    ";--bg:" + t.v.void + ";--ink:" + t.v.cream + "}";
+  Store.setLocal("themeCss", { light: !!t.light, css: css, meta: t.v.void });
 }
 applyTheme(Store.get("theme", "zapwise"));
 function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
@@ -142,13 +147,14 @@ var DEFAULT_APPS = [
   { id: "grok", name: "Grok", url: "xai-grok://", icon: "/os/icons/grok.jpg", web: "https://grok.com", glyph: "spark", bg: "#16161d", accent: "#f0a202" },
   { id: "chatgpt", name: "ChatGPT", url: "chatgpt://", icon: "/os/icons/chatgpt.jpg", web: "https://chatgpt.com", glyph: "chat", bg: "#10a37f", accent: "#3ddc84" },
   { id: "web", name: "Web", url: "https://www.google.com", icon: "/os/icons/web.jpg", glyph: "compass", bg: "linear-gradient(180deg,#5ce1e6,#1a73e8)", accent: "#5ce1e6" },
-  { id: "gemini", name: "Gemini", url: "googlegemini://", icon: "/os/icons/gemini.jpg", web: "https://gemini.google.com", glyph: "gem", bg: "linear-gradient(135deg,#4f7cff,#a25cff)", accent: "#8b9dff" },
-  { id: "maps", name: "Maps", url: "maps://", icon: "/os/icons/maps.jpg", web: "https://maps.apple.com/", glyph: "map", bg: "linear-gradient(135deg,#3ddc84,#2a9df4)", accent: "#3ddc84" },
-  { id: "messages", name: "Messages", url: "sms:", icon: "/os/icons/messages.jpg", mac: "sms:", desk: "https://messages.google.com/web", glyph: "bubble", bg: "linear-gradient(180deg,#5af575,#16c13c)", accent: "#3ddc84" },
   { id: "phone", name: "Phone", url: "tel:", icon: "/os/icons/phone.jpg", dial: true, glyph: "phone", bg: "linear-gradient(180deg,#5af575,#16c13c)", accent: "#3ddc84" },
-  { id: "mail", name: "Mail", url: "mailto:", icon: "/os/icons/mail.jpg", web: "https://www.icloud.com/mail", glyph: "mail", bg: "linear-gradient(180deg,#1ea1ff,#1166dd)", accent: "#1ea1ff" },
-  { id: "calendar", name: "Calendar", url: "calshow://", icon: "/os/icons/calendar.jpg", web: "https://www.icloud.com/calendar", glyph: "cal", bg: "#fff", accent: "#ff4d5e" },
-  { id: "notes", name: "Notes", url: "mobilenotes://", icon: "/os/icons/notes.jpg", web: "https://www.icloud.com/notes", glyph: "notes", bg: "linear-gradient(180deg,#fff6c2 0 28%,#ffd23f 28%)", accent: "#ffd23f" }
+  { id: "messages", name: "Messages", url: "sms:", icon: "/os/icons/messages.jpg", mac: "sms:", desk: "https://messages.google.com/web", glyph: "bubble", bg: "linear-gradient(180deg,#5af575,#16c13c)", accent: "#3ddc84" },
+  { id: "maps", name: "Maps", url: "maps://", icon: "/os/icons/maps.jpg", web: "https://www.google.com/maps", glyph: "map", bg: "linear-gradient(135deg,#3ddc84,#2a9df4)", accent: "#3ddc84" },
+  { id: "mail", name: "Mail", url: "mailto:", icon: "/os/icons/mail.jpg", web: "https://mail.google.com", glyph: "mail", bg: "linear-gradient(180deg,#1ea1ff,#1166dd)", accent: "#1ea1ff" },
+  { id: "calendar", name: "Calendar", url: "calshow://", icon: "/os/icons/calendar.jpg", web: "https://calendar.google.com", glyph: "cal", bg: "#fff", accent: "#ff4d5e" },
+  { id: "notes", name: "Notes", url: "mobilenotes://", icon: "/os/icons/notes.jpg", web: "https://keep.google.com", glyph: "notes", bg: "linear-gradient(180deg,#fff6c2 0 28%,#ffd23f 28%)", accent: "#ffd23f" },
+  { id: "photos", name: "Photos", url: "photos-redirect://", icon: "/os/icons/photos.jpg", web: "https://photos.google.com", glyph: "letter", letter: "P", bg: "#111827", accent: "#f4efe4" },
+  { id: "gemini", name: "Gemini", url: "googlegemini://", icon: "/os/icons/gemini.jpg", web: "https://gemini.google.com", glyph: "gem", bg: "linear-gradient(135deg,#4f7cff,#a25cff)", accent: "#8b9dff" }
 ];
 DEFAULT_APPS.forEach(function (a) { a.on = true; });
 // music apps live in the PLAY hub only (not in the dock or app grid, so nothing shows twice)
@@ -202,9 +208,19 @@ var APPS = Store.get("apps", null);
 function migrateApps() {
   if (!APPS || !APPS.length) { APPS = clone(DEFAULT_APPS); return; }
   var OLD_ORDER = "x,youtube,chatgpt,grok,gemini,maps,messages,phone,mail,calendar,notes,web";
+  var OLD_ORDER2 = "x,youtube,grok,chatgpt,web,gemini,maps,messages,phone,mail,calendar,notes";
+  var OLD_ORDER3 = APPS.map(function (a) { return a.id; }).join(",");
   APPS = APPS.filter(function (a) { return a.custom || (a.id !== "music" && a.id !== "spotify"); }); // now in the PLAY hub
   APPS.forEach(function (a) { var d = DEFAULT_APPS.filter(function (x) { return x.id === a.id; })[0]; if (d && !a.custom) { var on = a.on; delete a.ios; delete a.mac; delete a.desk; Object.keys(d).forEach(function (k) { a[k] = d[k]; }); delete a.fb; delete a.store; a.on = on; } });
-  if (APPS.map(function (a) { return a.id; }).join(",") === OLD_ORDER) APPS.sort(function (p, q) { return DEFAULT_APPS.findIndex(function (d) { return d.id === p.id; }) - DEFAULT_APPS.findIndex(function (d) { return d.id === q.id; }); });
+  var curOrder = APPS.map(function (a) { return a.id; }).join(",");
+  if (curOrder === OLD_ORDER || curOrder === OLD_ORDER2 || curOrder.indexOf("photos") < 0) {
+    // pull photos in and sort built-ins toward the concept dock/grid order once
+    APPS.sort(function (p, q) {
+      var pi = DEFAULT_APPS.findIndex(function (d) { return d.id === p.id; });
+      var qi = DEFAULT_APPS.findIndex(function (d) { return d.id === q.id; });
+      if (pi < 0 && qi < 0) return 0; if (pi < 0) return 1; if (qi < 0) return -1; return pi - qi;
+    });
+  }
   // picked apps follow the catalog's current links (v2.1.1: TikTok / Cash App went website-only: their app links
   // aren't officially documented for opening, and an unknown link makes iPhone say "invalid address")
   APPS.forEach(function (a) { if (!a.pick || String(a.id).indexOf("p-") !== 0) return; var c = CATALOG.filter(function (x) { return "p-" + x.id === a.id; })[0]; if (c) { a.url = c.url; if (c.web) a.web = c.web; else delete a.web; } });
@@ -245,6 +261,22 @@ function go(u) { var w = null; try { w = window.open(u, "_blank"); } catch (e) {
 function openApp(a) {
   if (a.dial || a.id === "phone") { openDial(); return; }
   var url = a.url || "";
+  var ANDROID = /Android/i.test(navigator.userAgent);
+  // Maps: use geo: on Android, maps:// on iOS, Google Maps website everywhere else
+  if (a.id === "maps" || a.mapsHere) {
+    var ll = a.ll || "";
+    if (ANDROID) {
+      url = ll ? ("geo:" + ll + "?q=" + ll) : "geo:0,0?q=";
+      a = Object.assign({}, a, { url: url, web: ll ? ("https://www.google.com/maps?q=" + encodeURIComponent(ll)) : "https://www.google.com/maps" });
+    } else if (IOS) {
+      url = ll ? ("maps://?ll=" + ll + "&q=" + encodeURIComponent("You are here")) : "maps://";
+      a = Object.assign({}, a, { url: url, web: ll ? ("https://maps.apple.com/?ll=" + ll + "&q=" + encodeURIComponent("You are here")) : "https://maps.apple.com/" });
+    } else {
+      go(ll ? ("https://www.google.com/maps?q=" + encodeURIComponent(ll)) : "https://www.google.com/maps");
+      return;
+    }
+    url = a.url;
+  }
   if (/^https?:/i.test(url)) { go(url); return; }
   if (!MOBILE) {
     var d = (MAC && a.mac) || a.desk || a.web || url;
@@ -254,6 +286,17 @@ function openApp(a) {
   if (IOS && a.ios) url = a.ios;
   var fb = a.web;
   if (!fb) { location.href = url; return; }
+  // Android: prefer intent:// with browser fallback so Chrome doesn't stall on unknown schemes
+  if (ANDROID && !/^https?:/i.test(url) && !/^tel:|^sms:|^mailto:/i.test(url)) {
+    try {
+      var scheme = (url.match(/^([a-z][a-z0-9+.-]*):/i) || [])[1];
+      var path = url.replace(/^[a-z][a-z0-9+.-]*:(\/\/)?/i, "");
+      if (scheme) {
+        location.href = "intent://" + path + "#Intent;scheme=" + scheme + ";S.browser_fallback_url=" + encodeURIComponent(fb) + ";end";
+        return;
+      }
+    } catch (e) {}
+  }
   var left = false;
   function gone() { left = true; }
   document.addEventListener("visibilitychange", gone, { once: true });
@@ -281,28 +324,24 @@ function dockGlyph(a) {
 function renderApps() {
   var on = APPS.filter(function (a) { return a.on; });
   var dock = on.slice(0, DOCK_N), rest = on.slice(DOCK_N);
-  var dt = $("#dTiles"); dt.innerHTML = "";
-  dock.forEach(function (a) {
+  function mkTile(a, dockMode) {
     var b = document.createElement("button");
-    b.className = "d-tile"; b.style.color = accentOf(a); b.setAttribute("aria-label", "Open " + a.name); b.title = a.name;
-    b.innerHTML = dockGlyph(a);
+    b.className = "tile"; b.type = "button"; b.setAttribute("role", "listitem");
+    b.setAttribute("aria-label", "Open " + a.name); b.title = a.name;
+    b.innerHTML = '<span class="ic">' + iconHTML(a) + '</span><span class="lb">' + esc(a.name) + '</span>';
     b.addEventListener("click", function () { openApp(a); });
-    dt.appendChild(b);
-  });
+    return b;
+  }
+  var dt = $("#dTiles"); dt.innerHTML = "";
+  dock.forEach(function (a) { dt.appendChild(mkTile(a, true)); });
   var box = $("#apps"); box.innerHTML = "";
-  rest.forEach(function (a) {
-    var b = document.createElement("a");
-    b.className = "app"; b.href = "#"; b.setAttribute("role", "listitem"); b.setAttribute("aria-label", "Open " + a.name);
-    b.innerHTML = iconHTML(a) + '<span class="nm">' + esc(a.name) + '</span>';
-    b.addEventListener("click", function (e) { e.preventDefault(); openApp(a); });
-    box.appendChild(b);
-  });
-  var ad = document.createElement("a");
-  ad.className = "app add"; ad.href = "#"; ad.id = "addApp"; ad.setAttribute("role", "listitem"); ad.setAttribute("aria-label", "Add an app");
-  ad.innerHTML = '<span class="ico" aria-hidden="true">＋</span><span class="nm">ADD APP</span>';
-  ad.addEventListener("click", function (e) { e.preventDefault(); openAddApp(); });
+  rest.forEach(function (a) { box.appendChild(mkTile(a, false)); });
+  var ad = document.createElement("button");
+  ad.className = "tile add"; ad.type = "button"; ad.id = "addApp"; ad.setAttribute("role", "listitem"); ad.setAttribute("aria-label", "Add an app");
+  ad.innerHTML = '<span class="ic" aria-hidden="true">+</span><span class="lb">ADD</span>';
+  ad.addEventListener("click", function () { openAddApp(); });
   box.appendChild(ad);
-  if (!dock.length) dt.innerHTML = '<span class="d-none">NO APPS ON · TAP EDIT APPS</span>';
+  if (!dock.length) dt.innerHTML = '<span class="dim" style="grid-column:1/-1;text-align:center;font-size:11px">NO APPS ON · TAP EDIT</span>';
 }
 
 // ========== 6. clock, date, status, meters, focus ==========
@@ -311,28 +350,23 @@ function segs(el) { if (!el.children.length) el.innerHTML = new Array(17).join("
 function setSegs(el, pct, cls) { var c = segs(el), n = Math.round(Math.max(0, Math.min(1, pct)) * 16); for (var i = 0; i < 16; i++) c[i].className = i < n ? cls : ""; }
 function tick() {
   var d = new Date(), h = d.getHours();
-  $("#hClock").firstChild.nodeValue = (h % 12 || 12) + ":" + pad2(d.getMinutes());
+  var clk = $("#hClock");
+  if (clk.firstChild && clk.firstChild.nodeType === 3) clk.firstChild.nodeValue = (h % 12 || 12) + ":" + pad2(d.getMinutes());
+  else { var am = $("#hAmpm"); clk.textContent = ""; clk.appendChild(document.createTextNode((h % 12 || 12) + ":" + pad2(d.getMinutes()))); if (am) clk.appendChild(am); }
   $("#hAmpm").textContent = h < 12 ? "AM" : "PM";
   if (d.getSeconds() === 0 || !tick.done) { tick.done = true; minute(d); }
   renderFocus();
 }
 function minute(d) {
   var h = d.getHours();
-  $("#hDate").textContent = DOW[d.getDay()] + " · " + pad2(d.getDate()) + " " + MON[d.getMonth()];
-  $("#hStatus").textContent = STATUS_MSGS[Math.floor(d.getMinutes() / 5) % STATUS_MSGS.length];
-  var part = h < 5 ? "LATE NIGHT" : h < 12 ? "GOOD MORNING" : h < 17 ? "GOOD AFTERNOON" : h < 22 ? "GOOD EVENING" : "LATE NIGHT";
-  var nm = (S.name || "").trim().toUpperCase();
-  $("#greet").textContent = "> " + part + (nm ? ", " + nm : "");
-  var hrs = h + d.getMinutes() / 60;
-  var pct = Math.max(0, Math.min(1, (hrs - DAY_START) / (DAY_END - DAY_START)));
-  var remain = Math.max(0, DAY_END - hrs), lh = Math.floor(remain), lm = Math.round((remain - lh) * 60);
-  if (lm === 60) { lh++; lm = 0; }
-  setSegs($("#mDay"), pct, "on-c"); $("#mDayV").textContent = Math.round(pct * 100) + "%";
-  $("#mDayL").textContent = hrs < DAY_START ? "DAY STARTS AT 7A" : pct >= 1 ? "DAY COMPLETE" :
-    lh + "H " + pad2(lm) + "M LEFT TODAY · " + (hrs < 15 ? "KEEP GOING" : "FINISH STRONG");
-  $$(".app .cal").forEach(function (c) { c.innerHTML = '<i>' + DOW[d.getDay()] + '</i><b>' + d.getDate() + '</b>'; });
-  $$(".d-tile .dcal").forEach(function (c) { c.innerHTML = '<i>' + DOW[d.getDay()] + '</i><b>' + d.getDate() + '</b>'; });
+  $("#hDate").textContent = DOW[d.getDay()] + " " + MON[d.getMonth()] + " " + d.getDate();
+  var part = h < 5 ? "Good night" : h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : h < 22 ? "Good evening" : "Good night";
+  var nm = (S.name || "").trim() || "Snowfall";
+  $("#greet").textContent = part + ", " + nm;
+  var td = $("#tdDay"); if (td) td.textContent = pad2(d.getDate());
+  $$(".ico .cal").forEach(function (c) { c.innerHTML = '<i>' + DOW[d.getDay()] + '</i><b>' + d.getDate() + '</b>'; });
   updateStamps();
+  renderNowPlaying();
 }
 // FOCUS: a 25-minute sprint timer (the web can't read battery on iPhone, so this replaces the widget's PWR meter)
 var FOC = Store.getLocal("focus", { st: "idle" });
@@ -341,12 +375,19 @@ function renderFocus() {
   if (FOC.st === "run") { left = FOC.end - now; if (left <= 0) { FOC = { st: "done" }; Store.setLocal("focus", FOC); left = 0; toast("Focus sprint done. Take 5."); try { navigator.vibrate && navigator.vibrate([200, 100, 200]); } catch (e) {} } }
   else if (FOC.st === "pause") left = FOC.left;
   else if (FOC.st === "done") left = 0;
-  var pct = 1 - left / FOCUS_MS, s = Math.ceil(left / 1000);
-  setSegs($("#mFoc"), FOC.st === "idle" ? 0 : pct, FOC.st === "pause" ? "on-a" : "on-g");
+  var pct = FOC.st === "idle" ? 0 : (1 - left / FOCUS_MS), s = Math.ceil(left / 1000);
+  var C = 2 * Math.PI * 52; // r=52
+  var ring = $("#focRing");
+  if (ring) {
+    ring.style.strokeDasharray = String(C);
+    ring.style.strokeDashoffset = String(C * (1 - pct));
+    ring.style.stroke = FOC.st === "pause" ? "var(--amber)" : FOC.st === "done" ? "var(--ok)" : FOC.st === "run" ? "var(--cyan)" : "var(--amber)";
+  }
   $("#mFocV").textContent = Math.floor(s / 60) + ":" + pad2(s % 60);
-  $("#mFocV").className = "m-v " + (FOC.st === "pause" ? "c-amber" : FOC.st === "idle" ? "c-dim" : "c-green");
-  line = FOC.st === "run" ? "FOCUSING · TAP TO PAUSE · HOLD TO RESET" : FOC.st === "pause" ? "PAUSED · TAP TO RESUME · HOLD TO RESET" : FOC.st === "done" ? "SPRINT DONE · TAKE 5, THEN TAP FOR ANOTHER" : "TAP FOCUS TO START A 25-MIN SPRINT";
+  line = FOC.st === "run" ? "FOCUSING" : FOC.st === "pause" ? "PAUSED" : FOC.st === "done" ? "DONE · TAP AGAIN" : "TAP TO START";
   if ($("#mFocL").textContent !== line) $("#mFocL").textContent = line;
+  var card = $("#mFocus");
+  if (card) { card.classList.toggle("running", FOC.st === "run"); card.classList.toggle("done", FOC.st === "done"); }
 }
 (function bindFocus() {
   var b = $("#mFocus"), hold = null, held = false;
@@ -363,17 +404,40 @@ function renderFocus() {
     Store.setLocal("focus", FOC); renderFocus();
   });
 })();
-function renderNet() { var on = navigator.onLine !== false; $("#hNet").classList.toggle("off", !on); $("#hNet b").textContent = on ? "ONLINE" : "OFFLINE"; }
+function renderNet() { var on = navigator.onLine !== false; var el = $("#hSync"); if (el) { el.classList.toggle("off", !on); if (!on) el.innerHTML = "<i aria-hidden=\"true\"></i>OFFLINE"; } }
 
-// PLAY hub: Apple Music, Spotify, YouTube Music, and … for more
+// NOW PLAYING hub: honest music-app launcher (no fake track audio in a browser)
+var MEDIA_KEY = Store.getLocal("mediaKey", null) || HUB[0];
+function currentMedia() { return MEDIA[MEDIA_KEY] || MEDIA.music; }
+function renderNowPlaying() {
+  var m = currentMedia();
+  var art = $("#npArt"), title = $("#npTitle"), artist = $("#npArtist"), live = $("#npLive");
+  if (art) art.src = m.icon || "/os/icons/music.jpg";
+  if (title) title.textContent = m.name;
+  if (artist) artist.textContent = "Tap play to open";
+  if (live) live.textContent = "MUSIC";
+  var bar = $("#npBar"); if (bar) bar.style.width = "0%";
+  var cur = $("#npCur"); if (cur) cur.textContent = "0:00";
+  var dur = $("#npDur"); if (dur) dur.textContent = "—";
+}
+function cycleMedia(dir) {
+  var i = HUB.indexOf(MEDIA_KEY); if (i < 0) i = 0;
+  i = (i + dir + HUB.length) % HUB.length; MEDIA_KEY = HUB[i];
+  try { Store.setLocal("mediaKey", MEDIA_KEY); } catch (e) {}
+  renderNowPlaying(); toast(currentMedia().name);
+}
 $("#hPlay").addEventListener("click", function (e) {
-  var b = e.target.closest("[data-media]"); if (!b) return; var k = b.getAttribute("data-media");
-  if (k === "more") openMedia(); else openApp(MEDIA[k]);
+  var b = e.target.closest("[data-media-act]"); if (!b) return;
+  var act = b.getAttribute("data-media-act");
+  if (act === "prev") cycleMedia(-1);
+  else if (act === "next") cycleMedia(1);
+  else if (act === "play") openApp(currentMedia());
+  else openMedia();
 });
 function openMedia() {
   var html = '<p class="note" style="margin-bottom:10px">Opens the app if it\'s on this phone, otherwise its website (on a computer, the website opens right away).</p>' +
-    Object.keys(MEDIA).filter(function (k) { return HUB.indexOf(k) < 0; }).map(function (k) { return '<button class="mrow" data-m="' + k + '"><img class="mimg" src="' + esc(MEDIA[k].icon) + '" alt=""><span class="grow">' + esc(MEDIA[k].name) + '</span><span aria-hidden="true">↗</span></button>'; }).join("");
-  sheet("♪ MORE MUSIC APPS", html, function (b) { b.addEventListener("click", function (e) { var x = e.target.closest("[data-m]"); if (x) { closeSheet(); openApp(MEDIA[x.getAttribute("data-m")]); } }); });
+    Object.keys(MEDIA).map(function (k) { return '<button class="mrow" data-m="' + k + '"><img class="mimg" src="' + esc(MEDIA[k].icon) + '" alt=""><span class="grow">' + esc(MEDIA[k].name) + '</span><span aria-hidden="true">↗</span></button>'; }).join("");
+  sheet("♪ MUSIC APPS", html, function (b) { b.addEventListener("click", function (e) { var x = e.target.closest("[data-m]"); if (x) { MEDIA_KEY = x.getAttribute("data-m"); try { Store.setLocal("mediaKey", MEDIA_KEY); } catch (err) {} renderNowPlaying(); closeSheet(); openApp(MEDIA[MEDIA_KEY]); } }); });
 }
 
 // ========== 7. weather FX (canvas only) ==========
@@ -540,8 +604,16 @@ function refreshWeather(force) {
     if (e && e.geo) $("#wxNote").innerHTML = "Location is off for this app. Tap <b>◎ CHANGE</b> above to type your city instead.";
     else $("#wxNote").textContent = navigator.onLine === false ? "You're offline. Showing the last weather we saved." : "Weather service didn't answer. We'll retry in a few minutes.";
     var xn = $("#xpNote"); if (xn) xn.textContent = $("#wxNote").textContent;
-    if (e && e.geo && !WX) { $("#wxPlace").textContent = "LOCATION OFF"; $("#hwNow").textContent = "LOCATION OFF · TAP TO SET A CITY"; $("#wxCond").textContent = "SET YOUR CITY"; }
-    else if (!WX) $("#hwNow").textContent = navigator.onLine === false ? "OFFLINE · NO WEATHER SAVED YET" : "WEATHER BUSY · RETRYING SOON";
+    if (e && e.geo && !WX) {
+      $("#wxPlace").textContent = "LOCATION OFF";
+      $("#hwNow").textContent = "LOCATION OFF · TAP TO SET A CITY";
+      $("#wxCond").textContent = "SET YOUR CITY";
+      var adv = $("#hwAdvice"); if (adv) adv.textContent = "Turn on location or tap to pick a city";
+      var ht = $("#hwTemp"); if (ht) ht.textContent = "--°";
+    } else if (!WX) {
+      $("#hwNow").textContent = navigator.onLine === false ? "OFFLINE · NO WEATHER SAVED YET" : "WEATHER BUSY · RETRYING SOON";
+      var adv2 = $("#hwAdvice"); if (adv2) adv2.textContent = navigator.onLine === false ? "Showing last saved weather when available" : "Retrying live forecast…";
+    }
   }).then(function () { wxBusy = false; renderWeather(); });
 }
 function locKey() { return LOC.mode + ":" + LOC.lat + "," + LOC.lon; }
@@ -561,21 +633,32 @@ function renderWeather() {
   $("#wxRain").textContent = (j.daily.precipitation_probability_max[0] || 0) + "%";
   $("#wxWind").textContent = Math.round(cu.wind_speed_10m) + " " + wu;
   $("#wxSun").textContent = j.daily.sunset[0] ? isoT12(j.daily.sunset[0]) : "--";
-  // HUD weather panel (matches the widget)
+  // Concept weather card: big temp + advice + 5-hour strip (NOW + next 4)
   var hi = Math.round(j.daily.temperature_2m_max[0]), lo = Math.round(j.daily.temperature_2m_min[0]), rain = j.daily.precipitation_probability_max[0] || 0;
+  var tempEl = $("#hwTemp"); if (tempEl) tempEl.textContent = Math.round(cu.temperature_2m) + "°";
   $("#hwIc").textContent = wxEmoji(code, day);
-  $("#hwNow").textContent = Math.round(cu.temperature_2m) + "° " + wxText(code);
+  $("#hwNow").textContent = wxText(code).replace(/_/g, " ").toLowerCase().replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+  // friendly one-line advice from rain / conditions (no fake clock claims)
+  var advice = $("#hwAdvice");
+  if (advice) {
+    var tip = "Live forecast · tap for more";
+    if (rain >= 60 || (code >= 51 && code <= 67) || (code >= 80 && code <= 82) || code >= 95) tip = "Rain likely — grab a jacket.";
+    else if (code <= 77 && code >= 71) tip = "Snow in the forecast — dress warm.";
+    else if (code === 0 || code === 1) tip = day ? "Clear skies — nice window to get outside." : "Clear night — good focus weather.";
+    else if (code <= 3) tip = "Clouds hanging around — still a solid day.";
+    else if (code <= 48) tip = "Foggy — give yourself extra time.";
+    advice.textContent = tip;
+  }
   $("#hwHL").textContent = "H " + hi + "° L " + lo + "°";
   $("#hwFeels").textContent = "FEELS " + Math.round(cu.apparent_temperature) + "°";
   $("#hwRain").textContent = "RAIN " + rain + "%";
-  $("#hSunset").textContent = "SUNSET " + (j.daily.sunset[0] ? isoT12(j.daily.sunset[0]).replace(/ ?([AP])M$/, "$1") : "--");
-  $("#hWind").textContent = Math.round(cu.wind_speed_10m) + " " + wu.toUpperCase().replace("KM/H", "KM/H");
-  // hourly: NOW + next 11 hours
+  var hsEl = $("#hSunset"); if (hsEl) hsEl.textContent = "SUNSET " + (j.daily.sunset[0] ? isoT12(j.daily.sunset[0]).replace(/ ?([AP])M$/, "$1") : "--");
+  var hwEl = $("#hWind"); if (hwEl) hwEl.textContent = Math.round(cu.wind_speed_10m) + " " + wu.toUpperCase().replace("KM/H", "KM/H");
   var key = cu.time.slice(0, 13), idx = j.hourly.time.findIndex(function (t) { return t.slice(0, 13) === key; }); if (idx < 0) idx = 0;
   var h4 = "";
-  for (var q = 1; q <= 4 && idx + q < j.hourly.time.length; q++) {
+  for (var q = 0; q < 5 && idx + q < j.hourly.time.length; q++) {
     var iq = idx + q, rq = j.hourly.precipitation_probability[iq] || 0;
-    h4 += '<span class="hh' + (rq >= 40 ? " wet" : "") + '"><small>' + isoH(j.hourly.time[iq]) + "</small> " + wxEmoji(j.hourly.weather_code[iq], j.hourly.is_day[iq] === 1) + " <b>" + Math.round(j.hourly.temperature_2m[iq]) + "°</b></span>";
+    h4 += '<span class="hh' + (rq >= 40 ? " wet" : "") + '" role="listitem"><small>' + (q ? isoH(j.hourly.time[iq]) : "NOW") + '</small><span class="i">' + wxEmoji(j.hourly.weather_code[iq], j.hourly.is_day[iq] === 1) + "</span><b>" + Math.round(j.hourly.temperature_2m[iq]) + "°</b></span>";
   }
   $("#hwHrs").innerHTML = h4;
   var hs = "";
@@ -614,18 +697,39 @@ function refreshMarkets() {
     .then(renderMarkets);
 }
 function chHTML(ch) { if (ch == null || isNaN(ch)) return '<span class="dim">--</span>'; return '<span class="' + (ch >= 0 ? "up" : "dn") + '">' + (ch >= 0 ? "▲" : "▼") + Math.abs(ch).toFixed(2) + "%</span>"; }
+function sparkSVG(ch, seed) {
+  // Lightweight sparkline from 24h change (no extra API key). Seed keeps shape stable per coin.
+  var up = (ch == null || isNaN(ch)) ? true : ch >= 0;
+  var col = up ? "#3ddc97" : "#ff5c7a";
+  var pts = [], n = 12, base = 14, amp = Math.min(10, 2 + Math.abs(ch || 0) * 0.6);
+  var rnd = (seed || 1) * 9301 + 49297;
+  for (var i = 0; i < n; i++) {
+    rnd = (rnd * 49297 + 233280) % 233280;
+    var wave = Math.sin(i / (n - 1) * Math.PI * (up ? 1.1 : 1.4) + (seed || 0)) * amp;
+    var jit = ((rnd / 233280) - 0.5) * 3;
+    var y = base + (up ? -wave : wave) + jit;
+    pts.push((i / (n - 1) * 54 + 1).toFixed(1) + "," + Math.max(2, Math.min(20, y)).toFixed(1));
+  }
+  return '<svg class="mk-spark" viewBox="0 0 56 22" aria-hidden="true"><path d="M' + pts.join(" L") + '" stroke="' + col + '"/></svg>';
+}
 function renderMarkets() {
   var d = MK && MK.d || {}, list = "", mini = "";
   COINS.forEach(function (c, i) {
     var q = d[c.id];
-    list += '<div class="mkr"><span class="sym">' + esc(c.sym) + '</span><span class="nm2">' + esc(c.name) + '</span><span class="px">' + (q ? money(q.usd) : "--") + '</span><span class="ch">' + (q ? chHTML(q.usd_24h_change) : "") + "</span></div>";
+    list += '<div class="row"><span class="sym">' + esc(c.sym) + '</span><span class="grow">' + esc(c.name) + '</span><span class="px">' + (q ? money(q.usd) : "--") + '</span><span class="ch">' + (q ? chHTML(q.usd_24h_change) : "") + "</span></div>";
   });
   var pages = Math.max(1, Math.ceil(COINS.length / 2)), pg = mkPage % pages;
-  COINS.slice(pg * 2, pg * 2 + 2).forEach(function (c) { var q = d[c.id]; mini += '<span class="mki"><b>' + esc(c.sym) + "</b> " + (q ? money(q.usd) : "--") + " " + (q ? chHTML(q.usd_24h_change) : "") + "</span>"; });
-  if (!COINS.length) { list = '<p class="offline">Your watchlist is empty. Tap ✎ EDIT to add a coin.</p>'; mini = '<span class="mki dim">WATCHLIST EMPTY · TAP TO ADD</span>'; }
-  if (mkErr && !(MK && MK.at)) { list = '<p class="offline">Markets offline. We\'ll retry in 2 minutes.</p>'; mini = '<span class="mki dim">MARKETS OFFLINE · RETRYING</span>'; }
+  COINS.slice(pg * 2, pg * 2 + 2).forEach(function (c, i) {
+    var q = d[c.id], ch = q ? q.usd_24h_change : null;
+    mini += '<div class="mk-row"><span class="sym">' + esc(c.sym) + '</span><span>' + sparkSVG(ch, (c.id || "").length + i) +
+      '<div class="px">' + (q ? money(q.usd) : "--") + '</div></span><span class="ch ' + ((ch == null || isNaN(ch)) ? "" : (ch >= 0 ? "up" : "dn")) + '">' +
+      ((ch == null || isNaN(ch)) ? "--" : ((ch >= 0 ? "+" : "") + ch.toFixed(2) + "%")) + "</span></div>";
+  });
+  if (!COINS.length) { list = '<p class="offline">Your watchlist is empty. Tap ✎ EDIT to add a coin.</p>'; mini = '<span class="dim">WATCHLIST EMPTY · TAP TO ADD</span>'; }
+  if (mkErr && !(MK && MK.at)) { list = '<p class="offline">Markets offline. We\'ll retry in 2 minutes.</p>'; mini = '<span class="dim">MARKETS OFFLINE · RETRYING</span>'; }
   else if (mkErr) list += '<p class="offline">Couldn\'t refresh. Showing the last prices we saved.</p>';
-  $("#mkList").innerHTML = list; $("#hMkList").innerHTML = mini; $("#xpMkList").innerHTML = list;
+  var mk = $("#mkList"); if (mk) mk.innerHTML = list;
+  $("#hMkList").innerHTML = mini; $("#xpMkList").innerHTML = list;
   updateStamps();
 }
 function updateStamps() {
@@ -633,8 +737,14 @@ function updateStamps() {
   st($("#wxStamp"), WX && WX.at); st($("#mkStamp"), MK && MK.at); st($("#xpMkStamp"), MK && MK.at);
   var sh = function (el, at, pre) { el.textContent = pre + (at ? short12(at) : "--"); el.classList.toggle("old", !at || Date.now() - at > 30 * 60000); };
   sh($("#hwUpd"), WX && WX.at, "UPD "); sh($("#hMkT"), MK && MK.at, "");
-  var last = Math.max(WX && WX.at || 0, MK && MK.at || 0); $("#hSync").textContent = "SYNC " + (last ? short12(last) : "--");
-  if (GPS) sh($("#hGps"), GPS.at, "GPS "); else $("#hGps").textContent = "";
+  var last = Math.max(WX && WX.at || 0, MK && MK.at || 0);
+  var sync = $("#hSync");
+  if (sync) {
+    if (navigator.onLine === false) sync.innerHTML = '<i aria-hidden="true"></i>OFFLINE';
+    else sync.innerHTML = '<i aria-hidden="true"></i>SYNCED';
+    sync.title = last ? ("Last live update " + short12(last)) : "Waiting for live data";
+  }
+  if (GPS) sh($("#hGps"), GPS.at, "GPS "); else { var g = $("#hGps"); if (g) g.textContent = GEO_OFF ? "GPS OFF" : "GPS --"; }
 }
 function short12(at) { return t12(new Date(at)).replace(/ ?([AP])M$/, "$1"); }
 
@@ -671,7 +781,7 @@ function renderMap() {
   var ox = px - W / 2, oy = py - H / 2, html = "";
   for (var tx = Math.floor(ox / 256); tx <= Math.floor((ox + W) / 256); tx++) for (var ty = Math.floor(oy / 256); ty <= Math.floor((oy + H) / 256); ty++) {
     if (ty < 0 || ty >= n) continue;
-    html += '<img alt="" draggable="false" src="https://tile.openstreetmap.org/' + z + "/" + ((tx % n + n) % n) + "/" + ty + '.png" style="left:' + Math.round(tx * 256 - ox) + "px;top:" + Math.round(ty * 256 - oy) + 'px" onerror="this.style.visibility=\'hidden\'">';
+    html += '<img alt="" draggable="false" src="https://basemaps.cartocdn.com/dark_all/' + z + "/" + ((tx % n + n) % n) + "/" + ty + '.png" style="left:' + Math.round(tx * 256 - ox) + "px;top:" + Math.round(ty * 256 - oy) + 'px" onerror="this.style.visibility=\'hidden\'">';
   }
   tl.innerHTML = html; $("#mapDot").hidden = false; msg.hidden = true;
   mapDrawn = { lat: GPS.lat, lon: GPS.lon, w: W, h: H };
@@ -689,7 +799,7 @@ $("#hMap").addEventListener("click", function (e) {
   if (e.target.closest(".map-attr")) return;
   if (!GPS) { toast(GEO_OFF ? "Turn on Location for this app to see where you are" : "Still finding you…"); return; }
   var ll = GPS.lat.toFixed(6) + "," + GPS.lon.toFixed(6);
-  openApp({ url: "maps://?ll=" + ll, web: "https://maps.apple.com/?ll=" + ll + "&q=" + encodeURIComponent("You are here") });
+  openApp({ id: "maps", mapsHere: true, ll: ll, name: "Maps" });
 });
 $("#hMap").addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("#hMap").click(); } });
 window.addEventListener("resize", function () { clearTimeout(renderMap.t); renderMap.t = setTimeout(renderMap, 150); });
@@ -713,7 +823,6 @@ $("#hMk").addEventListener("click", function () { toggleXp("mk"); });
 function toggleXp(k) {
   var el = $(k === "wx" ? "#xpWx" : "#xpMk"), btn = $(k === "wx" ? "#hWx" : "#hMk"), open = el.hidden;
   el.hidden = !open; btn.setAttribute("aria-expanded", String(open));
-  $("#hud").classList.toggle("xp", !$("#xpWx").hidden || !$("#xpMk").hidden);
   if (open) { if (k === "wx") renderWeather(); else renderMarkets(); setTimeout(function () { try { el.scrollIntoView({ block: "nearest", behavior: "smooth" }); } catch (e) {} }, 30); }
   setTimeout(renderMap, 0);
 }
@@ -958,10 +1067,10 @@ function openHelp() {
   var standalone = window.navigator.standalone === true || (window.matchMedia && matchMedia("(display-mode: standalone)").matches);
   sheet("? ADD TO HOME SCREEN",
     (standalone ? '<p class="note" style="color:#3ddc84;margin-bottom:10px">✓ You\'re already using it from your Home Screen.</p>' : "") +
-    '<ol class="steps"><li>Open <b>zapwiseai.com/os</b> in <b>Safari</b> and tap the <b>Share</b> button (the square with an arrow ↑).</li>' +
-    '<li>Scroll down and tap <b>Add to Home Screen</b>, then tap <b>Add</b>.</li>' +
-    '<li>Open <b>ZAP//OS</b> from the new icon on your Home Screen. It opens full screen, like an app.</li></ol>' +
-    '<h3>GOOD TO KNOW</h3><p class="note">One tap opens an app if it\'s installed. If it isn\'t, its website opens after about a second. On a computer the website opens right away (Calendar, Notes and Mail open iCloud.com). The map shows your street from your live location; tap it to open Maps. Weather asks for your location once; tap Allow, or set a city in the menu. Your choices are saved on this phone only.</p>',
+    '<ol class="steps"><li><b>iPhone:</b> open <b>zapwiseai.com/os</b> in Safari → Share → Add to Home Screen.</li>' +
+    '<li><b>Android:</b> open it in Chrome → menu ⋮ → Install app / Add to Home screen.</li>' +
+    '<li><b>Computer:</b> bookmark the page or Install from the browser menu. It works in Chrome, Edge, Firefox and Safari.</li></ol>' +
+    '<h3>GOOD TO KNOW</h3><p class="note">One tap opens an app if it\'s installed. If it isn\'t, its website opens after about a second. On a computer the website opens in a new tab. The live map shows your area from your location (OpenStreetMap / CARTO tiles); tap it to open Maps. Weather asks for location once; tap Allow, or set a city in the menu. Your choices stay on this device only.</p>',
     null);
 }
 
@@ -1060,9 +1169,26 @@ function runSearch(q) {
 })();
 window.ZAPOS = { store: Store, version: VERSION }; // for the stage 2 sync add-on
 
+// ========== v3.1 concept chrome: menu, work mode, today ==========
+var menuBtn = $("#menuBtn"); if (menuBtn) menuBtn.addEventListener("click", openMenu);
+(function bindWorkMode() {
+  var b = $("#workMode"); if (!b) return;
+  var on = !!Store.getLocal("workMode", false);
+  function paint() { b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on)); }
+  paint();
+  b.addEventListener("click", function () { on = !on; Store.setLocal("workMode", on); paint(); toast(on ? "Work mode on" : "Work mode off"); });
+})();
+(function bindToday() {
+  var cal = $("#tdCal"), note = $("#tdNote");
+  function findById(id) { return APPS.filter(function (a) { return a.id === id; })[0]; }
+  if (cal) cal.addEventListener("click", function () { var a = findById("calendar"); if (a) openApp(a); else openApp({ url: "calshow://", web: "https://calendar.google.com" }); });
+  if (note) note.addEventListener("click", function () { var a = findById("notes"); if (a) openApp(a); else openApp({ url: "mobilenotes://", web: "https://keep.google.com" }); });
+})();
+
 // ========== 13. boot ==========
 document.body.classList.add("on-home"); applyTheme(THEME.id);
-renderApps(); renderNet(); tick(); setInterval(tick, 1000);
+renderApps(); renderNowPlaying(); try { renderNet(); } catch (e) {}
+tick(); setInterval(tick, 1000);
 renderWeather(); renderMarkets(); renderMap();
 window.addEventListener("offline", renderNet);
 setInterval(function () { if (COINS.length > 2) { mkPage++; renderMarkets(); } }, 8000);
