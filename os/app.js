@@ -1,4 +1,4 @@
-/* ZAPWISE//OS web app v3.9.0 (Nov 5, 2026). Map geo-dot fix + markets account tiles + home portfolio/BTC/gold card; offline ZAP assistant + optional WebLLM; cyberpunk pack retained. Static, no build step, no API keys.
+/* ZAPWISE//OS web app v3.10.0 (Nov 5, 2026). Finish t625u: cyberpunk polish + voice assistant commands + real opt-in WebLLM. Static, no build step, no API keys.
    Data: Open-Meteo (weather + city search), api-bdc.io (city name for weather), CoinGecko (crypto + PAX Gold),
    mempool.space (BTC balance), ethereum.publicnode.com (ETH balance), solana.publicnode.com (SOL balance),
    OSM standard tiles (keyless, CSS dark filter) + Nominatim reverse geocoding (road + city, cached, re-queried only after moving > 40 m).
@@ -18,7 +18,7 @@
    Store.applyRemote below. */
 (function () {
 "use strict";
-var VERSION = "3.9.0";
+var VERSION = "3.10.0";
 var APP_VERSION = VERSION;
 var STATUS_MSGS = ["> SHORTCUTS ARMED", "> NET SECURE", "> AI LINK STABLE", "> SIGNAL CLEAN", "> APPS READY"];
 var FOCUS_MS = 25 * 60000;
@@ -391,9 +391,8 @@ function tick() {
 function minute(d) {
   var h = d.getHours();
   $("#hDate").textContent = DOW[d.getDay()] + " " + MON[d.getMonth()] + " " + d.getDate();
-  var part = h < 5 ? "Good night" : h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : h < 22 ? "Good evening" : "Good night";
-  var nm = (S.name || "").trim() || "Snowfall";
-  $("#greet").textContent = part + ", " + nm;
+  var nm = (S.name || "").trim() || "operator";
+  $("#greet").textContent = "Systems online, " + nm;
   try { updateSkyline(); } catch (e) {}
   var td = $("#tdDay"); if (td) td.textContent = pad2(d.getDate());
   $$(".ico .cal").forEach(function (c) { c.innerHTML = '<i>' + DOW[d.getDay()] + '</i><b>' + d.getDate() + '</b>'; });
@@ -3353,7 +3352,7 @@ function placeNeonRing(v, dx, dy) {
       boot.setAttribute("aria-hidden", "false");
       var nm = ((S && S.name) || "").trim() || "operator";
       var msgs = [
-        "ZAPWISE//OS — systems online, " + nm,
+        "Systems online, " + nm,
         "SENSORS LINKED",
         "READY"
       ];
@@ -3546,17 +3545,24 @@ function scheduleUpdateChecks() {
   }, 5 * 60 * 1000);
 }
 
-// ========== v3.9 offline ZAP assistant (intent router; optional WebLLM later) ==========
+// ========== v3.10 ZAP assistant (intents + voice + opt-in WebLLM) ==========
+var ZAP_LLM = { engine: null, loading: false, modelId: "Qwen2.5-0.5B-Instruct-q4f16_1-MLC", progress: 0 };
 function loadAssistantPrefs() {
   var a = Store.get("assistant", null);
-  if (!a || typeof a !== "object") a = { enabled: true, webllm: false, suggest: true, voiceOut: false };
+  if (!a || typeof a !== "object") a = { enabled: true, webllm: false, suggest: true, voiceOut: false, modelCached: false };
   return a;
 }
 function saveAssistantPrefs(a) { Store.set("assistant", a); }
+function hasWebGPU() {
+  try { return !!(navigator.gpu); } catch (e) { return false; }
+}
+function hasSpeechIn() {
+  return !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+}
 function openZapAssistant() {
   var sheet = $("#zapSheet"); if (!sheet) return;
   sheet.hidden = false;
-  try { updateZapBadge(); renderZapChips(); } catch (e) {}
+  try { updateZapBadge(); renderZapChips(); refreshZapAiBar(); } catch (e) {}
   setTimeout(function () { try { $("#zapIn").focus(); } catch (e) {} }, 40);
 }
 function closeZapAssistant() {
@@ -3590,9 +3596,9 @@ function renderZapChips() {
   var chips = [
     { t: "Net worth?", q: "net worth" },
     { t: "Weather", q: "weather" },
-    { t: "Drive home", q: "go home" },
-    { t: "Open maps", q: "open maps" },
-    { t: "Focus", q: "start focus" }
+    { t: "Drive home", q: "directions to home" },
+    { t: "Theme", q: "switch theme" },
+    { t: "Help", q: "help" }
   ];
   host.innerHTML = "";
   chips.forEach(function (c) {
@@ -3632,9 +3638,81 @@ function startZapListen() {
   var mic = $("#zapMic"); if (mic) mic.classList.add("on");
   try { _zapRec.start(); } catch (e) { stopZapListen(); toast("Mic unavailable"); }
 }
+function setThemeByQuery(q) {
+  var map = [
+    { re: /neon\s*night|neon/, id: "neon-night" },
+    { re: /amber/, id: "amber-ops" },
+    { re: /ghost/, id: "ghost-white" },
+    { re: /\blight\b/, id: "light" },
+    { re: /zapwise|default|classic/, id: "zapwise" },
+    { re: /sunset/, id: "sunset" },
+    { re: /terminal|green/, id: "terminal" },
+    { re: /arctic|blue/, id: "arctic" },
+    { re: /mono/, id: "mono" },
+    { re: /pink/, id: "neon" }
+  ];
+  for (var i = 0; i < map.length; i++) {
+    if (map[i].re.test(q)) {
+      applyTheme(map[i].id); Store.set("theme", THEME.id);
+      return { skill: "theme.set", text: "Theme: " + THEME.name, action: { label: "Themes", run: function () { closeZapAssistant(); openTheme(); } } };
+    }
+  }
+  // cycle next cyber preset
+  var order = ["neon-night", "amber-ops", "ghost-white"];
+  var cur = THEME && THEME.id, idx = order.indexOf(cur);
+  var next = order[(idx + 1) % order.length];
+  applyTheme(next); Store.set("theme", THEME.id);
+  return { skill: "theme.set", text: "Switched to " + THEME.name, action: { label: "Themes", run: function () { closeZapAssistant(); openTheme(); } } };
+}
 function routeZapIntent(raw) {
   var q = String(raw || "").trim().toLowerCase();
-  if (!q) return { skill: "help", text: "Try: weather, net worth, go home, open maps, start focus." };
+  if (!q) return { skill: "help", text: HELP_TEXT };
+  // help
+  if (/^(help|what can you|commands|\?)$/.test(q) || /\bhelp\b/.test(q) && q.length < 24) {
+    return { skill: "help", text: HELP_TEXT };
+  }
+  // time / date
+  if (/\b(what('?s| is)?\s+)?(the\s+)?(time|date|day)\b/.test(q) || /^(time|date)$/.test(q)) {
+    var d = new Date();
+    var line = DOW[d.getDay()] + " " + MON[d.getMonth()] + " " + d.getDate() + " · " + ((d.getHours() % 12) || 12) + ":" + pad2(d.getMinutes()) + (d.getHours() < 12 ? " AM" : " PM");
+    return { skill: "time.now", text: line };
+  }
+  // call favorite
+  if (/^call\b|\bdial\b|\bphone\b/.test(q)) {
+    var want = q.replace(/^(please\s+)?(call|dial|phone)\s+(me\s+)?/, "").trim();
+    var favs = FAVS || [];
+    var hit = null;
+    if (want) hit = favs.filter(function (f) { return (f.name || "").toLowerCase().indexOf(want) >= 0; })[0];
+    if (!hit && favs.length === 1) hit = favs[0];
+    if (!hit) return { skill: "call.fav", text: favs.length ? ("Say “call ” + a favorite: " + favs.map(function (f) { return f.name; }).join(", ")) : "No favorites yet. Save one from the Dialer." };
+    return {
+      skill: "call.fav",
+      text: "Call " + hit.name + "?",
+      action: { label: "Call", run: function () { closeZapAssistant(); callNum(hit.num); } }
+    };
+  }
+  // search web
+  if (/^(search|google|look up|web)\b/.test(q) || /\bsearch (the )?web\b/.test(q)) {
+    var sq = q.replace(/^(please\s+)?(search( the web)?|google|look up|web)\s+(for\s+)?/, "").trim();
+    if (!sq) return { skill: "web.search", text: "Say “search web …” with a query." };
+    return {
+      skill: "web.search",
+      text: "Search the web for “" + sq + "”?",
+      action: { label: "Search", run: function () { closeZapAssistant(); go("https://www.google.com/search?q=" + encodeURIComponent(sq)); } }
+    };
+  }
+  // switch theme
+  if (/\b(switch|change|set)\s+theme\b|\btheme\b.*(neon|amber|ghost|white)|^(neon night|amber ops|ghost white)$/.test(q)) {
+    return setThemeByQuery(q);
+  }
+  // add holding / account
+  if (/\b(add|new)\s+(holding|account|asset|broker)\b|\badd holding\b/.test(q)) {
+    return {
+      skill: "holdings.add",
+      text: "Open the add-holding sheet?",
+      action: { label: "Add holding", run: function () { closeZapAssistant(); try { openAddHolding(); } catch (e) { toggleXp("mk"); } } }
+    };
+  }
   // portfolio
   if (/net\s*worth|portfolio|balance|how much|holdings/.test(q)) {
     var st = portfolioStats();
@@ -3656,21 +3734,23 @@ function routeZapIntent(raw) {
     } catch (e) {}
     return { skill: "weather.now", text: line, action: { label: "Open weather", run: function () { closeZapAssistant(); toggleXp("wx"); } } };
   }
-  // places go
+  // directions to <place>
   if (/\b(go|drive|navigate|directions?)\b/.test(q) || /\bhome\b/.test(q) || /\bwork\b/.test(q)) {
     var places = loadPlaces();
-    var want = /\bwork\b/.test(q) ? "work" : (/\bhome\b/.test(q) ? "home" : null);
-    var hit = null;
-    if (want) hit = places.filter(function (p) { return (p.name || "").toLowerCase().indexOf(want) >= 0 || (p.id || "").toLowerCase() === want; })[0];
-    if (!hit && places.length) {
-      // fuzzy name
-      hit = places.filter(function (p) { return q.indexOf((p.name || "").toLowerCase()) >= 0; })[0] || places[0];
+    var wantP = null;
+    var m = q.match(/(?:directions?|drive|navigate|go)\s+(?:to\s+)?(.+)$/);
+    if (m) wantP = m[1].replace(/[?.!]+$/, "").trim();
+    if (!wantP) wantP = /\bwork\b/.test(q) ? "work" : (/\bhome\b/.test(q) ? "home" : null);
+    var hitP = null;
+    if (wantP) hitP = places.filter(function (p) { return (p.name || "").toLowerCase().indexOf(wantP) >= 0 || (p.id || "").toLowerCase() === wantP; })[0];
+    if (!hitP && places.length) {
+      hitP = places.filter(function (p) { return q.indexOf((p.name || "").toLowerCase()) >= 0; })[0] || (wantP ? null : places[0]);
     }
-    if (!hit) return { skill: "places.go", text: "No saved places yet. Add Home or Work on the map card." };
+    if (!hitP) return { skill: "places.go", text: "No saved places yet. Add Home or Work on the map card." };
     return {
       skill: "places.go",
-      text: "Directions to " + (hit.name || "place") + "?",
-      action: { label: "Go", run: function () { closeZapAssistant(); openDirectionsTo(hit); } }
+      text: "Directions to " + (hitP.name || "place") + "?",
+      action: { label: "Go", run: function () { closeZapAssistant(); openDirectionsTo(hitP); } }
     };
   }
   if (/places|saved places|list places/.test(q)) {
@@ -3683,7 +3763,6 @@ function routeZapIntent(raw) {
     var apps = APPS.filter(function (a) { return a.on; });
     var app = apps.filter(function (a) { return (a.name || "").toLowerCase().indexOf(name) >= 0 || (a.id || "") === name; })[0];
     if (!app) {
-      // catalog search
       try {
         var cat = (typeof CATALOG !== "undefined" ? CATALOG : []).filter(function (c) { return (c.name || "").toLowerCase().indexOf(name) >= 0; })[0];
         if (cat) app = { id: cat.id, name: cat.name, url: cat.url, pkg: cat.pkg, web: cat.web };
@@ -3706,18 +3785,135 @@ function routeZapIntent(raw) {
     if (gold) bits.push("GOLD " + money(gold.usd));
     return { skill: "markets.quote", text: bits.length ? bits.join(" · ") : "Markets still loading.", action: { label: "Markets", run: function () { closeZapAssistant(); toggleXp("mk"); } } };
   }
-  if (/help|what can you|commands/.test(q)) {
-    return { skill: "help", text: "I can check weather, net worth, BTC/gold, open apps, start focus, and navigate to saved places — all on-device." };
-  }
-  return { skill: "unknown", text: "Not sure. Try “weather”, “net worth”, “go home”, or “open maps”." };
+  return { skill: "unknown", text: "Not sure. Try help, or enable private AI on a WebGPU device." };
 }
+var HELP_TEXT = "Commands: call <favorite>, directions to <place>, add holding, switch theme, search web <q>, time, date, weather, net worth, open <app>, focus, help. All on-device.";
+
+function refreshZapAiBar() {
+  var bar = $("#zapAiBar"); if (!bar) return;
+  bar.hidden = false;
+  var st = $("#zapAiStatus"), btn = $("#zapAiBtn"), del = $("#zapAiDel"), prog = $("#zapAiProg"), note = $("#zapAiNote");
+  var a = loadAssistantPrefs();
+  var gpu = hasWebGPU();
+  if (prog) { prog.hidden = !ZAP_LLM.loading; prog.value = ZAP_LLM.progress || 0; }
+  if (del) del.hidden = !(a.modelCached || ZAP_LLM.engine);
+  if (!gpu) {
+    if (st) st.textContent = "Offline commands only";
+    if (btn) { btn.hidden = true; }
+    if (note) { note.hidden = false; note.textContent = "Private AI needs WebGPU. This device keeps the offline command router — nothing is sent to a server."; }
+    return;
+  }
+  if (note) note.hidden = true;
+  if (btn) btn.hidden = false;
+  if (ZAP_LLM.loading) {
+    if (st) st.textContent = "Downloading model… " + Math.round((ZAP_LLM.progress || 0) * 100) + "%";
+    if (btn) { btn.disabled = true; btn.textContent = "…"; }
+  } else if (ZAP_LLM.engine || a.modelCached) {
+    if (st) st.textContent = "Private AI ready (on-device)";
+    if (btn) { btn.disabled = false; btn.textContent = a.webllm ? "AI ON" : "AI OFF"; }
+  } else {
+    if (st) st.textContent = "Private AI available";
+    if (btn) { btn.disabled = false; btn.textContent = "Enable private AI (~1 GB)"; }
+  }
+}
+
+async function loadWebLLMEngine() {
+  if (ZAP_LLM.engine || ZAP_LLM.loading) return ZAP_LLM.engine;
+  if (!hasWebGPU()) throw new Error("WebGPU required");
+  ZAP_LLM.loading = true; ZAP_LLM.progress = 0; refreshZapAiBar();
+  try {
+    var mod = await import("https://esm.run/@mlc-ai/web-llm");
+    var CreateMLCEngine = mod.CreateMLCEngine || (mod.default && mod.default.CreateMLCEngine);
+    if (!CreateMLCEngine) throw new Error("CreateMLCEngine missing");
+    var engine = await CreateMLCEngine(ZAP_LLM.modelId, {
+      initProgressCallback: function (p) {
+        try {
+          ZAP_LLM.progress = (p && typeof p.progress === "number") ? p.progress : ZAP_LLM.progress;
+          var st = $("#zapAiStatus");
+          if (st) st.textContent = (p && p.text) ? String(p.text).slice(0, 72) : ("Downloading… " + Math.round(ZAP_LLM.progress * 100) + "%");
+          var prog = $("#zapAiProg"); if (prog) { prog.hidden = false; prog.value = ZAP_LLM.progress || 0; }
+        } catch (e) {}
+      }
+    });
+    ZAP_LLM.engine = engine;
+    var a = loadAssistantPrefs(); a.webllm = true; a.modelCached = true; saveAssistantPrefs(a);
+    return engine;
+  } finally {
+    ZAP_LLM.loading = false; refreshZapAiBar();
+  }
+}
+
+async function deleteWebLLMCache() {
+  try { if (ZAP_LLM.engine && ZAP_LLM.engine.unload) await ZAP_LLM.engine.unload(); } catch (e) {}
+  ZAP_LLM.engine = null;
+  try {
+    if (window.caches && caches.keys) {
+      var keys = await caches.keys();
+      await Promise.all(keys.filter(function (k) {
+        return /webllm|mlc|wasm|model/i.test(k);
+      }).map(function (k) { return caches.delete(k); }));
+    }
+  } catch (e) {}
+  try {
+    if (indexedDB && indexedDB.databases) {
+      var dbs = await indexedDB.databases();
+      (dbs || []).forEach(function (db) {
+        if (db && db.name && /webllm|mlc|tvm/i.test(db.name)) {
+          try { indexedDB.deleteDatabase(db.name); } catch (e2) {}
+        }
+      });
+    }
+  } catch (e) {}
+  var a = loadAssistantPrefs(); a.webllm = false; a.modelCached = false; saveAssistantPrefs(a);
+  refreshZapAiBar();
+  toast("Private AI removed from this device");
+}
+
+async function zapAskLLM(q) {
+  var engine = ZAP_LLM.engine;
+  if (!engine) engine = await loadWebLLMEngine();
+  var sys = "You are ZAP, a local OS assistant. Reply with ONE short helpful sentence under 40 words. Prefer concrete facts. Never invent balances. If the user wants an action (call, directions, theme, search, open app), say you can do it and keep it brief. No markdown.";
+  var reply = await engine.chat.completions.create({
+    messages: [
+      { role: "system", content: sys },
+      { role: "user", content: String(q).slice(0, 400) }
+    ],
+    temperature: 0.4,
+    max_tokens: 96
+  });
+  var text = "";
+  try { text = reply.choices[0].message.content; } catch (e) {}
+  return String(text || "").trim() || "Got it.";
+}
+
 function zapHandle(raw) {
   var q = String(raw || "").trim();
   if (!q) return;
   var inp = $("#zapIn"); if (inp) inp.value = "";
   zapAppend("user", q);
   var intent = routeZapIntent(q);
-  zapAppend("bot", intent.text, intent.action);
+  if (intent.skill !== "unknown") {
+    zapAppend("bot", intent.text, intent.action);
+    updateZapBadge();
+    return;
+  }
+  var a = loadAssistantPrefs();
+  if (a.webllm && hasWebGPU()) {
+    zapAppend("bot", "Thinking on-device…");
+    zapAskLLM(q).then(function (txt) {
+      var log = $("#zapLog");
+      if (log && log.lastChild && log.lastChild.classList.contains("bot")) log.removeChild(log.lastChild);
+      zapAppend("bot", txt);
+      updateZapBadge();
+    }).catch(function (err) {
+      var log = $("#zapLog");
+      if (log && log.lastChild && log.lastChild.classList.contains("bot")) log.removeChild(log.lastChild);
+      zapAppend("bot", "On-device AI failed (" + (err && err.message ? err.message : "error") + "). Using commands only — try help.");
+      updateZapBadge();
+    });
+    return;
+  }
+  zapAppend("bot", intent.text);
   updateZapBadge();
 }
 (function bindZapAssistant() {
@@ -3725,7 +3921,11 @@ function zapHandle(raw) {
   var close = $("#zapClose"); if (close) close.addEventListener("click", closeZapAssistant);
   var form = $("#zapForm");
   if (form) form.addEventListener("submit", function (e) { e.preventDefault(); zapHandle(($("#zapIn") && $("#zapIn").value) || ""); });
-  var mic = $("#zapMic"); if (mic) mic.addEventListener("click", startZapListen);
+  var mic = $("#zapMic");
+  if (mic) {
+    if (!hasSpeechIn()) { mic.hidden = true; mic.setAttribute("aria-hidden", "true"); }
+    else mic.addEventListener("click", startZapListen);
+  }
   var mute = $("#zapMute");
   if (mute) mute.addEventListener("click", function () {
     var a = loadAssistantPrefs();
@@ -3738,22 +3938,31 @@ function zapHandle(raw) {
   var aiBtn = $("#zapAiBtn");
   if (aiBtn) aiBtn.addEventListener("click", function () {
     var a = loadAssistantPrefs();
-    if (!a.webllm) {
-      if (!confirm("Optional on-device AI downloads a small model (hundreds of MB) and needs WebGPU. Continue?")) return;
-      a.webllm = true; saveAssistantPrefs(a);
-      var bar = $("#zapAiBar"); if (bar) bar.hidden = false;
-      var st = $("#zapAiStatus"); if (st) st.textContent = "On-device AI: keyword router active (WebLLM load not bundled in this build)";
-      toast("AI flag on — using offline router");
-    } else {
-      a.webllm = false; saveAssistantPrefs(a);
-      var st2 = $("#zapAiStatus"); if (st2) st2.textContent = "On-device AI off";
-      toast("On-device AI off");
+    if (!hasWebGPU()) { toast("WebGPU not available on this device"); return; }
+    if (ZAP_LLM.engine && a.webllm) {
+      a.webllm = false; saveAssistantPrefs(a); refreshZapAiBar(); toast("Private AI paused — commands still work"); return;
     }
+    if (ZAP_LLM.engine && !a.webllm) {
+      a.webllm = true; saveAssistantPrefs(a); refreshZapAiBar(); toast("Private AI on"); return;
+    }
+    if (!confirm("Enable private AI? Downloads ~1 GB once, stays on this device, nothing is sent to any server, no API keys.")) return;
+    loadWebLLMEngine().then(function () {
+      toast("Private AI ready");
+      refreshZapAiBar();
+    }).catch(function (err) {
+      toast("AI download failed: " + (err && err.message ? err.message : "error"));
+      refreshZapAiBar();
+    });
   });
-  var bar0 = $("#zapAiBar"); if (bar0) bar0.hidden = false;
+  var del = $("#zapAiDel");
+  if (del) del.addEventListener("click", function () {
+    if (!confirm("Delete the on-device AI model from this device?")) return;
+    deleteWebLLMCache();
+  });
   try {
     var pref = loadAssistantPrefs();
     if (mute) { mute.textContent = pref.voiceOut ? "🔊" : "🔇"; mute.setAttribute("aria-pressed", pref.voiceOut ? "true" : "false"); }
+    refreshZapAiBar();
   } catch (e) {}
 })();
 

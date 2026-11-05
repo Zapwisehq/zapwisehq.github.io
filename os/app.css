@@ -787,3 +787,18 @@ html.fx-paused #mapV.map-neon .map-dot{animation-play-state:paused!important}
 .zap-ai{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 14px 12px;color:var(--dim);font-size:11px}
 .zap-mic.on{border-color:var(--bad);color:var(--bad);box-shadow:0 0 0 1px rgba(255,80,80,.25)}
 @media (min-width:768px){.zap-sheet{left:auto;right:18px;width:min(420px,92vw);border-radius:18px;bottom:80px;border:1px solid rgba(92,225,230,.3)}}
+
+/* v3.10 private AI bar */
+.zap-ai{flex-direction:column;align-items:stretch;gap:6px}
+.zap-ai-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.zap-ai-row small{flex:1;min-width:120px}
+.zap-ai-prog{width:100%;height:6px;border-radius:99px;overflow:hidden;accent-color:var(--cyan);background:rgba(255,255,255,.08)}
+.zap-ai-note{display:block;color:var(--dim);line-height:1.35;font-size:10px}
+.chip.danger{border-color:rgba(255,79,120,.45);color:#ff8aa8}
+.greet{font-family:var(--mono);letter-spacing:.04em;color:var(--cyan)}
+/* neon roads / pins stronger */
+#mapV.map-neon:after{background:
+  radial-gradient(ellipse at 50% 50%,rgba(92,225,230,.12),transparent 55%),
+  linear-gradient(180deg,rgba(5,6,14,.15),rgba(5,6,14,.45));
+  mix-blend-mode:screen}
+#mapV.map-neon .place-pin,#mapV.map-neon .map-pin{filter:drop-shadow(0 0 6px rgba(255,140,60,.85))}
