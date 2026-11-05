@@ -1,4 +1,4 @@
-/* ZAPWISE//OS web app v3.8.0 (Nov 5, 2026). Cyberpunk pack (original): daily boot, skyline, neon map, charge-up, themes. Static, no build step, no API keys.
+/* ZAPWISE//OS web app v3.9.0 (Nov 5, 2026). Map geo-dot fix + markets account tiles + home portfolio/BTC/gold card; offline ZAP assistant + optional WebLLM; cyberpunk pack retained. Static, no build step, no API keys.
    Data: Open-Meteo (weather + city search), api-bdc.io (city name for weather), CoinGecko (crypto + PAX Gold),
    mempool.space (BTC balance), ethereum.publicnode.com (ETH balance), solana.publicnode.com (SOL balance),
    OSM standard tiles (keyless, CSS dark filter) + Nominatim reverse geocoding (road + city, cached, re-queried only after moving > 40 m).
@@ -18,7 +18,7 @@
    Store.applyRemote below. */
 (function () {
 "use strict";
-var VERSION = "3.8.0";
+var VERSION = "3.9.0";
 var APP_VERSION = VERSION;
 var STATUS_MSGS = ["> SHORTCUTS ARMED", "> NET SECURE", "> AI LINK STABLE", "> SIGNAL CLEAN", "> APPS READY"];
 var FOCUS_MS = 25 * 60000;
@@ -32,8 +32,8 @@ function clone(o) { return o == null ? o : JSON.parse(JSON.stringify(o)); }
 // ========== 2. STATE: one versioned object + one save/load layer ==========
 var Store = (function () {
   var STATE_KEY = "zapos.state", DEVICE_KEY = "zapos.device", VER = 1;
-  var PREF_KEYS = ["settings", "theme", "apps", "coins", "loc", "favs", "places", "holdings", "broker", "wallets", "accounts"];                     // shared state (sync-ready)
-  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss", "mediaKey", "skipBoot", "bootDay", "uiSounds", "recentPins", "wxDay", "wxMode", "portHist"]; // this device only
+  var PREF_KEYS = ["settings", "theme", "apps", "coins", "loc", "favs", "places", "holdings", "broker", "wallets", "accounts", "assistant"];                     // shared state (sync-ready)
+  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss", "mediaKey", "skipBoot", "bootDay", "uiSounds", "recentPins", "wxDay", "wxMode", "portHist", "acctMigrated"]; // this device only
   function read(k) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
   function write(k, v) { if (dead) return false; try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
   var state = read(STATE_KEY), dev = read(DEVICE_KEY), subs = [], uiT = null, dead = false; // dead: after a reset, write nothing more
@@ -1327,6 +1327,35 @@ function quickAddHolding(pick) {
       });
     });
 }
+
+function renderHomeMarkets(stats, accts) {
+  stats = stats || portfolioStats();
+  accts = accts || loadAccounts();
+  var port = $("#hMkPort"), quotes = $("#hMkQuotes"), body = $("#hMkBody");
+  var hasAcct = (accts && accts.length) || loadHoldings().length;
+  if (port) {
+    if (!hasAcct) {
+      port.innerHTML = '<span class="hmk-cta" data-hmk-add="1">Add your first account</span>';
+    } else {
+      var dayHtml = stats.priced
+        ? ('<span class="hmk-day ' + (stats.day >= 0 ? "up" : "dn") + '">' + signedMoney(stats.day) + (stats.dayPct != null ? " · " + ((stats.dayPct >= 0 ? "+" : "") + stats.dayPct.toFixed(2) + "%") : "") + "</span>")
+        : '<span class="hmk-day">—</span>';
+      port.innerHTML = '<span class="hmk-total" data-hmk-port="1">' + money(stats.total) + "</span>" + dayHtml;
+    }
+  }
+  if (quotes) {
+    var d = (MK && MK.d) || {};
+    function qRow(sym, id) {
+      var q = d[id], ch = q ? q.usd_24h_change : null;
+      var chCls = (ch == null || isNaN(ch)) ? "" : (ch >= 0 ? "up" : "dn");
+      var chTxt = (ch == null || isNaN(ch)) ? "--" : ((ch >= 0 ? "+" : "") + Number(ch).toFixed(2) + "%");
+      return '<span class="hmk-q" data-sym="' + sym + '"><b>' + sym + '</b> <span class="px">' + (q ? money(q.usd) : "--") + '</span> <i class="ch ' + chCls + '">' + chTxt + "</i></span>";
+    }
+    quotes.innerHTML = qRow("BTC", "bitcoin") + qRow("GOLD", "pax-gold");
+  }
+  if (body) body.hidden = false;
+}
+
 function renderHoldings() {
   var list = loadHoldings(), stats = portfolioStats(), accts = loadAccounts();
   pushPortHist(stats.total);
@@ -1366,16 +1395,7 @@ function renderHoldings() {
         '<div class="acts"><button type="button" class="chip" data-hold-edit="' + i + '">Edit</button><button type="button" class="chip" data-hold-del="' + i + '">Remove</button></div></div>';
     }).join("");
   }
-  var mini = $("#hMkPort");
-  if (mini) {
-    var hasAnything = list.length || accts.length;
-    if (!hasAnything) { mini.hidden = true; mini.innerHTML = ""; }
-    else {
-      mini.hidden = false;
-      var day = stats.priced ? (' · <span class="' + (stats.day >= 0 ? "up" : "dn") + '">' + signedMoney(stats.day) + "</span>") : "";
-      mini.innerHTML = "Net worth <b>" + money(stats.total) + "</b>" + day;
-    }
-  }
+  try { renderHomeMarkets(stats, accts); } catch (e) {}
 }
 function renderMarkets() {
   var d = MK && MK.d || {}, list = "", mini = "";
@@ -1397,6 +1417,7 @@ function renderMarkets() {
   if ($("#hMkList")) $("#hMkList").innerHTML = mini || $("#hMkList").innerHTML;
   if ($("#xpMkList")) $("#xpMkList").innerHTML = list;
   try { renderHoldings(); } catch (e) {}
+  try { renderHomeMarkets(); } catch (e) {}
   updateStamps();
 }
 
@@ -1524,23 +1545,37 @@ function metersToPixels(m, lat, z) {
   return mpp > 0 ? (m / mpp) : 0;
 }
 function ensureMapOverlay(v) {
-  var acc = v.querySelector(".map-acc");
-  if (!acc) {
-    acc = document.createElement("i");
-    acc.className = "map-acc";
-    acc.setAttribute("aria-hidden", "true");
-    v.insertBefore(acc, $("#mapDot") || null);
+  // Geo layers live inside #mapMarkers (map pane) so they share tile coordinates and never stick to the viewport.
+  var stage = v.querySelector("#mapStage") || v;
+  var host = v.querySelector("#mapMarkers");
+  if (!host) {
+    host = document.createElement("div");
+    host.id = "mapMarkers";
+    host.className = "map-markers";
+    host.setAttribute("aria-hidden", "true");
+    stage.appendChild(host);
   }
-  var radar = v.querySelector(".map-radar");
-  var head = v.querySelector(".map-heading");
-  if (!head) {
-    head = document.createElement("i");
-    head.className = "map-heading";
-    head.setAttribute("aria-hidden", "true");
-    head.hidden = true;
-    v.insertBefore(head, $("#mapDot") || null);
+  function ensure(cls, beforeDot) {
+    var el = host.querySelector("." + cls) || v.querySelector("." + cls);
+    if (!el) {
+      el = document.createElement("i");
+      el.className = cls;
+      el.setAttribute("aria-hidden", "true");
+    }
+    if (el.parentNode !== host) {
+      var dot = host.querySelector("#mapDot") || $("#mapDot");
+      if (beforeDot && dot && dot.parentNode === host) host.insertBefore(el, dot);
+      else host.appendChild(el);
+    }
+    return el;
   }
-  return { acc: acc, radar: radar, head: head };
+  var acc = ensure("map-acc", true);
+  var radar = ensure("map-radar", true);
+  var head = ensure("map-heading", true);
+  if (head.getAttribute("data-init") !== "1") { head.hidden = true; head.setAttribute("data-init", "1"); }
+  var dot = $("#mapDot");
+  if (dot && dot.parentNode !== host) host.appendChild(dot);
+  return { host: host, acc: acc, radar: radar, head: head };
 }
 function placeUserLayers(v, W, H, ox, oy, z) {
   var layers = ensureMapOverlay(v);
@@ -1669,11 +1704,17 @@ function renderMap(force) {
     var pl = loadPlaces().filter(function (x) { return x.id === g.getAttribute("data-place-go"); })[0];
     if (pl) showMapPlaceCard(pl);
   };
-  // Recenter button state
-  var rec = $("#mapRec"); if (rec) rec.classList.toggle("on", !!MAP.follow);
+  // Recenter: visible only after pan/pinch breaks follow; tap re-enables follow
+  var rec = $("#mapRec");
+  if (rec) {
+    rec.hidden = !!MAP.follow;
+    rec.classList.toggle("on", !MAP.follow);
+    rec.setAttribute("aria-label", MAP.follow ? "Following your location" : "Recenter on me");
+  }
 }
 function mapRecenter() {
   MAP.follow = true; MAP.offX = 0; MAP.offY = 0; MAP.z = 16; MAP._key = null;
+  var rec = $("#mapRec"); if (rec) { rec.hidden = true; rec.classList.remove("on"); }
   renderMap(true);
   toast("Following you");
   try { startGpsWatch(); } catch (e) {}
@@ -2084,7 +2125,27 @@ function show(tab) {
 }
 $$(".tab").forEach(function (b) { b.addEventListener("click", function () { show(b.getAttribute("data-tab")); }); });
 $("#hWx").addEventListener("click", function () { toggleXp("wx"); });
-$("#hMk").addEventListener("click", function () { toggleXp("mk"); });
+(function bindHomeMarketsCard() {
+  var card = $("#hMk"); if (!card) return;
+  function openPort() { toggleXp("mk"); }
+  function openAdd(e) {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    // reveal portfolio panel then open add-account sheet
+    var el = $("#xpMk");
+    if (el && el.hidden) toggleXp("mk");
+    try { openAddAccount(); } catch (err) { openPort(); }
+  }
+  card.addEventListener("click", function (e) {
+    if (e.target.closest("#hMkAct,[data-hmk-add]")) { openAdd(e); return; }
+    if (e.target.closest("[data-hmk-port],.hmk-total,.hmk-val")) { openPort(); return; }
+    openPort();
+  });
+  card.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openPort(); }
+  });
+  var act = $("#hMkAct");
+  if (act) act.addEventListener("click", openAdd);
+})();
 function toggleXp(k) {
   var el = $(k === "wx" ? "#xpWx" : "#xpMk"), btn = $(k === "wx" ? "#hWx" : "#hMk"), open = el.hidden;
   el.hidden = !open; btn.setAttribute("aria-expanded", String(open));
@@ -2410,7 +2471,7 @@ var ACCOUNT_CATALOG = [
   { id: "wallet-sol", name: "Solana wallet", kind: "wallet", chainHint: "sol", url: "", web: "https://solscan.io", icon: "", bg: "#14f195", letter: "S" }
 ];
 function loadAccounts() {
-  migrateWalletsToAccounts();
+  try { migrateWalletsToAccounts(); } catch (e) {}
   var a = Store.get("accounts", null);
   return Array.isArray(a) ? a : [];
 }
@@ -2437,17 +2498,21 @@ function migrateWalletsToAccounts() {
     });
     saveAccounts(accts);
   }
-  Store.setLocal("acctMigrated", 1);
+  try { Store.setLocal("acctMigrated", 1); } catch (e) {}
 }
 function accountIconHTML(a) {
   if (a.icon) return '<span class="at-ico"><img src="' + esc(a.icon) + '" alt=""></span>';
   return '<span class="at-ico" style="background:' + esc(a.bg || "#111827") + '"><span class="let">' + esc((a.letter || a.name || "?").charAt(0)) + "</span></span>";
 }
 function accountSubtotal(a) {
-  var total = 0, n = 0, priced = 0;
+  var total = 0, n = 0, priced = 0, day = 0;
   if (a.kind === "wallet") {
     var usd = walletUsd(a);
-    if (usd != null && !isNaN(usd)) { total += usd; priced++; }
+    if (usd != null && !isNaN(usd)) {
+      total += usd; priced++;
+      var wch = walletChange(a);
+      if (wch != null && !isNaN(wch)) day += usd * (wch / (100 + wch));
+    }
     n++;
   }
   loadHoldings().forEach(function (h) {
@@ -2455,33 +2520,38 @@ function accountSubtotal(a) {
     n++;
     var px = holdingPrice(h), qty = +h.qty || 0;
     if (px == null || isNaN(px)) return;
-    total += px * qty; priced++;
+    var val = px * qty;
+    total += val; priced++;
+    var ch = holdingChange(h);
+    if (ch != null && !isNaN(ch)) day += val * (ch / (100 + ch));
   });
-  return { total: total, n: n, priced: priced };
+  return { total: total, n: n, priced: priced, day: day };
 }
 function renderAccounts() {
   var host = $("#acctGrid"); if (!host) return;
   var list = loadAccounts();
+  function addTile() {
+    return '<button type="button" class="acct-tile empty" data-acct-add="1" role="listitem" aria-label="Add account">' +
+      '<span class="at-ico" aria-hidden="true">＋</span><span class="at-name">Add</span></button>';
+  }
   if (!list.length) {
-    host.innerHTML = '<button type="button" class="acct-tile empty" data-acct-add="1">＋ Add account<br><span style="font-weight:600;opacity:.75">Broker, exchange, or wallet</span></button>';
+    host.innerHTML = addTile();
     return;
   }
   host.innerHTML = list.map(function (a) {
     var st = accountSubtotal(a);
-    var sub;
-    if (a.kind === "wallet") {
-      var unit = a.chain === "btc" ? "BTC" : a.chain === "eth" ? "ETH" : a.chain === "sol" ? "SOL" : "";
-      var balTxt = a.bal != null && !isNaN(+a.bal) ? ((+a.bal >= 1 ? (+a.bal).toLocaleString("en-US", { maximumFractionDigits: 6 }) : (+a.bal).toPrecision(4)) + (unit ? " " + unit : "")) : (a.err || "…");
-      sub = shortAddr(a.address) + (balTxt ? " · " + balTxt : "");
+    var chg = "";
+    if (st.priced && st.day != null && !isNaN(st.day)) {
+      chg = '<span class="at-chg ' + (st.day >= 0 ? "up" : "dn") + '">' + signedMoney(st.day) + "</span>";
     } else {
-      sub = st.n ? (st.n + " holding" + (st.n === 1 ? "" : "s")) : "No holdings yet";
+      chg = '<span class="at-chg">—</span>';
     }
-    return '<button type="button" class="acct-tile" data-acct="' + esc(a.id) + '" role="listitem">' +
+    return '<button type="button" class="acct-tile" data-acct="' + esc(a.id) + '" role="listitem" aria-label="' + esc(a.name) + '">' +
       accountIconHTML(a) +
       '<span class="at-name">' + esc(a.name) + "</span>" +
-      '<span class="at-sub">' + esc(sub) + "</span>" +
-      '<span class="at-val">' + (st.priced ? money(st.total) : "—") + "</span></button>";
-  }).join("") + '<button type="button" class="acct-tile empty" data-acct-add="1">＋ Add</button>';
+      '<span class="at-val">' + (st.priced ? money(st.total) : "—") + "</span>" +
+      chg + "</button>";
+  }).join("") + addTile();
 }
 function openAccountApp(a) {
   if (!a) return;
@@ -2910,6 +2980,7 @@ function openSettings() {
     '<div class="field">TEMPERATURE</div><div class="seg" id="stU"><button data-v="F">°F · mph</button><button data-v="C">°C · km/h</button></div>' +
     '<div class="field">SOFT UI SOUNDS</div><div class="seg" id="stSnd"><button data-v="0">OFF</button><button data-v="1">ON</button></div>' +
     '<p class="note">Soft synth taps when you press cards. Off by default.</p>' +
+    '<div class="field">ZAP ASSISTANT</div><p class="note">Offline keyword router for weather, net worth, places, and apps. Optional on-device AI is experimental — open the ZAP button, then AI.</p>' +
     '<button class="btn" id="stSave">SAVE</button>' +
     '<h3>RESET</h3><button class="btn warn" id="stReset">Reset everything to defaults</button>',
     function (b) {
@@ -3239,11 +3310,15 @@ function updateSkyline() {
 function ensureMapNeon(v) {
   if (!v) return;
   v.classList.add("map-neon");
+  var host = v.querySelector("#mapMarkers") || v;
   if (!v.querySelector(".map-neon-ring")) {
     var ring = document.createElement("i");
     ring.className = "map-neon-ring";
     ring.setAttribute("aria-hidden", "true");
-    v.appendChild(ring);
+    host.appendChild(ring);
+  } else {
+    var ring2 = v.querySelector(".map-neon-ring");
+    if (ring2 && host && ring2.parentNode !== host) host.appendChild(ring2);
   }
 }
 function placeNeonRing(v, dx, dy) {
@@ -3470,6 +3545,218 @@ function scheduleUpdateChecks() {
     if (document.visibilityState === "visible") checkForAppUpdate(false);
   }, 5 * 60 * 1000);
 }
+
+// ========== v3.9 offline ZAP assistant (intent router; optional WebLLM later) ==========
+function loadAssistantPrefs() {
+  var a = Store.get("assistant", null);
+  if (!a || typeof a !== "object") a = { enabled: true, webllm: false, suggest: true, voiceOut: false };
+  return a;
+}
+function saveAssistantPrefs(a) { Store.set("assistant", a); }
+function openZapAssistant() {
+  var sheet = $("#zapSheet"); if (!sheet) return;
+  sheet.hidden = false;
+  try { updateZapBadge(); renderZapChips(); } catch (e) {}
+  setTimeout(function () { try { $("#zapIn").focus(); } catch (e) {} }, 40);
+}
+function closeZapAssistant() {
+  var sheet = $("#zapSheet"); if (sheet) sheet.hidden = true;
+  try { stopZapListen(); } catch (e) {}
+}
+function updateZapBadge() {
+  var b = $("#zapBadge"); if (!b) return;
+  var stale = !(WX && WX.at && Date.now() - WX.at < 45 * 60000) || !(MK && MK.at && Date.now() - MK.at < 45 * 60000);
+  b.textContent = navigator.onLine === false ? "OFFLINE" : (stale ? "CACHED" : "LIVE");
+  b.classList.toggle("live", !stale && navigator.onLine !== false);
+}
+function zapAppend(role, text, action) {
+  var log = $("#zapLog"); if (!log) return;
+  var d = document.createElement("div");
+  d.className = "zap-msg " + role;
+  d.textContent = text;
+  if (action && action.label && action.run) {
+    var btn = document.createElement("button");
+    btn.type = "button"; btn.className = "zap-act"; btn.textContent = action.label;
+    btn.addEventListener("click", function () { try { action.run(); } catch (e) { toast("Action failed"); } });
+    d.appendChild(document.createElement("br"));
+    d.appendChild(btn);
+  }
+  log.appendChild(d);
+  log.scrollTop = log.scrollHeight;
+  try { if (role === "bot" && loadAssistantPrefs().voiceOut) zapSpeak(text); } catch (e) {}
+}
+function renderZapChips() {
+  var host = $("#zapChips"); if (!host) return;
+  var chips = [
+    { t: "Net worth?", q: "net worth" },
+    { t: "Weather", q: "weather" },
+    { t: "Drive home", q: "go home" },
+    { t: "Open maps", q: "open maps" },
+    { t: "Focus", q: "start focus" }
+  ];
+  host.innerHTML = "";
+  chips.forEach(function (c) {
+    var b = document.createElement("button");
+    b.type = "button"; b.textContent = c.t;
+    b.addEventListener("click", function () { zapHandle(c.q); });
+    host.appendChild(b);
+  });
+}
+function zapSpeak(text) {
+  try {
+    if (!window.speechSynthesis) return;
+    var u = new SpeechSynthesisUtterance(String(text).slice(0, 280));
+    u.rate = 1.05; window.speechSynthesis.cancel(); window.speechSynthesis.speak(u);
+  } catch (e) {}
+}
+var _zapRec = null, _zapListening = false;
+function stopZapListen() {
+  _zapListening = false;
+  var mic = $("#zapMic"); if (mic) mic.classList.remove("on");
+  try { if (_zapRec) _zapRec.stop(); } catch (e) {}
+}
+function startZapListen() {
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { toast("Voice input not supported here"); return; }
+  if (_zapListening) { stopZapListen(); return; }
+  _zapRec = new SR();
+  _zapRec.lang = "en-US";
+  _zapRec.interimResults = false;
+  _zapRec.onresult = function (ev) {
+    var t = ev.results && ev.results[0] && ev.results[0][0] ? ev.results[0][0].transcript : "";
+    if (t) { var inp = $("#zapIn"); if (inp) inp.value = t; zapHandle(t); }
+  };
+  _zapRec.onerror = function () { stopZapListen(); };
+  _zapRec.onend = function () { stopZapListen(); };
+  _zapListening = true;
+  var mic = $("#zapMic"); if (mic) mic.classList.add("on");
+  try { _zapRec.start(); } catch (e) { stopZapListen(); toast("Mic unavailable"); }
+}
+function routeZapIntent(raw) {
+  var q = String(raw || "").trim().toLowerCase();
+  if (!q) return { skill: "help", text: "Try: weather, net worth, go home, open maps, start focus." };
+  // portfolio
+  if (/net\s*worth|portfolio|balance|how much|holdings/.test(q)) {
+    var st = portfolioStats();
+    var txt = st.priced
+      ? ("Net worth " + money(st.total) + (st.day != null ? (" · today " + signedMoney(st.day)) : ""))
+      : "No priced holdings yet. Add an account from Markets.";
+    return { skill: "portfolio.total", text: txt, action: { label: "Open portfolio", run: function () { closeZapAssistant(); toggleXp("mk"); } } };
+  }
+  // weather
+  if (/weather|forecast|temperature|temp\b|rain|hot|cold/.test(q)) {
+    var line = "Weather unavailable yet.";
+    try {
+      if (WX && WX.j) {
+        var cur = WX.j.current_weather || (WX.j.current) || {};
+        var t = cur.temperature != null ? cur.temperature : cur.temp;
+        var place = (WX.place || "Here");
+        line = place + " · " + (t != null ? (Math.round(+t) + "°") : "--");
+      }
+    } catch (e) {}
+    return { skill: "weather.now", text: line, action: { label: "Open weather", run: function () { closeZapAssistant(); toggleXp("wx"); } } };
+  }
+  // places go
+  if (/\b(go|drive|navigate|directions?)\b/.test(q) || /\bhome\b/.test(q) || /\bwork\b/.test(q)) {
+    var places = loadPlaces();
+    var want = /\bwork\b/.test(q) ? "work" : (/\bhome\b/.test(q) ? "home" : null);
+    var hit = null;
+    if (want) hit = places.filter(function (p) { return (p.name || "").toLowerCase().indexOf(want) >= 0 || (p.id || "").toLowerCase() === want; })[0];
+    if (!hit && places.length) {
+      // fuzzy name
+      hit = places.filter(function (p) { return q.indexOf((p.name || "").toLowerCase()) >= 0; })[0] || places[0];
+    }
+    if (!hit) return { skill: "places.go", text: "No saved places yet. Add Home or Work on the map card." };
+    return {
+      skill: "places.go",
+      text: "Directions to " + (hit.name || "place") + "?",
+      action: { label: "Go", run: function () { closeZapAssistant(); openDirectionsTo(hit); } }
+    };
+  }
+  if (/places|saved places|list places/.test(q)) {
+    var ps = loadPlaces();
+    return { skill: "places.list", text: ps.length ? ("Saved: " + ps.map(function (p) { return p.name; }).join(", ")) : "No saved places yet." };
+  }
+  // apps
+  if (/^open\s+/.test(q) || /\blaunch\b/.test(q)) {
+    var name = q.replace(/^(open|launch)\s+/, "").trim();
+    var apps = APPS.filter(function (a) { return a.on; });
+    var app = apps.filter(function (a) { return (a.name || "").toLowerCase().indexOf(name) >= 0 || (a.id || "") === name; })[0];
+    if (!app) {
+      // catalog search
+      try {
+        var cat = (typeof CATALOG !== "undefined" ? CATALOG : []).filter(function (c) { return (c.name || "").toLowerCase().indexOf(name) >= 0; })[0];
+        if (cat) app = { id: cat.id, name: cat.name, url: cat.url, pkg: cat.pkg, web: cat.web };
+      } catch (e) {}
+    }
+    if (!app) return { skill: "apps.open", text: "Couldn't find \"" + name + "\" in your apps." };
+    return { skill: "apps.open", text: "Open " + app.name + "?", action: { label: "Open", run: function () { closeZapAssistant(); openApp(app); } } };
+  }
+  if (/maps|where am i|locate/.test(q)) {
+    return { skill: "maps.here", text: GPS ? ("You are near " + ((PLACE && (PLACE.road || PLACE.city)) || (GPS.lat.toFixed(4) + ", " + GPS.lon.toFixed(4)))) : "Location off or still finding you.", action: { label: "Open Maps", run: function () { closeZapAssistant(); openMapsHere(); } } };
+  }
+  if (/focus|pomodoro|timer/.test(q)) {
+    return { skill: "focus.start", text: "Start a 25-minute focus sprint?", action: { label: "Start focus", run: function () { closeZapAssistant(); try { $("#mFocus").click(); } catch (e) {} } } };
+  }
+  if (/btc|bitcoin|gold|paxg|markets?/.test(q)) {
+    var d = MK && MK.d || {};
+    var btc = d.bitcoin, gold = d["pax-gold"];
+    var bits = [];
+    if (btc) bits.push("BTC " + money(btc.usd));
+    if (gold) bits.push("GOLD " + money(gold.usd));
+    return { skill: "markets.quote", text: bits.length ? bits.join(" · ") : "Markets still loading.", action: { label: "Markets", run: function () { closeZapAssistant(); toggleXp("mk"); } } };
+  }
+  if (/help|what can you|commands/.test(q)) {
+    return { skill: "help", text: "I can check weather, net worth, BTC/gold, open apps, start focus, and navigate to saved places — all on-device." };
+  }
+  return { skill: "unknown", text: "Not sure. Try “weather”, “net worth”, “go home”, or “open maps”." };
+}
+function zapHandle(raw) {
+  var q = String(raw || "").trim();
+  if (!q) return;
+  var inp = $("#zapIn"); if (inp) inp.value = "";
+  zapAppend("user", q);
+  var intent = routeZapIntent(q);
+  zapAppend("bot", intent.text, intent.action);
+  updateZapBadge();
+}
+(function bindZapAssistant() {
+  var fab = $("#zapFab"); if (fab) fab.addEventListener("click", openZapAssistant);
+  var close = $("#zapClose"); if (close) close.addEventListener("click", closeZapAssistant);
+  var form = $("#zapForm");
+  if (form) form.addEventListener("submit", function (e) { e.preventDefault(); zapHandle(($("#zapIn") && $("#zapIn").value) || ""); });
+  var mic = $("#zapMic"); if (mic) mic.addEventListener("click", startZapListen);
+  var mute = $("#zapMute");
+  if (mute) mute.addEventListener("click", function () {
+    var a = loadAssistantPrefs();
+    a.voiceOut = !a.voiceOut;
+    saveAssistantPrefs(a);
+    mute.setAttribute("aria-pressed", a.voiceOut ? "true" : "false");
+    mute.textContent = a.voiceOut ? "🔊" : "🔇";
+    toast(a.voiceOut ? "Voice replies on" : "Voice replies muted");
+  });
+  var aiBtn = $("#zapAiBtn");
+  if (aiBtn) aiBtn.addEventListener("click", function () {
+    var a = loadAssistantPrefs();
+    if (!a.webllm) {
+      if (!confirm("Optional on-device AI downloads a small model (hundreds of MB) and needs WebGPU. Continue?")) return;
+      a.webllm = true; saveAssistantPrefs(a);
+      var bar = $("#zapAiBar"); if (bar) bar.hidden = false;
+      var st = $("#zapAiStatus"); if (st) st.textContent = "On-device AI: keyword router active (WebLLM load not bundled in this build)";
+      toast("AI flag on — using offline router");
+    } else {
+      a.webllm = false; saveAssistantPrefs(a);
+      var st2 = $("#zapAiStatus"); if (st2) st2.textContent = "On-device AI off";
+      toast("On-device AI off");
+    }
+  });
+  var bar0 = $("#zapAiBar"); if (bar0) bar0.hidden = false;
+  try {
+    var pref = loadAssistantPrefs();
+    if (mute) { mute.textContent = pref.voiceOut ? "🔊" : "🔇"; mute.setAttribute("aria-pressed", pref.voiceOut ? "true" : "false"); }
+  } catch (e) {}
+})();
+
 scheduleUpdateChecks();
 try {
   window.checkForAppUpdate = checkForAppUpdate;
@@ -3484,6 +3771,8 @@ try {
   window.ZAPOS.mapFollow = function (on) { MAP.follow = !!on; if (on) { MAP.offX = 0; MAP.offY = 0; } renderMap(true); };
   window.ZAPOS.openSettings = openSettings;
   window.ZAPOS.openTheme = openTheme;
+  window.ZAPOS.openZap = openZapAssistant;
+  window.ZAPOS.routeZap = routeZapIntent;
 } catch (e) {}
 if (!Store.getLocal("seenHelp", false) && !(window.navigator.standalone === true)) { Store.setLocal("seenHelp", true); setTimeout(function () { toast("Tip: MENU → Help shows how to add this to your Home Screen"); }, 1500); }
 })();

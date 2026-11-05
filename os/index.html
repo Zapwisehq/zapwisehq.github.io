@@ -7,10 +7,10 @@
 <meta name="robots" content="noindex,follow">
 <meta name="description" content="ZAPWISE//OS: one full-screen home for your clock, weather, markets, map and apps.">
 <meta name="theme-color" content="#070814">
-<meta name="zapos-version" content="3.8.0">
+<meta name="zapos-version" content="3.9.0">
 <script>
 /* Early update probe — runs even before app.js. Reloads once if /os/version.json is newer. */
-(function(){var V="3.8.0",k="zapos.bootReload";try{if(sessionStorage.getItem(k)===V)return;}catch(e){}
+(function(){var V="3.9.0",k="zapos.bootReload";try{if(sessionStorage.getItem(k)===V)return;}catch(e){}
 fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.ok?r.json():null}).then(function(j){
   if(!j||!j.version||j.version===V)return;
   try{sessionStorage.setItem(k,j.version);sessionStorage.setItem("zapos.pendingToast","Updated to v"+j.version);}catch(e){}
@@ -22,7 +22,7 @@ fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){retu
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ZAP//OS">
 <meta name="format-detection" content="telephone=no">
-<link rel="manifest" href="/os/manifest.webmanifest?v=3.8.0">
+<link rel="manifest" href="/os/manifest.webmanifest?v=3.9.0">
 <link rel="apple-touch-icon" href="/os/icon-180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/os/icon-192.png">
 <link rel="preconnect" href="https://api.open-meteo.com" crossorigin>
@@ -30,7 +30,7 @@ fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){retu
 <link rel="preconnect" href="https://tile.openstreetmap.org" crossorigin>
 <link rel="dns-prefetch" href="https://a.tile.openstreetmap.org">
 <link rel="preconnect" href="https://nominatim.openstreetmap.org" crossorigin>
-<link rel="stylesheet" href="/os/app.css?v=3.8.0">
+<link rel="stylesheet" href="/os/app.css?v=3.9.0">
 <script>try{var z=JSON.parse(localStorage.getItem("zapos.device")||"{}").themeCss;if(z&&z.css){var s=document.createElement("style");s.textContent=z.css;document.head.appendChild(s);if(z.light)document.documentElement.classList.add("light");var m=document.querySelector('meta[name="theme-color"]');if(m&&z.meta)m.setAttribute("content",z.meta);}}catch(e){}</script>
 </head>
 <body class="cyber">
@@ -48,7 +48,7 @@ fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){retu
 <div id="app">
 
  <header class="top sticky" id="top">
-  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver">v3.8.0</span></div>
+  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver">v3.9.0</span></div>
   <div class="top-r">
    <span class="sync" id="hSync"><i aria-hidden="true"></i>SYNCED</span>
    <button class="h-theme" data-theme-btn aria-label="Change theme" title="Change theme"><i aria-hidden="true"></i>THEME</button>
@@ -146,15 +146,19 @@ fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){retu
    <div class="map-v" id="mapV" aria-label="Live map">
     <div class="map-stage" id="mapStage">
      <div class="map-tiles" id="mapTiles"></div>
+     <div class="map-markers" id="mapMarkers" aria-hidden="true">
+      <i class="map-acc" aria-hidden="true"></i>
+      <i class="map-radar" aria-hidden="true"></i>
+      <i class="map-heading" aria-hidden="true" hidden></i>
+      <i class="map-dot" id="mapDot" hidden></i>
+     </div>
     </div>
     <i class="map-shade" aria-hidden="true"></i>
-    <i class="map-radar" aria-hidden="true"></i>
-    <i class="map-dot" id="mapDot" hidden></i>
     <span class="map-msg" id="mapMsg">LOCATING…</span>
     <div class="map-tools" aria-hidden="false">
      <button type="button" class="map-tool" id="mapIn" aria-label="Zoom in">+</button>
      <button type="button" class="map-tool" id="mapOut" aria-label="Zoom out">−</button>
-     <button type="button" class="map-tool" id="mapRec" aria-label="Recenter on me">◎</button>
+     <button type="button" class="map-tool map-rec" id="mapRec" aria-label="Recenter on me" hidden>◎</button>
     </div>
     <a class="map-attr" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap</a>
    </div>
@@ -166,11 +170,19 @@ fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){retu
   </div>
 
   <div class="row2">
-   <button class="card br h-mk" id="hMk" type="button" aria-label="Show markets" aria-expanded="false" aria-controls="xpMk">
-    <div class="mk-h">MARKETS<span class="mk-t" id="hMkT">Updated --</span></div>
-    <div class="mk-items" id="hMkList"><span class="dim">Markets loading…</span></div>
-    <div class="mk-port" id="hMkPort" hidden></div>
-   </button>
+   <div class="card br h-mk" id="hMk" role="button" tabindex="0" aria-label="Show markets" aria-expanded="false" aria-controls="xpMk">
+    <div class="mk-h">MARKETS<span class="mk-t" id="hMkT">Updated --</span>
+     <button type="button" class="hmk-act" id="hMkAct" aria-label="Add or change account">＋</button>
+    </div>
+    <div class="hmk-body" id="hMkBody">
+     <div class="hmk-val" id="hMkPort"><span class="hmk-cta" data-hmk-add="1">Add your first account</span></div>
+     <div class="hmk-quotes" id="hMkQuotes">
+      <span class="hmk-q" data-sym="BTC"><b>BTC</b> <span class="px">--</span> <i class="ch">--</i></span>
+      <span class="hmk-q" data-sym="GOLD"><b>GOLD</b> <span class="px">--</span> <i class="ch">--</i></span>
+     </div>
+    </div>
+    <div class="mk-items" id="hMkList" hidden></div>
+   </div>
 
    <button class="card br focus-card" id="mFocus" type="button" aria-label="Focus timer: tap to start or pause">
     <div class="mk-h">FOCUS</div>
@@ -258,10 +270,32 @@ fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){retu
  <div class="sheet-h"><b id="sheetTitle">MENU</b><button class="chip" id="sheetClose" aria-label="Close" type="button">✕ CLOSE</button></div>
  <div class="sheet-b" id="sheetBody"></div>
 </div>
+
+<button type="button" class="zap-fab" id="zapFab" aria-label="Open ZAP assistant" title="ZAP assistant">ZAP</button>
+<div class="zap-sheet" id="zapSheet" hidden role="dialog" aria-modal="false" aria-labelledby="zapTitle">
+ <div class="zap-h">
+  <b id="zapTitle">ZAP</b>
+  <span class="zap-badge" id="zapBadge">OFFLINE</span>
+  <button type="button" class="zap-mute" id="zapMute" aria-pressed="false" title="Mute voice">🔊</button>
+  <button type="button" class="chip" id="zapClose" aria-label="Close">✕</button>
+ </div>
+ <div class="zap-log" id="zapLog" aria-live="polite"></div>
+ <div class="zap-chips" id="zapChips"></div>
+ <form class="zap-form" id="zapForm" autocomplete="off">
+  <button type="button" class="zap-mic" id="zapMic" aria-label="Speak">🎤</button>
+  <input id="zapIn" type="text" enterkeyhint="send" placeholder="Ask ZAP… open maps, weather, net worth" aria-label="Message ZAP" maxlength="240">
+  <button type="submit" class="zap-send" aria-label="Send">GO</button>
+ </form>
+ <div class="zap-ai" id="zapAiBar" hidden>
+  <small id="zapAiStatus">On-device AI off</small>
+  <button type="button" class="chip" id="zapAiBtn">AI</button>
+ </div>
+</div>
+
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/os/catalog.js?v=3.8.0"></script>
-<script src="/os/sky.js?v=3.8.0"></script>
-<script src="/os/app.js?v=3.8.0"></script>
+<script src="/os/catalog.js?v=3.9.0"></script>
+<script src="/os/sky.js?v=3.9.0"></script>
+<script src="/os/app.js?v=3.9.0"></script>
 </body>
 </html>
