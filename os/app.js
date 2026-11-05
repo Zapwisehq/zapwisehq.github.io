@@ -1,7 +1,7 @@
-/* ZAPWISE//OS web app v4.5.0 (Nov 5, 2026). One-page cyberpunk HUD — no sound, no tab bar, Lite-first on phones. Static, no API keys. */
+/* ZAPWISE//OS web app v4.6.0 (Nov 5, 2026). One-page HUD — card detail sheets restored. No sound, no tabs. Static, no API keys. */
 (function () {
 "use strict";
-var VERSION = "4.5.0";
+var VERSION = "4.6.0";
 var APP_VERSION = VERSION;
 
 // v4.5: default Lite on coarse/mobile unless user already chose
@@ -123,8 +123,9 @@ function ensurePanelsVisible() {
     var el = document.getElementById(id);
     if (el && el.hasAttribute("hidden") && id.indexOf("xp") !== 0) { /* leave intentional hidden alone */ }
   });
-  var xpWx = document.getElementById("xpWx"); if (xpWx) { xpWx.hidden = true; }
-  var xpMk = document.getElementById("xpMk"); if (xpMk) { xpMk.hidden = true; }
+  var openKind = (typeof CARD_DETAIL !== "undefined" && CARD_DETAIL && CARD_DETAIL.kind) ? CARD_DETAIL.kind : null;
+  var xpWx = document.getElementById("xpWx"); if (xpWx && openKind !== "wx") { xpWx.hidden = true; xpWx.classList.remove("as-detail"); }
+  var xpMk = document.getElementById("xpMk"); if (xpMk && openKind !== "mk") { xpMk.hidden = true; xpMk.classList.remove("as-detail"); }
   try { mountPhoneScreen(); } catch (e) {}
 }
 
@@ -2287,7 +2288,9 @@ var mapOut = $("#mapOut"); if (mapOut) mapOut.addEventListener("click", function
 var mapRec = $("#mapRec"); if (mapRec) mapRec.addEventListener("click", function (e) { e.stopPropagation(); mapRecenter(); });
 // avoid opening Maps when the user just panned
 $("#hMap").addEventListener("click", function (e) {
-  if (e.target.closest(".map-tool,.map-attr,.map-open,.map-v")) return;
+  if (e.target.closest(".map-tool,.map-attr,.map-open,.map-v,.map-fs-close,.map-fs-ext,.map-place-card,.map-place-pin")) return;
+  if (document.documentElement.classList.contains("map-fs-open")) return;
+  openMapOverlay();
 });
 window.addEventListener("resize", function () { clearTimeout(renderMap.t); renderMap.t = setTimeout(function () { MAP._key = null; renderMap(true); }, 150); });
 
@@ -2680,11 +2683,92 @@ $("#hWx").addEventListener("click", function () { toggleXp("wx"); });
   var act = $("#hMkAct");
   if (act) act.addEventListener("click", openAdd);
 })();
-function toggleXp(k) {
-  if (k === "wx") { setHudTab("weather"); try { renderWeather(); renderConditions(); } catch (e) {} return; }
-  if (k === "mk") { setHudTab("markets"); try { renderMarkets(); } catch (e) {} return; }
+/* v4.6: card detail sheets — restore v3.7.1 expand content in a slide-up sheet */
+var CARD_DETAIL = { kind: null, scrollY: 0 };
+function detailPanel(k) { return $(k === "wx" ? "#xpWx" : "#xpMk"); }
+function detailBtn(k) { return $(k === "wx" ? "#hWx" : "#hMk"); }
+function isCardDetailOpen() {
+  if (!CARD_DETAIL.kind) return false;
+  var el = detailPanel(CARD_DETAIL.kind);
+  return !!(el && !el.hidden && el.classList.contains("as-detail"));
 }
-$("#xpCity").addEventListener("click", function () { openCity(); });
+function closeCardDetail(skipHist) {
+  var k = CARD_DETAIL.kind;
+  if (!k) return;
+  var el = detailPanel(k), btn = detailBtn(k);
+  if (el) {
+    el.hidden = true;
+    el.classList.remove("as-detail");
+    try { document.documentElement.classList.remove("detail-open"); } catch (eD2) {}
+    el.style.transform = "";
+    try { el.removeAttribute("role"); } catch (e0) {}
+  }
+  if (btn) btn.setAttribute("aria-expanded", "false");
+  CARD_DETAIL.kind = null;
+  hideScrimIfIdle();
+  if (!skipHist && !anyOverlayOpen()) overlayClearHistory();
+  try {
+    var y = CARD_DETAIL.scrollY || 0;
+    requestAnimationFrame(function () { try { window.scrollTo(0, y); } catch (e1) {} });
+  } catch (e2) {}
+}
+function openCardDetail(k) {
+  if (k !== "wx" && k !== "mk") return;
+  var el = detailPanel(k), btn = detailBtn(k);
+  if (!el) return;
+  /* toggle closed if same detail already open */
+  if (CARD_DETAIL.kind === k && !el.hidden) { closeCardDetail(false); return; }
+  if (CARD_DETAIL.kind && CARD_DETAIL.kind !== k) closeCardDetail(true);
+  /* Mark detail open BEFORE closing other overlays. closeZapAssistant/hideMapPlaceCard
+     call overlayClearHistory when anyOverlayOpen() is false — that history.back() races
+     a popstate that would dismiss the sheet we are about to show. */
+  CARD_DETAIL.kind = k;
+  CARD_DETAIL.scrollY = window.scrollY || document.documentElement.scrollTop || 0;
+  el.hidden = false;
+  el.classList.add("as-detail");
+  try { document.documentElement.classList.add("detail-open"); } catch (eD) {}
+  el.setAttribute("role", "dialog");
+  el.setAttribute("aria-modal", "true");
+  if (btn) btn.setAttribute("aria-expanded", "true");
+  try { closeZapAssistant(true); } catch (eZ) {}
+  try { closeSheet(true); } catch (eS) {}
+  try { hideMapPlaceCard(); } catch (eM) {}
+  showScrim("detail");
+  overlayPushHistory();
+  /* paint then render so canvas has size */
+  requestAnimationFrame(function () {
+    try {
+      if (k === "wx") { renderWeather(); renderConditions(); }
+      else { renderMarkets(); try { renderHoldings(); } catch (eH) {} try { renderAccounts(); } catch (eA) {} }
+    } catch (eR) {}
+    try { el.scrollTop = 0; } catch (eT) {}
+  });
+}
+function toggleXp(k) {
+  if (k === "wx" || k === "mk") { openCardDetail(k); return; }
+}
+$("#xpCity").addEventListener("click", function (e) { e.stopPropagation(); openCity(); });
+(function bindDetailInner() {
+  ["#xpWx", "#xpMk"].forEach(function (sel) {
+    var el = $(sel); if (!el || el._detailInner) return; el._detailInner = true;
+    el.addEventListener("click", function (e) {
+      if (e.target.closest("button,a,input,select,label,[data-acct],[data-hold-del],[data-m]")) e.stopPropagation();
+    });
+  });
+})();
+(function ensureDetailClose() {
+  function ensure(sel) {
+    var el = $(sel); if (!el) return;
+    var h = el.querySelector(".xp-h"); if (!h) return;
+    if (h.querySelector(".detail-close")) return;
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "chip detail-close"; b.setAttribute("aria-label", "Close");
+    b.textContent = "✕ CLOSE";
+    b.addEventListener("click", function (e) { e.stopPropagation(); closeCardDetail(false); });
+    h.appendChild(b);
+  }
+  ensure("#xpWx"); ensure("#xpMk");
+})();
 $("#xpMkEdit").addEventListener("click", function () { openEditCoins(); });
 var _xpHoldAdd = $("#xpHoldAdd"); if (_xpHoldAdd) _xpHoldAdd.addEventListener("click", function () { openAddHolding(); });
 var _xpAcctAdd = $("#xpAcctAdd"); if (_xpAcctAdd) _xpAcctAdd.addEventListener("click", function () { openAddAccount(); });
@@ -2740,7 +2824,7 @@ document.addEventListener("click", function (e) {
 var OVERLAY = { hist: false, closingFromPop: false, swipeY0: 0, swipeEl: null };
 function anyOverlayOpen() {
   var sh = $("#sheet"), zap = $("#zapSheet"), card = $("#mapPlaceCard");
-  return (sh && !sh.hidden) || (zap && !zap.hidden) || (card && !card.hidden);
+  return (sh && !sh.hidden) || (zap && !zap.hidden) || (card && !card.hidden) || isCardDetailOpen() || !!(document.documentElement.classList.contains("map-fs-open"));
 }
 function showScrim(kind) {
   var sc = $("#scrim"); if (!sc) return;
@@ -2750,7 +2834,7 @@ function showScrim(kind) {
 function hideScrimIfIdle() {
   var sc = $("#scrim"); if (!sc) return;
   var sh = $("#sheet"), zap = $("#zapSheet");
-  if ((sh && !sh.hidden) || (zap && !zap.hidden)) return;
+  if ((sh && !sh.hidden) || (zap && !zap.hidden) || isCardDetailOpen()) return;
   sc.hidden = true; sc.classList.remove("zap-open");
 }
 function overlayPushHistory() {
@@ -2767,6 +2851,8 @@ function dismissTopOverlay(fromPop) {
   var zap = $("#zapSheet"), sh = $("#sheet"), card = $("#mapPlaceCard");
   if (zap && !zap.hidden) { try { closeZapAssistant(); } catch (e) {} }
   else if (sh && !sh.hidden) { try { closeSheet(true); } catch (e) {} }
+  else if (isCardDetailOpen()) { try { closeCardDetail(true); } catch (e) {} }
+  else if (document.documentElement.classList.contains("map-fs-open")) { try { closeMapOverlay(); } catch (e) {} }
   else if (card && !card.hidden) { try { hideMapPlaceCard(); } catch (e) {} }
   hideScrimIfIdle();
   if (!anyOverlayOpen()) overlayClearHistory();
@@ -2776,6 +2862,8 @@ function dismissAllOverlays(fromPop) {
   OVERLAY.closingFromPop = !!fromPop;
   try { closeZapAssistant(); } catch (e) {}
   try { closeSheet(true); } catch (e) {}
+  try { closeCardDetail(true); } catch (e) {}
+  try { closeMapOverlay(); } catch (e) {}
   try { hideMapPlaceCard(); } catch (e) {}
   hideScrimIfIdle();
   if (!fromPop) overlayClearHistory();
@@ -2785,6 +2873,7 @@ function dismissAllOverlays(fromPop) {
 function sheet(title, html, bind) {
   // fresh body each time: listeners bound by the previous sheet must not fire here (the music list's
   // [data-m] handler used to close Edit Apps when you tapped ↑/↓/toggle, which also use data-m)
+  try { closeCardDetail(true); } catch (eCd) {}
   var old = $("#sheetBody"), nb = old.cloneNode(false); old.parentNode.replaceChild(nb, old);
   $("#sheetTitle").textContent = title; nb.innerHTML = html; $("#sheet").hidden = false;
   showScrim("sheet");
@@ -2832,7 +2921,7 @@ window.addEventListener("popstate", function () {
       if (!e.touches || e.touches.length !== 1) return;
       /* only from header / top area */
       var t = e.target;
-      if (!(t.closest && (t.closest(".sheet-h") || t.closest(".zap-h") || t === el))) {
+      if (!(t.closest && (t.closest(".sheet-h") || t.closest(".zap-h") || t.closest(".xp-h") || t === el))) {
         var rect = el.getBoundingClientRect();
         if (e.touches[0].clientY > rect.top + 56) return;
       }
@@ -2852,6 +2941,8 @@ window.addEventListener("popstate", function () {
   }
   bindSwipe($("#sheet"));
   bindSwipe($("#zapSheet"));
+  bindSwipe($("#xpWx"));
+  bindSwipe($("#xpMk"));
 })();
 $("#dEdit").addEventListener("click", function () { openEditApps(); });
 $("#editMkBtn").addEventListener("click", function () { openEditCoins(); });
@@ -3968,7 +4059,7 @@ function runSearch(q) {
   });
   document.addEventListener("click", function (e) { if (!f.contains(e.target)) hideDrop(); });
 })();
-window.ZAPOS = { store: Store, version: VERSION, setHudTab: setHudTab, catalog: CATALOG.length, accounts: ACCOUNT_CATALOG.length, openDirectionsTo: openDirectionsTo, placeLL: placeLL, showMapPlaceCard: showMapPlaceCard, loadAccounts: loadAccounts, loadPlaces: loadPlaces, setGPS: function (g) { GPS = g; Store.setLocal("gps", GPS); try { updateGpsLockChip(); } catch (e) {} }, mapFollow: function (on) { MAP.follow = !!on; }, updateSkyline: updateSkyline, setUiSounds: setUiSounds, sfxTap: sfxTap, sfxSuccess: sfxSuccess, sfxError: sfxError, sunPeriodNow: sunPeriodNow }; // for the stage 2 sync add-on + QA
+window.ZAPOS = { store: Store, version: VERSION, openCardDetail: openCardDetail, closeCardDetail: closeCardDetail, toggleXp: toggleXp, setHudTab: setHudTab, catalog: CATALOG.length, accounts: ACCOUNT_CATALOG.length, openDirectionsTo: openDirectionsTo, placeLL: placeLL, showMapPlaceCard: showMapPlaceCard, loadAccounts: loadAccounts, loadPlaces: loadPlaces, setGPS: function (g) { GPS = g; Store.setLocal("gps", GPS); try { updateGpsLockChip(); } catch (e) {} }, mapFollow: function (on) { MAP.follow = !!on; }, updateSkyline: updateSkyline, setUiSounds: setUiSounds, sfxTap: sfxTap, sfxSuccess: sfxSuccess, sfxError: sfxError, sunPeriodNow: sunPeriodNow }; // for the stage 2 sync add-on + QA
 
 // ========== v3.1 concept chrome: menu, today ==========
 var menuBtn = $("#menuBtn"); if (menuBtn) menuBtn.addEventListener("click", openMenu);
@@ -4362,11 +4453,11 @@ function openZapAssistant() {
   /* no 3D orb — flat mic button only */
   setTimeout(function () { try { $("#zapIn").focus(); } catch (e) {} }, 40);
 }
-function closeZapAssistant() {
+function closeZapAssistant(skipHist) {
   var sheet = $("#zapSheet"); if (sheet) { sheet.hidden = true; sheet.style.transform = ""; }
   try { stopZapListen(); } catch (e) {}
   hideScrimIfIdle();
-  if (!anyOverlayOpen()) overlayClearHistory();
+  if (!skipHist && !anyOverlayOpen()) overlayClearHistory();
 }
 function updateZapBadge() {
   var b = $("#zapBadge"); if (!b) return;

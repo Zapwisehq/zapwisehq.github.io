@@ -7,13 +7,13 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="description" content="ZAPWISE//OS: calm glass HUD — clock, weather, map, markets, focus, apps.">
 <meta name="theme-color" content="#070814">
-<meta name="zapos-version" content="4.5.0">
+<meta name="zapos-version" content="4.6.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="/os/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/os/icon-180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/os/icon-192.png">
-<link rel="stylesheet" href="/os/app.css?v=4.5.0">
+<link rel="stylesheet" href="/os/app.css?v=4.6.0">
 <script>
 (function(){try{var raw=localStorage.getItem("zapos.device");var j=raw?JSON.parse(raw):{};if(!j||typeof j!=="object")j={};if(!Object.prototype.hasOwnProperty.call(j,"liteMode")){var m=false;try{m=(window.matchMedia&&(matchMedia("(pointer: coarse)").matches||matchMedia("(max-width: 900px)").matches))||/iPhone|iPad|iPod|Android/i.test(navigator.userAgent||"")||navigator.standalone===true;}catch(e0){}if(m){j.liteMode=true;localStorage.setItem("zapos.device",JSON.stringify(j));}}if(j.liteMode)document.documentElement.classList.add("fx-lite");}catch(e){}
 try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.themeCss){var s=document.createElement("style");s.id="themeBoot";s.textContent=p.themeCss;document.head.appendChild(s);}}}catch(e){}})();
@@ -29,7 +29,7 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
 <div id="app">
 
  <header class="top sticky" id="top">
-  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver">v4.5.0</span></div>
+  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver">v4.6.0</span></div>
   <div class="top-r">
    <span class="sync" id="hSync"><i aria-hidden="true"></i>LIVE</span>
    <span class="hud-chip gps" id="hGpsLock" data-lock="0" hidden><i aria-hidden="true"></i>GPS —</span>
@@ -61,7 +61,7 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
    </div>
   </div>
 
-  <button class="card br h-wx" id="hWx" type="button" aria-label="Show more weather" aria-expanded="false" aria-controls="xpWx">
+  <button class="card br h-wx" id="hWx" type="button" aria-label="Open weather detail" aria-expanded="false" aria-controls="xpWx">
    <canvas class="fx" id="fxHud" aria-hidden="true"></canvas>
    <span class="hw-in">
     <span class="hw-top">
@@ -139,7 +139,7 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
   </div>
 
   <div class="row2">
-   <button class="card br h-mk" id="hMk" type="button" aria-label="Show markets" aria-expanded="false" aria-controls="xpMk">
+   <button class="card br h-mk" id="hMk" type="button" aria-label="Open markets detail" aria-expanded="false" aria-controls="xpMk">
     <div class="mk-h">MARKETS<span class="mk-t" id="hMkT">Updated --</span></div>
     <div class="mk-items" id="hMkList"><span class="dim">Markets loading…</span></div>
     <div class="mk-port" id="hMkPort" hidden></div>
@@ -164,6 +164,7 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
   </div>
 
   <div class="xp" id="xpMk" hidden>
+   <div class="xp-h detail-head"><b id="xpMkTitle">MARKETS</b></div>
    <div class="port-hero" id="portHero" aria-label="Portfolio net worth">
     <div class="ph-kicker">PORTFOLIO · LIVE</div>
     <b class="ph-total" id="holdTotalV">$0</b>
@@ -272,8 +273,8 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/os/catalog.js?v=4.5.0"></script>
-<script src="/os/sky.js?v=4.5.0"></script>
-<script src="/os/app.js?v=4.5.0"></script>
+<script src="/os/catalog.js?v=4.6.0"></script>
+<script src="/os/sky.js?v=4.6.0"></script>
+<script src="/os/app.js?v=4.6.0"></script>
 </body>
 </html>

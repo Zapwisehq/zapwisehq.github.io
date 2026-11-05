@@ -1,6 +1,6 @@
 {
-  "version": "4.5.0",
+  "version": "4.6.0",
   "released": "2026-11-05",
   "name": "ZAPWISE//OS",
-  "notes": "CEO polish: 44px taps, LIVE status, Lite default on phones, skip standalone boot, no AI upsell tiles, copy cleanup, ghost DOM removed"
+  "notes": "Restore Weather/Markets card detail sheets (v3.7.1 content + slide-up UX); map card opens overlay; Back/scrim/swipe close"
 }

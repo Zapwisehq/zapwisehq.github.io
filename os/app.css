@@ -773,3 +773,22 @@ button:focus-visible,a:focus-visible,input:focus-visible,.chip:focus-visible,.ti
 .h-map.map-fs .map-fs-close,.h-map.map-fs .map-fs-ext{min-height:44px;min-width:72px;z-index:13;position:relative}
 .h-map.map-fs .map-tools{z-index:12;bottom:max(12px,env(safe-area-inset-bottom))}
 .h-map.map-fs .map-v{position:relative;z-index:1}
+
+
+/* ===== v4.6.0 card detail sheets (weather / markets) ===== */
+.xp.as-detail{
+  position:fixed;left:50%;bottom:0;transform:translateX(-50%);
+  z-index:92;width:min(560px,100%);max-height:min(88dvh,760px);
+  margin:0;padding:12px 14px calc(18px + env(safe-area-inset-bottom));
+  border-radius:22px 22px 0 0;border:1px solid var(--line2);border-bottom:0;
+  background:rgba(8,10,22,.97);box-shadow:0 -20px 60px rgba(0,0,0,.55);
+  overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+}
+.xp.as-detail .xp-h{position:sticky;top:0;z-index:2;padding:4px 0 10px;margin:0 0 8px;background:rgba(8,10,22,.96);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.xp.as-detail .xp-h b{flex:1;min-width:0}
+.xp.as-detail .detail-close{margin-left:auto}
+.xp.as-detail .wx-temp-chart,.xp.as-detail .wx-precip-chart,.xp.as-detail .hold-chart{max-width:100%;height:auto}
+.xp.as-detail .wx-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+html.detail-open,html.detail-open body{overflow:hidden}
+#scrim:not([hidden]){z-index:88}
