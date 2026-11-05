@@ -5,12 +5,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>ZAPWISE//OS</title>
 <meta name="robots" content="noindex,follow">
-<meta name="description" content="ZAPWISE//OS: cinematic neon city — scroll to fly, glass HUD panels for clock, weather, markets, map and apps.">
+<meta name="description" content="ZAPWISE//OS: simple cyberpunk HUD — Home, Apps, Map, Markets, Weather, Phone. Shortcuts first.">
 <meta name="theme-color" content="#070814">
-<meta name="zapos-version" content="4.0.0">
+<meta name="zapos-version" content="4.1.0">
 <script>
 /* Early update probe — runs even before app.js. Reloads once if /os/version.json is newer. */
-(function(){var V="4.0.0",k="zapos.bootReload";try{if(sessionStorage.getItem(k)===V)return;}catch(e){}
+(function(){var V="4.1.0",k="zapos.bootReload";try{if(sessionStorage.getItem(k)===V)return;}catch(e){}
 fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.ok?r.json():null}).then(function(j){
   if(!j||!j.version||j.version===V)return;
   try{sessionStorage.setItem(k,j.version);sessionStorage.setItem("zapos.pendingToast","Updated to v"+j.version);}catch(e){}
@@ -20,9 +20,9 @@ fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){retu
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="ZAP//OS">
+<meta name="apple-mobile-web-app-title" content="OS">
 <meta name="format-detection" content="telephone=no">
-<link rel="manifest" href="/os/manifest.webmanifest?v=4.0.0">
+<link rel="manifest" href="/os/manifest.webmanifest?v=4.1.0">
 <link rel="apple-touch-icon" href="/os/icon-180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/os/icon-192.png">
 <link rel="preconnect" href="https://api.open-meteo.com" crossorigin>
@@ -32,8 +32,8 @@ fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){retu
 <link rel="preconnect" href="https://nominatim.openstreetmap.org" crossorigin>
 <link rel="dns-prefetch" href="https://tiles.openfreemap.org">
 <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
-<link rel="stylesheet" href="/os/app.css?v=4.0.0">
-<link rel="stylesheet" href="/os/cinematic.css?v=4.0.0">
+<link rel="stylesheet" href="/os/app.css?v=4.1.0">
+<link rel="stylesheet" href="/os/cinematic.css?v=4.1.0">
 <script>try{var z=JSON.parse(localStorage.getItem("zapos.device")||"{}").themeCss;if(z&&z.css){var s=document.createElement("style");s.textContent=z.css;document.head.appendChild(s);if(z.light)document.documentElement.classList.add("light");var m=document.querySelector('meta[name="theme-color"]');if(m&&z.meta)m.setAttribute("content",z.meta);}}catch(e){}</script>
 </head>
 <body class="cyber">
@@ -52,7 +52,7 @@ fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){retu
 <div id="app">
 
  <header class="top sticky hud-top" id="top">
-  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver">v4.0.0</span></div>
+  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver">v4.1.0</span></div>
   <div class="hud-status" id="hudStatus" aria-label="System status">
    <span class="hud-chip sync" id="hSync"><i aria-hidden="true"></i>SYNCED</span>
    <span class="hud-chip gps" id="hGpsLock" data-lock="0"><i aria-hidden="true"></i>GPS —</span>
@@ -65,17 +65,18 @@ fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){retu
  </header>
 
  <main>
- <section class="view" id="v-home" aria-label="Home">
-
-  <form class="h-srch" id="srch" role="search" autocomplete="off">
+ 
+ <section class="view hud-screens" id="v-home" aria-label="Home">
+  <div class="hud-screen on" id="screen-home" data-screen="home">
+   <div class="sec-title">HOME</div>
+   <form class="h-srch" id="srch" role="search" autocomplete="off">
    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M15.5 15.5L21 21" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
    <input id="srchQ" type="search" enterkeyhint="go" placeholder="Search any app or the web." aria-label="Search apps or the web" autocapitalize="off" spellcheck="false" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="srchDrop" aria-autocomplete="list">
    <span class="srch-h" id="srchHint" aria-hidden="true"><kbd>⌘</kbd>K</span>
    <div class="srch-drop" id="srchDrop" role="listbox" hidden></div>
   </form>
-
-  <div class="row2">
-   <div class="card br hero hud-panel" id="heroCard">
+   <div class="row2">
+    <div class="card br hero hud-panel" id="heroCard">
     <div class="hud-ticks" aria-hidden="true"></div>
     <div class="skyline" id="skyline" aria-hidden="true" data-period="night" data-wx="">
      <div class="sky-wash"></div>
@@ -96,23 +97,8 @@ fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){retu
      <span class="greet" id="greet">Systems online</span>
     </div>
    </div>
-
-   <div class="card br play hud-panel" id="hPlay">
-    <div class="np-top hud-h">
-     <span>MUSIC</span>
-     <button type="button" class="np-live" id="npLive" data-media-act="pick" aria-label="Choose music app">SWITCH ▾</button>
-    </div>
-    <div class="np-body">
-     <button type="button" class="np-pick" data-media-act="pick" aria-label="Choose music app">
-      <img class="np-art" id="npArt" src="/os/icons/music.jpg" alt="">
-      <span class="np-meta"><b id="npTitle">Choose a music app</b><small id="npArtist">Tap to switch</small></span>
-     </button>
-     <button type="button" class="np-play" data-media-act="play" aria-label="Open music app">▶</button>
-    </div>
    </div>
-  </div>
-
-  <button class="card br h-wx hud-panel" id="hWx" type="button" aria-label="Show more weather" aria-expanded="false" aria-controls="xpWx">
+   <button class="card br h-wx hud-panel" id="hWx" type="button" aria-label="Weather summary" data-go-tab="weather">
    <canvas class="fx" id="fxHud" aria-hidden="true"></canvas>
    <span class="hw-in">
     <span class="hw-top">
@@ -127,33 +113,43 @@ fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){retu
     <span class="hw-meta"><span id="hwHL"></span><span id="hwFeels"></span><span id="hwRain"></span><span class="hw-upd" id="hwUpd">UPD --</span></span>
    </span>
   </button>
-
-  <div class="xp wx-cond" id="xpWx" hidden>
-   <div class="xp-h"><b id="xpPlace">CONDITIONS</b><button class="chip" id="xpCity" type="button">◎ CHANGE CITY</button></div>
-   <div class="wx-days" id="wxDayPick" role="tablist" aria-label="Forecast days"></div>
-   <div class="wx-day-label" id="wxDayLabel">—</div>
-   <div class="wx-chart-head"><span class="wx-hl" id="wxChartHL">--°</span><span class="wx-unit" id="wxUnitLbl">Fahrenheit (°F)</span></div>
-   <div class="wx-icons" id="wxHourIcons" aria-hidden="true"></div>
-   <canvas class="wx-temp-chart" id="wxTempChart" width="720" height="220" aria-label="Hourly temperature chart"></canvas>
-   <div class="wx-xlabels" id="wxXLabels"><span>12AM</span><span>6AM</span><span>12PM</span><span>6PM</span></div>
-   <div class="wx-tog" role="group" aria-label="Temperature type">
-    <button type="button" class="wx-tog-b on" data-wxmode="actual" id="wxModeActual">Actual</button>
-    <button type="button" class="wx-tog-b" data-wxmode="feels" id="wxModeFeels">Feels Like</button>
+   <div class="card br h-mk hud-panel" id="hMk" role="button" tabindex="0" aria-label="Markets summary" data-go-tab="markets">
+    <div class="mk-h hud-h">MARKETS<span class="mk-t" id="hMkT">Updated --</span>
+     <button type="button" class="hmk-act" id="hMkAct" aria-label="Add or change account">＋</button>
+    </div>
+    <div class="hmk-body" id="hMkBody">
+     <div class="hmk-val" id="hMkPort"><span class="hmk-cta" data-hmk-add="1">Add your first account</span></div>
+     <div class="hmk-quotes" id="hMkQuotes">
+      <span class="hmk-q" data-sym="BTC"><b>BTC</b> <span class="px">--</span> <i class="ch">--</i></span>
+      <span class="hmk-q" data-sym="GOLD"><b>GOLD</b> <span class="px">--</span> <i class="ch">--</i></span>
+     </div>
+    </div>
+    <div class="mk-items" id="hMkList" hidden></div>
    </div>
-   <p class="wx-tog-cap" id="wxModeCap">The actual temperature.</p>
-   <div class="wx-precip-h">Chance of Precipitation</div>
-   <div class="wx-precip-sum" id="wxPrecipSum">—</div>
-   <canvas class="wx-precip-chart" id="wxPrecipChart" width="720" height="120" aria-label="Precipitation chance chart"></canvas>
-   <div class="wx-scrub" id="wxScrub" hidden>
-    <span class="wx-scrub-t" id="wxScrubT">—</span>
-    <span class="wx-scrub-v" id="wxScrubV">—</span>
-   </div>
-   <p class="wx-summary" id="wxSummary">—</p>
-   <div class="wx-grid" id="wxGrid" aria-label="Weather details"></div>
-   <p class="note" id="xpNote"></p>
+   <div class="card br today" id="today">
+   <div class="td-ico" aria-hidden="true"><small>TODAY</small><b id="tdDay">—</b></div>
+   <button type="button" class="td-item" id="tdCal" aria-label="Open Calendar">
+    <span class="td-k">Calendar</span>
+    <span class="td-v" id="tdCalV">Open today’s schedule</span>
+   </button>
+   <button type="button" class="td-item" id="tdNote" aria-label="Open Notes">
+    <span class="td-k">Note</span>
+    <span class="td-v" id="tdNoteV">Open Notes</span>
+   </button>
+  </div>
   </div>
 
-  <div class="card br h-map hud-panel" id="hMap">
+  <div class="hud-screen" id="screen-apps" data-screen="apps" hidden>
+   <div class="sec-title">APPS</div>
+   <div class="card br apps-card apps-wrap" id="appsSection">
+   <div class="sec-h">APPS <span class="sec-actions"><button class="chip accent" id="findApp" type="button">⌕ FIND</button><button class="chip" id="dEdit" type="button">✎ EDIT</button></span></div>
+   <div class="apps" id="apps" role="list"></div>
+  </div>
+  </div>
+
+  <div class="hud-screen" id="screen-map" data-screen="map" hidden>
+   <div class="sec-title">MAP</div>
+   <div class="card br h-map hud-panel" id="hMap">
    <div class="map-h hud-h">
     <b id="hPlace">&gt; LOCATING…</b>
     <span class="map-h-r"><span id="hGps">GPS --</span>
@@ -182,47 +178,16 @@ fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){retu
     <span class="map-traffic-note" id="mapTrafficNote" title="No free live jam tiles for most regions">ETA via OSRM · no live jam colors</span>
    </div>
   </div>
-  <div class="places-row card br hud-panel" id="placesRow">
+   <div class="places-row card br hud-panel" id="placesRow">
    <div class="places-h hud-h"><b>PLACES</b><button type="button" class="chip" id="placeAdd" aria-label="Add a saved place">＋ ADD</button></div>
    <div class="places-scroller" id="placesList" role="list"></div>
    <p class="note places-note" id="placesNote">Save Home, Work, School or a custom spot. Tap a place for directions.</p>
   </div>
-
-  <div class="row2">
-   <div class="card br h-mk hud-panel" id="hMk" role="button" tabindex="0" aria-label="Show markets" aria-expanded="false" aria-controls="xpMk">
-    <div class="mk-h hud-h">MARKETS<span class="mk-t" id="hMkT">Updated --</span>
-     <button type="button" class="hmk-act" id="hMkAct" aria-label="Add or change account">＋</button>
-    </div>
-    <div class="hmk-body" id="hMkBody">
-     <div class="hmk-val" id="hMkPort"><span class="hmk-cta" data-hmk-add="1">Add your first account</span></div>
-     <div class="hmk-quotes" id="hMkQuotes">
-      <span class="hmk-q" data-sym="BTC"><b>BTC</b> <span class="px">--</span> <i class="ch">--</i></span>
-      <span class="hmk-q" data-sym="GOLD"><b>GOLD</b> <span class="px">--</span> <i class="ch">--</i></span>
-     </div>
-    </div>
-    <div class="mk-items" id="hMkList" hidden></div>
-   </div>
-
-   <button class="card br focus-card" id="mFocus" type="button" aria-label="Focus timer: tap to start or pause">
-    <div class="mk-h">FOCUS</div>
-    <div class="foc-wrap">
-     <svg class="foc-svg" viewBox="0 0 120 120" aria-hidden="true">
-      <circle class="foc-track" cx="60" cy="60" r="52"/>
-      <circle class="foc-ring" id="focRing" cx="60" cy="60" r="52"/>
-     </svg>
-     <div class="foc-mid">
-      <span class="foc-time" id="mFocV">25:00</span>
-      <span class="foc-status" id="mFocL">TAP TO START</span>
-     </div>
-    </div>
-    <span class="segs" id="mFoc" hidden></span>
-    <span class="segs" id="mDay" hidden></span>
-    <span id="mDayV" hidden></span>
-    <span id="mDayL" hidden></span>
-   </button>
   </div>
 
-  <div class="xp" id="xpMk" hidden>
+  <div class="hud-screen" id="screen-markets" data-screen="markets" hidden>
+   <div class="sec-title">MARKETS</div>
+   <div class="xp" id="xpMk">
    <div class="port-hero" id="portHero" aria-label="Portfolio net worth">
     <div class="ph-kicker">PORTFOLIO · LIVE</div>
     <b class="ph-total" id="holdTotalV">$0</b>
@@ -249,22 +214,78 @@ fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){retu
    <div class="stamp" id="xpMkStamp">UPDATED --</div>
    <p class="note">Holdings &amp; accounts stay on this device only. Stocks/broker lots use a manual price. Crypto prices via CoinGecko.</p>
   </div>
+  </div>
 
-  <div class="card br today" id="today">
-   <div class="td-ico" aria-hidden="true"><small>TODAY</small><b id="tdDay">—</b></div>
-   <button type="button" class="td-item" id="tdCal" aria-label="Open Calendar">
-    <span class="td-k">Calendar</span>
-    <span class="td-v" id="tdCalV">Open today’s schedule</span>
-   </button>
-   <button type="button" class="td-item" id="tdNote" aria-label="Open Notes">
-    <span class="td-k">Note</span>
-    <span class="td-v" id="tdNoteV">Open Notes</span>
+  <div class="hud-screen" id="screen-weather" data-screen="weather" hidden>
+   <div class="sec-title">WEATHER</div>
+   <div class="xp wx-cond" id="xpWx">
+   <div class="xp-h"><b id="xpPlace">CONDITIONS</b><button class="chip" id="xpCity" type="button">◎ CHANGE CITY</button></div>
+   <div class="wx-days" id="wxDayPick" role="tablist" aria-label="Forecast days"></div>
+   <div class="wx-day-label" id="wxDayLabel">—</div>
+   <div class="wx-chart-head"><span class="wx-hl" id="wxChartHL">--°</span><span class="wx-unit" id="wxUnitLbl">Fahrenheit (°F)</span></div>
+   <div class="wx-icons" id="wxHourIcons" aria-hidden="true"></div>
+   <canvas class="wx-temp-chart" id="wxTempChart" width="720" height="220" aria-label="Hourly temperature chart"></canvas>
+   <div class="wx-xlabels" id="wxXLabels"><span>12AM</span><span>6AM</span><span>12PM</span><span>6PM</span></div>
+   <div class="wx-tog" role="group" aria-label="Temperature type">
+    <button type="button" class="wx-tog-b on" data-wxmode="actual" id="wxModeActual">Actual</button>
+    <button type="button" class="wx-tog-b" data-wxmode="feels" id="wxModeFeels">Feels Like</button>
+   </div>
+   <p class="wx-tog-cap" id="wxModeCap">The actual temperature.</p>
+   <div class="wx-precip-h">Chance of Precipitation</div>
+   <div class="wx-precip-sum" id="wxPrecipSum">—</div>
+   <canvas class="wx-precip-chart" id="wxPrecipChart" width="720" height="120" aria-label="Precipitation chance chart"></canvas>
+   <div class="wx-scrub" id="wxScrub" >
+    <span class="wx-scrub-t" id="wxScrubT">—</span>
+    <span class="wx-scrub-v" id="wxScrubV">—</span>
+   </div>
+   <p class="wx-summary" id="wxSummary">—</p>
+   <div class="wx-grid" id="wxGrid" aria-label="Weather details"></div>
+   <p class="note" id="xpNote"></p>
+  </div>
+  </div>
+
+  <div class="hud-screen" id="screen-phone" data-screen="phone" hidden>
+   <div class="sec-title">PHONE</div>
+   <div class="card br" id="phoneMount" aria-label="Dial pad and favorites"></div>
+  </div>
+
+  <div class="hud-screen" id="screen-music" data-screen="music" hidden>
+   <div class="sec-title">MUSIC / FOCUS</div>
+   <div class="card br play hud-panel" id="hPlay">
+    <div class="np-top hud-h">
+     <span>MUSIC</span>
+     <button type="button" class="np-live" id="npLive" data-media-act="pick" aria-label="Choose music app">SWITCH ▾</button>
+    </div>
+    <div class="np-body">
+     <button type="button" class="np-pick" data-media-act="pick" aria-label="Choose music app">
+      <img class="np-art" id="npArt" src="/os/icons/music.jpg" alt="">
+      <span class="np-meta"><b id="npTitle">Choose a music app</b><small id="npArtist">Tap to switch</small></span>
+     </button>
+     <button type="button" class="np-play" data-media-act="play" aria-label="Open music app">▶</button>
+    </div>
+   </div>
+   <button class="card br focus-card" id="mFocus" type="button" aria-label="Focus timer: tap to start or pause">
+    <div class="mk-h">FOCUS</div>
+    <div class="foc-wrap">
+     <svg class="foc-svg" viewBox="0 0 120 120" aria-hidden="true">
+      <circle class="foc-track" cx="60" cy="60" r="52"/>
+      <circle class="foc-ring" id="focRing" cx="60" cy="60" r="52"/>
+     </svg>
+     <div class="foc-mid">
+      <span class="foc-time" id="mFocV">25:00</span>
+      <span class="foc-status" id="mFocL">TAP TO START</span>
+     </div>
+    </div>
+    <span class="segs" id="mFoc" hidden></span>
+    <span class="segs" id="mDay" hidden></span>
+    <span id="mDayV" hidden></span>
+    <span id="mDayL" hidden></span>
    </button>
   </div>
 
-  <div class="card br apps-card apps-wrap" id="appsSection">
-   <div class="sec-h">APPS <span class="sec-actions"><button class="chip accent" id="findApp" type="button">⌕ FIND</button><button class="chip" id="dEdit" type="button">✎ EDIT</button></span></div>
-   <div class="apps" id="apps" role="list"></div>
+  <div class="hud-screen" id="screen-settings" data-screen="settings" hidden>
+   <div class="sec-title">SETTINGS</div>
+   <div class="card br" id="settingsMount" aria-label="Settings"></div>
   </div>
 
   <!-- kept for expand/detail parity; hidden full pages unused in v3.1 one-screen -->
@@ -276,13 +297,24 @@ fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){retu
    <div id="mkList"></div><div id="mkStamp"></div><div id="editMkBtn"></div><div id="cityBtn"></div>
    <div id="hSunset"></div><div id="hWind"></div><div id="hStatus"></div>
   </div>
+ 
  </section>
 
- <section class="view" id="v-weather" aria-label="Weather" hidden></section>
- <section class="view" id="v-markets" aria-label="Markets" hidden></section>
  </main>
-<footer class="motto">No face. No hours. Just the shortcut.</footer>
+
+<footer class="motto" hidden>Shortcuts.</footer>
 </div>
+
+<nav class="hud-tabs" id="hudTabs" aria-label="Main sections">
+ <button type="button" data-tab="home" class="on" aria-current="page"><span class="ti" aria-hidden="true">⌂</span>Home</button>
+ <button type="button" data-tab="apps"><span class="ti" aria-hidden="true">▦</span>Apps</button>
+ <button type="button" data-tab="map"><span class="ti" aria-hidden="true">◎</span>Map</button>
+ <button type="button" data-tab="markets"><span class="ti" aria-hidden="true">₿</span>Markets</button>
+ <button type="button" data-tab="weather"><span class="ti" aria-hidden="true">☁</span>Weather</button>
+ <button type="button" data-tab="phone"><span class="ti" aria-hidden="true">☎</span>Phone</button>
+ <button type="button" data-tab="music"><span class="ti" aria-hidden="true">♪</span>Music</button>
+ <button type="button" data-tab="settings"><span class="ti" aria-hidden="true">⚙</span>Settings</button>
+</nav>
 
 <div class="scrim" id="scrim" hidden></div>
 <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" hidden>
@@ -290,17 +322,17 @@ fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){retu
  <div class="sheet-b" id="sheetBody"></div>
 </div>
 
-<button type="button" class="zap-fab zap-orb" id="zapFab" aria-label="Open ZAP assistant" title="ZAP assistant">
+<button type="button" class="zap-fab zap-orb asst" id="zapFab" aria-label="Open Assistant" title="Assistant">
  <span class="zap-orb3d" aria-hidden="true"></span>
  <span class="zap-hex" aria-hidden="true"></span>
  <svg class="zap-wave" id="zapWave" viewBox="0 0 64 24" aria-hidden="true" preserveAspectRatio="none">
   <polyline id="zapWaveLine" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" points="0,12 64,12"/>
  </svg>
- <span class="zap-lab">ZAP</span>
+ <span class="zap-lab">ASSIST</span>
 </button>
 <div class="zap-sheet" id="zapSheet" hidden role="dialog" aria-modal="false" aria-labelledby="zapTitle">
  <div class="zap-h">
-  <b id="zapTitle">ZAP</b>
+  <b id="zapTitle">Assistant</b>
   <span class="zap-badge" id="zapBadge">OFFLINE</span>
   <button type="button" class="zap-mute" id="zapMute" aria-pressed="false" title="Mute voice">🔊</button>
   <button type="button" class="chip" id="zapClose" aria-label="Close">✕</button>
@@ -309,7 +341,7 @@ fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){retu
  <div class="zap-chips" id="zapChips"></div>
  <form class="zap-form" id="zapForm" autocomplete="off">
   <button type="button" class="zap-mic" id="zapMic" aria-label="Speak">🎤</button>
-  <input id="zapIn" type="text" enterkeyhint="send" placeholder="Ask ZAP… call, directions, theme, search…" aria-label="Message ZAP" maxlength="240">
+  <input id="zapIn" type="text" enterkeyhint="send" placeholder="Ask… call, directions, theme, search…" aria-label="Message Assistant" maxlength="240">
   <button type="submit" class="zap-send" aria-label="Send">GO</button>
  </form>
  <div class="zap-ai" id="zapAiBar" hidden>
@@ -329,8 +361,8 @@ fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){retu
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/os/catalog.js?v=4.0.0"></script>
-<script src="/os/sky.js?v=4.0.0"></script>
-<script src="/os/app.js?v=4.0.0"></script>
+<script src="/os/catalog.js?v=4.1.0"></script>
+<script src="/os/sky.js?v=4.1.0"></script>
+<script src="/os/app.js?v=4.1.0"></script>
 </body>
 </html>

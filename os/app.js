@@ -1,24 +1,7 @@
-/* ZAPWISE//OS web app v4.0.0 (Nov 5, 2026). Cinematic neon city (Three.js fly-through) + glass HUD panels; keeps MapLibre/orb/Lite/Smart/honest traffic. Static, no API keys.
-   Data: Open-Meteo (weather + city search), api-bdc.io (city name for weather), CoinGecko (crypto + PAX Gold),
-   mempool.space (BTC balance), ethereum.publicnode.com (ETH balance), solana.publicnode.com (SOL balance),
-   OSM standard tiles (keyless, CSS dark filter) + Nominatim reverse geocoding (road + city, cached, re-queried only after moving > 40 m).
-
-   SECTIONS
-     1  config + DOM helpers        6  clock, meters, focus timer   11  sheets: menu, edit apps, add app,
-     2  STATE (one versioned store)  7  weather FX (canvas)              theme, city, watchlist, settings, help
-     3  themes                       8  weather data                12  return-to-app (restore view + scroll)
-     4  apps: data + migration       9  markets                     13  boot
-     5  apps: icons, open, render   10  map + tabs
-
-   STATE: everything the user chooses lives in ONE object, zapos.state = { v, updatedAt, prefs, ui }.
-     prefs = settings, theme, apps (list, order, on/off), coins (watchlist), loc (GPS mode or a saved city).
-     ui    = last view + scroll position of each view.
-   Live GPS coordinates, the street name, weather/market caches and the focus timer stay on this device only, in
-   zapos.device, and never go in the shared state. Stage 2 (sync) plugs in through Store.onChange / Store.snapshot /
-   Store.applyRemote below. */
+/* ZAPWISE//OS web app v4.1.0 (Nov 5, 2026). Tabbed cyberpunk HUD + calm Three.js city backdrop; keeps MapLibre/Lite/Smart/honest traffic. Static, no API keys. */
 (function () {
 "use strict";
-var VERSION = "4.0.0";
+var VERSION = "4.1.0";
 var APP_VERSION = VERSION;
 
 // ========== v3.12 3D FX (lazy) ==========
@@ -73,6 +56,82 @@ function initCinematic() {
       return cine;
     });
   }).catch(function () { return null; });
+}
+
+
+// ========== v4.1 HUD tabs (one screen per section, nothing hidden) ==========
+var HUD_TABS = ["home","apps","map","markets","weather","phone","music","settings"];
+var HUD_TAB = "home";
+function hudScreen(id) { return document.getElementById("screen-" + id); }
+function setHudTab(id, opts) {
+  opts = opts || {};
+  if (HUD_TABS.indexOf(id) < 0) id = "home";
+  HUD_TAB = id;
+  try { if (typeof closeZapAssistant === "function") closeZapAssistant(); } catch (e0) {}
+  HUD_TABS.forEach(function (k) {
+    var el = hudScreen(k);
+    if (!el) return;
+    var on = k === id;
+    el.classList.toggle("on", on);
+    if (on) el.removeAttribute("hidden"); else el.setAttribute("hidden", "");
+  });
+  var tabs = document.getElementById("hudTabs");
+  if (tabs) {
+    tabs.querySelectorAll("[data-tab]").forEach(function (b) {
+      var on = b.getAttribute("data-tab") === id;
+      b.classList.toggle("on", on);
+      if (on) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
+    });
+  }
+  try { if (window.ZAPCINE && window.ZAPCINE.setTab) window.ZAPCINE.setTab(HUD_TABS.indexOf(id)); } catch (e) {}
+  try { Store.setUI({ view: "hud:" + id }); } catch (e1) { try { Store.setUI({ view: "hud:" + id }); } catch (e2) {} }
+  if (id === "phone") { try { mountPhoneScreen(); } catch (e) {} }
+  if (id === "settings") { try { mountSettingsScreen(); } catch (e) {} }
+  if (id === "map") { try { setTimeout(function () { renderMap(true); window.dispatchEvent(new Event("resize")); }, 60); } catch (e) {} }
+  if (id === "weather") { try { if (typeof renderConditions === "function") renderConditions(); } catch (e) {} }
+  if (id === "markets") { try { if (typeof renderMarkets === "function") renderMarkets(); } catch (e) {} }
+  if (!opts.silent) {
+    try { var main = document.querySelector("main"); if (main) main.scrollTop = 0; window.scrollTo(0, 0); } catch (e) {}
+  }
+}
+function bindHudTabs() {
+  var tabs = document.getElementById("hudTabs");
+  if (!tabs || tabs._bound) return;
+  tabs._bound = true;
+  tabs.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-tab]");
+    if (!b) return;
+    setHudTab(b.getAttribute("data-tab"));
+  });
+  var startX = 0, startY = 0, tracking = false;
+  var root = document.getElementById("v-home") || document.querySelector("main");
+  if (!root) return;
+  root.addEventListener("touchstart", function (e) {
+    if (!e.touches || !e.touches[0]) return;
+    if (e.target.closest("input,textarea,select,.map-v,.dl-pad,.apps,.sheet,.zap-sheet")) { tracking = false; return; }
+    startX = e.touches[0].clientX; startY = e.touches[0].clientY; tracking = true;
+  }, { passive: true });
+  root.addEventListener("touchend", function (e) {
+    if (!tracking) return; tracking = false;
+    var touch = e.changedTouches && e.changedTouches[0]; if (!touch) return;
+    var dx = touch.clientX - startX, dy = touch.clientY - startY;
+    if (Math.abs(dx) < 56 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
+    var i = HUD_TABS.indexOf(HUD_TAB);
+    if (dx < 0 && i < HUD_TABS.length - 1) setHudTab(HUD_TABS[i + 1]);
+    else if (dx > 0 && i > 0) setHudTab(HUD_TABS[i - 1]);
+  }, { passive: true });
+  document.addEventListener("click", function (e) {
+    var go = e.target.closest("[data-go-tab]");
+    if (!go) return;
+    e.preventDefault();
+    setHudTab(go.getAttribute("data-go-tab"));
+  });
+}
+function ensurePanelsVisible() {
+  ["xpWx","xpMk"].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) { el.hidden = false; el.removeAttribute("hidden"); }
+  });
 }
 
 function initFx3dLayer() {
@@ -1158,7 +1217,7 @@ function renderConditions() {
     WX_MODE = b.getAttribute("data-wxmode"); try { Store.setLocal("wxMode", WX_MODE); } catch (err) {}
     renderConditions();
   });
-  window.addEventListener("resize", function () { clearTimeout(renderConditions._t); renderConditions._t = setTimeout(function () { if (!$("#xpWx").hidden) renderConditions(); }, 120); });
+  window.addEventListener("resize", function () { clearTimeout(renderConditions._t); renderConditions._t = setTimeout(function () { renderConditions(); }, 120); });
   var tc = $("#wxTempChart");
   if (tc) {
     var dragging = false;
@@ -2291,13 +2350,19 @@ function openPlaceEditor(presetId) {
 var VIEWS = ["home", "weather", "markets"], VIEW = "home";
 function show(tab) {
   if (tab === "menu") { openMenu(); return; }
-  if (tab === "weather" && !Q.get("fx")) tab = "home"; if (tab === "markets") tab = "home"; // v3: cards expand on the main screen
+  // v4.1: weather/markets/phone/settings are HUD screens
+  if (typeof setHudTab === "function") {
+    if (tab === "weather" || tab === "markets" || tab === "phone" || tab === "settings" || tab === "apps" || tab === "map" || tab === "music") {
+      setHudTab(tab); return;
+    }
+    if (tab === "home") { setHudTab("home"); }
+  }
   if (VIEWS.indexOf(tab) < 0) tab = "home";
   VIEW = tab;
-  VIEWS.forEach(function (t) { $("#v-" + t).hidden = t !== tab; });
+  VIEWS.forEach(function (t) { var el = $("#v-" + t); if (el) el.hidden = t !== tab; });
   document.body.classList.toggle("on-home", tab === "home");
-  Store.setUI({ view: tab }); restoreScroll();
-  if (tab === "home") setTimeout(function () { renderMap(true); }, 0);
+  try { Store.setUI({ view: "hud:" + (HUD_TAB || tab) }); } catch (e) { Store.setUI({ view: tab }); }
+  restoreScroll();
   $$(".tab").forEach(function (b) { b.classList.toggle("on", b.getAttribute("data-tab") === tab); });
 }
 $$(".tab").forEach(function (b) { b.addEventListener("click", function () { show(b.getAttribute("data-tab")); }); });
@@ -2308,8 +2373,7 @@ $("#hWx").addEventListener("click", function () { toggleXp("wx"); });
   function openAdd(e) {
     if (e) { e.preventDefault(); e.stopPropagation(); }
     // reveal portfolio panel then open add-account sheet
-    var el = $("#xpMk");
-    if (el && el.hidden) toggleXp("mk");
+    setHudTab("markets");
     try { openAddAccount(); } catch (err) { openPort(); }
   }
   card.addEventListener("click", function (e) {
@@ -2324,10 +2388,8 @@ $("#hWx").addEventListener("click", function () { toggleXp("wx"); });
   if (act) act.addEventListener("click", openAdd);
 })();
 function toggleXp(k) {
-  var el = $(k === "wx" ? "#xpWx" : "#xpMk"), btn = $(k === "wx" ? "#hWx" : "#hMk"), open = el.hidden;
-  el.hidden = !open; btn.setAttribute("aria-expanded", String(open));
-  if (open) { if (k === "wx") renderWeather(); else renderMarkets(); setTimeout(function () { try { el.scrollIntoView({ block: "nearest", behavior: "smooth" }); } catch (e) {} }, 30); }
-  setTimeout(function () { renderMap(true); }, 0);
+  if (k === "wx") { setHudTab("weather"); try { renderWeather(); renderConditions(); } catch (e) {} return; }
+  if (k === "mk") { setHudTab("markets"); try { renderMarkets(); } catch (e) {} return; }
 }
 $("#xpCity").addEventListener("click", function () { openCity(); });
 $("#xpMkEdit").addEventListener("click", function () { openEditCoins(); });
@@ -3150,77 +3212,101 @@ function openAddHolding(editIdx) {
 function openEditHolding(i) { openAddHolding(i); }
 
 // ----- settings -----
-function openSettings() {
+function settingsHtml(sndOn, liteOn, tiltOn, motionOn) {
+  return '<label class="field">YOUR NAME (FOR THE GREETING)<input id="stName" maxlength="20" placeholder="e.g. Sam" value="' + esc(S.name) + '" autocomplete="off"></label>' +
+    '<div class="field">TEMPERATURE</div><div class="seg" id="stU"><button type="button" data-v="F">°F · mph</button><button type="button" data-v="C">°C · km/h</button></div>' +
+    '<div class="field">SOFT UI SOUNDS</div><div class="seg" id="stSnd"><button type="button" data-v="0">OFF</button><button type="button" data-v="1">ON</button></div>' +
+    '<p class="note">Soft synth taps when you press cards. Off by default.</p>' +
+    '<div class="field">LITE MODE</div><div class="seg" id="stLite"><button type="button" data-v="0">3D ON</button><button type="button" data-v="1">LITE</button></div>' +
+    '<p class="note">Lite skips WebGL (city backdrop), tilt, and particle boot. Auto-on for low-end / Reduce Motion.</p>' +
+    '<div class="field">CARD TILT</div><div class="seg" id="stTilt"><button type="button" data-v="0">OFF</button><button type="button" data-v="1">ON</button></div>' +
+    '<div class="field">MOTION TILT (iOS NEEDS TAP)</div><div class="seg" id="stMotion"><button type="button" data-v="0">OFF</button><button type="button" data-v="1">ENABLE</button></div>' +
+    '<p class="note">Motion tilt asks for permission only when you tap Enable — never auto-prompted.</p>' +
+    '<div class="field">ASSISTANT</div><p class="note">On-device commands for weather, net worth, places, and apps. Smart mode uses Pollinations. Optional private WebLLM on-device.</p>' +
+    '<button class="btn" id="stSave" type="button">SAVE</button>' +
+    '<h3>UPDATES</h3><button class="btn" id="stUpdate" type="button">Check for updates</button>' +
+    '<p class="note">Running v' + VERSION + '. Themes: tap THEME in the top bar.</p>' +
+    '<h3>RESET</h3><button class="btn warn" id="stReset" type="button">Reset everything to defaults</button>';
+}
+function bindSettings(b, closeAfterSave) {
   var sndOn = !!Store.getLocal("uiSounds", false);
   var liteOn = !!Store.getLocal("liteMode", false);
   var tiltOn = Store.getLocal("tiltCards", null); if (tiltOn == null) tiltOn = true; else tiltOn = !!tiltOn;
   var motionOn = !!Store.getLocal("motionTilt", false);
-  sheet("⚙ SETTINGS",
-    '<label class="field">YOUR NAME (FOR THE GREETING)<input id="stName" maxlength="20" placeholder="e.g. Sam" value="' + esc(S.name) + '" autocomplete="off"></label>' +
-    '<div class="field">TEMPERATURE</div><div class="seg" id="stU"><button data-v="F">°F · mph</button><button data-v="C">°C · km/h</button></div>' +
-    '<div class="field">SOFT UI SOUNDS</div><div class="seg" id="stSnd"><button data-v="0">OFF</button><button data-v="1">ON</button></div>' +
-    '<p class="note">Soft synth taps when you press cards. Off by default.</p>' +
-    '<div class="field">LITE MODE</div><div class="seg" id="stLite"><button data-v="0">3D ON</button><button data-v="1">LITE</button></div>' +
-    '<p class="note">Lite skips WebGL (orb + 3D city), tilt, and particle boot. Auto-on for low-end / Reduce Motion.</p>' +
-    '<div class="field">CARD TILT</div><div class="seg" id="stTilt"><button data-v="0">OFF</button><button data-v="1">ON</button></div>' +
-    '<div class="field">MOTION TILT (iOS NEEDS TAP)</div><div class="seg" id="stMotion"><button data-v="0">OFF</button><button data-v="1">ENABLE</button></div>' +
-    '<p class="note">Motion tilt asks for permission only when you tap Enable — never auto-prompted.</p>' +
-    '<div class="field">ZAP ASSISTANT</div><p class="note">Offline keyword router for weather, net worth, places, and apps. Smart mode uses Pollinations. Optional private WebLLM on-device.</p>' +
-    '<button class="btn" id="stSave">SAVE</button>' +
-    '<h3>RESET</h3><button class="btn warn" id="stReset">Reset everything to defaults</button>',
-    function (b) {
-      var u = S.units, snd = sndOn ? "1" : "0", lite = liteOn ? "1" : "0", tilt = tiltOn ? "1" : "0", motion = motionOn ? "1" : "0";
-      function seg() { $$("#stU button", b).forEach(function (x) { x.classList.toggle("on", x.getAttribute("data-v") === u); }); }
-      function segS() { $$("#stSnd button", b).forEach(function (x) { x.classList.toggle("on", x.getAttribute("data-v") === snd); }); }
-      function segL() { $$("#stLite button", b).forEach(function (x) { x.classList.toggle("on", x.getAttribute("data-v") === lite); }); }
-      function segT() { $$("#stTilt button", b).forEach(function (x) { x.classList.toggle("on", x.getAttribute("data-v") === tilt); }); }
-      function segM() { $$("#stMotion button", b).forEach(function (x) { x.classList.toggle("on", x.getAttribute("data-v") === motion); }); }
-      b.querySelector("#stU").addEventListener("click", function (e) { var x = e.target.closest("[data-v]"); if (x) { u = x.getAttribute("data-v"); seg(); } });
-      b.querySelector("#stSnd").addEventListener("click", function (e) { var x = e.target.closest("[data-v]"); if (x) { snd = x.getAttribute("data-v"); segS(); if (snd === "1") { setUiSounds(true); sfxTap(); } } });
-      b.querySelector("#stLite").addEventListener("click", function (e) { var x = e.target.closest("[data-v]"); if (x) { lite = x.getAttribute("data-v"); segL(); } });
-      b.querySelector("#stTilt").addEventListener("click", function (e) { var x = e.target.closest("[data-v]"); if (x) { tilt = x.getAttribute("data-v"); segT(); } });
-      b.querySelector("#stMotion").addEventListener("click", function (e) {
-        var x = e.target.closest("[data-v]"); if (!x) return;
-        if (x.getAttribute("data-v") === "1") {
-          loadFx3d().then(function (fx) {
-            if (!fx) { motion = "0"; segM(); toast("3D layer unavailable"); return; }
-            fx.requestMotionPermission().then(function (ok) {
-              motion = ok ? "1" : "0"; segM();
-              toast(ok ? "Motion tilt on" : "Motion permission denied");
-            });
-          }).catch(function () { motion = "0"; segM(); });
-        } else { motion = "0"; segM(); if (window.ZAPFX3D) window.ZAPFX3D.setMotionEnabled(false); }
-      });
-      b.querySelector("#stSave").addEventListener("click", function () {
-        var uc = u !== S.units; S.name = b.querySelector("#stName").value.trim().slice(0, 20); S.units = u; Store.set("settings", S);
-        setUiSounds(snd === "1");
-        try {
-          Store.setLocal("liteMode", lite === "1");
-          Store.setLocal("tiltCards", tilt === "1");
-          Store.setLocal("motionTilt", motion === "1");
-        } catch (e) {}
-        if (window.ZAPCINE) {
-          try { window.ZAPCINE.setEnabled(lite !== "1"); } catch (eC) {}
-        }
-        if (window.ZAPFX3D) {
-          window.ZAPFX3D.setLite(lite === "1");
-          window.ZAPFX3D.setTiltEnabled(tilt === "1");
-          window.ZAPFX3D.setMotionEnabled(motion === "1");
-        } else if (lite !== "1") {
-          initCinematic().then(function (c) { if (!c) initFx3dLayer(); });
-        } else {
-          document.documentElement.classList.add("fx-lite");
-          document.documentElement.classList.remove("fx-3d");
-          document.documentElement.classList.remove("zw-cine");
-        }
-        minute(new Date()); closeSheet(); toast("Saved"); if (uc) refreshWeather(true);
-      });
-      b.querySelector("#stReset").addEventListener("click", function () {
-        if (!confirm("Reset apps, watchlist, weather city and settings to the defaults?")) return;
-        Store.reset(); location.reload();
-      });
-      seg(); segS(); segL(); segT(); segM();
-    });
+  var u = S.units, snd = sndOn ? "1" : "0", lite = liteOn ? "1" : "0", tilt = tiltOn ? "1" : "0", motion = motionOn ? "1" : "0";
+  function seg() { $$("#stU button", b).forEach(function (x) { x.classList.toggle("on", x.getAttribute("data-v") === u); }); }
+  function segS() { $$("#stSnd button", b).forEach(function (x) { x.classList.toggle("on", x.getAttribute("data-v") === snd); }); }
+  function segL() { $$("#stLite button", b).forEach(function (x) { x.classList.toggle("on", x.getAttribute("data-v") === lite); }); }
+  function segT() { $$("#stTilt button", b).forEach(function (x) { x.classList.toggle("on", x.getAttribute("data-v") === tilt); }); }
+  function segM() { $$("#stMotion button", b).forEach(function (x) { x.classList.toggle("on", x.getAttribute("data-v") === motion); }); }
+  b.querySelector("#stU").addEventListener("click", function (e) { var x = e.target.closest("[data-v]"); if (x) { u = x.getAttribute("data-v"); seg(); } });
+  b.querySelector("#stSnd").addEventListener("click", function (e) { var x = e.target.closest("[data-v]"); if (x) { snd = x.getAttribute("data-v"); segS(); if (snd === "1") { setUiSounds(true); sfxTap(); } } });
+  b.querySelector("#stLite").addEventListener("click", function (e) { var x = e.target.closest("[data-v]"); if (x) { lite = x.getAttribute("data-v"); segL(); } });
+  b.querySelector("#stTilt").addEventListener("click", function (e) { var x = e.target.closest("[data-v]"); if (x) { tilt = x.getAttribute("data-v"); segT(); } });
+  b.querySelector("#stMotion").addEventListener("click", function (e) {
+    var x = e.target.closest("[data-v]"); if (!x) return;
+    if (x.getAttribute("data-v") === "1") {
+      loadFx3d().then(function (fx) {
+        if (!fx) { motion = "0"; segM(); toast("3D layer unavailable"); return; }
+        fx.requestMotionPermission().then(function (ok) {
+          motion = ok ? "1" : "0"; segM();
+          toast(ok ? "Motion tilt on" : "Motion permission denied");
+        });
+      }).catch(function () { motion = "0"; segM(); });
+    } else { motion = "0"; segM(); if (window.ZAPFX3D) window.ZAPFX3D.setMotionEnabled(false); }
+  });
+  b.querySelector("#stSave").addEventListener("click", function () {
+    var uc = u !== S.units; S.name = b.querySelector("#stName").value.trim().slice(0, 20); S.units = u; Store.set("settings", S);
+    setUiSounds(snd === "1");
+    try {
+      Store.setLocal("liteMode", lite === "1");
+      Store.setLocal("tiltCards", tilt === "1");
+      Store.setLocal("motionTilt", motion === "1");
+    } catch (e) {}
+    if (window.ZAPCINE) {
+      try { window.ZAPCINE.setEnabled(lite !== "1"); } catch (eC) {}
+    }
+    if (window.ZAPFX3D) {
+      window.ZAPFX3D.setLite(lite === "1");
+      window.ZAPFX3D.setTiltEnabled(tilt === "1");
+      window.ZAPFX3D.setMotionEnabled(motion === "1");
+    } else if (lite !== "1") {
+      initCinematic().then(function (c) { if (!c) initFx3dLayer(); });
+    } else {
+      document.documentElement.classList.add("fx-lite");
+      document.documentElement.classList.remove("fx-3d");
+      document.documentElement.classList.remove("zw-cine");
+    }
+    minute(new Date());
+    if (closeAfterSave) closeSheet();
+    toast("Saved"); if (uc) refreshWeather(true);
+  });
+  var stUp = b.querySelector("#stUpdate");
+  if (stUp) stUp.addEventListener("click", function () { try { checkForAppUpdate(true); } catch (e) { toast("Update check failed"); } });
+  b.querySelector("#stReset").addEventListener("click", function () {
+    if (!confirm("Reset apps, watchlist, weather city and settings to the defaults?")) return;
+    Store.reset(); location.reload();
+  });
+  seg(); segS(); segL(); segT(); segM();
+}
+function mountSettingsScreen() {
+  var host = document.getElementById("settingsMount");
+  if (!host) return;
+  var sndOn = !!Store.getLocal("uiSounds", false);
+  var liteOn = !!Store.getLocal("liteMode", false);
+  var tiltOn = Store.getLocal("tiltCards", null); if (tiltOn == null) tiltOn = true; else tiltOn = !!tiltOn;
+  var motionOn = !!Store.getLocal("motionTilt", false);
+  host.innerHTML = settingsHtml(sndOn, liteOn, tiltOn, motionOn);
+  bindSettings(host, false);
+}
+function openSettings() {
+  var host = document.getElementById("settingsMount");
+  if (host) { setHudTab("settings"); mountSettingsScreen(); return; }
+  var sndOn = !!Store.getLocal("uiSounds", false);
+  var liteOn = !!Store.getLocal("liteMode", false);
+  var tiltOn = Store.getLocal("tiltCards", null); if (tiltOn == null) tiltOn = true; else tiltOn = !!tiltOn;
+  var motionOn = !!Store.getLocal("motionTilt", false);
+  sheet("SETTINGS", settingsHtml(sndOn, liteOn, tiltOn, motionOn), function (b) { bindSettings(b, true); });
 }
 
 // ----- help -----
@@ -3238,14 +3324,14 @@ function openHelp() {
 // ========== 12. return-to-app: keep the exact view + scroll, refresh live data quietly ==========
 function saveScroll(now) {
   var sc = Object.assign({}, Store.ui().scroll);
-  VIEWS.forEach(function (t) { var v = $("#v-" + t); if (!v.hidden) sc[t] = Math.round(v.scrollTop); });
+  VIEWS.forEach(function (t) { var v = $("#v-" + t); if (v && !v.hidden) sc[t] = Math.round(v.scrollTop); });
   Store.setUI({ view: VIEW, scroll: sc }, now);
 }
 function restoreScroll() {
   var y = (Store.ui().scroll || {})[VIEW] || 0, v = $("#v-" + VIEW);
-  if (Math.abs(v.scrollTop - y) > 1) v.scrollTop = y;
+  if (v && Math.abs(v.scrollTop - y) > 1) v.scrollTop = y;
 }
-VIEWS.forEach(function (t) { $("#v-" + t).addEventListener("scroll", function () { saveScroll(false); }, { passive: true }); });
+VIEWS.forEach(function (t) { var el = $("#v-" + t); if (el) el.addEventListener("scroll", function () { saveScroll(false); }, { passive: true }); });
 var lastLive = Date.now();
 function onReturn() {
   if (Store.ui().view && Store.ui().view !== VIEW) show(Store.ui().view); else restoreScroll();
@@ -3273,41 +3359,58 @@ function cleanNum(n) { return String(n || "").replace(/[^0-9+*#]/g, ""); }
 function fmtNum(n) { var d = n.replace(/\D/g, ""); if (/^\+/.test(n) || d.length !== 10) return n; return "(" + d.slice(0, 3) + ") " + d.slice(3, 6) + "-" + d.slice(6); }
 function callNum(n) { n = cleanNum(n); if (!n) { toast("Type a number first"); return; } location.href = "tel:" + n; }
 function textNum(n) { n = cleanNum(n); location.href = n ? "sms:" + n : "sms:"; }
-function openDial() {
-  var num = "";
+function dialerHtml() {
   var keys = [["1", ""], ["2", "ABC"], ["3", "DEF"], ["4", "GHI"], ["5", "JKL"], ["6", "MNO"], ["7", "PQRS"], ["8", "TUV"], ["9", "WXYZ"], ["*", ""], ["0", "+"], ["#", ""]];
-  var html = '<div class="dl-num" id="dlNum" aria-live="polite">&nbsp;</div>' +
-    '<div class="dl-pad" id="dlPad">' + keys.map(function (k) { return '<button class="dl-k" data-k="' + k[0] + '" aria-label="' + k[0] + '"><b>' + k[0] + "</b><small>" + k[1] + "</small></button>"; }).join("") + "</div>" +
-    '<div class="dl-act"><button class="dl-sv" id="dlSave" aria-label="Save as favorite">☆</button><button class="dl-call" id="dlCall" aria-label="Call">📞 CALL</button><button class="dl-sv" id="dlDel" aria-label="Delete last digit">⌫</button></div>' +
+  return '<div class="dl-num" id="dlNum" aria-live="polite">&nbsp;</div>' +
+    '<div class="dl-pad" id="dlPad">' + keys.map(function (k) { return '<button type="button" class="dl-k" data-k="' + k[0] + '" aria-label="' + k[0] + '"><b>' + k[0] + "</b><small>" + k[1] + "</small></button>"; }).join("") + "</div>" +
+    '<div class="dl-act"><button type="button" class="dl-sv" id="dlSave" aria-label="Save as favorite">☆</button><button type="button" class="dl-call" id="dlCall" aria-label="Call">CALL</button><button type="button" class="dl-sv" id="dlDel" aria-label="Delete last digit">⌫</button></div>' +
     '<h3>FAVORITES</h3><div id="dlFavs"></div>' +
     '<p class="note" style="margin-top:10px">Call opens your phone\'s call screen with the number ready. Favorites are saved on this device.</p>';
-  sheet("📞 PHONE", html, function (b) {
-    function draw() { b.querySelector("#dlNum").textContent = num ? fmtNum(num) : "\u00a0"; }
-    function drawFavs() {
-      b.querySelector("#dlFavs").innerHTML = FAVS.length ? FAVS.map(function (f, i) {
-        return '<div class="dl-fav"><span class="grow"><b>' + esc(f.name) + "</b><small>" + esc(fmtNum(f.num)) + '</small></span>' +
-          '<button class="sq" data-f="text" data-i="' + i + '" aria-label="Text ' + esc(f.name) + '">💬</button>' +
-          '<button class="sq" data-f="call" data-i="' + i + '" aria-label="Call ' + esc(f.name) + '" style="color:var(--green)">📞</button>' +
-          '<button class="sq" data-f="del" data-i="' + i + '" aria-label="Remove ' + esc(f.name) + '" style="color:var(--red)">✕</button></div>';
-      }).join("") : '<p class="note">No favorites yet. Type a number and tap ☆ to save it.</p>';
-    }
-    b.querySelector("#dlPad").addEventListener("click", function (e) { var k = e.target.closest("[data-k]"); if (!k || num.length >= 20) return; num += k.getAttribute("data-k"); draw(); });
-    b.querySelector("#dlDel").addEventListener("click", function () { num = num.slice(0, -1); draw(); });
-    b.querySelector("#dlCall").addEventListener("click", function () { callNum(num); });
-    b.querySelector("#dlSave").addEventListener("click", function () {
-      if (!cleanNum(num)) { toast("Type a number first"); return; }
-      var nm = (prompt("Name for this favorite?") || "").trim().slice(0, 24); if (!nm) return;
-      FAVS.push({ name: nm, num: cleanNum(num) }); saveFavs(); drawFavs(); toast(nm + " saved to favorites");
-    });
-    b.querySelector("#dlFavs").addEventListener("click", function (e) {
-      var x = e.target.closest("[data-f]"); if (!x) return; var f = FAVS[+x.getAttribute("data-i")], m = x.getAttribute("data-f"); if (!f) return;
-      if (m === "call") callNum(f.num); else if (m === "text") textNum(f.num);
-      else if (confirm("Remove " + f.name + " from favorites?")) { FAVS.splice(+x.getAttribute("data-i"), 1); saveFavs(); drawFavs(); }
-    });
-    b.addEventListener("keydown", function (e) { if (/^[0-9*#+]$/.test(e.key)) { num += e.key; draw(); } else if (e.key === "Backspace") { num = num.slice(0, -1); draw(); } else if (e.key === "Enter") callNum(num); });
-    draw(); drawFavs();
-  });
 }
+function bindDialer(b) {
+  var num = "";
+  function draw() { var n = b.querySelector("#dlNum"); if (n) n.textContent = num ? fmtNum(num) : "\u00a0"; }
+  function drawFavs() {
+    var host = b.querySelector("#dlFavs"); if (!host) return;
+    host.innerHTML = FAVS.length ? FAVS.map(function (f, i) {
+      return '<div class="dl-fav"><span class="grow"><b>' + esc(f.name) + "</b><small>" + esc(fmtNum(f.num)) + '</small></span>' +
+        '<button type="button" class="sq" data-f="text" data-i="' + i + '" aria-label="Text ' + esc(f.name) + '">💬</button>' +
+        '<button type="button" class="sq" data-f="call" data-i="' + i + '" aria-label="Call ' + esc(f.name) + '" style="color:var(--green)">📞</button>' +
+        '<button type="button" class="sq" data-f="del" data-i="' + i + '" aria-label="Remove ' + esc(f.name) + '" style="color:var(--red)">✕</button></div>';
+    }).join("") : '<p class="note">No favorites yet. Type a number and tap ☆ to save it.</p>';
+  }
+  var pad = b.querySelector("#dlPad");
+  if (pad) pad.addEventListener("click", function (e) { var k = e.target.closest("[data-k]"); if (!k || num.length >= 20) return; num += k.getAttribute("data-k"); draw(); });
+  var del = b.querySelector("#dlDel"); if (del) del.addEventListener("click", function () { num = num.slice(0, -1); draw(); });
+  var callB = b.querySelector("#dlCall"); if (callB) callB.addEventListener("click", function () { callNum(num); });
+  var save = b.querySelector("#dlSave"); if (save) save.addEventListener("click", function () {
+    if (!cleanNum(num)) { toast("Type a number first"); return; }
+    var nm = (prompt("Name for this favorite?") || "").trim().slice(0, 24); if (!nm) return;
+    FAVS.push({ name: nm, num: cleanNum(num) }); saveFavs(); drawFavs(); toast(nm + " saved to favorites");
+  });
+  var favs = b.querySelector("#dlFavs");
+  if (favs) favs.addEventListener("click", function (e) {
+    var x = e.target.closest("[data-f]"); if (!x) return; var f = FAVS[+x.getAttribute("data-i")], m = x.getAttribute("data-f"); if (!f) return;
+    if (m === "call") callNum(f.num); else if (m === "text") textNum(f.num);
+    else if (confirm("Remove " + f.name + " from favorites?")) { FAVS.splice(+x.getAttribute("data-i"), 1); saveFavs(); drawFavs(); }
+  });
+  b.addEventListener("keydown", function (e) { if (/^[0-9*#+]$/.test(e.key)) { num += e.key; draw(); } else if (e.key === "Backspace") { num = num.slice(0, -1); draw(); } else if (e.key === "Enter") callNum(num); });
+  draw(); drawFavs();
+}
+function mountPhoneScreen() {
+  var host = document.getElementById("phoneMount");
+  if (!host) return;
+  if (host.dataset.ready === "1") return;
+  host.innerHTML = dialerHtml();
+  host.dataset.ready = "1";
+  bindDialer(host);
+}
+function openDial() {
+  var host = document.getElementById("phoneMount");
+  if (host) { setHudTab("phone"); mountPhoneScreen(); return; }
+  sheet("PHONE", dialerHtml(), function (b) { bindDialer(b); });
+}
+
 
 // ========== v3.2 live app search (bundled catalog) — never App Store ==========
 function catalogMatchScore(a, q) {
@@ -3440,7 +3543,7 @@ function runSearch(q) {
   });
   document.addEventListener("click", function (e) { if (!f.contains(e.target)) hideDrop(); });
 })();
-window.ZAPOS = { store: Store, version: VERSION, catalog: CATALOG.length, accounts: ACCOUNT_CATALOG.length, openDirectionsTo: openDirectionsTo, placeLL: placeLL, showMapPlaceCard: showMapPlaceCard, loadAccounts: loadAccounts, loadPlaces: loadPlaces, setGPS: function (g) { GPS = g; Store.setLocal("gps", GPS); try { updateGpsLockChip(); } catch (e) {} }, mapFollow: function (on) { MAP.follow = !!on; }, updateSkyline: updateSkyline, setUiSounds: setUiSounds, sunPeriodNow: sunPeriodNow }; // for the stage 2 sync add-on + QA
+window.ZAPOS = { store: Store, version: VERSION, setHudTab: setHudTab, catalog: CATALOG.length, accounts: ACCOUNT_CATALOG.length, openDirectionsTo: openDirectionsTo, placeLL: placeLL, showMapPlaceCard: showMapPlaceCard, loadAccounts: loadAccounts, loadPlaces: loadPlaces, setGPS: function (g) { GPS = g; Store.setLocal("gps", GPS); try { updateGpsLockChip(); } catch (e) {} }, mapFollow: function (on) { MAP.follow = !!on; }, updateSkyline: updateSkyline, setUiSounds: setUiSounds, sunPeriodNow: sunPeriodNow }; // for the stage 2 sync add-on + QA
 
 // ========== v3.1 concept chrome: menu, today ==========
 var menuBtn = $("#menuBtn"); if (menuBtn) menuBtn.addEventListener("click", openMenu);
@@ -3607,6 +3710,14 @@ function placeNeonRing(v, dx, dy) {
     }
   }
   try { bindChargeUp(); updateSkyline(); buildClockTicks(); ensureHudTicks(); initBatteryHud(); updateGpsLockChip(); startZapWave(); } catch (e) {}
+
+  try { bindHudTabs(); ensurePanelsVisible(); } catch (e) {}
+  try {
+    var uv = (Store.ui() || {}).view || "";
+    if (String(uv).indexOf("hud:") === 0) setHudTab(String(uv).slice(4), { silent: true });
+    else setHudTab("home", { silent: true });
+  } catch (e) { try { setHudTab("home", { silent: true }); } catch (e2) {} }
+
   try {
     setTimeout(function () {
       initCinematic().then(function (cine) {
@@ -4059,7 +4170,7 @@ function routeZapIntent(raw) {
   }
   return { skill: "unknown", text: "Not sure. Try help, or enable private AI on a WebGPU device." };
 }
-var HELP_TEXT = "Commands (on-device): call <favorite>, directions to <place>, add holding, switch theme, search web <q>, time, date, weather, net worth, open <app>, focus, help. Smart mode answers free-form via Pollinations (toggle in ZAP). Private AI stays on-device.";
+var HELP_TEXT = "Commands (on-device): call <favorite>, directions to <place>, add holding, switch theme, search web <q>, time, date, weather, net worth, open <app>, focus, help. Smart mode answers free-form via Pollinations (toggle in Assistant). Private AI stays on-device.";
 
 function refreshZapAiBar() {
   var bar = $("#zapAiBar"); if (!bar) return;
