@@ -1,4 +1,4 @@
-/* ZAPWISE//OS web app v3.4.0 (Nov 4, 2026). Concept layout + live map. Static, no build step, no API keys.
+/* ZAPWISE//OS web app v3.5.0 (Nov 4, 2026). Concept layout + live map. Static, no build step, no API keys.
    Data: Open-Meteo (weather + city search), api-bdc.io (city name for weather), CoinGecko (crypto + PAX Gold),
    OSM standard tiles (keyless, CSS dark filter) + Nominatim reverse geocoding (road + city, cached, re-queried only after moving > 40 m).
 
@@ -17,7 +17,7 @@
    Store.applyRemote below. */
 (function () {
 "use strict";
-var VERSION = "3.4.0";
+var VERSION = "3.5.0";
 var STATUS_MSGS = ["> SHORTCUTS ARMED", "> NET SECURE", "> AI LINK STABLE", "> SIGNAL CLEAN", "> APPS READY"];
 var FOCUS_MS = 25 * 60000;
 var DAY_START = 7, DAY_END = 23;
@@ -30,8 +30,8 @@ function clone(o) { return o == null ? o : JSON.parse(JSON.stringify(o)); }
 // ========== 2. STATE: one versioned object + one save/load layer ==========
 var Store = (function () {
   var STATE_KEY = "zapos.state", DEVICE_KEY = "zapos.device", VER = 1;
-  var PREF_KEYS = ["settings", "theme", "apps", "coins", "loc", "favs"];                     // shared state (sync-ready)
-  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss", "mediaKey", "workMode", "skipBoot", "recentPins"]; // this device only
+  var PREF_KEYS = ["settings", "theme", "apps", "coins", "loc", "favs", "places"];                     // shared state (sync-ready)
+  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss", "mediaKey", "skipBoot", "recentPins", "wxDay", "wxMode"]; // this device only
   function read(k) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
   function write(k, v) { if (dead) return false; try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
   var state = read(STATE_KEY), dev = read(DEVICE_KEY), subs = [], uiT = null, dead = false; // dead: after a reset, write nothing more
@@ -83,7 +83,7 @@ var Store = (function () {
 // ========== 3. themes: applied instantly from the THEME button ==========
 var THEMES = [
   { id: "zapwise", name: "ZAPWISE", sub: "Default · void, cream, amber, cyan", v: { void: "#070814", panel: "#0d1226", panel2: "#111833", cream: "#f4efe4", amber: "#f0a202", cyan: "#5ce1e6", magenta: "#ff4fd8", dim: "#6b7896", on: "#070814" } },
-  { id: "neon", name: "NEON PINK", sub: "Hot pink and violet on deep plum", v: { void: "#10040f", panel: "#1d0a1f", panel2: "#28102b", cream: "#fde9f6", amber: "#ffd166", cyan: "#ff4fd8", magenta: "#9d7bff", dim: "#8f7393", on: "#10040f" } },
+  { id: "neon", name: "NEON PINK", sub: "Hot pink and violet on deep plum", v: { void: "#10040f", panel: "#1d0a1f", panel2: "#28102b", cream: "#fff5fb", amber: "#ffd166", cyan: "#7ef0ff", magenta: "#ff4fd8", dim: "#c9a8c8", on: "#10040f" } },
   { id: "terminal", name: "TERMINAL GREEN", sub: "Green phosphor on black", v: { void: "#020a05", panel: "#07170d", panel2: "#0b2013", cream: "#d8ffe2", amber: "#c6ff3d", cyan: "#3dff7e", magenta: "#7affc8", dim: "#57805f", on: "#020a05" } },
   { id: "arctic", name: "ARCTIC BLUE", sub: "Ice blue on midnight navy", v: { void: "#03101d", panel: "#081c30", panel2: "#0c253d", cream: "#eaf6ff", amber: "#a8e1ff", cyan: "#47a8ff", magenta: "#b9a6ff", dim: "#6d88a3", on: "#03101d" } },
   { id: "sunset", name: "SUNSET ORANGE", sub: "Warm orange and coral on dusk", v: { void: "#140806", panel: "#22100b", panel2: "#2d160f", cream: "#fff0e3", amber: "#ffc04d", cyan: "#ff7a3d", magenta: "#ff4f7b", dim: "#94705f", on: "#140806" } },
@@ -97,8 +97,10 @@ function applyTheme(id) {
   Object.keys(t.v).forEach(function (k) { st.setProperty("--" + k, t.v[k]); st.setProperty("--" + k + "-rgb", hexRgb(t.v[k])); });
   // v3.1 layout tokens
   st.setProperty("--bg", t.v.void); st.setProperty("--ink", t.v.cream);
-  st.setProperty("--muted", "rgba(" + hexRgb(t.v.cream) + ",.58)");
-  st.setProperty("--dim", "rgba(" + hexRgb(t.v.cream) + ",.38)");
+  // Readable secondary text — neon/purple especially needs stronger muted/dim
+  var muteA = t.id === "neon" ? .78 : .62, dimA = t.id === "neon" ? .55 : .42;
+  st.setProperty("--muted", "rgba(" + hexRgb(t.v.cream) + "," + muteA + ")");
+  st.setProperty("--dim", t.v.dim || ("rgba(" + hexRgb(t.v.cream) + "," + dimA + ")"));
   document.documentElement.classList.toggle("light", !!t.light);
   if (document.body) document.body.classList.toggle("light", !!t.light);
   var m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute("content", t.v.void);
@@ -481,21 +483,19 @@ FX.prototype.draw = function (now, dt) {
   var c = this.ctx, W = this.w, H = this.h, k = this.kind, t = (now - this.t0) / 1000, i, q;
   c.clearRect(0, 0, W, H);
   if (k === "none") return;
+  // Real sky wash (sun altitude / period) + single sun or moon + constellations (no duplicate moons)
+  if (k === "sun" || k === "night" || k === "cloud" || k === "fog" || k === "rain" || k === "storm" || k === "snow") {
+    paintCelestialSky(this, c, W, H, t, k);
+  }
   if (k === "sun") {
-    var cx = W * .82, cy = H * .22, pulse = 1 + Math.sin(t * 1.6) * .08, R = Math.min(W, H) * .55 * pulse;
-    var g = c.createRadialGradient(cx, cy, 0, cx, cy, R);
-    g.addColorStop(0, "rgba(255,210,63,.55)"); g.addColorStop(.25, "rgba(240,162,2,.28)"); g.addColorStop(1, "rgba(240,162,2,0)");
-    c.fillStyle = g; c.fillRect(0, 0, W, H);
-    c.save(); c.translate(cx, cy); c.rotate(t * .15); c.strokeStyle = "rgba(255,210,63,.22)"; c.lineWidth = 2;
-    for (i = 0; i < 12; i++) { c.rotate(Math.PI / 6); c.beginPath(); c.moveTo(R * .32, 0); c.lineTo(R * .62, 0); c.stroke(); }
-    c.restore();
-    c.fillStyle = "rgba(255,226,120,.9)"; c.beginPath(); c.arc(cx, cy, Math.min(W, H) * .09 * pulse, 0, 6.283); c.fill();
+    /* sun disc drawn inside paintCelestialSky when above horizon */
   }
   if (k === "night") {
-    c.fillStyle = "rgba(244,239,228,.85)"; c.beginPath(); c.arc(W * .84, H * .2, Math.min(W, H) * .08, 0, 6.283); c.fill();
-    c.fillStyle = THEME.v.panel; c.beginPath(); c.arc(W * .84 + Math.min(W, H) * .035, H * .2 - Math.min(W, H) * .02, Math.min(W, H) * .075, 0, 6.283); c.fill();
-    for (i = 0; i < this.p.length; i++) { q = this.p[i]; c.globalAlpha = .25 + .75 * Math.abs(Math.sin(t * q.f + q.s)); c.fillStyle = "#f4efe4"; c.beginPath(); c.arc(q.x, q.y, q.r, 0, 6.283); c.fill(); }
-    c.globalAlpha = 1;
+    /* stars/constellations/moon drawn in paintCelestialSky; keep light rain of field stars as fallback if sky lib missing */
+    if (!(window.ZAPOS_SKY && this._sky)) {
+      for (i = 0; i < this.p.length; i++) { q = this.p[i]; c.globalAlpha = .25 + .75 * Math.abs(Math.sin(t * q.f + q.s)); c.fillStyle = "#f4efe4"; c.beginPath(); c.arc(q.x, q.y, q.r, 0, 6.283); c.fill(); }
+      c.globalAlpha = 1;
+    }
   }
   if (k === "cloud" || k === "storm") {
     for (i = 0; i < this.c.length; i++) {
@@ -571,11 +571,251 @@ function wxText(c) {
   if (c <= 82) return "SHOWERS"; if (c <= 86) return "SNOW SHOWERS"; return "THUNDERSTORMS";
 }
 function wxEmoji(c, day) {
-  if (c === 0) return day ? "☀️" : "🌙"; if (c === 1) return day ? "🌤️" : "🌙"; if (c === 2) return "⛅"; if (c === 3) return "☁️";
+  if (c === 0) return day ? "☀️" : "✦"; if (c === 1) return day ? "🌤️" : "✦"; if (c === 2) return "⛅"; if (c === 3) return "☁️";
   if (c <= 48) return "🌫️"; if (c <= 57) return "🌦️"; if (c <= 67) return "🌧️"; if (c <= 77) return "🌨️";
   if (c <= 82) return "🌧️"; if (c <= 86) return "🌨️"; return "⛈️";
 }
 var FX_DEBUG = { rain: [63, 1], snow: [73, 1], sun: [0, 1], night: [0, 0], cloud: [3, 1], storm: [95, 1], fog: [45, 1] };
+
+
+// ========== 7b. real sky (sun / moon / constellations) ==========
+var SKY_CACHE = { at: 0, data: null, key: "" };
+function skyLatLon() {
+  if (LOC && LOC.lat != null) return { lat: LOC.lat, lon: LOC.lon };
+  if (GPS) return { lat: GPS.lat, lon: GPS.lon };
+  return { lat: 29.56, lon: -98.27 }; // Schertz-ish fallback until GPS arrives
+}
+function paintCelestialSky(fx, c, W, H, t, kind) {
+  var ll = skyLatLon(), now = new Date();
+  var Sky = window.ZAPOS_SKY;
+  var sun = Sky ? Sky.sunAltAz(now, ll.lat, ll.lon) : { alt: kind === "sun" ? 40 : -30, az: 220 };
+  var period = Sky ? Sky.skyPeriod(sun.alt) : (kind === "sun" ? "day" : "night");
+  // sky gradient by solar altitude
+  var g = c.createLinearGradient(0, 0, 0, H);
+  if (period === "day") {
+    g.addColorStop(0, "rgba(90,160,255,.35)"); g.addColorStop(.55, "rgba(120,190,255,.12)"); g.addColorStop(1, "rgba(240,200,120,.08)");
+  } else if (period === "golden") {
+    g.addColorStop(0, "rgba(255,170,70,.45)"); g.addColorStop(.5, "rgba(255,120,80,.22)"); g.addColorStop(1, "rgba(40,20,60,.35)");
+  } else if (period === "sunset") {
+    g.addColorStop(0, "rgba(255,110,60,.5)"); g.addColorStop(.45, "rgba(180,60,90,.28)"); g.addColorStop(1, "rgba(20,10,40,.55)");
+  } else if (period === "dusk" || period === "twilight") {
+    g.addColorStop(0, "rgba(60,40,110,.55)"); g.addColorStop(.5, "rgba(20,20,50,.45)"); g.addColorStop(1, "rgba(5,8,20,.7)");
+  } else {
+    g.addColorStop(0, "rgba(8,12,40,.55)"); g.addColorStop(1, "rgba(2,4,14,.25)");
+  }
+  c.fillStyle = g; c.fillRect(0, 0, W, H);
+
+  if (!Sky) return;
+  var key = ll.lat.toFixed(2) + "," + ll.lon.toFixed(2) + ":" + (now.getMinutes());
+  if (SKY_CACHE.key !== key || !SKY_CACHE.data) {
+    SKY_CACHE = { key: key, at: Date.now(), data: Sky.visible(now, ll.lat, ll.lon, W, H) };
+  }
+  var sky = SKY_CACHE.data; fx._sky = sky;
+
+  // constellation lines
+  if (period === "night" || period === "twilight" || period === "dusk") {
+    c.lineWidth = 1; c.strokeStyle = "rgba(244,239,228,.22)";
+    sky.lines.forEach(function (ln) {
+      c.beginPath();
+      ln.pts.forEach(function (pt, i) { if (i) c.lineTo(pt.x, pt.y); else c.moveTo(pt.x, pt.y); });
+      c.stroke();
+    });
+    sky.stars.forEach(function (s) {
+      var r = Math.max(0.6, 2.4 - (s.mag + 1) * 0.45);
+      c.globalAlpha = RM ? 0.85 : (0.45 + 0.55 * Math.abs(Math.sin(t * (1.2 + r) + s.x)));
+      c.fillStyle = "#f4efe4";
+      c.beginPath(); c.arc(s.x, s.y, r, 0, 6.283); c.fill();
+    });
+    c.globalAlpha = 1;
+    if (!RM) {
+      c.fillStyle = "rgba(92,225,230,.75)"; c.font = "600 10px ui-sans-serif,system-ui,sans-serif";
+      sky.labels.forEach(function (lb) { c.fillText(lb.name, lb.x, lb.y); });
+    } else {
+      c.fillStyle = "rgba(92,225,230,.85)"; c.font = "600 10px ui-sans-serif,system-ui,sans-serif";
+      sky.labels.forEach(function (lb) { c.fillText(lb.name, lb.x, lb.y); });
+    }
+  }
+
+  // ONE sun
+  if (sky.sun && sky.sun.on && sun.alt > -3) {
+    var sx = sky.sun.x, sy = sky.sun.y, pulse = RM ? 1 : (1 + Math.sin(t * 1.2) * .05);
+    var R = Math.min(W, H) * (.12 + Math.max(0, sun.alt) / 90 * .2) * pulse;
+    var sg = c.createRadialGradient(sx, sy, 0, sx, sy, R * 2.2);
+    if (period === "day") { sg.addColorStop(0, "rgba(255,230,120,.7)"); sg.addColorStop(.35, "rgba(255,190,60,.28)"); sg.addColorStop(1, "rgba(255,180,40,0)"); }
+    else { sg.addColorStop(0, "rgba(255,160,70,.75)"); sg.addColorStop(.4, "rgba(255,90,50,.3)"); sg.addColorStop(1, "rgba(255,80,40,0)"); }
+    c.fillStyle = sg; c.beginPath(); c.arc(sx, sy, R * 2.2, 0, 6.283); c.fill();
+    c.fillStyle = period === "day" ? "rgba(255,236,150,.95)" : "rgba(255,190,110,.95)";
+    c.beginPath(); c.arc(sx, sy, Math.min(W, H) * .07 * pulse, 0, 6.283); c.fill();
+  }
+
+  // ONE moon with real phase (never a second decorative moon)
+  if (sky.moon && sky.moon.on && (period !== "day" || sky.moon.alt > 15)) {
+    var mx = sky.moon.x, my = sky.moon.y, mr = Math.min(W, H) * .075;
+    c.save();
+    c.beginPath(); c.arc(mx, my, mr, 0, 6.283); c.clip();
+    c.fillStyle = "rgba(244,239,228,.92)"; c.fillRect(mx - mr, my - mr, mr * 2, mr * 2);
+    // shadow for phase: waxing → shadow from left, waning from right
+    var ill = sky.moon.illum, wax = sky.moon.waxing;
+    c.fillStyle = "rgba(7,8,20,.88)";
+    if (ill < 0.02) {
+      c.fillRect(mx - mr, my - mr, mr * 2, mr * 2);
+    } else if (ill < 0.98) {
+      // approximate terminator as offset circle
+      var off = (1 - ill * 2) * mr * (wax ? 1 : -1);
+      if (ill <= 0.5) {
+        c.beginPath(); c.arc(mx + (wax ? off : -off), my, mr * 0.98, 0, 6.283); c.fill();
+        // dark half
+        c.fillRect(wax ? mx : mx - mr, my - mr, mr, mr * 2);
+      } else {
+        // gibbous: dark crescent
+        c.beginPath();
+        c.arc(mx, my, mr + 1, -Math.PI / 2, Math.PI / 2, !wax);
+        c.arc(mx + (wax ? -1 : 1) * (ill - 0.5) * 2 * mr, my, mr * 0.95, Math.PI / 2, -Math.PI / 2, wax);
+        c.fill();
+      }
+    }
+    c.restore();
+    c.strokeStyle = "rgba(244,239,228,.25)"; c.lineWidth = 1;
+    c.beginPath(); c.arc(mx, my, mr, 0, 6.283); c.stroke();
+  }
+}
+
+var WX_DAY = 0, WX_MODE = "actual";
+try { WX_DAY = +Store.getLocal("wxDay", 0) || 0; } catch (e) {}
+try { WX_MODE = Store.getLocal("wxMode", "actual") || "actual"; } catch (e) {}
+
+function hoursForDay(j, dayIdx) {
+  var day = j.daily.time[dayIdx];
+  if (!day) return [];
+  var out = [], i;
+  for (i = 0; i < j.hourly.time.length; i++) {
+    if (j.hourly.time[i].slice(0, 10) === day) out.push(i);
+  }
+  return out;
+}
+function drawTempChart(cv, j, dayIdx, mode) {
+  if (!cv || !j) return;
+  var idxs = hoursForDay(j, dayIdx); if (!idxs.length) return;
+  var dpr = Math.min(window.devicePixelRatio || 1, 2);
+  var cssW = cv.clientWidth || 360, cssH = Math.round(cssW * 220 / 720);
+  cv.width = cssW * dpr; cv.height = cssH * dpr;
+  var c = cv.getContext("2d"); c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  var padL = 8, padR = 36, padT = 16, padB = 18;
+  var W = cssW, H = cssH;
+  var vals = idxs.map(function (i) { return mode === "feels" ? j.hourly.apparent_temperature[i] : j.hourly.temperature_2m[i]; });
+  var hi = Math.max.apply(null, vals), lo = Math.min.apply(null, vals);
+  var yMax = Math.ceil((hi + 4) / 8) * 8, yMin = Math.floor((lo - 4) / 8) * 8;
+  if (yMax === yMin) yMax += 8;
+  function X(i) { return padL + (i / Math.max(1, idxs.length - 1)) * (W - padL - padR); }
+  function Y(v) { return padT + (1 - (v - yMin) / (yMax - yMin)) * (H - padT - padB); }
+  c.clearRect(0, 0, W, H);
+  // axis ticks
+  c.fillStyle = "rgba(244,239,228,.35)"; c.font = "10px ui-sans-serif,system-ui"; c.textAlign = "left";
+  for (var tick = yMin; tick <= yMax; tick += 8) {
+    var yy = Y(tick);
+    c.strokeStyle = "rgba(244,239,228,.08)"; c.beginPath(); c.moveTo(padL, yy); c.lineTo(W - padR, yy); c.stroke();
+    c.fillText(tick + "°", W - padR + 4, yy + 3);
+  }
+  // area path
+  c.beginPath();
+  idxs.forEach(function (_, i) { var x = X(i), y = Y(vals[i]); if (i) c.lineTo(x, y); else c.moveTo(x, y); });
+  var lastX = X(idxs.length - 1);
+  c.lineTo(lastX, H - padB); c.lineTo(padL, H - padB); c.closePath();
+  var ag = c.createLinearGradient(0, padT, 0, H - padB);
+  ag.addColorStop(0, "rgba(240,162,2,.45)"); ag.addColorStop(0.55, "rgba(92,225,230,.2)"); ag.addColorStop(1, "rgba(92,225,230,0)");
+  c.fillStyle = ag; c.fill();
+  c.beginPath();
+  idxs.forEach(function (_, i) { var x = X(i), y = Y(vals[i]); if (i) c.lineTo(x, y); else c.moveTo(x, y); });
+  c.strokeStyle = "rgba(244,239,228,.9)"; c.lineWidth = 2; c.stroke();
+  // H / L markers
+  var iHi = vals.indexOf(hi), iLo = vals.indexOf(lo);
+  [[iHi, "H", hi], [iLo, "L", lo]].forEach(function (m) {
+    var x = X(m[0]), y = Y(m[2]);
+    c.fillStyle = "rgba(244,239,228,.95)"; c.beginPath(); c.arc(x, y, 3.2, 0, 6.283); c.fill();
+    c.font = "700 11px ui-sans-serif,system-ui"; c.fillText(m[1], x - 4, y - 8);
+  });
+}
+function drawPrecipChart(cv, j, dayIdx) {
+  if (!cv || !j) return;
+  var idxs = hoursForDay(j, dayIdx); if (!idxs.length) return;
+  var dpr = Math.min(window.devicePixelRatio || 1, 2);
+  var cssW = cv.clientWidth || 360, cssH = Math.round(cssW * 120 / 720);
+  cv.width = cssW * dpr; cv.height = cssH * dpr;
+  var c = cv.getContext("2d"); c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  var padL = 8, padR = 36, padT = 10, padB = 8, W = cssW, H = cssH;
+  function X(i) { return padL + (i / Math.max(1, idxs.length - 1)) * (W - padL - padR); }
+  c.clearRect(0, 0, W, H);
+  [0, 20, 40, 60, 80, 100].forEach(function (p) {
+    var yy = padT + (1 - p / 100) * (H - padT - padB);
+    c.strokeStyle = "rgba(244,239,228,.08)"; c.beginPath(); c.moveTo(padL, yy); c.lineTo(W - padR, yy); c.stroke();
+    if (p === 80 || p === 100) { c.fillStyle = "rgba(244,239,228,.35)"; c.font = "10px ui-sans-serif,system-ui"; c.fillText(p + "%", W - padR + 2, yy + 3); }
+  });
+  var bw = Math.max(2, (W - padL - padR) / idxs.length * 0.55);
+  idxs.forEach(function (hi, i) {
+    var p = j.hourly.precipitation_probability[hi] || 0;
+    var bh = (p / 100) * (H - padT - padB);
+    var x = X(i) - bw / 2, y = H - padB - bh;
+    c.fillStyle = p >= 60 ? "rgba(92,225,230,.85)" : "rgba(92,225,230,.4)";
+    c.fillRect(x, y, bw, bh);
+  });
+}
+function renderConditions() {
+  if (!WX || !WX.j) return;
+  var j = WX.j, pick = $("#wxDayPick");
+  if (!pick) return;
+  WX_DAY = Math.max(0, Math.min(WX_DAY, j.daily.time.length - 1));
+  var letters = ["S", "M", "T", "W", "T", "F", "S"];
+  var html = "";
+  for (var d = 0; d < j.daily.time.length; d++) {
+    var dt = new Date(j.daily.time[d] + "T12:00:00");
+    var wd = letters[dt.getDay()], dom = dt.getDate();
+    var isToday = d === 0;
+    html += '<button type="button" class="wx-day' + (d === WX_DAY ? " on" : "") + (isToday ? " today" : "") + '" data-d="' + d + '" role="tab" aria-selected="' + (d === WX_DAY) + '"><span class="wd">' + wd + '</span><span class="wn">' + dom + "</span></button>";
+  }
+  pick.innerHTML = html;
+  var sel = new Date(j.daily.time[WX_DAY] + "T12:00:00");
+  var lab = sel.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+  var dl = $("#wxDayLabel"); if (dl) dl.textContent = lab;
+  var hi = Math.round(j.daily.temperature_2m_max[WX_DAY]), lo = Math.round(j.daily.temperature_2m_min[WX_DAY]);
+  var hl = $("#wxChartHL"); if (hl) hl.textContent = hi + "°  " + lo + "°";
+  var ul = $("#wxUnitLbl"); if (ul) ul.textContent = S.units === "C" ? "Celsius (°C)" : "Fahrenheit (°F)";
+  var idxs = hoursForDay(j, WX_DAY);
+  var icons = $("#wxHourIcons");
+  if (icons) {
+    var step = Math.max(1, Math.floor(idxs.length / 8));
+    var bits = [];
+    for (var i = 0; i < idxs.length; i += step) {
+      var ii = idxs[i];
+      bits.push("<span>" + wxEmoji(j.hourly.weather_code[ii], j.hourly.is_day[ii] === 1) + "</span>");
+    }
+    icons.innerHTML = bits.join("");
+  }
+  $$(".wx-tog-b").forEach(function (b) { b.classList.toggle("on", b.getAttribute("data-wxmode") === WX_MODE); });
+  var cap = $("#wxModeCap"); if (cap) cap.textContent = WX_MODE === "feels" ? "What it feels like outside." : "The actual temperature.";
+  var rain = j.daily.precipitation_probability_max[WX_DAY] || 0;
+  var dayName = sel.toLocaleDateString("en-US", { weekday: "long" });
+  var ps = $("#wxPrecipSum"); if (ps) ps.textContent = dayName + "'s chance: " + rain + "%";
+  var anim = !(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
+  var tc = $("#wxTempChart"), pc = $("#wxPrecipChart");
+  if (anim && tc) { tc.style.opacity = "0.35"; setTimeout(function () { drawTempChart(tc, j, WX_DAY, WX_MODE); tc.style.transition = "opacity .28s ease"; tc.style.opacity = "1"; }, 40); }
+  else drawTempChart(tc, j, WX_DAY, WX_MODE);
+  if (anim && pc) { pc.style.opacity = "0.35"; setTimeout(function () { drawPrecipChart(pc, j, WX_DAY); pc.style.transition = "opacity .28s ease"; pc.style.opacity = "1"; }, 60); }
+  else drawPrecipChart(pc, j, WX_DAY);
+}
+(function bindWxCond() {
+  var pick = $("#wxDayPick");
+  if (pick) pick.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-d]"); if (!b) return;
+    WX_DAY = +b.getAttribute("data-d"); try { Store.setLocal("wxDay", WX_DAY); } catch (err) {}
+    renderConditions();
+  });
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-wxmode]"); if (!b) return;
+    WX_MODE = b.getAttribute("data-wxmode"); try { Store.setLocal("wxMode", WX_MODE); } catch (err) {}
+    renderConditions();
+  });
+  window.addEventListener("resize", function () { clearTimeout(renderConditions._t); renderConditions._t = setTimeout(function () { if (!$("#xpWx").hidden) renderConditions(); }, 120); });
+})();
 
 // ========== 8. weather data ==========
 var WX = Store.getLocal("wx", null);
@@ -607,9 +847,9 @@ function refreshWeather(force) {
   p.then(function (L) {
     var url = "https://api.open-meteo.com/v1/forecast?latitude=" + L.lat + "&longitude=" + L.lon +
       "&current=temperature_2m,apparent_temperature,weather_code,is_day,wind_speed_10m" +
-      "&hourly=temperature_2m,weather_code,is_day,precipitation_probability" +
-      "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunset" +
-      unitQ() + "&timezone=auto&forecast_days=6";
+      "&hourly=temperature_2m,apparent_temperature,weather_code,is_day,precipitation_probability" +
+      "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset" +
+      unitQ() + "&timezone=auto&forecast_days=7";
     return getJSON(url).then(function (j) { WX = { at: Date.now(), units: S.units, key: locKey(), place: L.name || "MY LOCATION", j: j }; Store.setLocal("wx", WX); $("#wxNote").textContent = ""; });
   }).catch(function (e) {
     if (e && e.geo) $("#wxNote").innerHTML = "Location is off for this app. Tap <b>◎ CHANGE</b> above to type your city instead.";
@@ -647,7 +887,7 @@ function renderWeather() {
   // Concept weather card: big temp + advice + 5-hour strip (NOW + next 4)
   var hi = Math.round(j.daily.temperature_2m_max[0]), lo = Math.round(j.daily.temperature_2m_min[0]), rain = j.daily.precipitation_probability_max[0] || 0;
   var tempEl = $("#hwTemp"); if (tempEl) tempEl.textContent = Math.round(cu.temperature_2m) + "°";
-  $("#hwIc").textContent = wxEmoji(code, day);
+  $("#hwIc").textContent = (code <= 1 && !day) ? "✦" : wxEmoji(code, day);
   $("#hwNow").textContent = wxText(code).replace(/_/g, " ").toLowerCase().replace(/\b\w/g, function (c) { return c.toUpperCase(); });
   // friendly one-line advice from rain / conditions (no fake clock claims)
   var advice = $("#hwAdvice");
@@ -677,17 +917,17 @@ function renderWeather() {
     var i = idx + k, rp = j.hourly.precipitation_probability[i] || 0;
     hs += '<div class="hr"><small>' + (k ? isoH(j.hourly.time[i]) : "NOW") + '</small><span>' + wxEmoji(j.hourly.weather_code[i], j.hourly.is_day[i] === 1) + '</span><b>' + Math.round(j.hourly.temperature_2m[i]) + '°</b><em>' + (rp >= 20 ? rp + "%" : "") + '</em></div>';
   }
-  $("#wxHours").innerHTML = hs;
+  var _wxH=$("#wxHours"); if(_wxH) _wxH.innerHTML = hs;
   var ds = "";
   for (var d = 0; d < 5 && d < j.daily.time.length; d++) {
     var dt = new Date(j.daily.time[d] + "T12:00:00"), nm = d === 0 ? "TODAY" : dt.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase();
     var dc = j.daily.weather_code[d];
     ds += '<div class="day"><span class="d">' + nm + '</span><span>' + wxEmoji(dc, true) + '</span><span class="c">' + wxText(dc) + '</span><span class="r">' + (j.daily.precipitation_probability_max[d] || 0) + '%</span><span class="t">' + Math.round(j.daily.temperature_2m_max[d]) + '° <span>/ ' + Math.round(j.daily.temperature_2m_min[d]) + '°</span></span></div>';
   }
-  $("#wxDays").innerHTML = ds;
-  $("#xpHours").innerHTML = hs; $("#xpDays").innerHTML = ds;
+  var _wxD=$("#wxDays"); if(_wxD) _wxD.innerHTML = ds;
   $("#xpPlace").textContent = "➤ " + WX.place.toUpperCase();
   $("#xpNote").textContent = $("#wxNote").textContent;
+  try { renderConditions(); } catch (e) {}
   updateStamps();
 }
 
@@ -783,7 +1023,7 @@ function geocode() {
       var road = a.road || a.pedestrian || a.footway || a.path || a.residential || a.neighbourhood || a.hamlet || "";
       var city = a.city || a.town || a.village || a.municipality || a.suburb || a.county || "";
       PLACE = { road: road.toUpperCase(), city: city.toUpperCase(), lat: GPS.lat, lon: GPS.lon, at: Date.now() }; Store.setLocal("place", PLACE);
-    }).catch(function () {}).then(function () { nomBusy = false; renderPlace(); });
+    }).catch(function () {}).then(function () { nomBusy = false; renderPlace(); try { refreshPlaceEtas(); } catch (e) {} });
 }
 function renderPlace() {
   var t = "> " + (GEO_OFF && !GPS ? "LOCATION OFF" : PLACE && (PLACE.road || PLACE.city) ? [PLACE.road, PLACE.city].filter(Boolean).join(" · ") : "LOCATING…");
@@ -837,6 +1077,22 @@ function renderMap(force) {
     dot.style.marginLeft = "-7px";
     dot.style.marginTop = "-7px";
   }
+  // Saved place pins
+  var pinHost = v.querySelector(".map-pins");
+  if (!pinHost) { pinHost = document.createElement("div"); pinHost.className = "map-pins"; pinHost.style.cssText = "position:absolute;inset:0;pointer-events:none;z-index:4"; v.appendChild(pinHost); }
+  var places = loadPlaces();
+  pinHost.innerHTML = places.map(function (pl) {
+    if (pl.lat == null) return "";
+    var pw = lonLatToWorld(pl.lon, pl.lat, z);
+    var px = pw.x - ox, py = pw.y - oy;
+    if (px < -40 || py < -40 || px > W + 40 || py > H + 40) return "";
+    return '<button type="button" class="map-place-pin" data-place-go="' + esc(pl.id) + '" style="left:' + Math.round(px) + "px;top:" + Math.round(py) + 'px;pointer-events:auto"><span class="pin-dot" style="background:' + (pl.color || "#5dade2") + '">' + (pl.icon || "📍") + '</span><span class="pin-lab">' + esc(pl.name) + "</span></button>";
+  }).join("");
+  pinHost.onclick = function (e) {
+    var g = e.target.closest("[data-place-go]"); if (!g) return;
+    var pl = loadPlaces().filter(function (x) { return x.id === g.getAttribute("data-place-go"); })[0];
+    if (pl) openDirectionsTo(pl);
+  };
 }
 function mapRecenter() { MAP.offX = 0; MAP.offY = 0; MAP.z = 16; renderMap(true); toast("Centered on you"); }
 function mapZoom(d) {
@@ -908,6 +1164,170 @@ $("#hMap").addEventListener("click", function (e) {
 window.addEventListener("resize", function () { clearTimeout(renderMap.t); renderMap.t = setTimeout(function () { MAP._key = null; renderMap(true); }, 150); });
 
 // ----- tabs -----
+
+// ========== 10b. Saved Places (Home / Work / School / custom) ==========
+// No live traffic overlay: free keyless sources either need MapLibre MVT (Earth Traffic is Thailand-only —
+// US tiles return 204) or require paid API keys (Google/TomTom/HERE). Map stays clean OSM + places.
+var PLACE_PRESETS = [
+  { id: "home", name: "Home", icon: "🏠", color: "#5dade2" },
+  { id: "work", name: "Work", icon: "💼", color: "#a0785a" },
+  { id: "school", name: "School", icon: "🎓", color: "#c4a574" }
+];
+function loadPlaces() {
+  var p = Store.get("places", null);
+  if (!Array.isArray(p)) p = [];
+  return p;
+}
+function savePlaces(list) { Store.set("places", list); }
+function haversineKm(a, b) {
+  var R = 6371, toR = Math.PI / 180;
+  var dLat = (b.lat - a.lat) * toR, dLon = (b.lon - a.lon) * toR;
+  var la1 = a.lat * toR, la2 = b.lat * toR;
+  var h = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(la1) * Math.cos(la2) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+function formatEta(sec, km) {
+  if (sec != null && !isNaN(sec)) {
+    var m = Math.round(sec / 60);
+    if (m < 1) return "Close by";
+    if (m < 60) return m + " min";
+    return Math.floor(m / 60) + " hr " + (m % 60) + " min";
+  }
+  if (km != null) {
+    if (km < 0.3) return "Close by";
+    var mi = km * 0.621371;
+    return (S.units === "C" ? (km < 10 ? km.toFixed(1) + " km" : Math.round(km) + " km") : (mi < 10 ? mi.toFixed(1) + " mi" : Math.round(mi) + " mi"));
+  }
+  return "—";
+}
+var PLACE_ETA = {};
+function refreshPlaceEtas() {
+  var list = loadPlaces(); if (!GPS || !list.length) { renderPlacesRow(); return; }
+  list.forEach(function (pl) {
+    if (pl.lat == null) return;
+    var km = haversineKm(GPS, { lat: pl.lat, lon: pl.lon });
+    PLACE_ETA[pl.id] = { km: km, sec: null };
+    // OSRM public demo — light use only
+    var url = "https://router.project-osrm.org/route/v1/driving/" + GPS.lon + "," + GPS.lat + ";" + pl.lon + "," + pl.lat + "?overview=false";
+    getJSON(url, 8000).then(function (j) {
+      var r = j && j.routes && j.routes[0];
+      if (r) PLACE_ETA[pl.id] = { km: (r.distance || 0) / 1000, sec: r.duration };
+      renderPlacesRow();
+      renderMap(true);
+    }).catch(function () { renderPlacesRow(); });
+  });
+  renderPlacesRow();
+}
+function renderPlacesRow() {
+  var host = $("#placesList"); if (!host) return;
+  var list = loadPlaces();
+  if (!list.length) {
+    host.innerHTML = PLACE_PRESETS.map(function (p) {
+      return '<button type="button" class="place-chip" data-place-new="' + p.id + '" role="listitem"><span class="pc-ico" style="background:' + p.color + '">' + p.icon + '</span><span class="pc-name">' + esc(p.name) + '</span><span class="pc-eta">Set up</span></button>';
+    }).join("") + '<button type="button" class="place-chip" data-place-new="custom" role="listitem"><span class="pc-ico" style="background:#8b5cf6">＋</span><span class="pc-name">Custom</span><span class="pc-eta">Add</span></button>';
+    return;
+  }
+  host.innerHTML = list.map(function (pl) {
+    var eta = PLACE_ETA[pl.id];
+    var sub = eta ? formatEta(eta.sec, eta.km) : "…";
+    var col = pl.color || "#5dade2";
+    return '<button type="button" class="place-chip" data-place-go="' + esc(pl.id) + '" role="listitem"><span class="pc-ico" style="background:' + col + '">' + (pl.icon || "📍") + '</span><span class="pc-name">' + esc(pl.name) + '</span><span class="pc-eta">' + esc(sub) + "</span></button>";
+  }).join("") + '<button type="button" class="place-chip" data-place-new="custom" role="listitem"><span class="pc-ico" style="background:#8b5cf6">＋</span><span class="pc-name">Add</span><span class="pc-eta">New</span></button>';
+}
+function openDirectionsTo(pl) {
+  if (!pl || pl.lat == null) return;
+  var ll = pl.lat.toFixed(6) + "," + pl.lon.toFixed(6);
+  var ua = (navigator.userAgent || "").toLowerCase();
+  var isiOS = /iphone|ipad|ipod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  if (isiOS) {
+    openApp({ id: "maps", name: "Maps", url: "maps://?daddr=" + ll + "&dirflg=d", web: "https://maps.apple.com/?daddr=" + encodeURIComponent(ll) + "&dirflg=d" });
+  } else {
+    openApp({ id: "maps", name: "Maps", url: "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(ll), web: "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(ll) });
+  }
+}
+function openPlaceEditor(presetId) {
+  var preset = PLACE_PRESETS.filter(function (p) { return p.id === presetId; })[0];
+  var isCustom = !preset || presetId === "custom";
+  var title = isCustom ? "＋ CUSTOM PLACE" : ("SET " + preset.name.toUpperCase());
+  sheet(title,
+    '<label class="field">NAME<input id="plName" maxlength="24" value="' + esc(preset && !isCustom ? preset.name : "") + '" placeholder="e.g. Dad\'s" autocomplete="off"></label>' +
+    '<label class="field">SEARCH ADDRESS<input id="plQ" placeholder="Street, city…" autocomplete="off"></label><div id="plRes"></div>' +
+    '<button class="btn alt" id="plHere" style="margin-top:8px">◎ Use current location</button>' +
+    '<button class="btn alt" id="plMap" style="margin-top:8px">⌖ Use map center</button>' +
+    (isCustom ? "" : '<p class="note" style="margin-top:10px">Saves as ' + esc(preset.name) + '. Tap the place later for directions.</p>'),
+    function (b) {
+      var chosen = null;
+      function pick(lat, lon, label) {
+        chosen = { lat: lat, lon: lon, label: label || "" };
+        toast("Location set — tap Save");
+        if (!b.querySelector("#plSave")) {
+          var btn = document.createElement("button"); btn.className = "btn"; btn.id = "plSave"; btn.textContent = "SAVE PLACE"; btn.style.marginTop = "12px";
+          b.appendChild(btn);
+          btn.addEventListener("click", function () {
+            var nm = (b.querySelector("#plName").value || "").trim() || (preset ? preset.name : "Place");
+            if (!chosen) { toast("Pick an address or location first"); return; }
+            var list = loadPlaces().filter(function (x) { return x.id !== (preset && !isCustom ? preset.id : null); });
+            // replace same preset id
+            if (preset && !isCustom) list = loadPlaces().filter(function (x) { return x.id !== preset.id; });
+            var id = (preset && !isCustom) ? preset.id : ("p" + Date.now());
+            list.push({ id: id, name: nm, icon: preset && !isCustom ? preset.icon : "📍", color: preset && !isCustom ? preset.color : "#8b5cf6", lat: chosen.lat, lon: chosen.lon, label: chosen.label || nm });
+            savePlaces(list); closeSheet(); refreshPlaceEtas(); renderMap(true); toast(nm + " saved");
+          });
+        }
+      }
+      b.querySelector("#plHere").addEventListener("click", function () {
+        if (!GPS) { toast("Still locating you…"); return; }
+        pick(GPS.lat, GPS.lon, "Current location");
+      });
+      b.querySelector("#plMap").addEventListener("click", function () {
+        if (!GPS) { toast("Map needs your location first"); return; }
+        var z = MAP.z | 0, world = lonLatToWorld(GPS.lon, GPS.lat, z);
+        var cx = world.x + MAP.offX, cy = world.y + MAP.offY;
+        // inverse web mercator
+        var n = Math.pow(2, z);
+        var lon = cx / (n * 256) * 360 - 180;
+        var latRad = Math.atan(Math.sinh(Math.PI * (1 - 2 * cy / (n * 256))));
+        var lat = latRad * 180 / Math.PI;
+        pick(lat, lon, "Map center");
+      });
+      var tm;
+      b.querySelector("#plQ").addEventListener("input", function (e) {
+        clearTimeout(tm); var q = e.target.value.trim(); if (q.length < 3) { b.querySelector("#plRes").innerHTML = ""; return; }
+        tm = setTimeout(function () {
+          getJSON("https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&addressdetails=1&accept-language=en&q=" + encodeURIComponent(q), 10000).then(function (R) {
+            R = R || [];
+            b.querySelector("#plRes").innerHTML = R.length ? R.map(function (r, i) {
+              return '<button class="res" data-i="' + i + '">' + esc(r.display_name) + '<span class="add">USE</span></button>';
+            }).join("") : '<p class="note">No matches.</p>';
+            $$("[data-i]", b.querySelector("#plRes")).forEach(function (x) {
+              x.addEventListener("click", function () {
+                var r = R[+x.getAttribute("data-i")];
+                pick(+r.lat, +r.lon, r.display_name);
+                b.querySelector("#plName").value = b.querySelector("#plName").value || (r.namedetails && r.namedetails.name) || r.display_name.split(",")[0];
+              });
+            });
+          }).catch(function () { b.querySelector("#plRes").innerHTML = '<p class="note">Search offline — try again.</p>'; });
+        }, 400);
+      });
+    });
+}
+(function bindPlaces() {
+  var row = $("#placesRow"); if (!row) return;
+  row.addEventListener("click", function (e) {
+    var go = e.target.closest("[data-place-go]");
+    if (go) {
+      var pl = loadPlaces().filter(function (x) { return x.id === go.getAttribute("data-place-go"); })[0];
+      if (pl) openDirectionsTo(pl);
+      return;
+    }
+    var nw = e.target.closest("[data-place-new]");
+    if (nw) openPlaceEditor(nw.getAttribute("data-place-new"));
+  });
+  var add = $("#placeAdd"); if (add) add.addEventListener("click", function () { openPlaceEditor("custom"); });
+  renderPlacesRow();
+})();
+
+
 var VIEWS = ["home", "weather", "markets"], VIEW = "home";
 function show(tab) {
   if (tab === "menu") { openMenu(); return; }
@@ -940,7 +1360,7 @@ function sheet(title, html, bind) {
   $("#sheetTitle").textContent = title; nb.innerHTML = html; $("#sheet").hidden = false; $("#scrim").hidden = false;
   if (bind) bind($("#sheetBody"));
 }
-function closeSheet() { $("#sheet").hidden = true; $("#scrim").hidden = true; }
+function closeSheet() { $("#sheet").hidden = true; $("#scrim").hidden = true; try { $("#sheet").classList.remove("finder-sheet"); } catch (e) {} }
 $("#sheetClose").addEventListener("click", closeSheet);
 $("#scrim").addEventListener("click", closeSheet);
 document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !$("#sheet").hidden) closeSheet(); });
@@ -1002,17 +1422,18 @@ function openEditApps() {
 
 // ----- + add app: categories + search (v3.3) -----
 var APP_CATS = [
-  { id: "social", name: "Social", match: /instagram|tiktok|facebook|snapchat|threads|reddit|linkedin|pinterest|bluesky|mastodon|tumblr|lemon8|bereal|beReal|vsco/i },
-  { id: "msg", name: "Chat", match: /whatsapp|messenger|telegram|discord|signal|slack|teams|skype|line|wechat|viber|groupme|messages/i },
-  { id: "music", name: "Music", match: /spotify|music|pandora|soundcloud|deezer|tidal|shazam|bandcamp|audible|podcast/i },
-  { id: "video", name: "Video", match: /youtube|netflix|twitch|hulu|disney|max|peacock|paramount|primevideo|tubi|crunchyroll|vimeo|roku|appletv|plex/i },
-  { id: "money", name: "Money", match: /venmo|cash|paypal|zelle|coinbase|binance|robinhood|chase|bank|amex|capital|chime|stripe|mint|creditkarma|wells|quickbooks|applepay|googlepay|1password|bitwarden|lastpass/i },
-  { id: "work", name: "Work", match: /gmail|outlook|drive|docs|sheets|slides|notion|trello|asana|todoist|evernote|dropbox|onedrive|github|gitlab|figma|word|excel|powerpoint|calendar|mail|zoom|meet/i },
-  { id: "ai", name: "AI", match: /chatgpt|claude|gemini|grok|perplexity|copilot|character|midjourney|runway|eleven|poe|openai/i },
-  { id: "travel", name: "Travel", match: /uber|lyft|maps|waze|airbnb|booking|expedia|kayak|tripadvisor|delta|united|southwest|american|flightradar|citymapper|tesla|gasbuddy/i },
-  { id: "food", name: "Food", match: /doordash|ubereats|grubhub|instacart|starbucks|mcdonald|chipotle|opentable|resy|yelp|toast/i },
-  { id: "shop", name: "Shop", match: /amazon|ebay|etsy|walmart|target|costco|shein|temu|poshmark|bestbuy|shopify|aliexpress/i },
-  { id: "games", name: "Games", match: /fortnite|roblox|minecraft|steam|xbox|playstation|twitchigdb/i }
+  { id: "social", name: "Social Media", icon: "💬", match: /instagram|tiktok|facebook|snapchat|threads|reddit|linkedin|pinterest|bluesky|mastodon|tumblr|lemon8|bereal|vsco|x\b|twitter|apollo|redditisfun/i },
+  { id: "entertainment", name: "Entertainment", icon: "🎬", match: /youtube|netflix|twitch|hulu|disney|max|peacock|paramount|primevideo|tubi|crunchyroll|vimeo|roku|appletv|plex|imdb|letterboxd|capcut|canva|adobe|lightroom|photoshop|davinci|descript/i },
+  { id: "lifestyle", name: "Lifestyle", icon: "🌿", match: /fitness|strava|myfitnesspal|fitbit|calm|headspace|duolingo|kindle|goodreads|news|cnn|nytimes|bbc|wikipedia|ring|nest|alexa|findmy|photos|gphotos|camera|clock|weather|translate/i },
+  { id: "music", name: "Music", icon: "🎵", match: /spotify|music|pandora|soundcloud|deezer|tidal|shazam|bandcamp|audible|podcast|ytmusic/i },
+  { id: "shop", name: "Shopping", icon: "🛍️", match: /amazon|ebay|etsy|walmart|target|costco|shein|temu|poshmark|bestbuy|shopify|aliexpress|nike/i },
+  { id: "money", name: "Money", icon: "💸", match: /venmo|cash|paypal|zelle|coinbase|binance|robinhood|chase|bank|amex|capital|chime|stripe|mint|creditkarma|wells|quickbooks|applepay|googlepay/i },
+  { id: "food", name: "Food", icon: "🍔", match: /doordash|ubereats|grubhub|instacart|starbucks|mcdonald|chipotle|opentable|resy|yelp|toast/i },
+  { id: "travel", name: "Travel", icon: "✈️", match: /uber|lyft|maps|waze|airbnb|booking|expedia|kayak|tripadvisor|delta|united|southwest|american|flightradar|citymapper|tesla|gasbuddy|googlemaps|applemaps/i },
+  { id: "work", name: "Work", icon: "💼", match: /gmail|outlook|drive|docs|sheets|slides|notion|trello|asana|todoist|evernote|dropbox|onedrive|github|gitlab|figma|word|excel|powerpoint|calendar|mail|zoom|meet|slack|teams|keep|chrome|safari|edge|icloud|finder|shortcuts|notes|reminders|stackoverflow/i },
+  { id: "ai", name: "AI", icon: "✨", match: /chatgpt|claude|gemini|grok|perplexity|copilot|character|midjourney|runway|eleven|poe|openai|chatgptalt/i },
+  { id: "games", name: "Games", icon: "🎮", match: /fortnite|roblox|minecraft|steam|xbox|playstation|twitchigdb|spotifykids/i },
+  { id: "utilities", name: "Utilities", icon: "🛠️", match: /settings|calculator|authenticator|lastpass|bitwarden|1password|phone|messages|whatsapp|messenger|telegram|discord|signal|skype|line|wechat|viber|groupme|zapwise/i }
 ];
 function catOf(c) {
   var hay = (c.id || "") + " " + (c.name || "");
@@ -1025,13 +1446,17 @@ function openAddApp(opt) {
     '<div class="cat-chips" id="pkCats" role="tablist"></div>' +
     '<div class="pick-hint" id="pkHint">Suggested</div>' +
     '<div class="pick" id="pkGrid"></div>' +
-    '<h3>CUSTOM APP</h3>' +
+    '<div class="custom-fold">' +
+    '<button type="button" class="btn alt" id="caToggle">＋ Add custom app</button>' +
+    '<div id="caPanel" hidden>' +
     '<label class="field">NAME<input id="caName" maxlength="14" placeholder="e.g. Instagram" autocomplete="off"></label>' +
     '<label class="field">LINK OR APP LINK<input id="caUrl" placeholder="e.g. instagram.com or instagram://" autocomplete="off" autocapitalize="off" spellcheck="false"></label>' +
     '<div class="field">ICON</div><div class="glyphs" id="caG"></div>' +
     '<div class="field">COLOR</div><div class="colors" id="caC"></div>' +
-    '<button class="btn" id="caAdd">＋ ADD CUSTOM APP</button>';
-  sheet("＋ ADD APP", html, function (b) {
+    '<button class="btn" id="caAdd">＋ ADD CUSTOM APP</button>' +
+    "</div></div>";
+  sheet("⌕ FIND APPS", html, function (b) {
+    try { $("#sheet").classList.add("finder-sheet"); } catch (e) {}
     var gSel = "letter", cSel = CUSTOM_COLORS[0], cat = "all", recent = [];
     try { recent = Store.getLocal("recentPins", []) || []; } catch (e) { recent = []; }
     function has(c) { return APPS.some(function (a) { return a.id === "p-" + c.id || a.id === c.id || (a.name && a.name === c.name); }); }
@@ -1040,9 +1465,10 @@ function openAddApp(opt) {
       try { Store.setLocal("recentPins", recent); } catch (e) {}
     }
     function drawCats() {
-      var chips = [{ id: "all", name: "All" }].concat(APP_CATS).concat([{ id: "more", name: "More" }]);
+      var chips = [{ id: "all", name: "All", icon: "▦" }].concat(APP_CATS).concat([{ id: "more", name: "More", icon: "…" }]);
       b.querySelector("#pkCats").innerHTML = chips.map(function (c) {
-        return '<button type="button" class="cat-chip' + (c.id === cat ? " on" : "") + '" data-cat="' + c.id + '" role="tab" aria-selected="' + (c.id === cat) + '">' + esc(c.name) + "</button>";
+        var ic = c.icon ? '<span class="ci" aria-hidden="true">' + c.icon + "</span>" : "";
+        return '<button type="button" class="cat-chip' + (c.id === cat ? " on" : "") + '" data-cat="' + c.id + '" role="tab" aria-selected="' + (c.id === cat) + '">' + ic + esc(c.name) + "</button>";
       }).join("");
     }
     function drawGrid() {
@@ -1107,6 +1533,12 @@ function openAddApp(opt) {
       saveApps(); renderApps();
       b.querySelector("#caName").value = ""; b.querySelector("#caUrl").value = ""; drawPick();
       toast(nm + " added to your apps");
+    });
+    var caT = b.querySelector("#caToggle"), caP = b.querySelector("#caPanel");
+    if (caT && caP) caT.addEventListener("click", function () {
+      var open = caP.hidden; caP.hidden = !open;
+      caT.textContent = open ? "▾ Hide custom app" : "＋ Add custom app";
+      if (open) setTimeout(function () { try { caP.scrollIntoView({ block: "nearest", behavior: "smooth" }); } catch (e) {} }, 30);
     });
     drawCats(); drawGrid(); drawPick();
   });
@@ -1445,15 +1877,9 @@ function runSearch(q) {
 })();
 window.ZAPOS = { store: Store, version: VERSION, catalog: CATALOG.length }; // for the stage 2 sync add-on
 
-// ========== v3.1 concept chrome: menu, work mode, today ==========
+// ========== v3.1 concept chrome: menu, today ==========
 var menuBtn = $("#menuBtn"); if (menuBtn) menuBtn.addEventListener("click", openMenu);
-(function bindWorkMode() {
-  var b = $("#workMode"); if (!b) return;
-  var on = !!Store.getLocal("workMode", false);
-  function paint() { b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on)); }
-  paint();
-  b.addEventListener("click", function () { on = !on; Store.setLocal("workMode", on); paint(); toast(on ? "Work mode on" : "Work mode off"); });
-})();
+/* Work Mode removed in v3.5 — no visible effect for users */
 (function bindToday() {
   var cal = $("#tdCal"), note = $("#tdNote");
   function findById(id) { return APPS.filter(function (a) { return a.id === id; })[0]; }
@@ -1555,13 +1981,13 @@ function paintTicker(rows) {
 document.body.classList.add("on-home"); applyTheme(THEME.id);
 renderApps(); renderNowPlaying(); try { renderNet(); } catch (e) {}
 tick(); setInterval(tick, 1000);
-renderWeather(); renderMarkets(); renderMap();
+renderWeather(); renderMarkets(); renderMap(); try { renderPlacesRow(); } catch (e) {}
 window.addEventListener("offline", renderNet);
 setInterval(function () { if (COINS.length > 2) { mkPage++; renderMarkets(); } }, 8000);
 requestAnimationFrame(loop);
 show(Q.get("tab") || Store.ui().view || "home");
 requestAnimationFrame(restoreScroll); setTimeout(restoreScroll, 400); // again after late content (weather, icons) settles
-refreshWeather(); refreshMarkets(); refreshGPS();
+refreshWeather(); refreshMarkets(); refreshGPS(); setTimeout(function () { try { refreshPlaceEtas(); } catch (e) {} }, 1200);
 setInterval(function () { if (document.visibilityState === "visible") { refreshWeather(); refreshGPS(); } }, 5 * 60000);
 setInterval(function () { if (document.visibilityState === "visible") refreshMarkets(); }, 2 * 60000);
 window.addEventListener("online", function () { renderNet(); refreshWeather(true); refreshMarkets(); geocode(); });

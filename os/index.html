@@ -20,7 +20,7 @@
 <link rel="preconnect" href="https://tile.openstreetmap.org" crossorigin>
 <link rel="dns-prefetch" href="https://a.tile.openstreetmap.org">
 <link rel="preconnect" href="https://nominatim.openstreetmap.org" crossorigin>
-<link rel="stylesheet" href="/os/app.css?v=3.4.0">
+<link rel="stylesheet" href="/os/app.css?v=3.5.0">
 <script>try{var z=JSON.parse(localStorage.getItem("zapos.device")||"{}").themeCss;if(z&&z.css){var s=document.createElement("style");s.textContent=z.css;document.head.appendChild(s);if(z.light)document.documentElement.classList.add("light");var m=document.querySelector('meta[name="theme-color"]');if(m&&z.meta)m.setAttribute("content",z.meta);}}catch(e){}</script>
 </head>
 <body class="cyber">
@@ -37,7 +37,7 @@
 <div id="app">
 
  <header class="top sticky" id="top">
-  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver">v3.4</span></div>
+  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver">v3.5</span></div>
   <div class="top-r">
    <span class="sync" id="hSync"><i aria-hidden="true"></i>SYNCED</span>
    <button class="h-theme" data-theme-btn aria-label="Change theme" title="Change theme"><i aria-hidden="true"></i>THEME</button>
@@ -61,7 +61,6 @@
     <div class="h-date" id="hDate">—</div>
     <div class="hero-bot">
      <span class="greet" id="greet">Good evening</span>
-     <button class="mode-chip" id="workMode" type="button" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h16v11H4zM8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" fill="none" stroke="currentColor" stroke-width="2"/></svg>WORK MODE</button>
     </div>
    </div>
 
@@ -104,10 +103,22 @@
    </span>
   </button>
 
-  <div class="xp" id="xpWx" hidden>
-   <div class="xp-h"><b id="xpPlace">WEATHER</b><button class="chip" id="xpCity" type="button">◎ CHANGE CITY</button></div>
-   <div class="hours" id="xpHours"></div>
-   <div class="days" id="xpDays"></div>
+  <div class="xp wx-cond" id="xpWx" hidden>
+   <div class="xp-h"><b id="xpPlace">CONDITIONS</b><button class="chip" id="xpCity" type="button">◎ CHANGE CITY</button></div>
+   <div class="wx-days" id="wxDayPick" role="tablist" aria-label="Forecast days"></div>
+   <div class="wx-day-label" id="wxDayLabel">—</div>
+   <div class="wx-chart-head"><span class="wx-hl" id="wxChartHL">--°</span><span class="wx-unit" id="wxUnitLbl">Fahrenheit (°F)</span></div>
+   <div class="wx-icons" id="wxHourIcons" aria-hidden="true"></div>
+   <canvas class="wx-temp-chart" id="wxTempChart" width="720" height="220" aria-label="Hourly temperature chart"></canvas>
+   <div class="wx-xlabels" id="wxXLabels"><span>12AM</span><span>6AM</span><span>12PM</span><span>6PM</span></div>
+   <div class="wx-tog" role="group" aria-label="Temperature type">
+    <button type="button" class="wx-tog-b on" data-wxmode="actual" id="wxModeActual">Actual</button>
+    <button type="button" class="wx-tog-b" data-wxmode="feels" id="wxModeFeels">Feels Like</button>
+   </div>
+   <p class="wx-tog-cap" id="wxModeCap">The actual temperature.</p>
+   <div class="wx-precip-h">Chance of Precipitation</div>
+   <div class="wx-precip-sum" id="wxPrecipSum">—</div>
+   <canvas class="wx-precip-chart" id="wxPrecipChart" width="720" height="120" aria-label="Precipitation chance chart"></canvas>
    <p class="note" id="xpNote"></p>
   </div>
 
@@ -133,6 +144,11 @@
     </div>
     <a class="map-attr" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap</a>
    </div>
+  </div>
+  <div class="places-row card br" id="placesRow">
+   <div class="places-h"><b>PLACES</b><button type="button" class="chip" id="placeAdd" aria-label="Add a saved place">＋ ADD</button></div>
+   <div class="places-scroller" id="placesList" role="list"></div>
+   <p class="note places-note" id="placesNote">Save Home, Work, School or a custom spot. Tap a place for directions.</p>
   </div>
 
   <div class="mk-ticker" id="mkTicker" aria-hidden="true"><span class="track" id="mkTickerTrack"><span>MARKETS · loading…</span></span></div>
@@ -210,7 +226,8 @@
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/os/catalog.js?v=3.4.0"></script>
-<script src="/os/app.js?v=3.4.0"></script>
+<script src="/os/catalog.js?v=3.5.0"></script>
+<script src="/os/sky.js?v=3.5.0"></script>
+<script src="/os/app.js?v=3.5.0"></script>
 </body>
 </html>
