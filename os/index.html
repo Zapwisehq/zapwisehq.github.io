@@ -7,10 +7,10 @@
 <meta name="robots" content="noindex,follow">
 <meta name="description" content="ZAPWISE//OS: one full-screen home for your clock, weather, markets, map and apps.">
 <meta name="theme-color" content="#070814">
-<meta name="zapos-version" content="3.7.1">
+<meta name="zapos-version" content="3.8.0">
 <script>
 /* Early update probe — runs even before app.js. Reloads once if /os/version.json is newer. */
-(function(){var V="3.7.1",k="zapos.bootReload";try{if(sessionStorage.getItem(k)===V)return;}catch(e){}
+(function(){var V="3.8.0",k="zapos.bootReload";try{if(sessionStorage.getItem(k)===V)return;}catch(e){}
 fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){return r.ok?r.json():null}).then(function(j){
   if(!j||!j.version||j.version===V)return;
   try{sessionStorage.setItem(k,j.version);sessionStorage.setItem("zapos.pendingToast","Updated to v"+j.version);}catch(e){}
@@ -22,7 +22,7 @@ fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){retu
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ZAP//OS">
 <meta name="format-detection" content="telephone=no">
-<link rel="manifest" href="/os/manifest.webmanifest?v=3.7.1">
+<link rel="manifest" href="/os/manifest.webmanifest?v=3.8.0">
 <link rel="apple-touch-icon" href="/os/icon-180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/os/icon-192.png">
 <link rel="preconnect" href="https://api.open-meteo.com" crossorigin>
@@ -30,14 +30,15 @@ fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){retu
 <link rel="preconnect" href="https://tile.openstreetmap.org" crossorigin>
 <link rel="dns-prefetch" href="https://a.tile.openstreetmap.org">
 <link rel="preconnect" href="https://nominatim.openstreetmap.org" crossorigin>
-<link rel="stylesheet" href="/os/app.css?v=3.7.1">
+<link rel="stylesheet" href="/os/app.css?v=3.8.0">
 <script>try{var z=JSON.parse(localStorage.getItem("zapos.device")||"{}").themeCss;if(z&&z.css){var s=document.createElement("style");s.textContent=z.css;document.head.appendChild(s);if(z.light)document.documentElement.classList.add("light");var m=document.querySelector('meta[name="theme-color"]');if(m&&z.meta)m.setAttribute("content",z.meta);}}catch(e){}</script>
 </head>
 <body class="cyber">
-<div class="boot" id="boot" aria-hidden="true">
+<div class="boot" id="boot" aria-hidden="true" role="dialog" aria-label="System boot">
  <div class="boot-logo">ZAPWISE<b>//OS</b></div>
  <div class="boot-bar"><i></i></div>
  <div class="boot-msg" id="bootMsg">INITIALIZING…</div>
+ <button type="button" class="boot-skip" id="bootSkip">SKIP</button>
 </div>
 <div class="fx-layer" aria-hidden="true">
  <div class="fx-floor"></div>
@@ -47,7 +48,7 @@ fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){retu
 <div id="app">
 
  <header class="top sticky" id="top">
-  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver">v3.7.1</span></div>
+  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver">v3.8.0</span></div>
   <div class="top-r">
    <span class="sync" id="hSync"><i aria-hidden="true"></i>SYNCED</span>
    <button class="h-theme" data-theme-btn aria-label="Change theme" title="Change theme"><i aria-hidden="true"></i>THEME</button>
@@ -66,7 +67,12 @@ fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){retu
   </form>
 
   <div class="row2">
-   <div class="card br hero">
+   <div class="card br hero" id="heroCard">
+    <div class="skyline" id="skyline" aria-hidden="true" data-period="night" data-wx="">
+     <div class="sky-wash"></div>
+     <div class="sky-buildings"></div>
+     <div class="sky-wx" id="skyWx"></div>
+    </div>
     <div class="h-clock" id="hClock" aria-live="off">--:--<em id="hAmpm"></em></div>
     <div class="h-date" id="hDate">—</div>
     <div class="hero-bot">
@@ -254,8 +260,8 @@ fetch("/os/version.json?t="+Date.now(),{cache:"no-store"}).then(function(r){retu
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/os/catalog.js?v=3.7.1"></script>
-<script src="/os/sky.js?v=3.7.1"></script>
-<script src="/os/app.js?v=3.7.1"></script>
+<script src="/os/catalog.js?v=3.8.0"></script>
+<script src="/os/sky.js?v=3.8.0"></script>
+<script src="/os/app.js?v=3.8.0"></script>
 </body>
 </html>

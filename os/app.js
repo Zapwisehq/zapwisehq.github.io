@@ -1,4 +1,4 @@
-/* ZAPWISE//OS web app v3.7.1 (Nov 5, 2026). Concept layout + live map (watchPosition follow). Static, no build step, no API keys.
+/* ZAPWISE//OS web app v3.8.0 (Nov 5, 2026). Cyberpunk pack (original): daily boot, skyline, neon map, charge-up, themes. Static, no build step, no API keys.
    Data: Open-Meteo (weather + city search), api-bdc.io (city name for weather), CoinGecko (crypto + PAX Gold),
    mempool.space (BTC balance), ethereum.publicnode.com (ETH balance), solana.publicnode.com (SOL balance),
    OSM standard tiles (keyless, CSS dark filter) + Nominatim reverse geocoding (road + city, cached, re-queried only after moving > 40 m).
@@ -18,7 +18,7 @@
    Store.applyRemote below. */
 (function () {
 "use strict";
-var VERSION = "3.7.1";
+var VERSION = "3.8.0";
 var APP_VERSION = VERSION;
 var STATUS_MSGS = ["> SHORTCUTS ARMED", "> NET SECURE", "> AI LINK STABLE", "> SIGNAL CLEAN", "> APPS READY"];
 var FOCUS_MS = 25 * 60000;
@@ -33,7 +33,7 @@ function clone(o) { return o == null ? o : JSON.parse(JSON.stringify(o)); }
 var Store = (function () {
   var STATE_KEY = "zapos.state", DEVICE_KEY = "zapos.device", VER = 1;
   var PREF_KEYS = ["settings", "theme", "apps", "coins", "loc", "favs", "places", "holdings", "broker", "wallets", "accounts"];                     // shared state (sync-ready)
-  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss", "mediaKey", "skipBoot", "recentPins", "wxDay", "wxMode", "portHist"]; // this device only
+  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss", "mediaKey", "skipBoot", "bootDay", "uiSounds", "recentPins", "wxDay", "wxMode", "portHist"]; // this device only
   function read(k) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
   function write(k, v) { if (dead) return false; try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
   var state = read(STATE_KEY), dev = read(DEVICE_KEY), subs = [], uiT = null, dead = false; // dead: after a reset, write nothing more
@@ -90,7 +90,10 @@ var THEMES = [
   { id: "arctic", name: "ARCTIC BLUE", sub: "Ice blue on midnight navy", v: { void: "#03101d", panel: "#081c30", panel2: "#0c253d", cream: "#eaf6ff", amber: "#a8e1ff", cyan: "#47a8ff", magenta: "#b9a6ff", dim: "#6d88a3", on: "#03101d" } },
   { id: "sunset", name: "SUNSET ORANGE", sub: "Warm orange and coral on dusk", v: { void: "#140806", panel: "#22100b", panel2: "#2d160f", cream: "#fff0e3", amber: "#ffc04d", cyan: "#ff7a3d", magenta: "#ff4f7b", dim: "#94705f", on: "#140806" } },
   { id: "mono", name: "MONO", sub: "Black, white and grey", v: { void: "#0a0a0b", panel: "#161618", panel2: "#1f1f22", cream: "#f2f2f2", amber: "#ffffff", cyan: "#cfcfd4", magenta: "#9a9aa2", dim: "#76767e", on: "#0a0a0b" } },
-  { id: "light", name: "LIGHT", sub: "Dark text on a bright page", light: true, v: { void: "#f1efe9", panel: "#ffffff", panel2: "#e7e4dc", cream: "#16181e", amber: "#b45a00", cyan: "#0a6f8c", magenta: "#b0186e", dim: "#666c79", on: "#ffffff" } }
+  { id: "light", name: "LIGHT", sub: "Dark text on a bright page", light: true, v: { void: "#f1efe9", panel: "#ffffff", panel2: "#e7e4dc", cream: "#16181e", amber: "#b45a00", cyan: "#0a6f8c", magenta: "#b0186e", dim: "#666c79", on: "#ffffff" } },
+  { id: "neon-night", name: "NEON NIGHT", sub: "Void · cyan · magenta", v: { void: "#05060e", panel: "#0b1024", panel2: "#121a36", cream: "#e8f7ff", amber: "#5ce1e6", cyan: "#5ce1e6", magenta: "#ff4fd8", dim: "#6a7aa0", on: "#05060e" } },
+  { id: "amber-ops", name: "AMBER OPS", sub: "Void · amber tactical", v: { void: "#0a0804", panel: "#16110a", panel2: "#1f180e", cream: "#ffe9c4", amber: "#f0a202", cyan: "#ffc04d", magenta: "#ff7a3d", dim: "#8a7348", on: "#0a0804" } },
+  { id: "ghost-white", name: "GHOST WHITE", sub: "Light void · soft ink", light: true, v: { void: "#f7f8fc", panel: "#ffffff", panel2: "#eceef6", cream: "#12141c", amber: "#5b4cff", cyan: "#0a8c9e", magenta: "#c2186e", dim: "#6b7280", on: "#ffffff" } }
 ];
 function hexRgb(h) { var n = parseInt(h.slice(1), 16); return (n >> 16 & 255) + "," + (n >> 8 & 255) + "," + (n & 255); }
 var THEME = THEMES[0];
@@ -100,7 +103,7 @@ function applyTheme(id) {
   // v3.1 layout tokens
   st.setProperty("--bg", t.v.void); st.setProperty("--ink", t.v.cream);
   // Readable secondary text — neon/purple especially needs stronger muted/dim
-  var muteA = t.id === "neon" ? .78 : .62, dimA = t.id === "neon" ? .55 : .42;
+  var muteA = (t.id === "neon" || t.id === "neon-night") ? .78 : .62, dimA = (t.id === "neon" || t.id === "neon-night") ? .55 : .42;
   st.setProperty("--muted", "rgba(" + hexRgb(t.v.cream) + "," + muteA + ")");
   st.setProperty("--dim", t.v.dim || ("rgba(" + hexRgb(t.v.cream) + "," + dimA + ")"));
   document.documentElement.classList.toggle("light", !!t.light);
@@ -110,6 +113,14 @@ function applyTheme(id) {
   var css = ":root{" + Object.keys(t.v).map(function (k) { return "--" + k + ":" + t.v[k] + ";--" + k + "-rgb:" + hexRgb(t.v[k]); }).join(";") +
     ";--bg:" + t.v.void + ";--ink:" + t.v.cream + "}";
   Store.setLocal("themeCss", { light: !!t.light, css: css, meta: t.v.void });
+  try {
+    if (document.body) {
+      document.body.classList.toggle("theme-neon-night", t.id === "neon-night");
+      document.body.classList.toggle("theme-amber-ops", t.id === "amber-ops");
+      document.body.classList.toggle("theme-ghost", t.id === "ghost-white");
+      document.body.classList.add("pack-cyber");
+    }
+  } catch (e) {}
 }
 applyTheme(Store.get("theme", "zapwise"));
 function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
@@ -383,6 +394,7 @@ function minute(d) {
   var part = h < 5 ? "Good night" : h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : h < 22 ? "Good evening" : "Good night";
   var nm = (S.name || "").trim() || "Snowfall";
   $("#greet").textContent = part + ", " + nm;
+  try { updateSkyline(); } catch (e) {}
   var td = $("#tdDay"); if (td) td.textContent = pad2(d.getDate());
   $$(".ico .cal").forEach(function (c) { c.innerHTML = '<i>' + DOW[d.getDay()] + '</i><b>' + d.getDate() + '</b>'; });
   updateStamps();
@@ -1046,7 +1058,7 @@ function refreshWeather(force) {
 function locKey() { return LOC.mode + ":" + LOC.lat + "," + LOC.lon; }
 function renderWeather() {
   var fk = FORCE_FX && FX_DEBUG[FORCE_FX];
-  if (!WX || !WX.j) { if (fk) { fxHud.set(FORCE_FX); fxMain.set(FORCE_FX); } return; }
+  if (!WX || !WX.j) { if (fk) { fxHud.set(FORCE_FX); fxMain.set(FORCE_FX); } try { updateSkyline(); } catch (e) {} return; }
   var j = WX.j, cu = j.current, u = S.units === "C" ? "C" : "F", wu = S.units === "C" ? "km/h" : "mph";
   var code = fk ? fk[0] : cu.weather_code, day = fk ? fk[1] === 1 : cu.is_day === 1;
   var kind = fk ? FORCE_FX : fxKind(code, day);
@@ -1220,8 +1232,10 @@ function animateHoldTotal(to) {
     tv.textContent = money(_dispTotal);
     _animRaf = requestAnimationFrame(step);
   }
-  if (target > prev + 0.01) { tv.classList.add("tick-up"); tv.classList.remove("tick-dn"); }
-  else if (target < prev - 0.01) { tv.classList.add("tick-dn"); tv.classList.remove("tick-up"); }
+  if (target > prev + 0.01) { tv.classList.add("tick-up", "pulse"); tv.classList.remove("tick-dn"); }
+  else if (target < prev - 0.01) { tv.classList.add("tick-dn", "pulse"); tv.classList.remove("tick-up"); }
+  clearTimeout(animateHoldTotal._pk);
+  animateHoldTotal._pk = setTimeout(function () { tv.classList.remove("pulse"); }, 700);
   _animRaf = requestAnimationFrame(step);
 }
 function drawHoldChart(cv, stats) {
@@ -1391,6 +1405,7 @@ function updateStamps() {
   st($("#wxStamp"), WX && WX.at); st($("#mkStamp"), MK && MK.at); st($("#xpMkStamp"), MK && MK.at);
   var sh = function (el, at, pre) { if (!el) return; el.textContent = pre + (at ? short12(at) : "--"); el.classList.toggle("old", !at || Date.now() - at > 30 * 60000); };
   sh($("#hwUpd"), WX && WX.at, "UPD ");
+  try { updateSkyline(); } catch (e) {} // after wx
   var hMkT = $("#hMkT");
   if (hMkT) {
     if (MK && MK.at) hMkT.textContent = "Updated " + t12(new Date(MK.at)).replace(/([AP])$/, " $1M");
@@ -1561,11 +1576,17 @@ function placeUserLayers(v, W, H, ox, oy, z) {
       layers.head.style.transform = "translate(-50%, -50%) rotate(" + GPS.heading + "deg)";
     } else layers.head.hidden = true;
   }
+  try {
+    ensureMapNeon(v);
+    placeNeonRing(v, dx, dy);
+    $$(".map-place-pin", v).forEach(function (pin) { pin.classList.add("neon-lit"); });
+  } catch (e) {}
 }
 function renderMap(force) {
   renderPlace();
   var v = $("#mapV"), tl = $("#mapTiles"), msg = $("#mapMsg");
   if (!v || !tl) return;
+  try { ensureMapNeon(v); } catch (e) {}
   if (!GPS) {
     // keep last tiles if any; just hide user layers
     if ($("#mapDot")) $("#mapDot").hidden = true;
@@ -1640,7 +1661,7 @@ function renderMap(force) {
     var pw = lonLatToWorld(pl.lon, pl.lat, z);
     var px = pw.x - ox, py = pw.y - oy;
     if (px < -48 || py < -48 || px > W + 48 || py > H + 48) return "";
-    return '<button type="button" class="map-place-pin" data-place-go="' + esc(pl.id) + '" style="left:' + Math.round(px) + "px;top:" + Math.round(py) + 'px;pointer-events:auto"><span class="pin-dot" style="background:' + (pl.color || "#5dade2") + '">' + (pl.icon || "📍") + '</span><span class="pin-lab">' + esc(pl.name) + "</span></button>";
+    return '<button type="button" class="map-place-pin neon-lit" data-place-go="' + esc(pl.id) + '" style="left:' + Math.round(px) + "px;top:" + Math.round(py) + 'px;pointer-events:auto"><span class="pin-dot" style="background:' + (pl.color || "#5dade2") + '">' + (pl.icon || "📍") + '</span><span class="pin-lab">' + esc(pl.name) + "</span></button>";
   }).join("");
   pinHost.onclick = function (e) {
     var g = e.target.closest("[data-place-go]"); if (!g) return;
@@ -2883,24 +2904,30 @@ function openEditHolding(i) { openAddHolding(i); }
 
 // ----- settings -----
 function openSettings() {
+  var sndOn = !!Store.getLocal("uiSounds", false);
   sheet("⚙ SETTINGS",
     '<label class="field">YOUR NAME (FOR THE GREETING)<input id="stName" maxlength="20" placeholder="e.g. Sam" value="' + esc(S.name) + '" autocomplete="off"></label>' +
     '<div class="field">TEMPERATURE</div><div class="seg" id="stU"><button data-v="F">°F · mph</button><button data-v="C">°C · km/h</button></div>' +
+    '<div class="field">SOFT UI SOUNDS</div><div class="seg" id="stSnd"><button data-v="0">OFF</button><button data-v="1">ON</button></div>' +
+    '<p class="note">Soft synth taps when you press cards. Off by default.</p>' +
     '<button class="btn" id="stSave">SAVE</button>' +
     '<h3>RESET</h3><button class="btn warn" id="stReset">Reset everything to defaults</button>',
     function (b) {
-      var u = S.units;
+      var u = S.units, snd = sndOn ? "1" : "0";
       function seg() { $$("#stU button", b).forEach(function (x) { x.classList.toggle("on", x.getAttribute("data-v") === u); }); }
+      function segS() { $$("#stSnd button", b).forEach(function (x) { x.classList.toggle("on", x.getAttribute("data-v") === snd); }); }
       b.querySelector("#stU").addEventListener("click", function (e) { var x = e.target.closest("[data-v]"); if (x) { u = x.getAttribute("data-v"); seg(); } });
+      b.querySelector("#stSnd").addEventListener("click", function (e) { var x = e.target.closest("[data-v]"); if (x) { snd = x.getAttribute("data-v"); segS(); if (snd === "1") { setUiSounds(true); sfxTap(); } } });
       b.querySelector("#stSave").addEventListener("click", function () {
         var uc = u !== S.units; S.name = b.querySelector("#stName").value.trim().slice(0, 20); S.units = u; Store.set("settings", S);
+        setUiSounds(snd === "1");
         minute(new Date()); closeSheet(); toast("Saved"); if (uc) refreshWeather(true);
       });
       b.querySelector("#stReset").addEventListener("click", function () {
         if (!confirm("Reset apps, watchlist, weather city and settings to the defaults?")) return;
         Store.reset(); location.reload();
       });
-      seg();
+      seg(); segS();
     });
 }
 
@@ -3121,7 +3148,7 @@ function runSearch(q) {
   });
   document.addEventListener("click", function (e) { if (!f.contains(e.target)) hideDrop(); });
 })();
-window.ZAPOS = { store: Store, version: VERSION, catalog: CATALOG.length, accounts: ACCOUNT_CATALOG.length, openDirectionsTo: openDirectionsTo, placeLL: placeLL, showMapPlaceCard: showMapPlaceCard, loadAccounts: loadAccounts, loadPlaces: loadPlaces, setGPS: function (g) { GPS = g; Store.setLocal("gps", GPS); }, mapFollow: function (on) { MAP.follow = !!on; } }; // for the stage 2 sync add-on + QA
+window.ZAPOS = { store: Store, version: VERSION, catalog: CATALOG.length, accounts: ACCOUNT_CATALOG.length, openDirectionsTo: openDirectionsTo, placeLL: placeLL, showMapPlaceCard: showMapPlaceCard, loadAccounts: loadAccounts, loadPlaces: loadPlaces, setGPS: function (g) { GPS = g; Store.setLocal("gps", GPS); }, mapFollow: function (on) { MAP.follow = !!on; }, updateSkyline: updateSkyline, setUiSounds: setUiSounds, sunPeriodNow: sunPeriodNow }; // for the stage 2 sync add-on + QA
 
 // ========== v3.1 concept chrome: menu, today ==========
 var menuBtn = $("#menuBtn"); if (menuBtn) menuBtn.addEventListener("click", openMenu);
@@ -3134,24 +3161,146 @@ var menuBtn = $("#menuBtn"); if (menuBtn) menuBtn.addEventListener("click", open
 })();
 
 
+// ========== v3.8 cyberpunk pack (original designs) ==========
+var UI_SOUNDS = !!Store.getLocal("uiSounds", false);
+function setUiSounds(on) {
+  UI_SOUNDS = !!on;
+  try { Store.setLocal("uiSounds", UI_SOUNDS); } catch (e) {}
+}
+var _sfxCtx = null;
+function sfxTone(freq, dur, type, gain) {
+  if (!UI_SOUNDS || RM) return;
+  if (document.visibilityState === "hidden") return;
+  try {
+    var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+    if (!_sfxCtx) _sfxCtx = new AC();
+    if (_sfxCtx.state === "suspended") _sfxCtx.resume().catch(function () {});
+    var t0 = _sfxCtx.currentTime, o = _sfxCtx.createOscillator(), g = _sfxCtx.createGain();
+    o.type = type || "sine"; o.frequency.value = freq || 520;
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(gain || 0.04, t0 + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + (dur || 0.12));
+    o.connect(g); g.connect(_sfxCtx.destination);
+    o.start(t0); o.stop(t0 + (dur || 0.12) + 0.02);
+  } catch (e) {}
+}
+function sfxTap() { sfxTone(640, 0.07, "triangle", 0.03); sfxTone(920, 0.05, "sine", 0.02); }
+function sfxCharge() { sfxTone(280, 0.1, "sawtooth", 0.018); sfxTone(560, 0.12, "triangle", 0.028); }
+function bindChargeUp() {
+  var root = $("#app"); if (!root || root._chargeBound) return;
+  root._chargeBound = true;
+  root.addEventListener("pointerdown", function (e) {
+    var card = e.target && e.target.closest ? e.target.closest(".card.br, .acct-tile, .place-chip, .thm, .btn, .dock button, .tab") : null;
+    if (!card) return;
+    card.classList.add("charge");
+    sfxCharge();
+    var clear = function () { card.classList.remove("charge"); };
+    card.addEventListener("pointerup", clear, { once: true });
+    card.addEventListener("pointerleave", clear, { once: true });
+    card.addEventListener("pointercancel", clear, { once: true });
+  }, { passive: true });
+}
+function sunPeriodNow() {
+  try {
+    var ll = GPS || (LOC && LOC.lat != null ? { lat: +LOC.lat, lon: +LOC.lon } : null);
+    if (!ll || !window.Sky || !Sky.sunAltAz) {
+      var h = new Date().getHours();
+      if (h < 6) return "night"; if (h < 8) return "dawn"; if (h < 16) return "day"; if (h < 18) return "golden"; if (h < 20) return "sunset"; if (h < 22) return "dusk"; return "night";
+    }
+    var alt = Sky.sunAltAz(new Date(), ll.lat, ll.lon).alt;
+    if (alt > 18) return "day";
+    if (alt > 6) return "golden";
+    if (alt > -0.5) return "sunset";
+    if (alt > -6) return "dusk";
+    if (alt > -12) return "dawn";
+    return "night";
+  } catch (e) { return "night"; }
+}
+function wxOverlayKind() {
+  try {
+    if (!WX || !WX.j || !WX.j.current) return "";
+    var code = +WX.j.current.weather_code, day = !!WX.j.current.is_day;
+    var k = (typeof fxKind === "function") ? fxKind(code, day) : "";
+    if (k === "rain" || k === "storm") return "rain";
+    if (k === "snow") return "snow";
+    if (k === "fog") return "fog";
+    return "";
+  } catch (e) { return ""; }
+}
+function updateSkyline() {
+  var el = $("#skyline"); if (!el) return;
+  var period = sunPeriodNow();
+  el.setAttribute("data-period", period);
+  var wx = wxOverlayKind();
+  el.setAttribute("data-wx", wx);
+  var wxEl = $("#skyWx");
+  if (wxEl) wxEl.className = "sky-wx" + (wx ? " on " + wx : "");
+}
+function ensureMapNeon(v) {
+  if (!v) return;
+  v.classList.add("map-neon");
+  if (!v.querySelector(".map-neon-ring")) {
+    var ring = document.createElement("i");
+    ring.className = "map-neon-ring";
+    ring.setAttribute("aria-hidden", "true");
+    v.appendChild(ring);
+  }
+}
+function placeNeonRing(v, dx, dy) {
+  var ring = v && v.querySelector(".map-neon-ring");
+  if (!ring) return;
+  ring.style.left = dx + "px";
+  ring.style.top = dy + "px";
+  ring.style.transform = "translate(-50%, -50%)";
+}
+
 // ========== v3.2 cyber HUD (original) — Reduce Motion + visibility aware ==========
 (function cyberHUD() {
   var RM = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  var boot = $("#boot"), bootMsg = $("#bootMsg");
-  var msgs = ["LINKING SENSORS…", "LOADING CATALOG…", "SYNCING MARKETS…", "MAP ONLINE…", "READY"];
+  var boot = $("#boot"), bootMsg = $("#bootMsg"), bootSkip = $("#bootSkip");
+  function todayKey() {
+    var d = new Date();
+    return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+  }
+  function finishBoot() {
+    if (!boot || boot.classList.contains("go")) return;
+    boot.classList.add("go");
+    boot.setAttribute("aria-hidden", "true");
+    try { Store.setLocal("bootDay", todayKey()); } catch (e) {}
+  }
   if (boot) {
-    var skipB = false; try { skipB = !!Store.getLocal("skipBoot", false); } catch (e) {} try { if (sessionStorage.getItem("zapos.skipBoot")) skipB = true; } catch (e) {}
-    if (RM || skipB) { boot.classList.add("go"); }
+    var day = todayKey(), last = "";
+    try { last = Store.getLocal("bootDay", "") || ""; } catch (e) {}
+    var sess = false; try { sess = sessionStorage.getItem("zapos.skipBoot") === day; } catch (e) {}
+    // Daily boot only (first open each calendar day). Skippable. Cap ~1.4s.
+    if (RM || last === day || sess) { finishBoot(); }
     else {
-      var mi = 0;
+      boot.setAttribute("aria-hidden", "false");
+      var nm = ((S && S.name) || "").trim() || "operator";
+      var msgs = [
+        "ZAPWISE//OS — systems online, " + nm,
+        "SENSORS LINKED",
+        "READY"
+      ];
+      var mi = 0, t0 = Date.now();
+      if (bootMsg) bootMsg.textContent = msgs[0];
       var iv = setInterval(function () {
-        if (bootMsg) bootMsg.textContent = msgs[Math.min(mi, msgs.length - 1)];
         mi++;
-        if (mi >= msgs.length) { clearInterval(iv); setTimeout(function () { boot.classList.add("go"); }, 180); }
-      }, 160);
-      try { Store.setLocal("skipBoot", true); } catch (e) { try { sessionStorage.setItem("zapos.skipBoot","1"); } catch (e2) {} }
+        if (bootMsg) bootMsg.textContent = msgs[Math.min(mi, msgs.length - 1)];
+        if (mi >= msgs.length - 1 || Date.now() - t0 > 1400) {
+          clearInterval(iv);
+          setTimeout(finishBoot, 120);
+        }
+      }, 380);
+      if (bootSkip) bootSkip.onclick = function () { clearInterval(iv); finishBoot(); };
+      boot.addEventListener("click", function (e) {
+        if (e.target && e.target.id === "bootSkip") return;
+        clearInterval(iv); finishBoot();
+      }, { once: true });
+      try { sessionStorage.setItem("zapos.skipBoot", day); } catch (e) {}
     }
   }
+  try { bindChargeUp(); updateSkyline(); } catch (e) {}
   // decode / typing effect on brand
   var dec = $("#brandDecode");
   if (dec && !RM) {
@@ -3328,8 +3477,13 @@ try {
 } catch (e) {}
 try {
   window.ZAPOS = window.ZAPOS || {};
-  window.ZAPOS.setGPS = function (lat, lon, meta) { setGPS(lat, lon, meta || {}); };
+  window.ZAPOS.setGPS = function (lat, lon, meta) {
+    if (lat && typeof lat === "object") { meta = lon || {}; setGPS(+lat.lat, +(lat.lon != null ? lat.lon : lat.lng), Object.assign({}, meta, { accuracy: lat.acc != null ? lat.acc : lat.accuracy, heading: lat.heading, speed: lat.speed })); return; }
+    setGPS(lat, lon, meta || {});
+  };
   window.ZAPOS.mapFollow = function (on) { MAP.follow = !!on; if (on) { MAP.offX = 0; MAP.offY = 0; } renderMap(true); };
+  window.ZAPOS.openSettings = openSettings;
+  window.ZAPOS.openTheme = openTheme;
 } catch (e) {}
 if (!Store.getLocal("seenHelp", false) && !(window.navigator.standalone === true)) { Store.setLocal("seenHelp", true); setTimeout(function () { toast("Tip: MENU → Help shows how to add this to your Home Screen"); }, 1500); }
 })();
