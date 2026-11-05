@@ -17,7 +17,7 @@
    Store.applyRemote below. */
 (function () {
 "use strict";
-var VERSION = "3.1.0";
+var VERSION = "3.2.0";
 var STATUS_MSGS = ["> SHORTCUTS ARMED", "> NET SECURE", "> AI LINK STABLE", "> SIGNAL CLEAN", "> APPS READY"];
 var FOCUS_MS = 25 * 60000, DOCK_N = 5;
 var DAY_START = 7, DAY_END = 23;
@@ -31,7 +31,7 @@ function clone(o) { return o == null ? o : JSON.parse(JSON.stringify(o)); }
 var Store = (function () {
   var STATE_KEY = "zapos.state", DEVICE_KEY = "zapos.device", VER = 1;
   var PREF_KEYS = ["settings", "theme", "apps", "coins", "loc", "favs"];                     // shared state (sync-ready)
-  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss", "mediaKey", "workMode"]; // this device only
+  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss", "mediaKey", "workMode", "skipBoot"]; // this device only
   function read(k) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
   function write(k, v) { if (dead) return false; try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
   var state = read(STATE_KEY), dev = read(DEVICE_KEY), subs = [], uiT = null, dead = false; // dead: after a reset, write nothing more
@@ -167,38 +167,19 @@ var MEDIA = {
   soundcloud: { name: "SoundCloud", url: "soundcloud://", web: "https://soundcloud.com", icon: "/os/icons/soundcloud.jpg" }
 };
 var HUB = ["music", "spotify", "ytmusic"];
-// + ADD APP picker (v2.0.2): real icons from App Store artwork, served from /os/icons. url = app link (or https, which opens the
-// app when installed), web = website fallback on a phone and what opens on a computer. No App Store links.
-var CATALOG = [
-  { id: "instagram", name: "Instagram", url: "instagram://", web: "https://www.instagram.com" },
-  { id: "tiktok", name: "TikTok", url: "https://www.tiktok.com" },
-  { id: "facebook", name: "Facebook", url: "fb://", web: "https://www.facebook.com" },
-  { id: "whatsapp", name: "WhatsApp", url: "whatsapp://", web: "https://web.whatsapp.com" },
-  { id: "snapchat", name: "Snapchat", url: "snapchat://", web: "https://web.snapchat.com" },
-  { id: "messenger", name: "Messenger", url: "fb-messenger://", web: "https://www.messenger.com" },
-  { id: "threads", name: "Threads", url: "barcelona://", web: "https://www.threads.com" },
-  { id: "telegram", name: "Telegram", url: "tg://", web: "https://web.telegram.org" },
-  { id: "discord", name: "Discord", url: "discord://", web: "https://discord.com/app" },
-  { id: "reddit", name: "Reddit", url: "reddit://", web: "https://www.reddit.com" },
-  { id: "linkedin", name: "LinkedIn", url: "linkedin://", web: "https://www.linkedin.com" },
-  { id: "pinterest", name: "Pinterest", url: "pinterest://", web: "https://www.pinterest.com" },
-  { id: "netflix", name: "Netflix", url: "nflx://", web: "https://www.netflix.com" },
-  { id: "twitch", name: "Twitch", url: "twitch://", web: "https://www.twitch.tv" },
-  { id: "amazon", name: "Amazon", url: "https://www.amazon.com" },
-  { id: "uber", name: "Uber", url: "uber://", web: "https://m.uber.com" },
-  { id: "gmail", name: "Gmail", url: "googlegmail://", web: "https://mail.google.com" },
-  { id: "drive", name: "Drive", url: "googledrive://", web: "https://drive.google.com" },
-  { id: "gphotos", name: "Google Photos", url: "googlephotos://", web: "https://photos.google.com" },
-  { id: "photos", name: "Photos", url: "photos-redirect://", web: "https://www.icloud.com/photos/" },
-  { id: "claude", name: "Claude", url: "https://claude.ai" },
-  { id: "perplexity", name: "Perplexity", url: "https://www.perplexity.ai" },
-  { id: "copilot", name: "Copilot", url: "https://copilot.microsoft.com" },
-  { id: "capcut", name: "CapCut", url: "capcut://", web: "https://www.capcut.com" },
-  { id: "canva", name: "Canva", url: "canva://", web: "https://www.canva.com" },
-  { id: "venmo", name: "Venmo", url: "venmo://", web: "https://venmo.com" },
-  { id: "cashapp", name: "Cash App", url: "cashme://", web: "https://cash.app" }
-];
-CATALOG.forEach(function (c) { c.icon = "/os/icons/" + c.id + ".jpg"; });
+// + ADD APP / live search: large bundled catalog (v3.2). Icons at /os/icons/<id>.jpg. Never App Store.
+var CATALOG = (typeof window !== "undefined" && Array.isArray(window.ZAPOS_CATALOG) && window.ZAPOS_CATALOG.length)
+  ? window.ZAPOS_CATALOG.map(function (c) {
+      return {
+        id: c.id, name: c.name, aliases: c.aliases || [],
+        url: c.url || c.ios || c.web || "",
+        pkg: c.pkg || c.android || "",
+        web: c.web || "",
+        icon: c.icon || ("/os/icons/" + c.id + ".jpg")
+      };
+    })
+  : [];
+CATALOG.forEach(function (c) { if (!c.icon) c.icon = "/os/icons/" + c.id + ".jpg"; });
 var DEFAULT_COINS = [{ id: "bitcoin", sym: "BTC", name: "Bitcoin" }, { id: "pax-gold", sym: "GOLD", name: "Gold (PAX Gold)" }];
 var DEFAULT_SET = { name: "", units: "F" };
 
@@ -223,7 +204,7 @@ function migrateApps() {
   }
   // picked apps follow the catalog's current links (v2.1.1: TikTok / Cash App went website-only: their app links
   // aren't officially documented for opening, and an unknown link makes iPhone say "invalid address")
-  APPS.forEach(function (a) { if (!a.pick || String(a.id).indexOf("p-") !== 0) return; var c = CATALOG.filter(function (x) { return "p-" + x.id === a.id; })[0]; if (c) { a.url = c.url; if (c.web) a.web = c.web; else delete a.web; } });
+  APPS.forEach(function (a) { if (!a.pick || String(a.id).indexOf("p-") !== 0) return; var c = CATALOG.filter(function (x) { return "p-" + x.id === a.id; })[0]; if (c) { a.url = c.url; if (c.web) a.web = c.web; else delete a.web; if (c.pkg) a.pkg = c.pkg; if (c.icon) a.icon = c.icon; } });
   DEFAULT_APPS.forEach(function (d) { if (!APPS.some(function (a) { return a.id === d.id; })) APPS.push(clone(d)); });
 }
 migrateApps(); if (JSON.stringify(APPS) !== JSON.stringify(Store.get("apps", null))) Store.set("apps", APPS);
@@ -286,15 +267,25 @@ function openApp(a) {
   if (IOS && a.ios) url = a.ios;
   var fb = a.web;
   if (!fb) { location.href = url; return; }
-  // Android: prefer intent:// with browser fallback so Chrome doesn't stall on unknown schemes
+  // Android: prefer intent:// (+ package when known) with browser fallback so Chrome doesn't stall
   if (ANDROID && !/^https?:/i.test(url) && !/^tel:|^sms:|^mailto:/i.test(url)) {
     try {
       var scheme = (url.match(/^([a-z][a-z0-9+.-]*):/i) || [])[1];
       var path = url.replace(/^[a-z][a-z0-9+.-]*:(\/\/)?/i, "");
       if (scheme) {
-        location.href = "intent://" + path + "#Intent;scheme=" + scheme + ";S.browser_fallback_url=" + encodeURIComponent(fb) + ";end";
+        var intent = "intent://" + path + "#Intent;scheme=" + scheme;
+        if (a.pkg) intent += ";package=" + a.pkg;
+        intent += ";S.browser_fallback_url=" + encodeURIComponent(fb) + ";end";
+        location.href = intent;
         return;
       }
+    } catch (e) {}
+  }
+  // Android https + package: try market-free package launch via intent, else web
+  if (ANDROID && a.pkg && /^https?:/i.test(url)) {
+    try {
+      location.href = "intent://#Intent;package=" + a.pkg + ";S.browser_fallback_url=" + encodeURIComponent(fb || url) + ";end";
+      return;
     } catch (e) {}
   }
   var left = false;
@@ -730,6 +721,13 @@ function renderMarkets() {
   else if (mkErr) list += '<p class="offline">Couldn\'t refresh. Showing the last prices we saved.</p>';
   var mk = $("#mkList"); if (mk) mk.innerHTML = list;
   $("#hMkList").innerHTML = mini; $("#xpMkList").innerHTML = list;
+  try {
+    var rows = COINS.map(function (c) {
+      var q = d[c.id];
+      return { sym: c.sym, name: c.name, price: q ? money(q.usd) : "--", chg: q ? q.usd_24h_change : 0 };
+    });
+    if (typeof paintTicker === "function") paintTicker(rows);
+  } catch (e) {}
   updateStamps();
 }
 function updateStamps() {
@@ -900,6 +898,7 @@ function openEditApps() {
 // ----- + add app: popular apps (one tap) + custom name and link -----
 function openAddApp() {
   var html = '<p class="note" style="margin-bottom:10px">Tap an app to add it. It opens the app on your phone (or its website if the app isn\'t installed) and the website on a computer. Remove or move apps in ⚙ EDIT APPS.</p>' +
+    '<label class="field">FILTER<input id="pkFilter" placeholder="Type to filter…" autocomplete="off" autocapitalize="off" spellcheck="false"></label>' +
     '<div class="pick" id="pkGrid"></div>' +
     '<h3>CUSTOM APP</h3>' +
     '<label class="field">NAME<input id="caName" maxlength="14" placeholder="e.g. Instagram" autocomplete="off"></label>' +
@@ -911,17 +910,23 @@ function openAddApp() {
     var gSel = "letter", cSel = CUSTOM_COLORS[0];
     function has(c) { return APPS.some(function (a) { return a.id === "p-" + c.id || (a.custom && a.name === c.name); }); }
     function drawGrid() {
-      b.querySelector("#pkGrid").innerHTML = CATALOG.map(function (c) {
+      var fq = ((b.querySelector("#pkFilter") || {}).value || "").trim().toLowerCase();
+      var list = !fq ? CATALOG : CATALOG.filter(function (c) {
+        if ((c.name || "").toLowerCase().indexOf(fq) >= 0) return true;
+        return (c.aliases || []).some(function (al) { return String(al).toLowerCase().indexOf(fq) >= 0; });
+      });
+      b.querySelector("#pkGrid").innerHTML = list.slice(0, 120).map(function (c) {
         var on = has(c);
-        return '<button class="pk' + (on ? " added" : "") + '" data-pk="' + c.id + '" aria-label="' + (on ? "Added: " : "Add ") + esc(c.name) + '"><img src="' + c.icon + '" alt="" loading="lazy"><span>' + esc(c.name) + "</span></button>";
-      }).join("");
+        return '<button class="pk' + (on ? " added" : "") + '" data-pk="' + c.id + '" aria-label="' + (on ? "Added: " : "Add ") + esc(c.name) + '"><img src="' + c.icon + '" alt="" loading="lazy" decoding="async"><span>' + esc(c.name) + "</span></button>";
+      }).join("") || '<p class="note">No matches.</p>';
     }
+    var pkF = b.querySelector("#pkFilter"); if (pkF) pkF.addEventListener("input", drawGrid);
     b.querySelector("#pkGrid").addEventListener("click", function (e) {
       var x = e.target.closest("[data-pk]"); if (!x) return;
       var c = CATALOG.filter(function (q) { return q.id === x.getAttribute("data-pk"); })[0];
       if (has(c)) { toast(c.name + " is already in your apps"); return; }
       var a = { id: "p-" + c.id, name: c.name, url: c.url, icon: c.icon, glyph: "letter", letter: c.name, bg: "#111827", on: true, custom: true, pick: true };
-      if (c.web) a.web = c.web;
+      if (c.web) a.web = c.web; if (c.pkg) a.pkg = c.pkg;
       APPS.push(a); saveApps(); renderApps(); drawGrid(); toast(c.name + " added to your apps");
     });
     function drawPick() {
@@ -1148,26 +1153,138 @@ function openDial() {
   });
 }
 
-// ========== v3.0 phase 1: search bar. App name -> opens the app; anything else -> Google search ==========
-function findApp(q) {
-  q = q.trim().toLowerCase(); if (!q) return null;
-  var pool = APPS.concat(Object.keys(MEDIA).map(function (k) { return Object.assign({ id: k }, MEDIA[k]); }), CATALOG);
-  var hit = pool.filter(function (a) { return (a.name || "").toLowerCase() === q; })[0];
-  if (!hit && q.length >= 2) hit = pool.filter(function (a) { return (a.name || "").toLowerCase().indexOf(q) === 0; })[0];
-  return hit || null;
+// ========== v3.2 live app search (bundled catalog) — never App Store ==========
+function catalogMatchScore(a, q) {
+  var n = (a.name || "").toLowerCase();
+  if (n === q) return 100;
+  if (n.indexOf(q) === 0) return 80;
+  if (n.indexOf(q) > 0) return 50;
+  var als = a.aliases || [];
+  for (var i = 0; i < als.length; i++) {
+    var al = String(als[i]).toLowerCase();
+    if (al === q) return 90;
+    if (al.indexOf(q) === 0) return 70;
+    if (al.indexOf(q) >= 0) return 40;
+  }
+  return 0;
+}
+function searchPool() {
+  var seen = {}, out = [];
+  function add(a) {
+    if (!a || !a.name) return;
+    var idk = (a.id || "").toLowerCase().replace(/^p-/, "");
+    var nk = (a.name || "").toLowerCase();
+    if (seen[idk] || seen["n:" + nk]) return;
+    if (idk) seen[idk] = 1;
+    seen["n:" + nk] = 1;
+    out.push(a);
+  }
+  APPS.forEach(add);
+  Object.keys(MEDIA).forEach(function (k) { add(Object.assign({ id: k }, MEDIA[k])); });
+  CATALOG.forEach(add);
+  return out;
+}
+function findApps(q, limit) {
+  q = (q || "").trim().toLowerCase(); if (!q) return [];
+  limit = limit || 12;
+  return searchPool().map(function (a) { return { a: a, s: catalogMatchScore(a, q) }; })
+    .filter(function (x) { return x.s > 0; })
+    .sort(function (p, q) { return q.s - p.s || (p.a.name || "").localeCompare(q.a.name || ""); })
+    .slice(0, limit).map(function (x) { return x.a; });
+}
+function findApp(q) { return findApps(q, 1)[0] || null; }
+function isPinned(c) {
+  return APPS.some(function (a) { return a.id === "p-" + c.id || a.id === c.id || (a.name && a.name === c.name); });
+}
+function pinFromCatalog(c) {
+  if (!c) return;
+  if (isPinned(c)) { toast(c.name + " is already on your grid"); return; }
+  var a = { id: "p-" + c.id, name: c.name, url: c.url, icon: c.icon || ("/os/icons/" + c.id + ".jpg"), glyph: "letter", letter: c.name, bg: "#111827", on: true, custom: true, pick: true };
+  if (c.web) a.web = c.web; if (c.pkg) a.pkg = c.pkg;
+  APPS.push(a); saveApps(); renderApps(); toast(c.name + " pinned to your apps");
 }
 function runSearch(q) {
   q = (q || "").trim(); if (!q) return;
-  var a = findApp(q);
-  if (a) { openApp(a); return; }
+  var hits = findApps(q, 1);
+  if (hits[0]) { openApp(hits[0]); return; }
   go("https://www.google.com/search?q=" + encodeURIComponent(q));
 }
 (function () {
-  var f = $("#srch"), inp = $("#srchQ"), hint = $("#srchHint");
-  f.addEventListener("submit", function (e) { e.preventDefault(); var v = inp.value; inp.blur(); runSearch(v); inp.value = ""; hint.textContent = ""; });
-  inp.addEventListener("input", function () { var a = findApp(inp.value); hint.textContent = inp.value.trim() ? (a ? "↵ OPEN " + a.name.toUpperCase() : "↵ GOOGLE") : ""; });
+  var f = $("#srch"), inp = $("#srchQ"), hint = $("#srchHint"), drop = $("#srchDrop");
+  if (!f || !inp || !drop) return;
+  var active = -1, lastHits = [];
+  function hideDrop() {
+    drop.classList.remove("on"); drop.hidden = true; drop.innerHTML = ""; active = -1; lastHits = [];
+    f.classList.remove("focus"); inp.setAttribute("aria-expanded", "false");
+  }
+  function paintActive() {
+    var items = drop.querySelectorAll(".srch-item");
+    items.forEach(function (el, i) { el.classList.toggle("active", i === active); });
+  }
+  function renderDrop(q) {
+    q = (q || "").trim();
+    if (!q) { hideDrop(); hint.textContent = ""; return; }
+    lastHits = findApps(q, 10);
+    var html = lastHits.map(function (a, i) {
+      var pinned = isPinned(a);
+      var catId = a.id && String(a.id).indexOf("p-") === 0 ? a.id.slice(2) : a.id;
+      return '<button type="button" class="srch-item" role="option" data-i="' + i + '" id="srchOpt' + i + '">' +
+        '<img src="' + esc(a.icon || ("/os/icons/" + catId + ".jpg")) + '" alt="" loading="lazy" decoding="async" onerror="this.style.opacity=.2">' +
+        '<span class="meta"><b>' + esc(a.name) + '</b><small>' + (a.web ? "APP OR WEB" : "OPEN") + "</small></span>" +
+        '<span class="pin' + (pinned ? " on" : "") + '" data-pin="' + i + '" title="' + (pinned ? "Pinned" : "Pin to grid") + '" aria-label="' + (pinned ? "Pinned" : "Pin " + esc(a.name)) + '">' + (pinned ? "✓" : "+") + "</span></button>";
+    }).join("");
+    if (!lastHits.length) {
+      html = '<div class="srch-empty">No catalog match — press Enter to search the web</div>' +
+        '<button type="button" class="srch-item web" data-web="1"><span class="meta"><b>Search the web for “' + esc(q) + '”</b><small>GOOGLE</small></span></button>';
+    }
+    drop.innerHTML = html;
+    drop.hidden = false; drop.classList.add("on"); f.classList.add("focus");
+    inp.setAttribute("aria-expanded", "true");
+    active = lastHits.length ? 0 : -1; paintActive();
+    hint.textContent = lastHits[0] ? ("↵ " + lastHits[0].name.toUpperCase()) : "↵ WEB";
+  }
+  f.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var v = inp.value;
+    if (active >= 0 && lastHits[active]) openApp(lastHits[active]);
+    else runSearch(v);
+    inp.blur(); inp.value = ""; hideDrop(); hint.textContent = "";
+  });
+  var tmr;
+  inp.addEventListener("input", function () {
+    clearTimeout(tmr);
+    var v = inp.value;
+    tmr = setTimeout(function () { renderDrop(v); }, 40);
+  });
+  inp.addEventListener("focus", function () { if (inp.value.trim()) renderDrop(inp.value); f.classList.add("focus"); });
+  inp.addEventListener("keydown", function (e) {
+    if (!drop.classList.contains("on")) return;
+    var n = lastHits.length;
+    if (e.key === "ArrowDown") { e.preventDefault(); if (!n) return; active = (active + 1) % n; paintActive(); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); if (!n) return; active = (active - 1 + n) % n; paintActive(); }
+    else if (e.key === "Escape") { hideDrop(); }
+  });
+  drop.addEventListener("mousedown", function (e) { e.preventDefault(); }); // keep focus
+  drop.addEventListener("click", function (e) {
+    var pin = e.target.closest("[data-pin]");
+    if (pin) {
+      e.stopPropagation();
+      var i = +pin.getAttribute("data-pin");
+      pinFromCatalog(lastHits[i]);
+      renderDrop(inp.value);
+      return;
+    }
+    var web = e.target.closest("[data-web]");
+    if (web) { go("https://www.google.com/search?q=" + encodeURIComponent(inp.value.trim())); inp.value = ""; hideDrop(); return; }
+    var item = e.target.closest("[data-i]");
+    if (!item) return;
+    var i = +item.getAttribute("data-i");
+    if (lastHits[i]) openApp(lastHits[i]);
+    inp.value = ""; hideDrop();
+  });
+  document.addEventListener("click", function (e) { if (!f.contains(e.target)) hideDrop(); });
 })();
-window.ZAPOS = { store: Store, version: VERSION }; // for the stage 2 sync add-on
+window.ZAPOS = { store: Store, version: VERSION, catalog: CATALOG.length }; // for the stage 2 sync add-on
 
 // ========== v3.1 concept chrome: menu, work mode, today ==========
 var menuBtn = $("#menuBtn"); if (menuBtn) menuBtn.addEventListener("click", openMenu);
@@ -1184,6 +1301,66 @@ var menuBtn = $("#menuBtn"); if (menuBtn) menuBtn.addEventListener("click", open
   if (cal) cal.addEventListener("click", function () { var a = findById("calendar"); if (a) openApp(a); else openApp({ url: "calshow://", web: "https://calendar.google.com" }); });
   if (note) note.addEventListener("click", function () { var a = findById("notes"); if (a) openApp(a); else openApp({ url: "mobilenotes://", web: "https://keep.google.com" }); });
 })();
+
+
+// ========== v3.2 cyber HUD (original) — Reduce Motion + visibility aware ==========
+(function cyberHUD() {
+  var RM = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var boot = $("#boot"), bootMsg = $("#bootMsg");
+  var msgs = ["LINKING SENSORS…", "LOADING CATALOG…", "SYNCING MARKETS…", "MAP ONLINE…", "READY"];
+  if (boot) {
+    var skipB = false; try { skipB = !!Store.getLocal("skipBoot", false); } catch (e) {} try { if (sessionStorage.getItem("zapos.skipBoot")) skipB = true; } catch (e) {}
+    if (RM || skipB) { boot.classList.add("go"); }
+    else {
+      var mi = 0;
+      var iv = setInterval(function () {
+        if (bootMsg) bootMsg.textContent = msgs[Math.min(mi, msgs.length - 1)];
+        mi++;
+        if (mi >= msgs.length) { clearInterval(iv); setTimeout(function () { boot.classList.add("go"); }, 180); }
+      }, 160);
+      try { Store.setLocal("skipBoot", true); } catch (e) { try { sessionStorage.setItem("zapos.skipBoot","1"); } catch (e2) {} }
+    }
+  }
+  // decode / typing effect on brand
+  var dec = $("#brandDecode");
+  if (dec && !RM) {
+    var glyphs = "01ABCDEF#$%";
+    function pulseDecode() {
+      if (document.visibilityState !== "visible") return;
+      var n = 3, i = 0;
+      var t = setInterval(function () {
+        dec.textContent = Array.from({ length: n }, function () { return glyphs[Math.floor(Math.random() * glyphs.length)]; }).join("");
+        i++;
+        if (i > 8) { clearInterval(t); dec.textContent = "//"; }
+      }, 45);
+    }
+    pulseDecode(); setInterval(pulseDecode, 12000);
+  }
+  // tile ripple
+  document.addEventListener("pointerdown", function (e) {
+    var tile = e.target.closest(".tile");
+    if (!tile) return;
+    tile.classList.remove("rip"); void tile.offsetWidth; tile.classList.add("rip");
+    setTimeout(function () { tile.classList.remove("rip"); }, 480);
+  }, { passive: true });
+  // pause CSS animations via class when hidden
+  function syncVis() {
+    document.documentElement.classList.toggle("fx-paused", document.visibilityState !== "visible");
+  }
+  document.addEventListener("visibilitychange", syncVis); syncVis();
+})();
+
+function paintTicker(rows) {
+  var track = $("#mkTickerTrack"); if (!track) return;
+  var bits = (rows || []).map(function (r) {
+    var cls = (r.chg || 0) >= 0 ? "up" : "dn";
+    var sign = (r.chg || 0) >= 0 ? "+" : "";
+    return "<span><b>" + esc(r.sym || r.name || "?") + "</b> " + esc(r.price || "—") + ' <span class="' + cls + '">' + sign + (r.chg != null ? Number(r.chg).toFixed(2) : "0") + "%</span></span>";
+  });
+  if (!bits.length) bits = ["<span>MARKETS · waiting for feed</span>"];
+  var line = bits.join("") + bits.join("");
+  track.innerHTML = line;
+}
 
 // ========== 13. boot ==========
 document.body.classList.add("on-home"); applyTheme(THEME.id);
