@@ -1962,7 +1962,10 @@ html.motion-on .panel-group > .panel-inner{z-index:2}
 /* Consistent card padding / gaps */
 .card.br{box-sizing:border-box}
 #mFocus.fz,#phoneMount{padding:14px!important}
-#mFocus.fz{min-height:0!important;height:auto!important;align-self:start!important}
+#mFocus.fz{min-height:0}
+@media (max-width:899px){
+  #mFocus.fz{height:auto!important;align-self:start!important}
+}
 .panel-group{padding:14px}
 .panel-tools{margin-top:4px}
 
@@ -2070,13 +2073,13 @@ html.motion-on .panel-group > .panel-inner{z-index:2}
 /* Phone dialer: fit inside card at 360–430 */
 #phoneMount{overflow:hidden;min-width:0}
 #phoneMount .phone-h{
-  display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;
-  gap:4px 10px;margin-bottom:10px;
+  display:flex;flex-wrap:nowrap;align-items:baseline;justify-content:space-between;
+  gap:4px 8px;margin-bottom:10px;min-width:0;max-width:100%;
 }
-#phoneMount .phone-h b{white-space:nowrap}
+#phoneMount .phone-h b{white-space:nowrap;flex:none}
 #phoneMount .phone-sub{
-  font:700 10px/1.2 var(--mono);letter-spacing:.1em;color:rgba(247,240,232,.55);
-  white-space:nowrap;
+  font:700 10px/1.2 var(--mono);letter-spacing:.08em;color:rgba(247,240,232,.55);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1 1 auto;text-align:right;
 }
 #phoneMount .dl-pad{
   display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
@@ -2276,8 +2279,10 @@ html.map-fs-open,html.map-fs-open body{overflow:hidden!important;overscroll-beha
 .row2.panel-tools > .card,
 #mFocus.fz,#phoneMount{
   width:100%!important;max-width:100%!important;min-width:0!important;
-  height:auto!important;align-self:start!important;
   box-sizing:border-box!important;
+}
+@media (max-width:899px){
+  #mFocus.fz,#phoneMount{height:auto!important;align-self:start!important}
 }
 #phoneMount{overflow-x:clip;overflow-y:visible!important}
 #phoneMount .dl-pad,#phoneMount .dl-act{
@@ -2297,4 +2302,57 @@ html.map-fs-open,html.map-fs-open body{overflow:hidden!important;overscroll-beha
   .card.br,.panel-group,#phoneMount,#mFocus{touch-action:manipulation}
   /* map/chart keep their own touch-action */
   .map-v,.wx-temp-chart{touch-action:none}
+}
+
+
+/* ===== v4.13.2 EQUAL-HEIGHT paired rows + filled Focus ===== */
+.fz-stats{
+  display:none;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;
+  margin:4px 0 2px;padding:8px 6px;border:1px solid rgba(5,217,232,.18);
+  background:rgba(5,217,232,.04);
+  clip-path:polygon(0 6px,6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%);
+}
+.fz-stat{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0}
+.fz-stat b{font:800 16px/1 "Rajdhani",var(--font);color:var(--ink);font-variant-numeric:tabular-nums}
+.fz-stat span{font:700 8px/1 var(--mono);letter-spacing:.12em;color:rgba(247,240,232,.5)}
+
+/* All multi-column row2 pairs stretch to equal height on desktop */
+@media (min-width:900px){
+  .row2, .row2.panel-tools, .row2.hero-row{
+    align-items:stretch!important;
+  }
+  .row2 > .card, .row2.panel-tools > .card, .row2.hero-row > .hero, .row2.hero-row > .play{
+    height:auto!important;align-self:stretch!important;min-height:100%;
+  }
+  #mFocus.fz{
+    display:flex!important;flex-direction:column!important;
+    height:100%!important;min-height:100%!important;
+    align-self:stretch!important;
+    justify-content:flex-start!important;
+    gap:12px!important;
+  }
+  #mFocus .fz-presets{flex:none}
+  #mFocus .fz-dial{
+    flex:1 1 auto!important;
+    width:min(220px,78%)!important;max-width:240px!important;
+    min-height:180px!important;
+    margin:8px auto!important;
+    display:block;
+  }
+  #mFocus .fz-time{font-size:clamp(28px,4.5vw,36px)!important}
+  #mFocus .fz-status{font-size:9px!important;letter-spacing:.16em}
+  #mFocus .fz-stats{display:grid!important;flex:none;margin-top:auto}
+  #mFocus .fz-acts{flex:none;margin-top:2px}
+  #mFocus .fz-btn{max-width:none!important}
+  #phoneMount{
+    height:100%!important;align-self:stretch!important;
+    display:flex;flex-direction:column;min-width:0!important;max-width:100%!important;
+    overflow-x:clip;overflow-y:visible;
+  }
+  .panel-today .hero-row{align-items:stretch!important}
+}
+/* Mobile: compact stats row under dial (still useful, no dead gap issue) */
+@media (max-width:899px){
+  #mFocus .fz-stats{display:grid;margin-top:2px}
+  #mFocus.fz{height:auto!important;align-self:start!important}
 }

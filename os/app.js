@@ -1,7 +1,7 @@
-/* ZAPWISE//OS web app v4.13.1 (Nov 5, 2026). Desktop scroll + layout fix. Plaid-only Bank. Motion toggle. No tabs. Source: edit app.js → build.sh → app.min.js. */
+/* ZAPWISE//OS web app v4.13.2 (Nov 5, 2026). Equal-height desktop Focus/Phone. Plaid-only Bank. Motion toggle. No tabs. Source: edit app.js → build.sh → app.min.js. */
 (function () {
 "use strict";
-var VERSION = '4.13.1';
+var VERSION = '4.13.2';
 var APP_VERSION = VERSION;
 
 // v4.5: default Lite on coarse/mobile unless user already chose
@@ -211,11 +211,26 @@ function focusSessionsToday() {
   if (s.day !== focusDayKey()) return 0;
   return +s.count || 0;
 }
+function focusStreak() {
+  var s = Store.getLocal("focusStats", null) || {};
+  var day = focusDayKey();
+  if (s.day === day || s.day === ydayKeyFromFocus()) return +s.streak || 0;
+  return 0;
+}
+function ydayKeyFromFocus() {
+  var d = new Date(); d.setDate(d.getDate() - 1);
+  return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+}
 function bumpFocusSession() {
   var day = focusDayKey();
   var s = Store.getLocal("focusStats", null) || {};
-  if (s.day !== day) s = { day: day, count: 0 };
+  var yday = ydayKeyFromFocus();
+  if (s.day !== day) {
+    var cont = (s.day === yday);
+    s = { day: day, count: 0, streak: cont ? ((+s.streak || 0) + 1) : 1 };
+  }
   s.count = (+s.count || 0) + 1;
+  if (!(+s.streak > 0)) s.streak = 1;
   Store.setLocal("focusStats", s);
   return s.count;
 }
@@ -711,7 +726,7 @@ var FOC = Store.getLocal("focus", { st: "idle", mins: 25 });
 if (!FOC || typeof FOC !== "object") FOC = { st: "idle", mins: 25 };
 if (!FOC.mins) FOC.mins = 25;
 var FOCUS_HTML =
-  '<div class="mk-h fz-h">FOCUS <span class="foc-sess" id="focSess">0 TODAY</span></div>' +
+  '<div class="mk-h fz-h">&gt; FOCUS <span class="foc-sess" id="focSess">0 TODAY</span></div>' +
   '<div class="fz-presets" id="focPresets" role="group" aria-label="Focus length">' +
     '<button type="button" class="fz-p" data-foc-min="15">15m</button>' +
     '<button type="button" class="fz-p" data-foc-min="25">25m</button>' +
@@ -724,6 +739,11 @@ var FOCUS_HTML =
     '</svg>' +
     '<span class="fz-mid"><span class="fz-time" id="mFocV">25:00</span><span class="fz-status" id="mFocL">READY</span></span>' +
   '</button>' +
+  '<div class="fz-stats" id="focStats" aria-label="Focus stats">' +
+    '<div class="fz-stat"><b id="focStatSessions">0</b><span>SESSIONS</span></div>' +
+    '<div class="fz-stat"><b id="focStatStreak">0</b><span>STREAK</span></div>' +
+    '<div class="fz-stat"><b id="focStatLen">25m</b><span>LENGTH</span></div>' +
+  '</div>' +
   '<div class="fz-acts">' +
     '<button type="button" class="fz-btn" id="focToggle">START</button>' +
     '<button type="button" class="fz-btn alt" id="focReset">RESET</button>' +
@@ -731,7 +751,7 @@ var FOCUS_HTML =
 function ensureFocusDom() {
   /* v4.9.2: self-heal — if anything ever wipes the Focus card, rebuild it from the template */
   var card = $("#mFocus"); if (!card) return null;
-  if (!card.querySelector("#mFocV") || !card.querySelector("#focToggle") || !card.querySelector("#focRing") || !card.querySelector("#focPresets")) {
+  if (!card.querySelector("#mFocV") || !card.querySelector("#focToggle") || !card.querySelector("#focRing") || !card.querySelector("#focPresets") || !card.querySelector("#focStats")) {
     card.innerHTML = FOCUS_HTML;
   }
   return card;
@@ -766,7 +786,12 @@ function renderFocus() {
   txt("#mFocV", Math.floor(sec / 60) + ":" + pad2(sec % 60));
   var done = FOC.st === "idle" && now < FOC_DONE_UNTIL;
   txt("#mFocL", FOC.st === "run" ? "FOCUSING" : FOC.st === "pause" ? "PAUSED" : done ? "DONE ✓" : "TAP TO START");
-  txt("#focSess", focusSessionsToday() + " TODAY");
+  var sessN = focusSessionsToday();
+  var streakN = 0; try { streakN = focusStreak(); } catch (eSt) {}
+  txt("#focSess", sessN + " TODAY");
+  txt("#focStatSessions", String(sessN));
+  txt("#focStatStreak", String(streakN));
+  txt("#focStatLen", String(FOC.mins || 25) + "m");
   txt("#focToggle", FOC.st === "run" ? "PAUSE" : (FOC.st === "pause" ? "RESUME" : "START"));
   card.classList.toggle("running", FOC.st === "run");
   card.classList.toggle("paused", FOC.st === "pause");
@@ -5646,7 +5671,7 @@ function mountPhoneScreen() {
   var host = document.getElementById("phoneMount");
   if (!host) return;
   if (host.dataset.ready === "1") return;
-  host.innerHTML = '<div class="places-h phone-h"><b>PHONE</b><span class="dim phone-sub">DIAL · FAVORITES</span></div>' + dialerHtml();
+  host.innerHTML = '<div class="places-h phone-h"><b>PHONE</b><span class="dim phone-sub">DIAL · FAVS</span></div>' + dialerHtml();
   host.dataset.ready = "1";
   bindDialer(host);
 }
