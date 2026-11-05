@@ -2,7 +2,7 @@
    Loaded after first paint. Falls back silently when Lite / no WebGL / Reduce Motion. */
 (function (global) {
   "use strict";
-  var VERSION = "3.12.0";
+  var VERSION = "4.0.0";
   var THREE_URL = "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js";
   var ML_JS = "https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js";
   var ML_CSS = "https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css";
@@ -16,6 +16,7 @@
     orb: null,
     map: null,
     mapOk: false,
+    mapToolsWired: false,
     tiltOn: false,
     motionOn: false,
     paused: false,
@@ -57,7 +58,7 @@
     document.documentElement.classList.toggle("fx-3d", !lite);
     if (lite) {
       pauseAll();
-      teardownMap(false);
+      teardownMap(true);
       teardownOrb(false);
     }
     return !lite;
@@ -442,18 +443,29 @@
         if (markers) { markers.style.zIndex = "5"; }
       });
       map.on("error", function () { /* keep going; tiles may 404 some regions */ });
-      // wire tools
-      var zin = document.getElementById("mapIn");
-      var zout = document.getElementById("mapOut");
-      var rec = document.getElementById("mapRec");
-      if (zin) zin.addEventListener("click", function () { if (state.mapOk) map.zoomIn({ duration: 300 }); });
-      if (zout) zout.addEventListener("click", function () { if (state.mapOk) map.zoomOut({ duration: 300 }); });
-      if (rec) rec.addEventListener("click", function () {
+      map.on("styleimagemissing", function (e) {
+        if (!e || !e.id || map.hasImage(e.id)) return;
         try {
-          var g = global.ZAPOS && global.ZAPOS.store && global.ZAPOS.store.getLocal("gps", null);
-          if (g && g.lat != null) map.easeTo({ center: [g.lon, g.lat], zoom: Math.max(map.getZoom(), 15), pitch: 58, duration: 500 });
-        } catch (e) {}
+          var data = new Uint8Array(4);
+          map.addImage(e.id, { width: 1, height: 1, data: data }, { pixelRatio: 1 });
+        } catch (err) {}
       });
+      // wire tools once
+      if (!state.mapToolsWired) {
+        state.mapToolsWired = true;
+        var zin = document.getElementById("mapIn");
+        var zout = document.getElementById("mapOut");
+        var rec = document.getElementById("mapRec");
+        if (zin) zin.addEventListener("click", function () { if (state.map && state.mapOk) state.map.zoomIn({ duration: 300 }); });
+        if (zout) zout.addEventListener("click", function () { if (state.map && state.mapOk) state.map.zoomOut({ duration: 300 }); });
+        if (rec) rec.addEventListener("click", function () {
+          try {
+            if (!state.map || !state.mapOk) return;
+            var g = global.ZAPOS && global.ZAPOS.store && global.ZAPOS.store.getLocal("gps", null);
+            if (g && g.lat != null) state.map.easeTo({ center: [g.lon, g.lat], zoom: Math.max(state.map.getZoom(), 15), pitch: 58, duration: 500 });
+          } catch (e) {}
+        });
+      }
       // attribution note
       var attr = mv.querySelector(".map-attr");
       if (attr) {

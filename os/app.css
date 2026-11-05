@@ -400,7 +400,7 @@ body.cyber .h-clock{text-shadow:0 0 18px rgba(240,162,2,.25)}
 }
 
 html.fx-paused .fx-floor,html.fx-paused .fx-lines i,html.fx-paused .card.br,html.fx-paused .br:before,html.fx-paused .br:after,
-html.fx-paused html.fx-paused .mk-ticker .track,html.fx-paused .map-radar,html.fx-paused .map-dot,html.fx-paused .sync{animation-play-state:paused!important}
+html.fx-paused .mk-ticker .track,html.fx-paused .map-radar,html.fx-paused .map-dot,html.fx-paused .sync{animation-play-state:paused!important}
 .h-srch{overflow:visible}
 .tile .ic{position:relative;overflow:hidden}
 

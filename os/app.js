@@ -1,4 +1,4 @@
-/* ZAPWISE//OS web app v3.12.0 (Nov 5, 2026). 3D hologram orb + MapLibre city (OpenFreeMap); card tilt; particle boot; Lite mode. Keeps v3.11 HUD + Smart mode + honest traffic. Static, no API keys.
+/* ZAPWISE//OS web app v4.0.0 (Nov 5, 2026). Cinematic neon city (Three.js fly-through) + glass HUD panels; keeps MapLibre/orb/Lite/Smart/honest traffic. Static, no API keys.
    Data: Open-Meteo (weather + city search), api-bdc.io (city name for weather), CoinGecko (crypto + PAX Gold),
    mempool.space (BTC balance), ethereum.publicnode.com (ETH balance), solana.publicnode.com (SOL balance),
    OSM standard tiles (keyless, CSS dark filter) + Nominatim reverse geocoding (road + city, cached, re-queried only after moving > 40 m).
@@ -18,7 +18,7 @@
    Store.applyRemote below. */
 (function () {
 "use strict";
-var VERSION = "3.12.0";
+var VERSION = "4.0.0";
 var APP_VERSION = VERSION;
 
 // ========== v3.12 3D FX (lazy) ==========
@@ -43,6 +43,38 @@ function loadFx3d() {
   });
   return _fx3dLoading;
 }
+
+// ========== v4 cinematic city (lazy, after first paint) ==========
+var _cineLoading = null;
+function loadCinematic() {
+  if (window.ZAPCINE) return Promise.resolve(window.ZAPCINE);
+  if (_cineLoading) return _cineLoading;
+  _cineLoading = new Promise(function (res, rej) {
+    var s = document.createElement("script");
+    s.src = "/os/cinematic.js?v=" + VERSION;
+    s.async = true;
+    s.onload = function () { res(window.ZAPCINE); };
+    s.onerror = function () { _cineLoading = null; rej(new Error("cine")); };
+    document.head.appendChild(s);
+  });
+  return _cineLoading;
+}
+function initCinematic() {
+  if (!fx3dWanted()) return Promise.resolve(null);
+  return loadCinematic().then(function (cine) {
+    if (!cine) return null;
+    return cine.start().then(function (ok) {
+      if (ok) {
+        try {
+          document.documentElement.classList.add("fx-3d");
+          document.documentElement.classList.remove("fx-lite");
+        } catch (e) {}
+      }
+      return cine;
+    });
+  }).catch(function () { return null; });
+}
+
 function initFx3dLayer() {
   if (!fx3dWanted()) {
     document.documentElement.classList.add("fx-lite");
@@ -3167,15 +3199,19 @@ function openSettings() {
           Store.setLocal("tiltCards", tilt === "1");
           Store.setLocal("motionTilt", motion === "1");
         } catch (e) {}
+        if (window.ZAPCINE) {
+          try { window.ZAPCINE.setEnabled(lite !== "1"); } catch (eC) {}
+        }
         if (window.ZAPFX3D) {
           window.ZAPFX3D.setLite(lite === "1");
           window.ZAPFX3D.setTiltEnabled(tilt === "1");
           window.ZAPFX3D.setMotionEnabled(motion === "1");
         } else if (lite !== "1") {
-          initFx3dLayer();
+          initCinematic().then(function (c) { if (!c) initFx3dLayer(); });
         } else {
           document.documentElement.classList.add("fx-lite");
           document.documentElement.classList.remove("fx-3d");
+          document.documentElement.classList.remove("zw-cine");
         }
         minute(new Date()); closeSheet(); toast("Saved"); if (uc) refreshWeather(true);
       });
@@ -3571,7 +3607,21 @@ function placeNeonRing(v, dx, dy) {
     }
   }
   try { bindChargeUp(); updateSkyline(); buildClockTicks(); ensureHudTicks(); initBatteryHud(); updateGpsLockChip(); startZapWave(); } catch (e) {}
-  try { setTimeout(function () { initFx3dLayer(); }, 400); } catch (e) {}
+  try {
+    setTimeout(function () {
+      initCinematic().then(function (cine) {
+        // Cinematic owns the 3D stage; do NOT call fx3d with lite:true (that adds fx-lite and hides the city).
+        if (cine && cine.ready && cine.ready()) {
+          try {
+            document.documentElement.classList.remove("fx-lite");
+            document.documentElement.classList.add("fx-3d");
+          } catch (eC) {}
+          return;
+        }
+        initFx3dLayer();
+      });
+    }, 350);
+  } catch (e) {}
   // decode / typing effect on brand
   var dec = $("#brandDecode");
   if (dec && !RM) {
@@ -3601,6 +3651,10 @@ function placeNeonRing(v, dx, dy) {
       if (window.ZAPFX3D) {
         if (document.visibilityState !== "visible") window.ZAPFX3D.pause();
         else window.ZAPFX3D.resume();
+      }
+      if (window.ZAPCINE) {
+        if (document.visibilityState !== "visible") window.ZAPCINE.pause();
+        else window.ZAPCINE.resume();
       }
     } catch (e) {}
   }
