@@ -1,6 +1,6 @@
 {
-  "version": "4.9.2",
+  "version": "4.9.3",
   "built": "2026-11-05",
   "channel": "stable",
-  "notes": "v4.9.2: Still mode \u2014 live wallpaper removed (static #070814 bg, no fixed layer), no CSS animations/backdrop blur/rAF loops = no iPhone flicker. Weather tap opens NOW (current conditions) at top, then hourly/daily; custom pressed state, no gray flash. Focus rebuilt: presets row / ring / actions, delegated touch handlers, self-healing render, timestamp timer, vibrate on done. Battery % + charging bolt where the browser supports it (hidden on iPhone). Double-tap zoom off."
+  "notes": "v4.9.3: Actual | Feels Like is now a big slide switch (tap or swipe) \u2014 Actual is the default, chart line (cyan vs violet), H/L, badge and caption all switch, choice is remembered. Sheet headers are solid (nothing shows through). Wallet add sheet: full-width 52px address field, PASTE under it, dark bold text on cyan buttons. ZAP AI mic moved into the header (never covers tiles). Calendar/Notes row moved to the top."
 }

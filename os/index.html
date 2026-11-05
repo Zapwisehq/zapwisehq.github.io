@@ -7,13 +7,13 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="description" content="ZAPWISE//OS: calm glass HUD — clock, weather, map, markets, focus, apps.">
 <meta name="theme-color" content="#070814">
-<meta name="zapos-version" content="4.9.2">
+<meta name="zapos-version" content="4.9.3">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="/os/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/os/icon-180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/os/icon-192.png">
-<link rel="stylesheet" href="/os/app.css?v=4.9.2">
+<link rel="stylesheet" href="/os/app.css?v=4.9.3">
 <style>
 @font-face{font-family:"Rajdhani";font-style:normal;font-weight:600;font-display:swap;src:url("/os/fonts/Rajdhani-SemiBold.ttf") format("truetype")}
 @font-face{font-family:"Rajdhani";font-style:normal;font-weight:700;font-display:swap;src:url("/os/fonts/Rajdhani-Bold.ttf") format("truetype")}
@@ -32,11 +32,14 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
 <div id="app">
 
  <header class="top sticky" id="top">
-  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver" data-app-ver>v4.9.2</span></div>
+  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver" data-app-ver>v4.9.3</span></div>
   <div class="top-r">
    <span class="sync" id="hSync"><i aria-hidden="true"></i>LIVE</span>
    <span class="hud-chip gps" id="hGpsLock" data-lock="0" hidden><i aria-hidden="true"></i>GPS —</span>
    <span class="hud-chip bat" id="hBat" hidden title="Battery"><span class="bat-meter" id="hBatMeter" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span><span id="hBatPct"></span></span>
+   <button type="button" class="zap-fab asst-mic h-mic" id="zapFab" aria-label="Open ZAP AI" title="ZAP AI">
+    <svg class="zap-mic-ico" viewBox="0 0 24 24" aria-hidden="true" width="20" height="20"><path fill="currentColor" d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-3.1A7 7 0 0 0 19 11h-2z"/></svg>
+   </button>
    <button class="h-theme" data-theme-btn aria-label="Change theme" title="Change theme"><i aria-hidden="true"></i>THEME</button>
    <button class="avatar" id="menuBtn" aria-label="Open settings menu" title="Menu">☰</button>
   </div>
@@ -73,6 +76,18 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
    </div>
   </div>
 
+  <div class="card br today" id="today">
+   <div class="td-ico" aria-hidden="true"><small>TODAY</small><b id="tdDay">—</b></div>
+   <button type="button" class="td-item" id="tdCal" aria-label="Open Calendar">
+    <span class="td-k">Calendar</span>
+    <span class="td-v" id="tdCalV">Open today’s schedule</span>
+   </button>
+   <button type="button" class="td-item" id="tdNote" aria-label="Open Notes">
+    <span class="td-k">Note</span>
+    <span class="td-v" id="tdNoteV">Open Notes</span>
+   </button>
+  </div>
+
   <button class="card br h-wx" id="hWx" type="button" aria-label="Open weather detail" aria-expanded="false" aria-controls="xpWx">
    <canvas class="fx" id="fxHud" aria-hidden="true"></canvas>
    <span class="hw-in">
@@ -94,14 +109,16 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
    <div class="wx-sec-h">HOURLY · NEXT DAYS</div>
    <div class="wx-days" id="wxDayPick" role="tablist" aria-label="Forecast days"></div>
    <div class="wx-day-label" id="wxDayLabel">—</div>
-   <div class="wx-chart-head"><span class="wx-hl" id="wxChartHL">--°</span><span class="wx-unit" id="wxUnitLbl">Fahrenheit (°F)</span></div>
+   <div class="wx-chart-head"><span class="wx-mode-badge" id="wxChartMode">ACTUAL</span><span class="wx-hl" id="wxChartHL">--°</span><span class="wx-unit" id="wxUnitLbl">Fahrenheit (°F)</span></div>
    <div class="wx-icons" id="wxHourIcons" aria-hidden="true"></div>
    <canvas class="wx-temp-chart" id="wxTempChart" width="720" height="220" aria-label="Hourly temperature chart"></canvas>
    <div class="wx-xlabels" id="wxXLabels"><span>12AM</span><span>6AM</span><span>12PM</span><span>6PM</span></div>
-   <div class="wx-tog" role="group" aria-label="Temperature type">
-    <button type="button" class="wx-tog-b on" data-wxmode="actual" id="wxModeActual">Actual</button>
-    <button type="button" class="wx-tog-b" data-wxmode="feels" id="wxModeFeels">Feels Like</button>
+   <div class="wx-sw" id="wxModeSw" role="switch" aria-checked="false" aria-label="Chart shows Actual or Feels Like temperature — swipe or tap" tabindex="0">
+    <span class="wx-sw-thumb" aria-hidden="true"></span>
+    <button type="button" class="wx-tog-b on" data-wxmode="actual" id="wxModeActual" tabindex="-1">ACTUAL</button>
+    <button type="button" class="wx-tog-b" data-wxmode="feels" id="wxModeFeels" tabindex="-1">FEELS LIKE</button>
    </div>
+   <div class="wx-sw-hint" aria-hidden="true">◀ swipe ▶</div>
    <p class="wx-tog-cap" id="wxModeCap">The actual temperature.</p>
    <div class="wx-precip-h">Chance of Precipitation</div>
    <div class="wx-precip-sum" id="wxPrecipSum">—</div>
@@ -214,18 +231,6 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
 
   <div class="card br" id="phoneMount" aria-label="Dial pad and favorites"></div>
 
-  <div class="card br today" id="today">
-   <div class="td-ico" aria-hidden="true"><small>TODAY</small><b id="tdDay">—</b></div>
-   <button type="button" class="td-item" id="tdCal" aria-label="Open Calendar">
-    <span class="td-k">Calendar</span>
-    <span class="td-v" id="tdCalV">Open today’s schedule</span>
-   </button>
-   <button type="button" class="td-item" id="tdNote" aria-label="Open Notes">
-    <span class="td-k">Note</span>
-    <span class="td-v" id="tdNoteV">Open Notes</span>
-   </button>
-  </div>
-
   <div class="card br apps-card apps-wrap" id="appsSection">
    <div class="sec-h">APPS <span class="sec-actions"><button class="chip" id="dEdit" type="button">✎ EDIT</button></span></div>
    <form class="h-srch in-apps" id="srch" role="search" autocomplete="off">
@@ -260,11 +265,6 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
  <div class="sheet-b" id="sheetBody"></div>
 </div>
 
-<div class="asst-dock" id="asstDock">
- <button type="button" class="zap-fab asst-mic" id="zapFab" aria-label="Open ZAP AI" title="ZAP AI">
-  <svg class="zap-mic-ico" viewBox="0 0 24 24" aria-hidden="true" width="22" height="22"><path fill="currentColor" d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-3.1A7 7 0 0 0 19 11h-2z"/></svg>
- </button>
-</div>
 <div class="zap-sheet" id="zapSheet" hidden role="dialog" aria-modal="true" aria-labelledby="zapTitle">
  <div class="zap-h">
   <b id="zapTitle">ZAP AI</b>
@@ -298,8 +298,8 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/os/catalog.js?v=4.9.2"></script>
-<script src="/os/sky.js?v=4.9.2"></script>
-<script src="/os/app.js?v=4.9.2"></script>
+<script src="/os/catalog.js?v=4.9.3"></script>
+<script src="/os/sky.js?v=4.9.3"></script>
+<script src="/os/app.js?v=4.9.3"></script>
 </body>
 </html>

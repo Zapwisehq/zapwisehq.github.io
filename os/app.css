@@ -1348,3 +1348,57 @@ html:not(.light) .card::after{background:rgba(7,8,20,.55)!important}
 .hud-chip.bat .bat-meter.low i.on{background:#ff2a6d}
 .hud-chip.bat.charging{color:#3ddc97}
 @media (max-width:400px){.hud-chip.bat .bat-meter{display:none}}
+
+/* ===== v4.9.3: solid sheet headers · slide switch · readable wallet/buttons · mic in header · today row on top ===== */
+/* 1a. Sheet headers: SOLID panel, content scrolls cleanly under it (no padding gap above sticky header). */
+.sheet:not([hidden]),.xp.as-detail{padding-top:0!important}
+.sheet .sheet-h,.zap-sheet .zap-h,.xp.as-detail .xp-h{
+  position:sticky!important;top:0!important;z-index:40!important;
+  background:#070814!important;opacity:1!important;
+  border-bottom:1px solid rgba(5,217,232,.45)!important;
+  box-shadow:0 6px 14px rgba(0,0,0,.6)!important;
+  margin:0 -14px 12px!important;padding:12px 14px 10px!important;
+}
+.zap-sheet .zap-h{margin:0!important}
+.sheet .sheet-h:after,.zap-h:after{margin-top:6px}
+.xp.as-detail .xp-h > *,.sheet .sheet-h > *{position:relative;z-index:1}
+
+/* 1b. Actual | Feels Like slide switch (static: thumb placed by class, no animation) */
+.wx-sw{position:relative;display:grid;grid-template-columns:1fr 1fr;width:100%;max-width:420px;min-height:52px;margin:14px 0 4px;padding:4px;border-radius:999px;
+  background:#070814;border:2px solid rgba(5,217,232,.6);touch-action:pan-y;user-select:none;-webkit-user-select:none;cursor:pointer;box-sizing:border-box}
+.wx-sw.is-feels{border-color:rgba(196,120,255,.75)}
+.wx-sw-thumb{position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);border-radius:999px;background:#05d9e8;box-shadow:0 0 0 1px rgba(255,255,255,.25) inset;pointer-events:none}
+.wx-sw.is-feels .wx-sw-thumb{left:50%;background:#c478ff}
+.wx-sw .wx-tog-b{position:relative;z-index:1;min-height:44px;border:0;border-radius:999px;background:transparent!important;box-shadow:none!important;
+  font:800 15px/1 var(--mono);letter-spacing:.1em;color:#9aa3b8!important;padding:0 8px;cursor:pointer}
+.wx-sw .wx-tog-b.on{color:#070814!important}
+.wx-sw-hint{font:700 10px/1 var(--mono);letter-spacing:.2em;color:var(--dim);text-align:center;max-width:420px;margin:2px 0 6px}
+.wx-tog-cap{font-size:12px!important;font-weight:700;color:#e9e4f2!important}
+.wx-mode-badge{display:inline-block;font:800 11px/1 var(--mono);letter-spacing:.14em;padding:5px 8px;border-radius:6px;background:#05d9e8;color:#070814;margin-right:8px;vertical-align:middle}
+#wxModeSw.is-feels ~ * .wx-mode-badge,.wx-mode-badge.feels{background:#c478ff}
+
+/* 2. Wallet / broker add sheets: big address field, PASTE under it, never overflows */
+.wal-field{display:block;width:100%;min-width:0}
+.wal-row{display:flex!important;flex-direction:column!important;gap:8px!important;width:100%;min-width:0}
+.wal-row input,#walAddr,#acAddr{display:block;width:100%!important;max-width:100%;box-sizing:border-box;min-height:52px!important;padding:12px 14px!important;
+  font-size:16px!important;border:2px solid rgba(5,217,232,.75)!important;border-radius:12px!important;background:#0d1024!important;color:#f7f0e8!important}
+.wal-row input::placeholder,.sheet input::placeholder{color:#a9b1c7!important;opacity:1}
+.wal-row input:focus,.sheet input:focus,.sheet textarea:focus,.sheet select:focus{outline:none!important;border-color:#05d9e8!important;box-shadow:0 0 0 3px rgba(5,217,232,.35)!important}
+.wal-paste,.btn.wal-paste{width:100%!important;min-height:46px!important;margin:0!important;font:800 13px/1 var(--mono)!important;letter-spacing:.14em}
+/* solid cyan/pink buttons: dark, bold, high-contrast text everywhere */
+.btn:not(.alt):not(.warn):not(.ghost),.sheet .btn:not(.alt):not(.warn):not(.ghost),.xp.as-detail .btn:not(.alt):not(.warn):not(.ghost){
+  background:#05d9e8!important;color:#070814!important;font-weight:800!important;text-shadow:none!important;-webkit-text-fill-color:#070814}
+.btn.pink,.btn.primary-pink{background:#ff2a6d!important;color:#070814!important;-webkit-text-fill-color:#070814}
+.btn:disabled,.btn[aria-disabled="true"]{opacity:.6!important;filter:none!important;color:#070814!important;-webkit-text-fill-color:#070814}
+
+/* 3. ZAP AI mic lives in the header — never floats over tiles or buttons */
+.asst-dock{display:none!important}
+.top-r .h-mic{position:static!important;width:44px!important;height:44px!important;min-width:44px;min-height:44px;flex:0 0 44px;border-radius:50%;
+  border:1px solid rgba(92,225,230,.6)!important;background:#070814!important;color:#05d9e8!important;display:grid!important;place-items:center;box-shadow:0 0 0 1px rgba(0,0,0,.3)!important;padding:0!important}
+@media (max-width:420px){
+  .top-r .h-theme{font-size:0!important;letter-spacing:0!important;width:44px;padding:0!important;justify-content:center;gap:0!important}
+  .top-r .h-theme i{width:16px;height:16px}
+  .top-r{gap:6px!important}
+}
+@media (max-width:400px){.brand .decode{display:none!important}.brand{letter-spacing:.02em!important;font-size:12px!important}.brand .ver{font-size:9px!important;letter-spacing:.04em!important;padding:2px 4px!important;margin-left:3px!important}}
+@media (max-width:400px){.brand{text-overflow:clip!important;flex:1 1 auto}.brand .ver{display:none!important}}

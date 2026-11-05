@@ -1,7 +1,7 @@
-/* ZAPWISE//OS web app v4.9.2 (Nov 5, 2026). Still mode: no wallpaper, no animation loops, no backdrop blur. Weather NOW sheet, rebuilt Focus, battery chip (where the browser allows). No tabs. Voice only from ZAP AI. */
+/* ZAPWISE//OS web app v4.9.3 (Nov 5, 2026). Actual/Feels slide switch, solid sheet headers, readable wallet add sheet, mic in header, Today row on top. Still mode: no wallpaper, no animation loops, no backdrop blur. Weather NOW sheet, rebuilt Focus, battery chip (where the browser allows). No tabs. Voice only from ZAP AI. */
 (function () {
 "use strict";
-var VERSION = "4.9.2";
+var VERSION = "4.9.3";
 var APP_VERSION = VERSION;
 
 // v4.5: default Lite on coarse/mobile unless user already chose
@@ -226,7 +226,7 @@ function clone(o) { return o == null ? o : JSON.parse(JSON.stringify(o)); }
 var Store = (function () {
   var STATE_KEY = "zapos.state", DEVICE_KEY = "zapos.device", VER = 1;
   var PREF_KEYS = ["settings", "theme", "apps", "coins", "loc", "favs", "places", "holdings", "broker", "wallets", "accounts", "assistant"];                     // shared state (sync-ready)
-  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss", "mediaKey", "skipBoot", "bootDay", "uiSounds", "recentPins", "wxDay", "wxMode", "portHist", "acctMigrated", "liteMode", "tiltCards", "motionTilt", "callLog", "zapChat", "focusStats", "wallpaper", "zapNotes", "zapReminders"]; // this device only
+  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss", "mediaKey", "skipBoot", "bootDay", "uiSounds", "recentPins", "wxDay", "wxMode", "wxMode2", "portHist", "acctMigrated", "liteMode", "tiltCards", "motionTilt", "callLog", "zapChat", "focusStats", "wallpaper", "zapNotes", "zapReminders"]; // this device only
   function read(k) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
   function write(k, v) { if (dead) return false; try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
   var state = read(STATE_KEY), dev = read(DEVICE_KEY), subs = [], uiT = null, dead = false; // dead: after a reset, write nothing more
@@ -1208,7 +1208,7 @@ function paintCelestialSky(fx, c, W, H, t, kind) {
 
 var WX_DAY = 0, WX_MODE = "actual";
 try { WX_DAY = +Store.getLocal("wxDay", 0) || 0; } catch (e) {}
-try { WX_MODE = Store.getLocal("wxMode", "feels") || "actual"; } catch (e) {}
+try { WX_MODE = Store.getLocal("wxMode2", "actual") === "feels" ? "feels" : "actual"; } catch (e) {} /* v4.9.3: new key → everyone starts on Actual once */
 
 /* Local calendar helpers — avoid UTC shift from date-only / T12 strings across TZ */
 function parseLocalYMD(s) {
@@ -1287,11 +1287,11 @@ function drawTempChart(cv, j, dayIdx, mode) {
   c.fillStyle = ag; c.fill();
   c.beginPath();
   idxs.forEach(function (_, i) { var x = X(i), y = Y(vals[i]); if (i) c.lineTo(x, y); else c.moveTo(x, y); });
-  c.strokeStyle = feels ? "rgba(232,180,255,.98)" : "rgba(244,239,228,.9)";
+  c.strokeStyle = feels ? "rgba(232,180,255,.98)" : "rgba(5,217,232,.95)";
   c.lineWidth = feels ? 2.6 : 2; c.lineJoin = "round"; c.stroke();
   // H / L markers with degree labels
   var iHi = vals.indexOf(hi), iLo = vals.indexOf(lo);
-  [[iHi, "H", hi, feels ? "#e9c6ff" : "rgba(244,239,228,.95)"], [iLo, "L", lo, feels ? "#c9a0ff" : "rgba(244,239,228,.85)"]].forEach(function (m) {
+  [[iHi, "H", hi, feels ? "#e9c6ff" : "#7ff3fb"], [iLo, "L", lo, feels ? "#c9a0ff" : "#05d9e8"]].forEach(function (m) {
     var x = X(m[0]), y = Y(m[2]);
     c.fillStyle = m[3]; c.beginPath(); c.arc(x, y, 3.6, 0, 6.283); c.fill();
     c.font = "700 11px ui-sans-serif,system-ui";
@@ -1513,7 +1513,7 @@ function renderConditions() {
       var cf = currentFeels(j);
       ul.textContent = (cf != null ? ("Feels like " + Math.round(cf) + "° · ") : "Feels like · ") + (S.units === "C" ? "Celsius (°C)" : "Fahrenheit (°F)");
     } else {
-      ul.textContent = (WX_MODE === "feels" ? "Feels like · " : "") + (S.units === "C" ? "Celsius (°C)" : "Fahrenheit (°F)");
+      ul.textContent = (WX_MODE === "feels" ? "Feels like · " : "Actual temp · ") + (S.units === "C" ? "Celsius (°C)" : "Fahrenheit (°F)");
     }
   }
   var icons = $("#wxHourIcons");
@@ -1526,8 +1526,12 @@ function renderConditions() {
     }
     icons.innerHTML = bits.join("");
   }
-  $$(".wx-tog-b").forEach(function (b) { b.classList.toggle("on", b.getAttribute("data-wxmode") === WX_MODE); });
-  var cap = $("#wxModeCap"); if (cap) cap.textContent = WX_MODE === "feels" ? "Apparent temperature — violet line · H/L marked." : "The actual temperature.";
+  $$(".wx-tog-b").forEach(function (b) { var on = b.getAttribute("data-wxmode") === WX_MODE; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on ? "true" : "false"); });
+  var sw = $("#wxModeSw"); if (sw) { sw.classList.toggle("is-feels", WX_MODE === "feels"); sw.setAttribute("aria-checked", WX_MODE === "feels" ? "true" : "false"); }
+  var cap = $("#wxModeCap"); if (cap) cap.textContent = WX_MODE === "feels"
+    ? "FEELS LIKE (apparent temp, wind + humidity) — violet line · H " + hi + "° / L " + lo + "°"
+    : "ACTUAL air temperature — cyan line · H " + hi + "° / L " + lo + "°";
+  var cm = $("#wxChartMode"); if (cm) { cm.textContent = WX_MODE === "feels" ? "FEELS LIKE" : "ACTUAL"; cm.classList.toggle("feels", WX_MODE === "feels"); }
   var rain = j.daily.precipitation_probability_max[WX_DAY] || 0;
   var dayName = sel.toLocaleDateString("en-US", { weekday: "long" });
   var ps = $("#wxPrecipSum"); if (ps) ps.textContent = dayName + "'s chance: " + rain + "% · " + rainTiming(j, WX_DAY);
@@ -1550,10 +1554,50 @@ function renderConditions() {
     WX_DAY = +b.getAttribute("data-d"); try { Store.setLocal("wxDay", WX_DAY); } catch (err) {}
     renderConditions();
   });
-  document.addEventListener("click", function (e) {
-    var b = e.target.closest("[data-wxmode]"); if (!b) return;
-    WX_MODE = b.getAttribute("data-wxmode"); try { Store.setLocal("wxMode", WX_MODE); } catch (err) {}
+  /* v4.9.3: Actual | Feels Like = slide switch. Tap a side or swipe the pill left/right. */
+  function setWxMode(m) {
+    m = m === "feels" ? "feels" : "actual";
+    WX_MODE = m; try { Store.setLocal("wxMode2", m); } catch (err) {}
     renderConditions();
+  }
+  window.setWxMode = setWxMode;
+  var swLast = 0, swX = 0, swY = 0, swDown = false;
+  function swPick(e, x) {
+    var sw = $("#wxModeSw"); if (!sw) return;
+    var r = sw.getBoundingClientRect();
+    var dx = x - swX;
+    if (Math.abs(dx) > 24) setWxMode(dx > 0 ? "feels" : "actual");
+    else setWxMode(x > r.left + r.width / 2 ? "feels" : "actual");
+  }
+  document.addEventListener("touchstart", function (e) {
+    var sw = e.target.closest && e.target.closest("#wxModeSw"); if (!sw) { swDown = false; return; }
+    var t = e.touches[0]; swX = t.clientX; swY = t.clientY; swDown = true;
+  }, { capture: true, passive: true });
+  document.addEventListener("touchend", function (e) {
+    if (!swDown) return; swDown = false;
+    var t = e.changedTouches && e.changedTouches[0]; if (!t) return;
+    if (Math.abs(t.clientY - swY) > 30 && Math.abs(t.clientY - swY) > Math.abs(t.clientX - swX)) return; /* vertical scroll */
+    try { if (e.cancelable) e.preventDefault(); } catch (err) {}
+    swLast = Date.now(); swPick(e, t.clientX);
+  }, { capture: true, passive: false });
+  document.addEventListener("pointerdown", function (e) {
+    if (e.pointerType === "touch") return;
+    var sw = e.target.closest && e.target.closest("#wxModeSw"); if (!sw) return;
+    swX = e.clientX; swY = e.clientY; swDown = true;
+  }, true);
+  document.addEventListener("pointerup", function (e) {
+    if (e.pointerType === "touch" || !swDown) return; swDown = false;
+    swLast = Date.now(); swPick(e, e.clientX);
+  }, true);
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest && e.target.closest("#wxModeSw,[data-wxmode]"); if (!b) return;
+    if (Date.now() - swLast < 700) return;
+    var m = e.target.closest("[data-wxmode]");
+    if (m) setWxMode(m.getAttribute("data-wxmode"));
+  });
+  document.addEventListener("keydown", function (e) {
+    if (!e.target.closest || !e.target.closest("#wxModeSw")) return;
+    if (e.key === "ArrowRight") setWxMode("feels"); else if (e.key === "ArrowLeft") setWxMode("actual");
   });
   window.addEventListener("resize", function () { clearTimeout(renderConditions._t); renderConditions._t = setTimeout(function () { renderConditions(); }, 120); });
   var tc = $("#wxTempChart");
@@ -4293,7 +4337,7 @@ function openAddWalletAccount(c) {
     '<p class="note" style="margin-bottom:10px;color:#9ff0c8"><b>Read-only.</b> Never enter your seed phrase or private key. Public address only.</p>' +
     '<label class="field wal-field">PUBLIC ADDRESS' +
       '<div class="wal-row">' +
-        '<input id="walAddr" ' + walletAddrAttrs() + ' placeholder="bc1… / 0x… / Solana">' +
+        '<input id="walAddr" ' + walletAddrAttrs() + ' placeholder="Paste your public wallet address">' +
         '<button type="button" class="btn wal-paste" data-wal-paste="1" aria-label="Paste address">PASTE</button>' +
       '</div></label>' +
     '<label class="field">NAME (OPTIONAL)<input id="walLabel" maxlength="24" placeholder="' + esc(c.name) + '" autocomplete="off"></label>' +
