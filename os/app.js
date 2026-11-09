@@ -1,7 +1,7 @@
 /* ZAPWISE//OS web app v4.13.2 (Nov 5, 2026). Equal-height desktop Focus/Phone. Plaid-only Bank. Motion toggle. No tabs. Source: edit app.js → build.sh → app.min.js. */
 (function () {
 "use strict";
-var VERSION = '4.14.0';
+var VERSION = '4.15.0';
 var APP_VERSION = VERSION;
 
 // v4.5: default Lite on coarse/mobile unless user already chose
@@ -245,7 +245,7 @@ function clone(o) { return o == null ? o : JSON.parse(JSON.stringify(o)); }
 var Store = (function () {
   var STATE_KEY = "zapos.state", DEVICE_KEY = "zapos.device", VER = 1;
   var PREF_KEYS = ["settings", "theme", "apps", "coins", "loc", "favs", "places", "holdings", "broker", "wallets", "accounts", "assistant"];                     // shared state (sync-ready)
-  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss", "mediaKey", "skipBoot", "bootDay", "uiSounds", "recentPins", "wxDay", "wxMode", "wxMode2", "portHist", "acctMigrated", "liteMode", "tiltCards", "motionTilt", "callLog", "zapChat", "focusStats", "wallpaper", "zapNotes", "zapReminders", "uiMotion", "welcomeSeen", "bankPrivacy", "mapTraffic", "bankManualCleared_v413"]; // this device only
+  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss", "mediaKey", "skipBoot", "bootDay", "uiSounds", "recentPins", "wxDay", "wxMode", "wxMode2", "portHist", "acctMigrated", "liteMode", "tiltCards", "motionTilt", "callLog", "zapChat", "focusStats", "wallpaper", "zapNotes", "zapReminders", "uiMotion", "welcomeSeen", "bankPrivacy", "mapTraffic", "bankManualCleared_v413", "searchProv", "focusCustom", "v5AppsOpen", "quickActions", "sugState"]; // this device only
   function read(k) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
   function write(k, v) { if (dead) return false; try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
   var state = read(STATE_KEY), dev = read(DEVICE_KEY), subs = [], uiT = null, dead = false; // dead: after a reset, write nothing more
@@ -726,11 +726,13 @@ var FOC = Store.getLocal("focus", { st: "idle", mins: 25 });
 if (!FOC || typeof FOC !== "object") FOC = { st: "idle", mins: 25 };
 if (!FOC.mins) FOC.mins = 25;
 var FOCUS_HTML =
-  '<div class="mk-h fz-h">&gt; FOCUS <span class="foc-sess" id="focSess">0 TODAY</span></div>' +
+  '<div class="mk-h fz-h v5h"><b>FOCUS MODE</b> <span class="foc-sess" id="focSess">0 TODAY</span></div>' +
   '<div class="fz-presets" id="focPresets" role="group" aria-label="Focus length">' +
     '<button type="button" class="fz-p" data-foc-min="15">15m</button>' +
     '<button type="button" class="fz-p" data-foc-min="25">25m</button>' +
     '<button type="button" class="fz-p" data-foc-min="50">50m</button>' +
+    '<button type="button" class="fz-p fz-custom" id="focCustom" hidden>--</button>' +
+    '<button type="button" class="fz-p fz-edit" id="focEdit" aria-label="Set a custom focus length">✎</button>' +
   '</div>' +
   '<button type="button" class="fz-dial" id="focTap" aria-label="Start or pause focus">' +
     '<svg class="fz-svg" viewBox="0 0 120 120" aria-hidden="true" focusable="false">' +
@@ -963,8 +965,23 @@ function renderNowPlaying() {
   var art = $("#npArt"), title = $("#npTitle"), artist = $("#npArtist"), live = $("#npLive");
   if (art) { var asrc = m.icon || "/os/icons/music.jpg"; if (art.getAttribute("src") !== asrc) art.src = asrc; art.alt = m.name; }
   if (title) title.textContent = m.name;
-  if (artist) artist.textContent = "Tap ▶ to play";
-  if (live) { live.textContent = "SWITCH ▾"; live.setAttribute("aria-label", "Choose music app"); }
+  if (artist) artist.textContent = "Tap to open " + m.name;
+  if (live) { live.textContent = "MORE ▾"; live.setAttribute("aria-label", "More music apps"); }
+  /* v4.15.0 inline provider switch (honest launcher: no fake track or progress) */
+  var list = $("#npList");
+  if (list) {
+    var keys = ["ytmusic", "spotify", "music", "soundcloud"];
+    if (keys.indexOf(MEDIA_KEY) < 0) keys = [MEDIA_KEY].concat(keys.slice(0, 3));
+    var html = keys.map(function (k) {
+      var mm = MEDIA[k]; if (!mm) return "";
+      var on = k === MEDIA_KEY;
+      var nm = k === "ytmusic" ? "YouTube" : mm.name;
+      return '<button type="button" class="np-opt' + (on ? " on" : "") + '" role="radio" aria-checked="' + on + '" data-media-act="set" data-m="' + k + '">' +
+        '<img src="' + esc(mm.icon) + '" alt="" width="22" height="22"><span>' + esc(nm) + '</span><i class="np-chk" aria-hidden="true">' + (on ? "✓" : "") + "</i></button>";
+    }).join("");
+    html += '<button type="button" class="np-opt np-more" data-media-act="pick" aria-label="More music apps"><span>More apps ▾</span></button>';
+    if (list._h !== html) { list._h = html; list.innerHTML = html; }
+  }
 }
 function setMediaKey(k, open) {
   if (!MEDIA[k]) return;
@@ -988,6 +1005,7 @@ $("#hPlay").addEventListener("click", function (e) {
   var act = b.getAttribute("data-media-act");
   if (act === "play") openApp(currentMedia());
   else if (act === "pick") openMedia();
+  else if (act === "set") setMediaKey(b.getAttribute("data-m"), false);
 });
 function openMedia() {
   var html = '<p class="note" style="margin-bottom:10px">Pick your music app</p>' +
@@ -5732,11 +5750,21 @@ function pinFromCatalog(c) {
   if (c.web) a.web = c.web; if (c.pkg) a.pkg = c.pkg;
   APPS.push(a); saveApps(); renderApps(); toast(c.name + " pinned to your apps");
 }
+/* v4.15.0 web search provider (saved on this device) */
+var SEARCH_PROVIDERS = {
+  google: { name: "Google", url: "https://www.google.com/search?q=" },
+  duckduckgo: { name: "DuckDuckGo", url: "https://duckduckgo.com/?q=" },
+  bing: { name: "Bing", url: "https://www.bing.com/search?q=" },
+  brave: { name: "Brave", url: "https://search.brave.com/search?q=" }
+};
+function searchProvKey() { var k = Store.getLocal("searchProv", "google"); return SEARCH_PROVIDERS[k] ? k : "google"; }
+function searchProv() { return SEARCH_PROVIDERS[searchProvKey()]; }
+function webSearchUrl(q) { return searchProv().url + encodeURIComponent(String(q || "").trim()); }
 function runSearch(q) {
   q = (q || "").trim(); if (!q) return;
   var hits = findApps(q, 1);
   if (hits[0]) { openApp(hits[0]); return; }
-  go("https://www.google.com/search?q=" + encodeURIComponent(q));
+  go(webSearchUrl(q));
 }
 (function () {
   var f = $("#srch"), inp = $("#srchQ"), hint = $("#srchHint"), drop = $("#srchDrop");
@@ -5806,7 +5834,7 @@ function runSearch(q) {
       return;
     }
     var web = e.target.closest("[data-web]");
-    if (web) { go("https://www.google.com/search?q=" + encodeURIComponent(inp.value.trim())); inp.value = ""; hideDrop(); return; }
+    if (web) { go(webSearchUrl(inp.value)); inp.value = ""; hideDrop(); return; }
     var item = e.target.closest("[data-i]");
     if (!item) return;
     var i = +item.getAttribute("data-i");
@@ -6761,7 +6789,7 @@ function routeZapIntent(raw) {
     return {
       skill: "web.search",
       text: "Search the web for “" + sq + "”?",
-      action: { label: "Search", run: function () { closeZapAssistant(); go("https://www.google.com/search?q=" + encodeURIComponent(sq)); } }
+      action: { label: "Search", run: function () { closeZapAssistant(); go(webSearchUrl(sq)); } }
     };
   }
   if (/\b(switch|change|set)\s+theme\b|\btheme\b.*(neon|amber|ghost|white)|^(neon night|amber ops|ghost white)$/.test(q)) {
@@ -7589,13 +7617,15 @@ setInterval(function () {
 /* ========== v4.9.5 page tour ("?" in the top bar) + one-time welcome card ========== */
 function tourSteps() {
   var S = [
-    ["#panelToday", "Today", "Clock, music, calendar and notes in one panel. Tap Calendar or Note to open them."],
-    ["#hWx", "Weather", "Current weather. Tap the card for hourly, days ahead and Feels Like."],
-    ["#panelNav", "Navigate", "Live map plus your saved places. Tap OPEN for turn-by-turn, tap a place chip for directions."],
-    ["#panelMoney", "Money", "Ticker, banks and markets together. Bank balances come from Plaid. Eye hides bank balances."],
-    ["#mFocus", "Focus", "A focus timer. Pick minutes and start."],
+    ["#srch", "Search", "Search your apps, or the web with the provider you pick. The mic searches by voice."],
+    ["#panelToday", "Today", "Time, date and weather. Tap the weather for hourly and days ahead. Calendar and Note open below."],
+    ["#cardPlay", "Now Playing", "Pick your music app, then tap to open it."],
+    ["#mFocus", "Focus", "A focus timer. Pick 15, 25 or 50 minutes, or tap ✎ for your own length."],
+    ["#panelNav", "Navigate", "Live map with traffic plus your saved places. Tap a place for directions."],
+    ["#panelMoney", "Banking", "Your linked bank via Plaid. Only the last 4 digits show. The eye hides balances."],
+    ["#cardInvest", "Investments", "Crypto prices, your holdings and watchlist. Tap View Portfolio for details."],
     ["#phoneMount", "Phone", "Dial pad and favorite people. Tap to call."],
-    ["#appsSection", "Apps", "Your app tiles. Use Edit to move or remove, ＋ to add."],
+    ["#appsSection", "Apps", "Six categories of your apps. Tap one to open its apps, ＋ to add, View All for the full grid."],
     [".top-r", "ZAP AI and help", "Tap the mic to ask ZAP AI. Tap ? anytime to see this tour again."]
   ];
   return S.filter(function (s) { var el = document.querySelector(s[0]); return el && !el.hidden && el.getClientRects().length; });
@@ -7717,7 +7747,6 @@ try { startCompass(false); } catch (e) {}
 try { window.ZAPOS.startTour = startTour; window.ZAPOS.endTour = endTour; window.ZAPOS.renderBanks = renderBanks; window.ZAPOS.openAddBankPicker = openLinkBankStub; window.ZAPOS.sanitizeLast4 = sanitizeLast4; window.ZAPOS.bankPrivacyOn = bankPrivacyOn; window.ZAPOS.setBankPrivacy = setBankPrivacy; window.ZAPOS.qa.compass = function () { return { c: COMPASS, gps: GPS && GPS.lat, hd: currentHeading() }; }; window.ZAPOS.qa.hist = function () { return { depth: HIST.depth, expect: HIST.expect, layers: overlayLayers(), state: history.state, len: history.length }; }; window.ZAPOS.qa.banks = function () { var rows = getBankAccounts(); return { n: rows.length, privacy: bankPrivacyOn(), total: bankStats().total, last4s: rows.map(function (a) { return a.last4 || null; }), source: "auto" }; }; window.ZAPOS.qa.holo = function () { return { motion: motionWanted(), live: document.querySelectorAll(".card.br.is-live .card-holo-foil").length, foil: !!document.querySelector(".card-holo-foil"), glow: !!document.querySelector(".card-holo-glow") }; }; } catch (eQ) {}
 setTimeout(showWelcomeOnce, 1400);
 if (!Store.getLocal("seenHelp", false)) { var _sa = false; try { _sa = window.navigator.standalone === true || (window.matchMedia && matchMedia("(display-mode: standalone)").matches); } catch (eTip) {} if (!_sa) { Store.setLocal("seenHelp", true); } else { Store.setLocal("seenHelp", true); } }
-})();
 
 /* ========== v4.14.0 keyboard: Enter/Space activate role=button cards (e.g. Markets, bank cards) ========== */
 document.addEventListener("keydown", function (e) {
@@ -7729,3 +7758,213 @@ document.addEventListener("keydown", function (e) {
   e.preventDefault();
   try { t.click(); } catch (err) {}
 });
+
+/* ========== v4.15.0 layout glue (search provider, Today city, GPS pill, Banking/Investments, 6 app categories, custom focus) ========== */
+(function v5Layout() {
+  /* --- search provider + voice --- */
+  var prov = $("#srchProv");
+  if (prov) {
+    prov.value = searchProvKey();
+    prov.addEventListener("change", function () {
+      try { Store.setLocal("searchProv", prov.value); } catch (e) {}
+      toast("Web search: " + searchProv().name);
+    });
+  }
+  var mic = $("#srchMic"), inp = $("#srchQ");
+  if (mic && inp) mic.addEventListener("click", function (e) {
+    e.preventDefault(); e.stopPropagation();
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { try { openZapAssistant(); } catch (eZ) {} return; }
+    try {
+      var r = new SR(); r.lang = navigator.language || "en-US"; r.interimResults = false; r.maxAlternatives = 1;
+      mic.classList.add("on"); toast("Listening…");
+      r.onresult = function (ev) {
+        var t = (ev.results && ev.results[0] && ev.results[0][0] && ev.results[0][0].transcript) || "";
+        inp.value = t; inp.focus();
+        try { inp.dispatchEvent(new Event("input", { bubbles: true })); } catch (eI) {}
+      };
+      r.onerror = function () { toast("Didn’t catch that"); };
+      r.onend = function () { mic.classList.remove("on"); };
+      r.start();
+    } catch (eR) { mic.classList.remove("on"); try { openZapAssistant(); } catch (eZ2) {} }
+  });
+
+  /* --- Today: city pin + weather opens detail --- */
+  function paintCity() {
+    var el = $("#tdCityV"); if (!el) return;
+    var name = (WX && WX.place) ? String(WX.place) : "";
+    var t = name || (GEO_OFF ? "Set your city" : "Locating…");
+    if (el.textContent !== t) el.textContent = t;
+  }
+  var city = $("#tdCity");
+  if (city) city.addEventListener("click", function (e) {
+    e.preventDefault(); e.stopPropagation();
+    try { var hw = $("#hWx"); if (hw) hw.click(); } catch (eC) {}
+  });
+
+  /* --- Navigate: GPS pill --- */
+  function paintGps() {
+    var pill = $("#v5Gps"); if (!pill) return;
+    var live = !!(GPS && GPS.at && Date.now() - GPS.at < 5 * 60000) && !GEO_OFF;
+    var t = live ? "GPS LIVE" : (GEO_OFF ? "GPS OFF" : "GPS …");
+    pill.lastChild.textContent = t;
+    pill.classList.toggle("live", live);
+    pill.classList.toggle("off", !live);
+  }
+
+  /* --- Banking extras: institution name + verified, View Account --- */
+  function bankCatalogEntry(name) {
+    var n = String(name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (!n || typeof ACCOUNT_CATALOG === "undefined") return null;
+    for (var i = 0; i < ACCOUNT_CATALOG.length; i++) {
+      var c = ACCOUNT_CATALOG[i];
+      var cn = String(c.name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+      if (cn && (n === cn || n.indexOf(cn) === 0 || cn.indexOf(n) === 0)) return c;
+    }
+    return null;
+  }
+  function v5BankExtras() {
+    var banks = []; try { banks = getBankAccounts() || []; } catch (e) {}
+    var nm = $("#v5BkName");
+    if (nm) {
+      if (banks.length) {
+        var inst = banks[0].name || "Bank";
+        nm.innerHTML = esc(inst) + ' <span class="v5-ver" title="Linked through Plaid" aria-label="Verified link through Plaid">✓</span>';
+        nm.hidden = false;
+      } else nm.hidden = true;
+    }
+    var v = $("#v5BankView");
+    if (v) { v.textContent = "View Account"; v.hidden = !banks.length; }
+  }
+  try {
+    var _rb = renderBanks;
+    renderBanks = function () { var r = _rb.apply(this, arguments); try { v5BankExtras(); } catch (e) {} return r; };
+  } catch (eRb) {}
+  var bv = $("#v5BankView");
+  if (bv) bv.addEventListener("click", function (e) {
+    e.preventDefault(); e.stopPropagation();
+    var banks = []; try { banks = getBankAccounts() || []; } catch (e1) {}
+    if (!banks.length) { openLinkBankStub(); return; }
+    var c = bankCatalogEntry(banks[0].name);
+    if (c) openApp(c); else openLinkBankStub();
+  });
+
+  /* --- Investments: honest counts + View Portfolio --- */
+  function paintInvest() {
+    var el = $("#v5InvCounts"); if (!el) return;
+    var h = 0, w = 0;
+    try { h = loadHoldings().length; } catch (e) {}
+    try { w = (COINS || []).length; } catch (e2) {}
+    var t = "Holdings: " + h + " | Watchlist: " + w;
+    if (el.textContent !== t) el.textContent = t;
+  }
+  var iv = $("#v5InvView");
+  if (iv) iv.addEventListener("click", function (e) {
+    e.preventDefault(); e.stopPropagation();
+    try { openCardDetail("mk", { fromUser: true }); } catch (eO) {}
+  });
+
+  /* --- Apps: 6 colored categories --- */
+  var V5_GROUPS = [
+    { id: "social", name: "Social", cats: ["social"], color: "#3d8bff" },
+    { id: "entertainment", name: "Entertainment", cats: ["entertainment", "music", "games"], color: "#a45bff" },
+    { id: "productivity", name: "Productivity", cats: ["work", "utilities", "money", "lifestyle"], color: "#ffb02e" },
+    { id: "ai", name: "AI", cats: ["ai"], color: "#3dff9e" },
+    { id: "navigation", name: "Navigation", cats: ["travel"], color: "#05d9e8" },
+    { id: "shopping", name: "Shopping", cats: ["shop", "food"], color: "#ff4fa3" }
+  ];
+  function groupApps(g) {
+    var on = (APPS || []).filter(function (a) { return a.on; });
+    return on.filter(function (a) { var c = "more"; try { c = appCatOf(a); } catch (e) {} return g.cats.indexOf(c) >= 0; });
+  }
+  function v5RenderCats() {
+    var box = $("#v5Cats"); if (!box) return;
+    var html = V5_GROUPS.map(function (g) {
+      var list = groupApps(g);
+      var icons = list.slice(0, 3).map(function (a) { return '<span class="v5-ai">' + iconHTML(a) + "</span>"; }).join("");
+      return '<div class="v5-cat" role="listitem" style="--cc:' + g.color + '">' +
+        '<button type="button" class="v5-cat-main" data-v5cat="' + g.id + '" aria-label="' + esc(g.name) + ", " + list.length + ' apps">' +
+          '<span class="v5-cat-h"><b>' + esc(g.name) + "</b></span>" +
+          '<span class="v5-cat-ic">' + (icons || '<span class="v5-empty">No apps yet</span>') + "</span>" +
+        "</button>" +
+        '<div class="v5-cat-f"><small>' + list.length + (list.length === 1 ? " app" : " apps") + '</small>' +
+        '<button type="button" class="v5-cat-add" data-v5add="' + g.id + '" aria-label="Add an app to ' + esc(g.name) + '">＋</button></div>' +
+      "</div>";
+    }).join("");
+    if (box._h !== html) { box._h = html; box.innerHTML = html; }
+  }
+  function openGroup(id) {
+    var g = V5_GROUPS.filter(function (x) { return x.id === id; })[0]; if (!g) return;
+    var list = groupApps(g);
+    var html = '<div class="apps v5-sheet-apps" role="list">' + list.map(function (a, i) {
+      return '<button type="button" class="tile" role="listitem" data-gi="' + i + '" aria-label="Open ' + esc(a.name) + '"><span class="ic">' + iconHTML(a) + '</span><span class="lb">' + esc(a.name) + "</span></button>";
+    }).join("") + '<button type="button" class="tile add" data-gadd="1" aria-label="Add an app"><span class="ic" aria-hidden="true">＋</span><span class="lb">Add</span></button></div>' +
+      (list.length ? "" : '<p class="note">No ' + esc(g.name) + " apps on your grid yet. Tap ＋ to add one.</p>");
+    sheet(g.name.toUpperCase() + " · " + list.length, html, function (b) {
+      b.addEventListener("click", function (e) {
+        var t = e.target.closest("[data-gi],[data-gadd]"); if (!t) return;
+        if (t.hasAttribute("data-gadd")) { closeSheet(); openAddApp({ focusSearch: true }); return; }
+        var a = list[+t.getAttribute("data-gi")]; if (a) openApp(a);
+      });
+    });
+  }
+  var cats = $("#v5Cats");
+  if (cats) cats.addEventListener("click", function (e) {
+    var add = e.target.closest("[data-v5add]");
+    if (add) { e.preventDefault(); openAddApp({ focusSearch: true }); return; }
+    var m = e.target.closest("[data-v5cat]");
+    if (m) { e.preventDefault(); openGroup(m.getAttribute("data-v5cat")); }
+  });
+  function setAllOpen(open) {
+    var full = $("#v5AppsFull"), btn = $("#v5AppsAll");
+    if (full) full.hidden = !open;
+    if (btn) { btn.setAttribute("aria-expanded", open ? "true" : "false"); btn.textContent = open ? "HIDE ALL" : "VIEW ALL"; }
+    try { Store.setLocal("v5AppsOpen", !!open); } catch (e) {}
+  }
+  var allBtn = $("#v5AppsAll");
+  if (allBtn) allBtn.addEventListener("click", function (e) { e.preventDefault(); setAllOpen($("#v5AppsFull").hidden); });
+  setAllOpen(!!Store.getLocal("v5AppsOpen", false));
+  try {
+    var _ra = renderApps;
+    renderApps = function () { var r = _ra.apply(this, arguments); try { v5RenderCats(); } catch (e) {} return r; };
+  } catch (eRa) {}
+
+  /* --- Focus: custom length --- */
+  function paintCustom() {
+    var b = $("#focCustom"); if (!b) return;
+    var m = +Store.getLocal("focusCustom", 0) || 0;
+    if (m > 0 && [15, 25, 50].indexOf(m) < 0) { b.hidden = false; b.textContent = m + "m"; b.setAttribute("data-foc-min", String(m)); }
+    else { b.hidden = true; b.removeAttribute("data-foc-min"); }
+  }
+  document.addEventListener("click", function (e) {
+    var b = e.target && e.target.closest && e.target.closest("#focEdit"); if (!b) return;
+    e.preventDefault(); e.stopPropagation();
+    if (FOC.st === "run" || FOC.st === "pause") { toast("Reset first to change length"); return; }
+    var cur = +Store.getLocal("focusCustom", 0) || FOC.mins || 25;
+    var v = window.prompt("Focus length in minutes (1–180)", String(cur));
+    if (v == null) return;
+    var m = Math.round(+String(v).replace(/[^0-9.]/g, ""));
+    if (!(m >= 1 && m <= 180)) { toast("Pick 1 to 180 minutes"); return; }
+    try { Store.setLocal("focusCustom", m); } catch (e2) {}
+    paintCustom(); focusSetMins(m); toast("Focus set to " + m + " min");
+  }, true);
+
+  /* map: OPEN joins the map tools so the card stays compact */
+  try { var mo = $("#mapOpen"), mt = document.querySelector("#panelNav .map-tools"); if (mo && mt && mo.parentNode !== mt) mt.appendChild(mo); } catch (eMo) {}
+  /* map: re-render tiles when the card resizes (grid rows stretch after first paint) */
+  try {
+    var mv = $("#mapV"), lastSz = "";
+    if (mv && window.ResizeObserver) new ResizeObserver(function () {
+      var sz = mv.clientWidth + "x" + mv.clientHeight; if (sz === lastSz) return; lastSz = sz;
+      clearTimeout(mv._v5t); mv._v5t = setTimeout(function () { try { MAP._key = null; MAP._trafKey = null; renderMap(true); } catch (eM) {} }, 120);
+    }).observe(mv);
+  } catch (eRo) {}
+  function tick() { try { paintCity(); } catch (e) {} try { paintGps(); } catch (e2) {} try { paintInvest(); } catch (e3) {} try { paintCustom(); } catch (e4) {} }
+  tick();
+  try { v5BankExtras(); } catch (eB) {}
+  try { v5RenderCats(); } catch (eC) {}
+  try { renderNowPlaying(); } catch (eN) {}
+  setInterval(tick, 5000);
+  try { Store.onChange(function () { tick(); try { v5RenderCats(); } catch (e) {} }); } catch (eS) {}
+})();
+})(); /* end ZAPWISE//OS app scope */

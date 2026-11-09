@@ -1,6 +1,6 @@
 {
-  "version": "4.14.0",
+  "version": "4.15.0",
   "built": "2026-11-09",
   "channel": "stable",
-  "notes": "v4.14.0: Accessibility + honesty foundation: pinch zoom allowed, 44px tap targets, skip link, keyboard Enter/Space on cards, neon cyberpunk title/description/share preview (still noindex), no fake $0 before a bank is linked, ZAP AI says when questions go online."
+  "notes": "v4.15.0: New layout \u2014 search with provider + mic, Today | Now Playing, Focus | Navigate, Banking | Investments, Apps in 6 categories, Phone; per-card neon edges; desktop 4-column grid."
 }

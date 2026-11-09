@@ -22,7 +22,7 @@
 <meta name="twitter:description" content="One neon HUD for your day: weather, live-traffic map, focus, balances that stay on your phone, your apps and ZAP AI.">
 <meta name="twitter:image" content="https://zapwiseai.com/os/icon-512.png">
 <meta name="theme-color" content="#070814">
-<meta name="zapos-version" content="4.14.0">
+<meta name="zapos-version" content="4.15.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="/os/manifest.webmanifest">
@@ -41,7 +41,8 @@
 <link rel="apple-touch-startup-image" media="(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/os/splash/splash-1206x2622.png">
 <link rel="apple-touch-startup-image" media="(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/os/splash/splash-1320x2868.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/os/icon-192.png">
-<link rel="stylesheet" href="/os/app.css?v=4.14.0">
+<link rel="stylesheet" href="/os/app.css?v=4.15.0">
+<link rel="stylesheet" href="/os/v5.css?v=4.15.0">
 <style>
 @font-face{font-family:"Rajdhani";font-style:normal;font-weight:600;font-display:swap;src:url("/os/fonts/Rajdhani-SemiBold.woff2") format("woff2"),url("/os/fonts/Rajdhani-SemiBold.ttf") format("truetype")}
 @font-face{font-family:"Rajdhani";font-style:normal;font-weight:700;font-display:swap;src:url("/os/fonts/Rajdhani-Bold.woff2") format("woff2"),url("/os/fonts/Rajdhani-Bold.ttf") format("truetype")}
@@ -61,7 +62,7 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
 <div id="app">
 
  <header class="top sticky" id="top">
-  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver" data-app-ver>v4.14.0</span></div>
+  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver" data-app-ver>v4.15.0</span></div>
   <div class="top-r">
    <span class="sync" id="hSync"><i aria-hidden="true"></i>LIVE</span>
    <span class="hud-chip gps" id="hGpsLock" data-lock="0" hidden><i aria-hidden="true"></i>GPS —</span>
@@ -70,17 +71,31 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
     <svg class="zap-mic-ico" viewBox="0 0 24 24" aria-hidden="true" width="20" height="20"><path fill="currentColor" d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-3.1A7 7 0 0 0 19 11h-2z"/></svg>
    </button>
    <button type="button" class="h-help" id="tourBtn" aria-label="Page tour and help" title="Tour">?</button>
-   <button class="h-theme" data-theme-btn aria-label="Change theme" title="Change theme"><i aria-hidden="true"></i>THEME</button>
-   <button class="avatar" id="menuBtn" aria-label="Open settings menu" title="Menu">☰</button>
+   <button class="h-theme" data-theme-btn aria-label="Change theme" title="Change theme"><i aria-hidden="true"></i><span class="ht-l">THEME</span></button>
+   <button class="avatar v5-gear" id="menuBtn" aria-label="Open settings menu" title="Settings"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.4 7.4 0 0 0-1.7-1L15 3.3h-4l-.3 2.6a7.4 7.4 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.6 7.6 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.4 7.4 0 0 0 1.7 1l.3 2.6h4l.3-2.6a7.4 7.4 0 0 0 1.7-1l2.5 1 2-3.5L19.4 13zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg></button>
   </div>
  </header>
 
- <main class="os-page" id="osPage" tabindex="-1">
+ <main class="os-page v5-grid" id="osPage" tabindex="-1">
 
-  <!-- TOP: Clock + Music + Today (one panel) -->
-  <section class="card br panel-group panel-today" id="panelToday" aria-label="Today">
-   <div class="panel-h"><b>&gt; TODAY</b></div>
-   <div class="row2 hero-row">
+  <!-- v4.15.0 layout: search · Today|Now Playing · Focus|Navigate · Banking|Investments · Apps · Phone -->
+  <form class="h-srch v5-search" id="srch" role="search" autocomplete="off">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M15.5 15.5L21 21" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+    <input id="srchQ" type="search" enterkeyhint="go" placeholder="Search apps, places, notes or the web" inputmode="search" aria-label="Search apps or the web" autocapitalize="off" spellcheck="false" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="srchDrop" aria-autocomplete="list">
+    <div class="srch-drop" id="srchDrop" role="listbox" hidden></div>
+    <button type="button" class="v5-mic" id="srchMic" aria-label="Search by voice"><svg viewBox="0 0 24 24" aria-hidden="true" width="20" height="20"><path fill="currentColor" d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-3.1A7 7 0 0 0 19 11h-2z"/></svg></button>
+    <label class="v5-prov"><span class="sr-only">Web search provider</span>
+     <select id="srchProv" aria-label="Web search provider">
+      <option value="google">Google</option>
+      <option value="duckduckgo">DuckDuckGo</option>
+      <option value="bing">Bing</option>
+      <option value="brave">Brave</option>
+     </select>
+    </label>
+   </form>
+
+  <section class="card br v5c v5-today" id="panelToday" aria-label="Today" style="--acc:#05d9e8">
+   <div class="v5h"><b>TODAY</b></div>
     <div class="hero panel-inner" id="heroCard">
      <div class="h-clock hud-clock" id="hClock" data-hud="1" aria-live="off">
       <i class="holo-sheen" aria-hidden="true"></i>
@@ -96,34 +111,8 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
      </div>
      <div class="hero-bot"><span class="greet" id="greet"></span></div>
     </div>
-    <div class="play panel-inner play-panel" id="hPlay">
-     <div class="np-top"><span class="np-lab">&gt; MUSIC</span>
-      <button type="button" class="np-live" id="npLive" data-media-act="pick" aria-label="Choose music app">SWITCH ▾</button>
-     </div>
-     <div class="np-body">
-      <button type="button" class="np-pick" data-media-act="play" aria-label="Open music app">
-       <img class="np-art" id="npArt" src="/os/icons/music.jpg" alt="">
-       <span class="np-meta"><b id="npTitle">Choose a music app</b><small id="npArtist">Tap ▶ to play</small></span>
-      </button>
-      <button type="button" class="np-play" data-media-act="play" aria-label="Open music app">▶</button>
-     </div>
-    </div>
-   </div>
-   <div class="panel-div" aria-hidden="true"></div>
-   <div class="today panel-inner" id="today">
-    <div class="td-ico" aria-hidden="true"><small>TODAY</small><b id="tdDay">—</b></div>
-    <button type="button" class="td-item" id="tdCal" aria-label="Open Calendar">
-     <span class="td-k">Calendar</span>
-     <span class="td-v" id="tdCalV">Open today’s schedule</span>
-    </button>
-    <button type="button" class="td-item" id="tdNote" aria-label="Open Notes">
-     <span class="td-k">Note</span>
-     <span class="td-v" id="tdNoteV">Open Notes</span>
-    </button>
-   </div>
-  </section>
-
-  <button class="card br h-wx" id="hWx" type="button" aria-label="Open weather detail" aria-expanded="false" aria-controls="xpWx">
+   <div class="td-wxwrap">
+  <button class="h-wx td-wx" id="hWx" type="button" aria-label="Open weather detail" aria-expanded="false" aria-controls="xpWx">
    <canvas class="fx" id="fxHud" aria-hidden="true"></canvas>
    <span class="hw-in">
     <span class="hw-top">
@@ -138,6 +127,37 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
     <span class="hw-meta"><span id="hwHL"></span><span id="hwFeels"></span><span id="hwRain"></span><span class="hw-upd" id="hwUpd">UPD --</span></span>
    </span>
   </button>
+   <button type="button" class="td-city" id="tdCity" aria-label="Weather location"><svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path fill="currentColor" d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg><span id="tdCityV">Set your city</span></button>
+   </div>
+   <div class="today panel-inner" id="today">
+    <div class="td-ico" aria-hidden="true"><small>TODAY</small><b id="tdDay">—</b></div>
+    <button type="button" class="td-item" id="tdCal" aria-label="Open Calendar">
+     <span class="td-k">Calendar</span>
+     <span class="td-v" id="tdCalV">Open today’s schedule</span>
+    </button>
+    <button type="button" class="td-item" id="tdNote" aria-label="Open Notes">
+     <span class="td-k">Note</span>
+     <span class="td-v" id="tdNoteV">Open Notes</span>
+    </button>
+   </div>
+  </section>
+
+  <section class="card br v5c v5-play" id="cardPlay" aria-label="Now playing" style="--acc:#ff4fd8">
+   <div class="play" id="hPlay">
+    <div class="v5h"><b>NOW PLAYING</b>
+     <button type="button" class="np-live" id="npLive" data-media-act="pick" aria-label="More music apps">MORE ▾</button>
+    </div>
+    <div class="np-body">
+     <button type="button" class="np-pick" data-media-act="play" aria-label="Open music app">
+      <img class="np-art" id="npArt" src="/os/icons/music.jpg" alt="">
+      <span class="np-meta"><b id="npTitle">Music</b><small id="npArtist">Tap to open</small></span>
+     </button>
+     <button type="button" class="np-play" data-media-act="play" aria-label="Open music app">▶</button>
+    </div>
+    <div class="np-list" id="npList" role="radiogroup" aria-label="Music app"></div>
+   </div>
+  </section>
+
   <div class="xp wx-cond" id="xpWx" hidden>
    <div class="xp-h"><b id="xpPlace">CONDITIONS</b><button class="chip" id="xpCity" type="button">◎ CHANGE CITY</button></div>
    <section class="wx-now" id="wxNow" aria-label="Current conditions"></section>
@@ -167,9 +187,37 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
    <p class="note" id="xpNote"></p>
   </div>
 
+
+   <div class="card br v5c focus-card fz" id="mFocus" role="group" aria-label="Focus timer" style="--acc:#b26bff">
+    <div class="mk-h fz-h v5h"><b>FOCUS MODE</b> <span class="foc-sess" id="focSess">0 TODAY</span></div>
+    <div class="fz-presets" id="focPresets" role="group" aria-label="Focus length">
+     <button type="button" class="fz-p" data-foc-min="15">15m</button>
+     <button type="button" class="fz-p on" data-foc-min="25">25m</button>
+     <button type="button" class="fz-p" data-foc-min="50">50m</button>
+     <button type="button" class="fz-p fz-custom" id="focCustom" hidden>--</button>
+     <button type="button" class="fz-p fz-edit" id="focEdit" aria-label="Set a custom focus length">✎</button>
+    </div>
+    <button type="button" class="fz-dial" id="focTap" aria-label="Start or pause focus">
+     <svg class="fz-svg" viewBox="0 0 120 120" aria-hidden="true" focusable="false">
+      <circle class="fz-track" cx="60" cy="60" r="52"/>
+      <circle class="fz-ring" id="focRing" cx="60" cy="60" r="52" transform="rotate(-90 60 60)"/>
+     </svg>
+     <span class="fz-mid"><span class="fz-time" id="mFocV">25:00</span><span class="fz-status" id="mFocL">TAP TO START</span></span>
+    </button>
+    <div class="fz-stats" id="focStats" aria-label="Focus stats">
+     <div class="fz-stat"><b id="focStatSessions">0</b><span>SESSIONS</span></div>
+     <div class="fz-stat"><b id="focStatStreak">0</b><span>STREAK</span></div>
+     <div class="fz-stat"><b id="focStatLen">25m</b><span>LENGTH</span></div>
+    </div>
+    <div class="fz-acts">
+     <button type="button" class="fz-btn" id="focToggle">START</button>
+     <button type="button" class="fz-btn alt" id="focReset">RESET</button>
+    </div>
+   </div>
+
   <!-- NAVIGATE: Map + Places (one panel) -->
-  <section class="card br panel-group panel-nav" id="panelNav" aria-label="Navigate">
-   <div class="panel-h"><b>&gt; NAVIGATE</b></div>
+  <section class="card br v5c v5-nav panel-nav" id="panelNav" aria-label="Navigate" style="--acc:#2ee6ff">
+   <div class="v5h"><b>NAVIGATE</b><span class="v5-pill gps" id="v5Gps"><i aria-hidden="true"></i>GPS</span></div>
    <div class="h-map panel-inner" id="hMap">
     <div class="map-h">
      <b id="hPlace">&gt; LOCATING…</b>
@@ -218,27 +266,28 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
    </div>
   </section>
 
-  <!-- MONEY: ticker + Bank + Markets (one panel, one eye) -->
-  <section class="card br panel-group panel-money" id="panelMoney" aria-label="Money">
-   <div class="panel-h money-h">
-    <b>&gt; MONEY</b>
+
+  <section class="card br v5c v5-bank panel-money" id="panelMoney" aria-label="Banking" style="--acc:#3dff9e">
+   <div class="v5h"><b><svg class="v5-ico" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M12 2 2 7v2h20V7L12 2zM4 11v7h3v-7H4zm6.5 0v7h3v-7h-3zM17 11v7h3v-7h-3zM2 20v2h20v-2H2z"/></svg>BANKING</b>
     <button type="button" class="bk-eye" id="hBkEye" aria-label="Hide balances and last 4" aria-pressed="false" title="Privacy: hide balances and last 4">👁</button>
    </div>
-   <div class="mk-ticker panel-inner" id="mkTicker" aria-label="Market ticker" hidden>
-    <div class="track" id="mkTickerTrack"></div>
-   </div>
-   <div class="panel-div" aria-hidden="true"></div>
-   <div class="panel-sec-lab">BANK</div>
    <div class="h-bk panel-inner" id="hBk" role="region" aria-label="Banks">
     <div class="bk-hero" id="hBkPort">
+     <span class="v5-bkname" id="v5BkName" hidden></span>
      <b class="hmk-total" id="hBkTotal">—</b>
      <span class="hmk-day" id="hBkSub">Link your bank · balances stay on this phone</span>
     </div>
     <div class="bk-grid" id="hBkGrid" role="list"></div>
     <p class="note bk-foot" id="hBkFoot">Only last 4 digits · never full account numbers</p>
    </div>
-   <div class="panel-div" aria-hidden="true"></div>
-   <div class="panel-sec-lab">MARKETS <span class="mk-t" id="hMkT"></span></div>
+   <button type="button" class="v5-btn" id="v5BankView">View Account</button>
+  </section>
+
+  <section class="card br v5c v5-invest" id="cardInvest" aria-label="Investments" style="--acc:#ffb547">
+   <div class="v5h"><b>INVESTMENTS</b><span class="mk-t" id="hMkT"></span></div>
+   <div class="mk-ticker panel-inner" id="mkTicker" aria-label="Market ticker" hidden>
+    <div class="track" id="mkTickerTrack"></div>
+   </div>
    <div class="h-mk panel-inner" id="hMk" role="button" tabindex="0" aria-label="Open markets detail" aria-expanded="false" aria-controls="xpMk">
     <div class="mk-hero" id="hMkPort">
       <b class="hmk-total" data-hmk-port="1" id="hMkTotal">—</b>
@@ -248,37 +297,9 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
     <div class="mk-items" id="hMkList"><span class="dim">Markets loading…</span></div>
     <button type="button" class="mk-add" data-hmk-add="1" id="hMkAct" aria-label="Add wallet, broker or holding">＋ Add</button>
    </div>
+   <p class="v5-counts" id="v5InvCounts">Holdings: 0 | Watchlist: 0</p>
+   <button type="button" class="v5-btn" id="v5InvView">View Portfolio</button>
   </section>
-
-  <!-- TOOLS: Focus + Phone -->
-  <div class="row2 panel-tools">
-   <div class="card br focus-card fz" id="mFocus" role="group" aria-label="Focus timer">
-    <div class="mk-h fz-h">&gt; FOCUS <span class="foc-sess" id="focSess">0 TODAY</span></div>
-    <div class="fz-presets" id="focPresets" role="group" aria-label="Focus length">
-     <button type="button" class="fz-p" data-foc-min="15">15m</button>
-     <button type="button" class="fz-p on" data-foc-min="25">25m</button>
-     <button type="button" class="fz-p" data-foc-min="50">50m</button>
-    </div>
-    <button type="button" class="fz-dial" id="focTap" aria-label="Start or pause focus">
-     <svg class="fz-svg" viewBox="0 0 120 120" aria-hidden="true" focusable="false">
-      <circle class="fz-track" cx="60" cy="60" r="52"/>
-      <circle class="fz-ring" id="focRing" cx="60" cy="60" r="52" transform="rotate(-90 60 60)"/>
-     </svg>
-     <span class="fz-mid"><span class="fz-time" id="mFocV">25:00</span><span class="fz-status" id="mFocL">TAP TO START</span></span>
-    </button>
-    <div class="fz-stats" id="focStats" aria-label="Focus stats">
-     <div class="fz-stat"><b id="focStatSessions">0</b><span>SESSIONS</span></div>
-     <div class="fz-stat"><b id="focStatStreak">0</b><span>STREAK</span></div>
-     <div class="fz-stat"><b id="focStatLen">25m</b><span>LENGTH</span></div>
-    </div>
-    <div class="fz-acts">
-     <button type="button" class="fz-btn" id="focToggle">START</button>
-     <button type="button" class="fz-btn alt" id="focReset">RESET</button>
-    </div>
-   </div>
-   <div class="card br" id="phoneMount" aria-label="Dial pad and favorites"></div>
-  </div>
-
 
   <div class="xp" id="xpMk" hidden>
    <div class="xp-h detail-head"><b id="xpMkTitle">MARKETS</b></div>
@@ -309,16 +330,17 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
   </div>
 
 
-  <div class="card br apps-card apps-wrap" id="appsSection">
-   <div class="sec-h">APPS <span class="sec-actions"><button class="chip" id="dEdit" type="button">✎ EDIT</button></span></div>
-   <form class="h-srch in-apps" id="srch" role="search" autocomplete="off">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M15.5 15.5L21 21" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
-    <input id="srchQ" type="search" enterkeyhint="go" placeholder="Find an app" inputmode="search" aria-label="Search apps or the web" autocapitalize="off" spellcheck="false" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="srchDrop" aria-autocomplete="list">
-    <div class="srch-drop" id="srchDrop" role="listbox" hidden></div>
-   </form>
-   <div class="cat-chips" id="appsCats" role="tablist" aria-label="App categories"></div>
-   <div class="apps" id="apps" role="list"></div>
-  </div>
+
+  <section class="card br v5c v5-apps apps-card apps-wrap" id="appsSection" aria-label="Apps" style="--acc:#05d9e8">
+   <div class="v5h"><b>APPS</b><span class="sec-actions"><button class="chip" id="dEdit" type="button">✎ EDIT</button><button class="chip" id="v5AppsAll" type="button" aria-expanded="false" aria-controls="v5AppsFull">VIEW ALL</button></span></div>
+   <div class="v5-cats" id="v5Cats" role="list"></div>
+   <div class="v5-apps-full" id="v5AppsFull" hidden>
+    <div class="cat-chips" id="appsCats" role="tablist" aria-label="App categories"></div>
+    <div class="apps" id="apps" role="list"></div>
+   </div>
+  </section>
+
+  <section class="card br v5c v5-phone" id="phoneMount" aria-label="Dial pad and favorites" style="--acc:#2ee6ff"></section>
 
   <div id="settingsMount" hidden aria-hidden="true"></div>
   <div hidden>
@@ -376,9 +398,9 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/os/catalog.js?v=4.14.0"></script>
-<script src="/os/sky.js?v=4.14.0"></script>
-<script src="/os/bank-plaid.js?v=4.14.0"></script>
-<script src="/os/app.min.js?v=4.14.0"></script>
+<script src="/os/catalog.js?v=4.15.0"></script>
+<script src="/os/sky.js?v=4.15.0"></script>
+<script src="/os/bank-plaid.js?v=4.15.0"></script>
+<script src="/os/app.min.js?v=4.15.0"></script>
 </body>
 </html>

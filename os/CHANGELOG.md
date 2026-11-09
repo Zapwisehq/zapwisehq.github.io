@@ -18,3 +18,16 @@ Newest last. Every entry was tested with Playwright (360/390/430/768/1366@1.25/1
 - No fake data: Bank total shows "—" until real Plaid balances arrive (was $0.00); weather shows "—" instead of "--°".
 - ZAP AI panel now says plainly that, with Online answers on, non-command questions go to a free open model (Pollinations).
 - Service worker: removed precache of missing /os/access.js.
+
+## v4.15.0 — 2026-11-09 — New layout (vision board)
+- Phone, top to bottom: header (ZAPWISE//OS, version, green LIVE pill, mic, ?, theme, settings gear) → full-width rounded search (mic + Google/DuckDuckGo/Bing/Brave dropdown, saved on device) → TODAY | NOW PLAYING → FOCUS | NAVIGATE → BANKING | INVESTMENTS → APPS (6 colored categories) → PHONE.
+- TODAY: big time, date tags, weather icon + temp + condition (tap for the full hourly/days detail), city pin, Calendar + Note.
+- NOW PLAYING: honest launcher — YouTube / Spotify / Apple Music / SoundCloud with a check on the chosen one, "Tap to open <app>", More apps sheet. No fake track or progress.
+- FOCUS MODE: 15/25/50 plus ✎ custom length (1–180 min, saved), ring, sessions/streak/length, Start/Reset.
+- NAVIGATE: existing map design kept (OSM + TomTom Clear/Slow/Jammed legend, +/−/◎, OPEN now in the tool stack), GPS LIVE/OFF pill, Home/Work/School chips + ＋ ADD. Map re-renders when its card resizes.
+- BANKING (separate): bank icon, real Plaid institution name + ✓ verified, total, accounts with last 4 only, eye, View Account (opens the bank's site/app). No View Account until an account is linked.
+- INVESTMENTS (separate): ticker, existing holdings/watchlist + sparkline, "Holdings: N | Watchlist: N" from real data, View Portfolio.
+- APPS: Social (blue), Entertainment (purple), Productivity (amber), AI (green), Navigation (cyan), Shopping (pink) — 3 real app icons, real counts, ＋ to add, tap for that category's apps; VIEW ALL shows the full editable grid.
+- Each card has its own neon edge glow; tablet = 2 columns, desktop ≥1100 px = 4-column grid with equal-height rows, Phone card splits dial pad | log + favorites.
+- New file: /os/v5.css (layout layer, cached by the service worker).
+- QA: layout suite at 6 sizes, 10 interaction checks, linked-bank mock at 390 and 1366.
