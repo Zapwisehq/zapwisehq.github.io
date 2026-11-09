@@ -97,3 +97,12 @@ Newest last. Every entry was tested with Playwright (360/390/430/768/1366@1.25/1
 - Customize dashboard now lists 12 cards; default order depends on screen width until you save your own.
 - Calmer card glow.
 - QA: qa423 (sidebar, bell, profile, 3×3 positions, Quick Actions, ZAP card, honest empty Shop Smart, phone bar + strip + no content under the bar, car view at 390/1366 incl. shopping blocked, TV link-outs) + full regression.
+
+## v4.24.0 — 2026-11-09 — Hardening
+- Content Security Policy (meta) on /os/: scripts only from this site (+ hashed boot script) and esm.run/jsDelivr for the optional offline brain; network only to the services ZAPWISE really uses (Open-Meteo, BigDataCloud, OpenStreetMap/Nominatim, OSRM, CoinGecko, Binance, ExchangeRate-API, Free Dictionary, Pollinations, mempool/publicnode, the two ZAPWISE Workers, Hugging Face for model files); no frames, no plugins.
+- /os/link/: CSP following Plaid’s documented Link directives (cdn.plaid.com script + frame, production.plaid.com, the bank Worker).
+- Removed the last inline event handler (search icon fallback) so the CSP needs no 'unsafe-inline' for scripts on /os/.
+- zapwise-bank Worker: Cloudflare Rate Limiting API (60/min per IP; 5/min on /pair, /pair-code, /exchange, /link-token, /unlink) on top of the per-isolate limits; KV guard of 10 wrong pairing codes per 15 min; 16 KB body cap; JSON-only POSTs; GET/POST only; no-store + nosniff + no-referrer headers. Auth unchanged.
+- zapwise-traffic Worker: GET only, tile x/y range validation, rate limit (300 tiles/min per IP), nosniff.
+- Keyboard: Now Playing picker shows a focus ring; keyboard pass (70 stops at 1440 and 390) finds no unnamed, invisible or ring-less stops.
+- QA: qa424 (no CSP violations across destinations, search, ZAP AI dictionary/currency/online answer, map tiles, WebLLM module import; Plaid SDK loads on link page; landmarks; keyboard pass; performance baseline in qa/4.24.0/perf.json) + full regression.

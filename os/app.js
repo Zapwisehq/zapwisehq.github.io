@@ -1,7 +1,7 @@
 /* ZAPWISE//OS web app v4.13.2 (Nov 5, 2026). Equal-height desktop Focus/Phone. Plaid-only Bank. Motion toggle. No tabs. Source: edit app.js → build.sh → app.min.js. */
 (function () {
 "use strict";
-var VERSION = '4.23.0';
+var VERSION = '4.24.0';
 var APP_VERSION = VERSION;
 
 // v4.5: default Lite on coarse/mobile unless user already chose
@@ -5811,7 +5811,7 @@ function runSearch(q) {
       var pinned = isPinned(a);
       var catId = a.id && String(a.id).indexOf("p-") === 0 ? a.id.slice(2) : a.id;
       return '<button type="button" class="srch-item" role="option" data-i="' + i + '" id="srchOpt' + i + '">' +
-        '<img src="' + esc(a.icon || ("/os/icons/" + catId + ".jpg")) + '" alt="" loading="lazy" decoding="async" onerror="this.style.opacity=.2">' +
+        '<img src="' + esc(a.icon || ("/os/icons/" + catId + ".jpg")) + '" alt="" loading="lazy" decoding="async">' +
         '<span class="meta"><b>' + esc(a.name) + '</b><small>' + (a.web ? "APP OR WEB" : "OPEN") + "</small></span>" +
         '<span class="pin' + (pinned ? " on" : "") + '" data-pin="' + i + '" title="' + (pinned ? "Pinned" : "Pin to grid") + '" aria-label="' + (pinned ? "Pinned" : "Pin " + esc(a.name)) + '">' + (pinned ? "✓" : "+") + "</span></button>";
     }).join("");
@@ -5825,7 +5825,8 @@ function runSearch(q) {
     active = lastHits.length ? 0 : -1; paintActive();
     setHint(lastHits[0] ? ("↵ " + lastHits[0].name.toUpperCase()) : "↵ WEB");
   }
-  try { f.setAttribute("action", "javascript:void(0)"); f.setAttribute("novalidate", ""); } catch (e0) {}
+  try { f.setAttribute("novalidate", ""); } catch (e0) {}
+  document.addEventListener("error", function (ev) { var t = ev.target; if (t && t.tagName === "IMG" && t.closest && t.closest(".srch-drop")) t.style.opacity = ".2"; }, true);
   f.addEventListener("submit", function (e) {
     e.preventDefault(); e.stopPropagation();
     var v = inp.value;

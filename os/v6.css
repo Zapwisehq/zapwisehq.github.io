@@ -263,3 +263,4 @@ html.car-mode #osPage.v5-grid > #panelNav,html.car-mode #osPage.v5-grid > #cardP
 html.car-mode #osPage.v5-grid > #panelNav{order:1} html.car-mode #osPage.v5-grid > #cardPlay{order:2} html.car-mode #osPage.v5-grid > #v7Car{order:0}
 .v7-tv-main > .chip{justify-self:start;grid-column:1/-1;min-height:44px}
 .v7-tv-side .v7-si{min-height:48px}
+.np-pick:focus-visible{outline:3px solid #fff!important;outline-offset:2px}
