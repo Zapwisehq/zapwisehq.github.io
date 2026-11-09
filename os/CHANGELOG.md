@@ -31,3 +31,12 @@ Newest last. Every entry was tested with Playwright (360/390/430/768/1366@1.25/1
 - Each card has its own neon edge glow; tablet = 2 columns, desktop ≥1100 px = 4-column grid with equal-height rows, Phone card splits dial pad | log + favorites.
 - New file: /os/v5.css (layout layer, cached by the service worker).
 - QA: layout suite at 6 sizes, 10 interaction checks, linked-bank mock at 390 and 1366.
+
+## v4.16.0 — 2026-11-09 (Stage 3: gestures, search, Quick Actions)
+- Swipes (phone/tablet): down at top → search/ZAP AI, left → Apps sheet, right → Quick Actions. Map, inputs, scrollers, sheets and screen edges are excluded.
+- Desktop keys: `/` search, `A` apps, `Q` Quick Actions (ignored while typing).
+- Universal search: results now include saved places, notes, commands and "Ask ZAP AI".
+- Customizable Quick Actions (saved on device).
+- On-device suggestion cards (Accept/Dismiss) from time of day, saved places, focus history and bank freshness. No data leaves the device.
+- `?` tour adds suggestion and gestures/keys steps.
+- QA: 6 sizes plus zoom, a11y, interaction, bank-link and link-return regressions all pass.

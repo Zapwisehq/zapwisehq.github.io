@@ -1,6 +1,6 @@
 {
-  "version": "4.15.0",
+  "version": "4.16.0",
   "built": "2026-11-09",
   "channel": "stable",
-  "notes": "v4.15.0: New layout \u2014 search with provider + mic, Today | Now Playing, Focus | Navigate, Banking | Investments, Apps in 6 categories, Phone; per-card neon edges; desktop 4-column grid."
+  "notes": "v4.16.0: Swipe down = search, left = app categories, right = Quick Actions (keys / A Q on desktop); universal search across apps, places, notes and commands; customizable Quick Actions; on-device suggestion cards that act only after Accept."
 }

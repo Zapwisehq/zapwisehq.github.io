@@ -1,7 +1,7 @@
 /* ZAPWISE//OS web app v4.13.2 (Nov 5, 2026). Equal-height desktop Focus/Phone. Plaid-only Bank. Motion toggle. No tabs. Source: edit app.js → build.sh → app.min.js. */
 (function () {
 "use strict";
-var VERSION = '4.15.0';
+var VERSION = '4.16.0';
 var APP_VERSION = VERSION;
 
 // v4.5: default Lite on coarse/mobile unless user already chose
@@ -7626,7 +7626,8 @@ function tourSteps() {
     ["#cardInvest", "Investments", "Crypto prices, your holdings and watchlist. Tap View Portfolio for details."],
     ["#phoneMount", "Phone", "Dial pad and favorite people. Tap to call."],
     ["#appsSection", "Apps", "Six categories of your apps. Tap one to open its apps, ＋ to add, View All for the full grid."],
-    [".top-r", "ZAP AI and help", "Tap the mic to ask ZAP AI. Tap ? anytime to see this tour again."]
+    ["#v5Sug", "Suggestions", "Ideas from simple rules on this phone (time of day, your saved places). Nothing happens until you tap Accept."],
+    [".top-r", "ZAP AI, gestures and help", "Tap the mic to ask ZAP AI. Swipe down at the top to search, left for app categories, right for Quick Actions. On a computer press / to search, A for apps, Q for Quick Actions. Tap ? anytime for this tour."]
   ];
   return S.filter(function (s) { var el = document.querySelector(s[0]); return el && !el.hidden && el.getClientRects().length; });
 }
@@ -7966,5 +7967,226 @@ document.addEventListener("keydown", function (e) {
   try { renderNowPlaying(); } catch (eN) {}
   setInterval(tick, 5000);
   try { Store.onChange(function () { tick(); try { v5RenderCats(); } catch (e) {} }); } catch (eS) {}
+})();
+
+/* ========== v4.16.0 gestures, universal search, Quick Actions, on-device suggestions ========== */
+(function v5Actions() {
+  function placeBy(re) { try { return loadPlaces().filter(function (p) { return re.test(String(p.id || "") + " " + String(p.name || "")) && placeLL(p); })[0] || null; } catch (e) { return null; } }
+  function openZap(cmd) { try { openZapAssistant(); } catch (e) {} if (cmd) setTimeout(function () { try { zapHandle(cmd); } catch (e2) {} }, 250); }
+  function focusSearch() {
+    try { window.scrollTo({ top: 0, behavior: "auto" }); } catch (e) { window.scrollTo(0, 0); }
+    var i = $("#srchQ"); if (i) { try { i.focus({ preventScroll: true }); } catch (e2) { i.focus(); } }
+  }
+  /* ---- action catalog (every action is real and runs only after a tap) ---- */
+  var QA = {
+    focus: { n: "Start focus", ic: "◔", run: function () { if (FOC.st !== "run") focusToggle(); var f = $("#mFocus"); if (f) f.scrollIntoView({ block: "center", behavior: "smooth" }); } },
+    home: { n: "Take me home", ic: "⌂", run: function () { var p = placeBy(/home/i); if (p) openDirectionsTo(p); else toast("Add Home in Navigate → ＋ ADD first"); } },
+    work: { n: "Directions to Work", ic: "▣", run: function () { var p = placeBy(/work/i); if (p) openDirectionsTo(p); else toast("Add Work in Navigate → ＋ ADD first"); } },
+    weather: { n: "Weather detail", ic: "☁", run: function () { var w = $("#hWx"); if (w) w.click(); } },
+    zap: { n: "Ask ZAP AI", ic: "✦", run: function () { openZap(); } },
+    search: { n: "Search", ic: "⌕", run: function () { focusSearch(); } },
+    music: { n: "Play music", ic: "♪", run: function () { openApp(currentMedia()); } },
+    call: { n: "Phone", ic: "☏", run: function () { var ph = $("#phoneMount"); if (ph) ph.scrollIntoView({ block: "start", behavior: "smooth" }); } },
+    bank: { n: "Refresh balances", ic: "$", run: function () { if (!bankDeviceReady()) { openLinkBankStub(); return; } toast("Refreshing…"); refreshBankAccountsFromLink({ refresh: true }).then(function () { toast("Balances updated"); }).catch(function () { toast("Couldn’t refresh"); }); } },
+    portfolio: { n: "Portfolio", ic: "↗", run: function () { openCardDetail("mk", { fromUser: true }); } },
+    notes: { n: "My notes", ic: "✎", run: function () { openZap("list notes"); } },
+    calendar: { n: "Calendar", ic: "▦", run: function () { var c = $("#tdCal"); if (c) c.click(); } },
+    theme: { n: "Theme", ic: "◐", run: function () { openTheme(); } },
+    tour: { n: "Page tour", ic: "?", run: function () { startTour(); } }
+  };
+  var QA_DEFAULT = ["focus", "home", "work", "weather", "zap", "music", "bank", "portfolio"];
+  function qaList() { var l = Store.getLocal("quickActions", null); if (!Array.isArray(l)) l = QA_DEFAULT.slice(); return l.filter(function (k) { return QA[k]; }); }
+  function runQA(k) { var a = QA[k]; if (!a) return; try { closeSheet(); } catch (e) {} setTimeout(function () { try { a.run(); } catch (e2) {} }, 80); }
+
+  /* ---- on-device suggestions: simple time / place / state rules, shown as cards; nothing runs without a tap ---- */
+  function dayKey() { var d = new Date(); return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate(); }
+  function sugState() { var s = Store.getLocal("sugState", null); if (!s || s.day !== dayKey()) s = { day: dayKey(), done: {} }; return s; }
+  function sugMark(id) { var s = sugState(); s.done[id] = 1; try { Store.setLocal("sugState", s); } catch (e) {} }
+  function suggestions() {
+    var now = new Date(), h = now.getHours(), wd = now.getDay() >= 1 && now.getDay() <= 5, out = [];
+    var home = placeBy(/home/i), work = placeBy(/work/i);
+    var here = (GPS && GPS.lat != null) ? { lat: GPS.lat, lon: GPS.lon } : null;
+    function far(p) { var ll = placeLL(p); return !here || !ll || haversineKm(here, ll) > 1; }
+    if (wd && h >= 6 && h < 10 && work && far(work)) out.push({ id: "work", t: "Heading to Work?", d: "Directions in your maps app", qa: "work", why: "Weekday morning, Work is saved" });
+    if (h >= 16 && h < 21 && home && far(home)) out.push({ id: "home", t: "Take me home", d: "Directions to Home", qa: "home", why: "Evening, you’re away from Home" });
+    if (h >= 6 && h < 11) out.push({ id: "cal", t: "Check today’s calendar", d: "Opens your Calendar app", qa: "calendar", why: "Morning" });
+    var sess = 0; try { sess = focusSessionsToday(); } catch (e) {}
+    if (h >= 9 && h < 18 && !sess && FOC.st !== "run") out.push({ id: "focus", t: "Start a " + (FOC.mins || 25) + "-min focus", d: "No focus session yet today", qa: "focus", why: "Daytime, 0 sessions today" });
+    if (h >= 21 || h < 2) out.push({ id: "relax", t: "Wind down", d: "Open " + currentMedia().name, qa: "music", why: "Late evening" });
+    try { if (bankDeviceReady() && _bankAsOf && Date.now() - _bankAsOf > 20 * 3600000) out.push({ id: "bank", t: "Refresh balances", d: "Last update over 20 hours ago", qa: "bank", why: "Balances are old" }); } catch (e2) {}
+    var st = sugState();
+    return out.filter(function (x) { return !st.done[x.id]; });
+  }
+  function sugHTML(list, max) {
+    return list.slice(0, max).map(function (x) {
+      return '<div class="v5-sug" role="group" aria-label="Suggestion: ' + esc(x.t) + '" data-sug="' + x.id + '" data-qa="' + x.qa + '">' +
+        '<span class="v5-sug-t"><b>' + esc(x.t) + "</b><small>" + esc(x.d) + " · " + esc(x.why) + "</small></span>" +
+        '<button type="button" class="v5-sug-ok" data-sug-ok="1">Accept</button>' +
+        '<button type="button" class="v5-sug-no" data-sug-no="1" aria-label="Dismiss suggestion">✕</button></div>';
+    }).join("");
+  }
+  function paintSug() {
+    var box = $("#v5Sug"); if (!box) return;
+    var list = suggestions();
+    var html = sugHTML(list, 1);
+    if (box._h !== html) { box._h = html; box.innerHTML = html; }
+    box.hidden = !list.length;
+  }
+  document.addEventListener("click", function (e) {
+    var card = e.target.closest && e.target.closest(".v5-sug"); if (!card) return;
+    var ok = e.target.closest("[data-sug-ok]"), no = e.target.closest("[data-sug-no]");
+    if (!ok && !no) return;
+    e.preventDefault(); e.stopPropagation();
+    sugMark(card.getAttribute("data-sug"));
+    if (ok) runQA(card.getAttribute("data-qa"));
+    else toast("Hidden for today");
+    paintSug();
+    var inSheet = $("#qaSug"); if (inSheet) inSheet.innerHTML = sugHTML(suggestions(), 3);
+  }, true);
+
+  /* ---- Quick Actions sheet (customizable) ---- */
+  function qaBody(edit) {
+    var on = qaList();
+    if (!edit) {
+      var sg = suggestions();
+      return (sg.length ? '<div class="qa-sec">SUGGESTED · ON THIS DEVICE</div><div id="qaSug" class="qa-sug">' + sugHTML(sg, 3) + "</div>" : "") +
+        '<div class="qa-sec">QUICK ACTIONS</div><div class="qa-grid">' + on.map(function (k) {
+          return '<button type="button" class="qa-btn" data-qa-run="' + k + '"><i aria-hidden="true">' + QA[k].ic + "</i><span>" + esc(QA[k].n) + "</span></button>";
+        }).join("") + '</div><button type="button" class="v5-btn qa-edit" data-qa-edit="1">Customize</button>';
+    }
+    return '<p class="note">Pick the actions you want. They run only when you tap them.</p><div class="qa-pick">' + Object.keys(QA).map(function (k) {
+      var c = on.indexOf(k) >= 0;
+      return '<button type="button" class="qa-opt' + (c ? " on" : "") + '" role="checkbox" aria-checked="' + c + '" data-qa-tog="' + k + '"><i aria-hidden="true">' + QA[k].ic + "</i><span>" + esc(QA[k].n) + '</span><b aria-hidden="true">' + (c ? "✓" : "") + "</b></button>";
+    }).join("") + '</div><button type="button" class="v5-btn" data-qa-done="1">Done</button>';
+  }
+  function qaTitle(edit) { return edit ? "CUSTOMIZE QUICK ACTIONS" : "⚡ QUICK ACTIONS"; }
+  function openQuickActions(edit) {
+    sheet(qaTitle(edit), qaBody(edit), function (b) {
+      b.addEventListener("click", function (e) {
+        var r = e.target.closest("[data-qa-run]"); if (r) { runQA(r.getAttribute("data-qa-run")); return; }
+        var sw = e.target.closest("[data-qa-edit],[data-qa-done]");
+        if (sw) { var ed = sw.hasAttribute("data-qa-edit"); b.innerHTML = qaBody(ed); var tt = $("#sheetTitle"); if (tt) tt.textContent = qaTitle(ed); return; }
+        var t = e.target.closest("[data-qa-tog]");
+        if (t) {
+          var k = t.getAttribute("data-qa-tog"), l = qaList(), i = l.indexOf(k);
+          if (i >= 0) l.splice(i, 1); else l.push(k);
+          try { Store.setLocal("quickActions", l); } catch (e2) {}
+          var c = i < 0; t.classList.toggle("on", c); t.setAttribute("aria-checked", String(c)); t.querySelector("b").textContent = c ? "✓" : "";
+        }
+      });
+    });
+  }
+  function openAppsSheet() {
+    var cats = $("#v5Cats");
+    var html = '<div class="v5-cats v5-cats-sheet">' + (cats ? cats.innerHTML : "") + "</div>";
+    sheet("APPS · CATEGORIES", html, function (b) {
+      b.addEventListener("click", function (e) {
+        var add = e.target.closest("[data-v5add]"), m = e.target.closest("[data-v5cat]");
+        if (!add && !m) return;
+        e.preventDefault(); closeSheet();
+        setTimeout(function () {
+          if (add) openAddApp({ focusSearch: true });
+          else { var src = document.querySelector('#v5Cats [data-v5cat="' + m.getAttribute("data-v5cat") + '"]'); if (src) src.click(); }
+        }, 60);
+      });
+    });
+  }
+  window.ZAPOS = window.ZAPOS || {};
+  window.ZAPOS.openQuickActions = openQuickActions; window.ZAPOS.openAppsSheet = openAppsSheet; window.ZAPOS.suggestions = suggestions;
+
+  /* ---- gestures: down (at top) = search, left = apps, right = quick actions. Never on map / scrollers / inputs / sheets ---- */
+  var g = null;
+  var NOSWIPE = "#mapV, .map-v, input, textarea, select, [contenteditable], .places-scroller, .hw-hrs, .mk-ticker, .wx-temp-chart, .wx-sw, .sheet, .zap-sheet, .xp, .np-list, #dlPad, .srch-drop";
+  document.addEventListener("touchstart", function (e) {
+    g = null;
+    if (!e.touches || e.touches.length !== 1) return;
+    var t = e.target; if (t && t.nodeType === 3) t = t.parentElement;
+    if (t && t.closest && t.closest(NOSWIPE)) return;
+    try { if (anyOverlayOpen()) return; } catch (eO) {}
+    var p = e.touches[0];
+    if (p.clientX < 28 || p.clientX > innerWidth - 28) return; /* leave iOS edge-swipe back/forward alone */
+    g = { x: p.clientX, y: p.clientY, t: Date.now(), top: (window.scrollY || document.documentElement.scrollTop || 0) <= 16 };
+  }, { passive: true, capture: true });
+  document.addEventListener("touchend", function (e) {
+    if (!g) return;
+    var p = e.changedTouches && e.changedTouches[0]; var s = g; g = null; if (!p) return;
+    var dx = p.clientX - s.x, dy = p.clientY - s.y, dt = Date.now() - s.t;
+    if (dt > 700) return;
+    if (Math.abs(dx) > 90 && Math.abs(dy) < 45) {
+      try { e.stopPropagation(); } catch (eS) {} /* a swipe is not a tap on the card underneath */
+      setTimeout(function () { if (dx < 0) openAppsSheet(); else openQuickActions(false); }, 0);
+      return;
+    }
+    if (s.top && dy > 110 && Math.abs(dx) < 50) { try { e.stopPropagation(); } catch (eS2) {} focusSearch(); }
+  }, { passive: true, capture: true });
+  document.addEventListener("touchcancel", function () { g = null; }, { passive: true, capture: true });
+
+  /* ---- desktop keys: / search, A apps, Q quick actions ---- */
+  document.addEventListener("keydown", function (e) {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    var t = e.target; if (t && t.matches && t.matches("input, textarea, select, [contenteditable]")) return;
+    try { if (anyOverlayOpen()) return; } catch (eO) {}
+    if (e.key === "/") { e.preventDefault(); focusSearch(); }
+    else if (e.key === "a" || e.key === "A") { e.preventDefault(); openAppsSheet(); }
+    else if (e.key === "q" || e.key === "Q") { e.preventDefault(); openQuickActions(false); }
+  });
+
+  /* ---- universal search: add places, notes and commands under the app results ---- */
+  var drop = $("#srchDrop"), inp = $("#srchQ"), busy = false, uHits = [];
+  function norm(x) { return String(x || "").toLowerCase(); }
+  function uResults(q) {
+    q = norm(q).trim(); if (q.length < 2) return [];
+    var out = [];
+    try { loadPlaces().forEach(function (p) { if (norm(p.name).indexOf(q) >= 0) out.push({ k: "place", label: p.name, sub: "PLACE · DIRECTIONS", run: function () { openDirectionsTo(p); } }); }); } catch (e) {}
+    try { zapLoadNotes().forEach(function (n) { if (norm(n.t).indexOf(q) >= 0 && out.length < 12) out.push({ k: "note", label: n.t, sub: "NOTE", run: function () { openZap("list notes"); } }); }); } catch (e2) {}
+    Object.keys(QA).forEach(function (k) { if (norm(QA[k].n).indexOf(q) >= 0 || norm(k).indexOf(q) === 0) out.push({ k: "cmd", label: QA[k].n, sub: "COMMAND", run: function () { QA[k].run(); } }); });
+    out.push({ k: "zap", label: "Ask ZAP AI: “" + String(inp.value).trim().slice(0, 40) + "”", sub: "ZAP AI", run: function () { openZap(String(inp.value).trim()); } });
+    return out.slice(0, 10);
+  }
+  function augment() {
+    if (busy || !drop || !inp || drop.hidden) return;
+    busy = true;
+    try {
+      var old = drop.querySelector(".u-sec"); if (old) old.remove();
+      uHits = uResults(inp.value);
+      if (uHits.length) {
+        var sec = document.createElement("div"); sec.className = "u-sec";
+        sec.innerHTML = '<div class="u-h">PLACES · NOTES · COMMANDS</div>' + uHits.map(function (h, i) {
+          return '<button type="button" class="srch-item u-item" role="option" data-u="' + i + '"><span class="u-ic u-' + h.k + '" aria-hidden="true"></span><span class="meta"><b>' + esc(h.label) + "</b><small>" + esc(h.sub) + "</small></span></button>";
+        }).join("");
+        drop.appendChild(sec);
+      }
+    } catch (e) {}
+    busy = false;
+  }
+  if (drop && inp && window.MutationObserver) {
+    new MutationObserver(function (recs) {
+      /* only react to the app search re-rendering, never to our own .u-sec insert (prevents a loop) */
+      var ours = recs.every(function (r) {
+        if (r.type !== "childList") return false;
+        var nodes = [].slice.call(r.addedNodes).concat([].slice.call(r.removedNodes));
+        return nodes.length > 0 && nodes.every(function (n) { return n.nodeType === 1 && n.classList && n.classList.contains("u-sec"); });
+      });
+      if (!ours && !busy) augment();
+    }).observe(drop, { childList: true, attributes: true, attributeFilter: ["hidden"] });
+    drop.addEventListener("click", function (e) {
+      var it = e.target.closest("[data-u]"); if (!it) return;
+      e.preventDefault(); e.stopPropagation();
+      var h = uHits[+it.getAttribute("data-u")];
+      inp.value = ""; try { inp.blur(); } catch (eB) {}
+      drop.hidden = true; drop.classList.remove("on"); drop.innerHTML = "";
+      if (h) h.run();
+    }, true);
+  }
+
+  /* ---- suggestion strip under search ---- */
+  var srch = $("#srch");
+  if (srch && !$("#v5Sug")) {
+    var box = document.createElement("div"); box.id = "v5Sug"; box.className = "v5-sugbar"; box.hidden = true; box.setAttribute("aria-live", "polite");
+    srch.parentNode.insertBefore(box, srch.nextSibling);
+  }
+  paintSug();
+  setInterval(paintSug, 60000);
+  try { Store.onChange(function () { paintSug(); }); } catch (eS) {}
 })();
 })(); /* end ZAPWISE//OS app scope */
