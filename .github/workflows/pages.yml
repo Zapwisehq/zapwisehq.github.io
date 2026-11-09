@@ -19,8 +19,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+      - name: Stage site (internal docs are not published)
+        run: |
+          mkdir -p "$RUNNER_TEMP/site"
+          tar --exclude=./.git --exclude=./.github --exclude=./docs-internal -cf - . | tar -xf - -C "$RUNNER_TEMP/site"
+          test -f "$RUNNER_TEMP/site/index.html" && test -f "$RUNNER_TEMP/site/os/index.html" && test ! -e "$RUNNER_TEMP/site/docs-internal"
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: ${{ runner.temp }}/site
       - id: deployment
         uses: actions/deploy-pages@v4
