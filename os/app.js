@@ -1,7 +1,7 @@
 /* ZAPWISE//OS web app v4.13.2 (Nov 5, 2026). Equal-height desktop Focus/Phone. Plaid-only Bank. Motion toggle. No tabs. Source: edit app.js → build.sh → app.min.js. */
 (function () {
 "use strict";
-var VERSION = '4.22.0';
+var VERSION = '4.23.0';
 var APP_VERSION = VERSION;
 
 // v4.5: default Lite on coarse/mobile unless user already chose
@@ -246,7 +246,7 @@ function clone(o) { return o == null ? o : JSON.parse(JSON.stringify(o)); }
 var Store = (function () {
   var STATE_KEY = "zapos.state", DEVICE_KEY = "zapos.device", VER = 1;
   var PREF_KEYS = ["settings", "theme", "apps", "coins", "loc", "favs", "places", "holdings", "broker", "wallets", "accounts", "assistant"];                     // shared state (sync-ready)
-  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss", "mediaKey", "skipBoot", "bootDay", "uiSounds", "recentPins", "wxDay", "wxMode", "wxMode2", "portHist", "acctMigrated", "liteMode", "tiltCards", "motionTilt", "callLog", "zapChat", "focusStats", "wallpaper", "zapNotes", "zapReminders", "uiMotion", "welcomeSeen", "bankPrivacy", "mapTraffic", "bankManualCleared_v413", "searchProv", "focusCustom", "v5AppsOpen", "quickActions", "sugState", "v6lists", "v6List", "v6ha", "v6compare", "v6cal", "zaLog", "dash"]; // this device only
+  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss", "mediaKey", "skipBoot", "bootDay", "uiSounds", "recentPins", "wxDay", "wxMode", "wxMode2", "portHist", "acctMigrated", "liteMode", "tiltCards", "motionTilt", "callLog", "zapChat", "focusStats", "wallpaper", "zapNotes", "zapReminders", "uiMotion", "welcomeSeen", "bankPrivacy", "mapTraffic", "bankManualCleared_v413", "searchProv", "focusCustom", "v5AppsOpen", "quickActions", "sugState", "v6lists", "v6List", "v6ha", "v6compare", "v6cal", "zaLog", "dash", "v7car", "v7tv"]; // this device only
   function read(k) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
   function write(k, v) { if (dead) return false; try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
   var state = read(STATE_KEY), dev = read(DEVICE_KEY), subs = [], uiT = null, dead = false; // dead: after a reset, write nothing more
@@ -4496,6 +4496,7 @@ function openMenu() {
   sheet("☰ MENU",
     "<h3>CONNECT</h3>" + row("⇄", "ZAP Connect", "Services, permissions, what’s shared, turn things off", "connect") +
     "<h3>DASHBOARD</h3>" + row("⚙", "Customize dashboard", "Show, hide or reorder cards", "dash") +
+    "<h3>VIEW</h3>" + row("🚗", "Car view", document.documentElement.classList.contains("car-mode") ? "On · tap to turn off" : "Big navigation, voice and audio buttons", "car") + row("📺", "TV view", document.documentElement.classList.contains("tv-mode") ? "On · tap to turn off" : "Discover screen for a big screen and remote", "tv") +
     "<h3>APPS</h3>" + row("▦", "Edit apps", "Add, remove, show, hide or reorder apps", "apps") +
     "<h3>WEATHER</h3>" + row("☁", "Weather location", LOC.mode === "city" ? "City: " + esc(LOC.name) : "Using my location", "city") +
     "<h3>MARKETS</h3>" + row("₿", "Edit watchlist", COINS.map(function (c) { return esc(c.sym); }).join(" · ") || "Empty", "coins") +
@@ -4508,6 +4509,8 @@ function openMenu() {
         var g = e.target.closest("[data-go]"); if (!g) return; var k = g.getAttribute("data-go");
         if (k === "connect") openConnect();
         else if (k === "dash") openDashEdit();
+        else if (k === "car") { closeSheet(); v7SetCar(!document.documentElement.classList.contains("car-mode")); }
+        else if (k === "tv") { closeSheet(); v7SetTv(!document.documentElement.classList.contains("tv-mode")); }
         else if (k === "apps") openEditApps();
         else if (k === "city") openCity();
         else if (k === "coins") openEditCoins();
@@ -8904,6 +8907,7 @@ function zaConfirm(text, yes) {
 }
 /* the one entry point: run(id, args, {source}) → reports honestly what happened */
 function zaRun(id, args, opt) {
+  if (document.documentElement.classList.contains("car-mode") && /^(shop\.|dest\.shop|dest\.food|food\.|watch\.|dest\.watch)/.test(id)) { toast("Not available in car view — exit car view first"); return { status: "failed", msg: "Not available in car view" }; }
   opt = opt || {};
   var d = zaDefs()[id]; if (!d) { toast("Unknown action"); return; }
   function go2() {
@@ -8997,13 +9001,19 @@ var DASH_CARDS = [
   { id: "panelMoney", n: "Banking" },
   { id: "cardInvest", n: "Investments & markets" },
   { id: "appsSection", n: "Apps" },
-  { id: "phoneMount", n: "Dial pad & favorites" }
+  { id: "phoneMount", n: "Dial pad & favorites" },
+  { id: "cardZap", n: "ZAP AI" },
+  { id: "cardShop", n: "Shop smart" },
+  { id: "cardQA", n: "Quick actions" }
 ];
+var DASH_DESK = ["panelToday", "cardPlay", "cardZap", "mFocus", "panelNav", "cardShop", "panelMoney", "cardInvest", "cardQA", "v6Hero", "appsSection", "phoneMount"];
+var DASH_PHONE = ["v6Hero", "panelToday", "cardPlay", "mFocus", "panelNav", "cardShop", "panelMoney", "cardInvest", "cardQA", "cardZap", "appsSection", "phoneMount"];
 function dashLoad() {
-  var d = Store.getLocal("dash", null), ids = DASH_CARDS.map(function (c) { return c.id; });
+  var d = Store.getLocal("dash", null), ids = (innerWidth >= 1024 ? DASH_DESK : DASH_PHONE).slice();
+  DASH_CARDS.forEach(function (c) { if (ids.indexOf(c.id) < 0) ids.push(c.id); });
   var order = (d && Array.isArray(d.order)) ? d.order.filter(function (x) { return ids.indexOf(x) >= 0; }) : [];
   ids.forEach(function (x) { if (order.indexOf(x) < 0) order.push(x); });
-  var off = (d && Array.isArray(d.off)) ? d.off.filter(function (x) { return ids.indexOf(x) >= 0 && x !== "v6Hero"; }) : [];
+  var off = (d && Array.isArray(d.off)) ? d.off.filter(function (x) { return ids.indexOf(x) >= 0 && x !== "v6Hero"; }) : (innerWidth >= 1024 ? [] : ["cardZap"]);
   return { order: order, off: off };
 }
 function dashSave(d) { Store.setLocal("dash", { order: d.order.slice(), off: d.off.slice() }); }
@@ -9069,6 +9079,192 @@ function openDashEdit() {
     applyDash();
   } catch (e) {}
   window.ZAPOS = window.ZAPOS || {}; window.ZAPOS.openDashEdit = openDashEdit; window.ZAPOS.applyDash = applyDash;
+})();
+
+
+/* ===== v4.23 LAYOUT: desktop sidebar + top bar, ZAP AI / Shop Smart / Quick Actions cards, phone bottom bar, TV Discover, car view ===== */
+var V7_SIDE = [
+  { id: "home", n: "Home", ic: "⌂" }, { id: "shop", n: "Shop", ic: "◆" }, { id: "watch", n: "Watch", ic: "▶" }, { id: "listen", n: "Listen", ic: "♫" },
+  { id: "food", n: "Food", ic: "✻" }, { id: "navigate", n: "Maps", ic: "➤" }, { id: "smarthome", n: "Smart Home", ic: "◈" }, { id: "finance", n: "Finance", ic: "$" },
+  { id: "apps", n: "Apps", ic: "▦" }, { id: "more", n: "More", ic: "⋯" }
+];
+var V7_TV_STREAM = [
+  { n: "Netflix", u: "https://www.netflix.com" }, { n: "YouTube", u: "https://www.youtube.com" }, { n: "Prime Video", u: "https://www.primevideo.com" },
+  { n: "Disney+", u: "https://www.disneyplus.com" }, { n: "Max", u: "https://www.max.com" }, { n: "Spotify", u: "https://open.spotify.com" }
+];
+function v7Desk() { return innerWidth >= 1024; }
+function v7Car() { return document.documentElement.classList.contains("car-mode"); }
+function v7Tv() { return document.documentElement.classList.contains("tv-mode"); }
+function v7SideGo(id) {
+  if (id === "home") { v6GoHome(); return; }
+  if (id === "more") { openMenu(); return; }
+  zaRun("dest." + id, {}, { quiet: true });
+}
+function v7Inbox() {
+  var R = zapLoadReminders(), c = v6Cal(), today = c ? v6DayEvents(new Date()) : [], now = Date.now();
+  var left = today.filter(function (e) { return (e.e || e.s) > now; });
+  var sug = []; try { sug = window.ZAPOS.suggestions() || []; } catch (e) {}
+  var html = '<div class="v6-dest">' +
+    '<div class="v6-list-h"><b>REMINDERS</b></div>' +
+    (R.length ? R.slice(0, 12).map(function (r, i) { return '<div class="v6-sv"><span class="v6-sv-use">' + esc(r.t) + ' <small class="v6-px">' + esc(new Date(r.at).toLocaleDateString()) + '</small></span><button type="button" class="chip" data-rdel="' + i + '" aria-label="Remove reminder ' + esc(r.t) + '">✕</button></div>'; }).join("") : '<p class="dim v6-empty">No reminders saved.</p>') +
+    '<div class="v6-list-h"><b>LATER TODAY</b></div>' +
+    (c ? (left.length ? left.slice(0, 8).map(function (e) { return '<div class="v6-ev"><b>' + esc(v6EvTime(e)) + '</b><span>' + esc(e.t || "Event") + '</span></div>'; }).join("") : '<p class="dim v6-empty">Nothing else in your imported calendar today.</p>') : '<p class="dim v6-empty">No calendar imported — Today’s agenda can import an .ics file.</p>') +
+    '<div class="v6-list-h"><b>SUGGESTED</b></div>' +
+    (sug.length ? sug.slice(0, 3).map(function (s) { return '<p class="dim">' + esc(s.t) + ' — ' + esc(s.d) + '</p>'; }).join("") : '<p class="dim v6-empty">No suggestions right now.</p>') +
+    '<p class="note">Saved on this device. ZAPWISE can’t send phone notifications — check here or ask ZAP AI.</p></div>';
+  sheet("🔔 INBOX", html, function (b) {
+    b.addEventListener("click", function (e) {
+      var d = e.target.closest("[data-rdel]"); if (!d) return;
+      var r = zapLoadReminders(); r.splice(+d.getAttribute("data-rdel"), 1); zapSaveReminders(r); v7PaintBell(); v7Inbox();
+    });
+  });
+}
+function v7PaintBell() {
+  var n = 0; try { n = zapLoadReminders().length; var c = v6Cal(), now = Date.now(); if (c) n += v6DayEvents(new Date()).filter(function (e) { return (e.e || e.s) > now; }).length; } catch (e) {}
+  var b = $("#v7Bell"); if (!b) return;
+  var badge = b.querySelector(".v7-badge"); badge.textContent = n > 9 ? "9+" : String(n); badge.hidden = !n;
+  b.setAttribute("aria-label", "Inbox" + (n ? ", " + n + " item" + (n === 1 ? "" : "s") : ", empty"));
+}
+function v7PaintClock() {
+  var c = $("#v7Clock"); if (!c) return; var d = new Date();
+  c.innerHTML = "<b>" + esc(t12(d)) + "</b><small>" + esc(d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })) + "</small>";
+}
+function v7PaintShop() {
+  var host = $("#v7ShopList"); if (!host) return;
+  var L = v6Lists().shop.filter(function (x) { return !x.done; }).slice(0, 3);
+  host.innerHTML = L.length ? L.map(function (x, i) { return '<button type="button" class="v7-shop-it" data-shop-q="' + esc(x.t) + '"><span>' + esc(x.t) + '</span><small>' + (x.price ? esc(x.price) + (x.store ? " · " + esc(x.store) : "") : "No price saved") + '</small></button>'; }).join("")
+    : '<p class="dim v6-empty">Nothing saved yet. Save items in Shop, add the price you saw, then compare.</p>';
+  var cmp = $("#v7ShopCmp"); if (cmp) cmp.hidden = !L.length;
+}
+function v7PaintNext() {
+  var t = $("#v7NextT"); if (!t) return; var s = [];
+  try { s = window.ZAPOS.suggestions() || []; } catch (e) {}
+  t.textContent = s.length ? s[0].t : "Ask anything or say what to do";
+}
+function v7PaintZapMode() { var m = $("#v7ZapMode"); if (m) m.textContent = v6SmartOn() ? "ONLINE ANSWERS ON" : "ON THIS DEVICE"; }
+function v7SetCar(on) {
+  document.documentElement.classList.toggle("car-mode", !!on);
+  try { Store.setLocal("v7car", on ? 1 : 0); } catch (e) {}
+  var c = $("#v7Car"); if (c) c.hidden = !on;
+  if (on) { try { window.scrollTo(0, 0); } catch (e2) {} setTimeout(function () { var b = $("#v7Car .v7-car-b"); if (b) b.focus({ preventScroll: true }); }, 100); }
+}
+function v7SetTv(on) {
+  document.documentElement.classList.toggle("tv-mode", !!on);
+  try { Store.setLocal("v7tv", on ? 1 : 0); } catch (e) {}
+  var t = $("#v7Tv"); if (t) t.hidden = !on;
+}
+(function v7Init() {
+  var app = $("#app"), pg = $("#osPage"), top = $("#top"); if (!app || !pg) return;
+  /* sidebar */
+  var side = document.createElement("nav"); side.id = "v7Side"; side.className = "v7-side"; side.setAttribute("aria-label", "Main");
+  side.innerHTML = '<div class="v7-side-brand" aria-hidden="true">ZAPWISE<b>//OS</b></div>' + V7_SIDE.map(function (s) { return '<button type="button" class="v7-si" data-side="' + s.id + '"' + (s.id === "home" ? ' aria-current="page"' : "") + '><span class="v7-si-ic" aria-hidden="true">' + s.ic + '</span><span>' + esc(s.n) + '</span></button>'; }).join("");
+  app.insertBefore(side, app.firstChild);
+  side.addEventListener("click", function (e) { var b = e.target.closest("[data-side]"); if (b) v7SideGo(b.getAttribute("data-side")); });
+  /* top bar: clock, bell, profile */
+  var tr = top && top.querySelector(".top-r"), mb = $("#menuBtn");
+  if (tr && mb) {
+    var w = document.createElement("span"); w.className = "v7-tr";
+    w.innerHTML = '<button type="button" class="v7-bell" id="v7Bell" aria-label="Inbox"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 22a2.5 2.5 0 0 0 2.4-2h-4.8A2.5 2.5 0 0 0 12 22zm7-6V11a7 7 0 0 0-5-6.7V3a2 2 0 0 0-4 0v1.3A7 7 0 0 0 5 11v5l-2 2v1h18v-1l-2-2z"/></svg><span class="v7-badge" hidden></span></button>' +
+      '<button type="button" class="v7-prof" id="v7Prof" aria-label="Profile and settings"><span aria-hidden="true">' + esc(((S && S.name) || "Z").trim().charAt(0).toUpperCase() || "Z") + '</span></button>' +
+      '<span class="v7-clock" id="v7Clock" aria-hidden="true"></span>';
+    tr.insertBefore(w, mb);
+    $("#v7Bell").addEventListener("click", v7Inbox);
+    $("#v7Prof").addEventListener("click", function () { openSettings(); });
+  }
+  var sq = $("#srchQ"); if (sq) { sq.placeholder = "Search or ask ZAP AI…"; sq.setAttribute("aria-label", "Search or ask ZAP AI"); }
+  /* new cards */
+  var anchor = $("#dashEditRow") || $("#settingsMount");
+  function card(id, cls, label, acc, inner) { var s = document.createElement("section"); s.className = "card br v5c " + cls; s.id = id; s.setAttribute("aria-label", label); s.style.setProperty("--acc", acc); s.innerHTML = inner; pg.insertBefore(s, anchor); return s; }
+  var cz = card("cardZap", "v7-zap", "ZAP AI", "#b26bff",
+    '<div class="v5h"><b>ZAP AI</b><small class="v7-mode" id="v7ZapMode"></small></div>' +
+    '<div class="v7-orb" aria-hidden="true"><span>Z</span></div><p class="v7-q">How can I help you today?</p>' +
+    '<div class="v7-chips"><button type="button" class="chip" data-zq="help me plan my day">Plan my day</button><button type="button" class="chip" data-zq="what\'s the weather today">Weather today</button><button type="button" class="chip" data-zq="what can you do">What can you do?</button></div>' +
+    '<button type="button" class="btn v7-ask" id="v7Ask">Ask ZAP AI →</button>');
+  cz.addEventListener("click", function (e) {
+    var q = e.target.closest("[data-zq]");
+    if (q) { var cmd = q.getAttribute("data-zq"); openZapAssistant(); setTimeout(function () { try { zapHandle(cmd); } catch (e2) {} }, 200); return; }
+    if (e.target.closest("#v7Ask")) openZapAssistant();
+  });
+  var cs = card("cardShop", "v7-shop", "Shop smart", "#ff4fd8",
+    '<div class="v5h"><b>SHOP SMART</b></div><div class="v7-shop-l" id="v7ShopList"></div>' +
+    '<div class="v6-row"><button type="button" class="chip accent" id="v7ShopCmp">⇄ Compare prices</button><button type="button" class="chip" id="v7ShopOpen">Open Shop →</button></div>' +
+    '<p class="note">Prices are the ones you saved. Store links open the store’s own search.</p>');
+  cs.addEventListener("click", function (e) {
+    var it = e.target.closest("[data-shop-q]");
+    if (it) { zaRun("dest.shop", { q: it.getAttribute("data-shop-q") }, { quiet: true }); return; }
+    if (e.target.closest("#v7ShopCmp")) { if (v7Car()) return; v6Compare(); return; }
+    if (e.target.closest("#v7ShopOpen")) zaRun("dest.shop", {}, { quiet: true });
+  });
+  var qa = card("cardQA", "v7-qa", "Quick actions", "#2ee6ff",
+    '<div class="v5h"><b>QUICK ACTIONS</b></div><div class="v7-qa-g">' +
+    [["nav.home", "⌂", "Home"], ["nav.work", "▣", "Work"], ["focus.start", "◔", "Focus"], ["cal.event", "▦", "Event"], ["reminder.add", "⏰", "Remind"], ["more", "⋯", "More"]]
+      .map(function (a) { return '<button type="button" class="v7-qa-b" data-za="' + a[0] + '"><span aria-hidden="true">' + a[1] + '</span>' + a[2] + '</button>'; }).join("") + '</div>');
+  qa.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-za]"); if (!b) return; var id = b.getAttribute("data-za");
+    if (id === "more") { try { window.ZAPOS.openQuickActions(); } catch (e2) {} return; }
+    zaRun(id);
+  });
+  /* phone bottom bar + next-action strip */
+  var bot = document.createElement("nav"); bot.id = "v7Bot"; bot.className = "v7-bot"; bot.setAttribute("aria-label", "Bottom");
+  bot.innerHTML = '<button type="button" class="v7-next" id="v7Next"><span class="v7-next-ic" aria-hidden="true">✦</span><span class="v7-next-tx"><small>ZAP AI · YOUR NEXT ACTION</small><b id="v7NextT">Ask anything</b></span><span class="v7-next-mic" aria-hidden="true">🎤</span></button>' +
+    '<div class="v7-bot-r"><button type="button" class="v7-bb" data-bot="home"><span aria-hidden="true">⌂</span>Home</button><button type="button" class="v7-bb" data-bot="search"><span aria-hidden="true">⌕</span>Search</button><button type="button" class="v7-bb" data-bot="profile"><span aria-hidden="true">◉</span>Profile</button></div>';
+  app.appendChild(bot);
+  bot.addEventListener("click", function (e) {
+    if (e.target.closest("#v7Next")) { openZapAssistant(); return; }
+    var b = e.target.closest("[data-bot]"); if (!b) return; var k = b.getAttribute("data-bot");
+    if (k === "home") v6GoHome();
+    else if (k === "search") { try { closeSheet(); } catch (e2) {} window.scrollTo(0, 0); var q = $("#srchQ"); if (q) setTimeout(function () { q.focus(); }, 60); }
+    else openSettings();
+  });
+  /* TV Discover */
+  var tv = document.createElement("section"); tv.id = "v7Tv"; tv.className = "v7-tv"; tv.hidden = true; tv.setAttribute("aria-label", "Discover");
+  tv.innerHTML = '<nav class="v7-tv-side" aria-label="TV">' + [["home", "Home"], ["movies", "Movies"], ["shows", "Shows"], ["music", "Music"], ["shop", "Shop"], ["apps", "Apps"], ["settings", "Settings"]].map(function (x) { return '<button type="button" class="v7-si" data-tv="' + x[0] + '">' + x[1] + '</button>'; }).join("") + '</nav>' +
+    '<div class="v7-tv-main"><div class="v7-tv-hero"><h2>Discover more with ZAPWISE</h2><p>Your watchlist, your services and ZAP AI on the big screen.</p><button type="button" class="btn" data-tv="explore">Explore →</button></div>' +
+    '<div class="v7-tv-ask"><b>ZAP AI</b><p>Find something to watch?</p><button type="button" class="chip accent" data-tv="ask">Ask now →</button></div>' +
+    '<div class="v7-tv-row"><h3>YOUR WATCHLIST</h3><div class="v7-tv-cards" id="v7TvList"></div></div>' +
+    '<div class="v7-tv-row"><h3>OPEN A SERVICE</h3><div class="v7-tv-cards">' + V7_TV_STREAM.map(function (s, i) { return '<button type="button" class="v7-tv-c" data-tvs="' + i + '"><b>' + esc(s.n) + '</b><small>Opens ' + esc(s.n) + ' ↗</small></button>'; }).join("") + '</div></div>' +
+    '<button type="button" class="chip" data-tv="exit">Exit TV view</button></div>';
+  pg.insertBefore(tv, pg.firstChild);
+  tv.addEventListener("click", function (e) {
+    var s = e.target.closest("[data-tvs]"); if (s) { var o = V7_TV_STREAM[+s.getAttribute("data-tvs")]; zaRun("site.open", { url: o.u, name: o.n }); return; }
+    var w = e.target.closest("[data-tvw]"); if (w) { zaRun("dest.watch", { q: w.getAttribute("data-tvw") }, { quiet: true }); return; }
+    var b = e.target.closest("[data-tv]"); if (!b) return; var k = b.getAttribute("data-tv");
+    if (k === "home") v6GoHome(); else if (k === "movies" || k === "shows" || k === "explore") zaRun("dest.watch", {}, { quiet: true });
+    else if (k === "music") zaRun("dest.listen", {}, { quiet: true }); else if (k === "shop") zaRun("dest.shop", {}, { quiet: true });
+    else if (k === "apps") zaRun("dest.apps", {}, { quiet: true }); else if (k === "settings") openSettings();
+    else if (k === "ask") { openZapAssistant(); } else if (k === "exit") v7SetTv(false);
+  });
+  /* car view */
+  var car = document.createElement("section"); car.id = "v7Car"; car.className = "v7-car"; car.hidden = true; car.setAttribute("aria-label", "Car view");
+  car.innerHTML = '<div class="v7-car-h"><b>CAR VIEW</b><small>Navigation · voice · audio. Shopping is off while driving.</small></div><div class="v7-car-g">' +
+    '<button type="button" class="v7-car-b" data-car="home"><span aria-hidden="true">⌂</span>Home</button>' +
+    '<button type="button" class="v7-car-b" data-car="work"><span aria-hidden="true">▣</span>Work</button>' +
+    '<button type="button" class="v7-car-b" data-car="voice"><span aria-hidden="true">🎤</span>Speak</button>' +
+    '<button type="button" class="v7-car-b" data-car="music"><span aria-hidden="true">♫</span>Music</button></div>' +
+    '<button type="button" class="chip" data-car="exit">Exit car view</button>';
+  pg.insertBefore(car, pg.firstChild);
+  car.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-car]"); if (!b) return; var k = b.getAttribute("data-car");
+    if (k === "home") zaRun("nav.home"); else if (k === "work") zaRun("nav.work");
+    else if (k === "voice") { openZapAssistant(); setTimeout(function () { try { startZapListen(); } catch (e2) {} }, 250); }
+    else if (k === "music") zaRun("media.open"); else v7SetCar(false);
+  });
+  /* modes from URL / saved */
+  var qs = location.search, carOn = /[?&]car=1/.test(qs) ? 1 : /[?&]car=0/.test(qs) ? 0 : Store.getLocal("v7car", 0);
+  var tvUA = /SmartTV|SMART-TV|Tizen|Web0S|webOS.TV|AFT[A-Z]|CrKey|Android TV|BRAVIA|GoogleTV/i.test(navigator.userAgent);
+  var tvOn = /[?&]tv=1/.test(qs) ? 1 : /[?&]tv=0/.test(qs) ? 0 : (Store.getLocal("v7tv", null) == null ? (tvUA ? 1 : 0) : Store.getLocal("v7tv", 0));
+  v7SetTv(tvOn); v7SetCar(carOn);
+  function paintW() { var l = $("#v7TvList"); if (!l) return; var W = v6Lists().watch.filter(function (x) { return !x.done; }).slice(0, 6); l.innerHTML = W.length ? W.map(function (x) { return '<button type="button" class="v7-tv-c" data-tvw="' + esc(x.t) + '"><b>' + esc(x.t) + '</b><small>Find where to watch ↗</small></button>'; }).join("") : '<p class="dim v6-empty">Nothing on your watchlist yet — add titles in Watch.</p>'; }
+  function paintAll() { v7PaintClock(); v7PaintBell(); v7PaintShop(); v7PaintNext(); v7PaintZapMode(); paintW(); }
+  paintAll(); setInterval(function () { if (!document.hidden) { v7PaintClock(); v7PaintNext(); } }, 30000);
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) paintAll(); });
+  /* repaint after sheets close (lists, reminders, smart mode may have changed) */
+  var sh = $("#sheet"); if (sh && window.MutationObserver) new MutationObserver(function () { if (sh.hidden) paintAll(); }).observe(sh, { attributes: true, attributeFilter: ["hidden"] });
+  var zs = $("#zapSheet"); if (zs && window.MutationObserver) new MutationObserver(function () { if (zs.hidden) paintAll(); }).observe(zs, { attributes: true, attributeFilter: ["hidden"] });
+  /* sidebar current item follows the open destination sheet */
+  window.ZAPOS = window.ZAPOS || {}; window.ZAPOS.run = zaRun; window.ZAPOS.v7 = { setCar: v7SetCar, setTv: v7SetTv, inbox: v7Inbox, paint: paintAll };
+  try { applyDash(); } catch (e3) {}
+  var lastDesk = v7Desk(); addEventListener("resize", function () { var d = v7Desk(); if (d !== lastDesk) { lastDesk = d; if (!Store.getLocal("dash", null)) applyDash(); } });
 })();
 
 })(); /* end ZAPWISE//OS app scope */

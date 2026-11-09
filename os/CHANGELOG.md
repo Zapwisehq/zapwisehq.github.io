@@ -86,3 +86,14 @@ Newest last. Every entry was tested with Playwright (360/390/430/768/1366@1.25/1
 - Order and hidden cards saved on this device (`dash`); "Reset dashboard to default" restores everything.
 - Cards are moved in the DOM (keyboard/screen-reader order matches what you see). Hidden cards still open from the orbit, search and ZAP AI (shown temporarily with a note).
 - QA: qa422 at 390 and 1440 (hide, reorder, focus kept, persists after reload, hidden card reachable, search finds action, reset) + full regression.
+
+## v4.23.0 — 2026-11-09 — Layout toward the ecosystem image
+- ≥1024 px: left sidebar (Home, Shop, Watch, Listen, Food, Maps, Smart Home, Finance, Apps, More) using the ZAP Actions registry; top bar adds an Inbox bell (saved reminders, rest of today from an imported calendar, suggestions — no fake notifications), profile button (Settings) and a clock (≥1280 px).
+- Search bar now reads "Search or ask ZAP AI…".
+- Default desktop grid is 3×3: Today | Now Playing | ZAP AI · Focus | Navigate | Shop Smart · Banking | Investments | Quick Actions, then Explore (orbit), Apps and Phone. New cards: ZAP AI (online/on-device status, ask + 3 prompts), Shop Smart (your saved items and prices only, compare, open Shop), Quick Actions (Home, Work, Focus, Event, Remind, More).
+- Phone/tablet <1024 px: orbit kept; fixed bottom bar (Home, Search, Profile) with a "ZAP AI · your next action" strip; page padding so nothing hides under it.
+- TV view (?tv=1, TV browsers, or Menu → View): Discover hero, TV sidebar (Home, Movies, Shows, Music, Shop, Apps, Settings), your watchlist and service link-outs only.
+- Car view (?car=1 or Menu → View): big Home / Work / Speak / Music buttons + Navigate and Now Playing only; shopping, food and watch actions are refused in car view.
+- Customize dashboard now lists 12 cards; default order depends on screen width until you save your own.
+- Calmer card glow.
+- QA: qa423 (sidebar, bell, profile, 3×3 positions, Quick Actions, ZAP card, honest empty Shop Smart, phone bar + strip + no content under the bar, car view at 390/1366 incl. shopping blocked, TV link-outs) + full regression.
