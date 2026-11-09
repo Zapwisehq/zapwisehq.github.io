@@ -6,3 +6,7 @@ Sitemap: https://zapwiseai.com/sitemap.xml
 User-agent: *
 Disallow: /os/get/
 Disallow: /os/get
+
+# Internal docs — noindex
+User-agent: *
+Disallow: /os/docs/
