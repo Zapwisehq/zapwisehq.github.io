@@ -1,11 +1,11 @@
-/* ZAPWISE//OS service worker v4.17.0
+/* ZAPWISE//OS service worker v4.18.0
    - Network-first for navigations + shell (index, app.js/css, catalog, sky, manifest).
    - Cache-first only for icons / images.
    - version.json is NEVER intercepted (always hits network for update checks).
    - skipWaiting on install; clients.claim + delete old caches on activate.
    Traffic tiles use network-first ≤2 min cache. OSM tiles stay longer offline cache. */
-const VER = "zapos-v4.17.0";
-const APP_VER = "4.17.0";
+const VER = "zapos-v4.18.0";
+const APP_VER = "4.18.0";
 const SHELL = [
   "/os/",
   "/os/index.html",
@@ -119,7 +119,7 @@ self.addEventListener("fetch", function (e) {
   if (req.method !== "GET") return;
   var u;
   try { u = new URL(req.url); } catch (err) { return; }
-  // v4.17.0: live traffic tiles — network-first, cache ≤2 min (never long-cache flow)
+  // v4.18.0: live traffic tiles — network-first, cache ≤2 min (never long-cache flow)
   if (u.hostname === "zapwise-traffic.zapwisehq.workers.dev") { e.respondWith(trafficFetch(req)); return; }
   // map tiles — keep a small offline cache (max ~600 tiles, refreshed after 7 days)
   if (/^tile\.openstreetmap\.(org|de)$/.test(u.hostname) && req.mode === "cors") { e.respondWith(tileFetch(req)); return; }
@@ -127,7 +127,7 @@ self.addEventListener("fetch", function (e) {
 
   // Let the browser handle SW script + version.json (always network for updates).
   if (u.pathname === "/os/sw.js" || u.pathname === "/os/version.json") return;
-  // v4.17.0: bank link + OAuth return pages always go straight to the network (never served from cache).
+  // v4.18.0: bank link + OAuth return pages always go straight to the network (never served from cache).
   if (u.pathname.indexOf("/os/link/") === 0) return;
 
   var isNav = req.mode === "navigate";

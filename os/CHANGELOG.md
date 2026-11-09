@@ -51,3 +51,10 @@ Newest last. Every entry was tested with Playwright (360/390/430/768/1366@1.25/1
 - **Honest states**: portfolio shows "—" / "NOTHING ADDED YET" instead of $0; no invented sparklines or chart placeholders; watchlist shows "Price service didn't answer · ↻ Retry"; weather ↻ refresh button; map says "DEFAULT AREA (NOT YOU)" when location is off; mics hidden where voice isn't supported.
 - **44px targets**: fixed 12 controls under 44px found in the audit.
 - QA: 360/390/768/1024/1440/1920 + 1366@1.25 layout suite, 37 interaction checks (orbit keys/swipe/list, all destinations, routines, labels, markets error + retry, empty states), gestures/search regression, bank-link regression, a11y scan (0 small, 0 unnamed).
+
+## v4.18.0 — 2026-11-09 (Spec steps 7–8: Shop/Discovery, Watch, Listen, Food)
+- Shop: ✎ on any saved item to add the price you saw, the store and an https link; ⇄ Compare shows saved items side by side, lowest price you entered first, labeled "prices you typed — confirm on the store's page". Got-it checkmarks for the shopping list. Still no invented prices, stock, reviews or images; no sponsored or affiliate links.
+- Watch: watchlist with Watched ✓ toggle; JustWatch/YouTube/Netflix/Prime Video/Google searches; says Continue Watching stays in each app.
+- Food: favorite spots; Google Maps "near me", DoorDash, Uber Eats, Grubhub, Yelp searches; ZAPWISE never places orders or takes payment.
+- Listen: current provider shown and switchable; plain note that live track/controls need each service's sign-in.
+- QA: shop edit/compare/link validation, watch toggle, food links, plus the full v4.17 layout, interaction and gesture suites at all sizes.

@@ -1,7 +1,7 @@
 /* ZAPWISE//OS web app v4.13.2 (Nov 5, 2026). Equal-height desktop Focus/Phone. Plaid-only Bank. Motion toggle. No tabs. Source: edit app.js → build.sh → app.min.js. */
 (function () {
 "use strict";
-var VERSION = '4.17.0';
+var VERSION = '4.18.0';
 var APP_VERSION = VERSION;
 
 // v4.5: default Lite on coarse/mobile unless user already chose
@@ -8395,13 +8395,14 @@ function v6OpenDest(id, o) {
     '<p class="note">' + esc(C.note) + '</p>' +
     '<div class="v6-list-h"><b>' + esc(C.saveL).toUpperCase() + ' · ON THIS DEVICE</b><button type="button" class="chip" id="v6DSave">＋ Save typed item</button></div>' +
     '<div class="v6-saved" id="v6Saved" role="list"></div>' +
+    (id === "shop" ? '<button type="button" class="chip accent" id="v6Cmp">⇄ Compare saved items</button>' : "") +
     '<button type="button" class="v6-home-btn" data-v6-home="1">⌂ Back to Home</button></div>';
   sheet(C.t, html, function (b) {
     var inp = b.querySelector("#v6DQ");
     function q() { return (inp.value || "").trim(); }
     function paintSaved() {
       var L = v6Lists()[id], host = b.querySelector("#v6Saved");
-      host.innerHTML = L.length ? L.map(function (x, i) { return '<div class="v6-sv" role="listitem"><button type="button" class="v6-sv-use" data-use="' + i + '">' + esc(x.t) + '</button>' + (id === "shop" ? '<button type="button" class="chip v6-done' + (x.done ? " on" : "") + '" data-done="' + i + '" aria-pressed="' + (!!x.done) + '" aria-label="Mark ' + esc(x.t) + ' as got it">' + (x.done ? "✓ Got it" : "Got it?") + '</button>' : "") + '<button type="button" class="chip" data-del="' + i + '" aria-label="Remove ' + esc(x.t) + '">✕</button></div>'; }).join("") : '<p class="dim v6-empty">Nothing saved yet. Type something above and tap ＋ Save.</p>';
+      host.innerHTML = L.length ? L.map(function (x, i) { return '<div class="v6-sv" role="listitem"><button type="button" class="v6-sv-use" data-use="' + i + '">' + esc(x.t) + (x.price ? ' <small class="v6-px">' + esc(x.price) + (x.store ? " · " + esc(x.store) : "") + '</small>' : "") + '</button>' + (id === "shop" ? '<button type="button" class="chip" data-edit="' + i + '" aria-label="Add price, store or link for ' + esc(x.t) + '">✎</button>' : "") + (id !== "food" ? '<button type="button" class="chip v6-done' + (x.done ? " on" : "") + '" data-done="' + i + '" aria-pressed="' + (!!x.done) + '" aria-label="Mark ' + esc(x.t) + (id === "watch" ? ' as watched' : ' as got it') + '">' + (x.done ? (id === "watch" ? "✓ Watched" : "✓ Got it") : (id === "watch" ? "Watched?" : "Got it?")) + '</button>' : "") + '<button type="button" class="chip" data-del="' + i + '" aria-label="Remove ' + esc(x.t) + '">✕</button></div>'; }).join("") : '<p class="dim v6-empty">Nothing saved yet. Type something above and tap ＋ Save.</p>';
     }
     paintSaved();
     b.querySelector("#v6DForm").addEventListener("submit", function (e) { e.preventDefault(); if (!q()) { inp.focus(); toast("Type something first"); return; } var first = b.querySelector(".v6-store"); if (first) first.focus(); toast("Pick a " + (id === "shop" ? "store" : "service") + " below"); });
@@ -8420,10 +8421,52 @@ function v6OpenDest(id, o) {
       var u = e.target.closest("[data-use]"), d = e.target.closest("[data-del]"), dn = e.target.closest("[data-done]"), L = v6Lists();
       if (u) { inp.value = L[id][+u.getAttribute("data-use")].t; inp.focus(); }
       if (dn) { var it = L[id][+dn.getAttribute("data-done")]; it.done = !it.done; v6SaveLists(L); paintSaved(); }
+      var ed = e.target.closest("[data-edit]"); if (ed) { v6EditItem(id, +ed.getAttribute("data-edit")); return; }
       if (d) { var i = +d.getAttribute("data-del"), gone = L[id][i]; L[id].splice(i, 1); v6SaveLists(L); paintSaved(); toast("Removed “" + gone.t.slice(0, 30) + "”"); }
     });
-    b.addEventListener("click", function (e) { if (e.target.closest("[data-v6-home]")) v6GoHome(); });
+    b.addEventListener("click", function (e) { if (e.target.closest("[data-v6-home]")) v6GoHome(); if (e.target.closest("#v6Cmp")) v6Compare(); });
     if (!o.q) setTimeout(function () { try { if (matchMedia("(pointer:fine)").matches) inp.focus(); } catch (e) {} }, 80);
+  });
+}
+function v6EditItem(id, i) {
+  var L = v6Lists(), x = L[id][i]; if (!x) return;
+  var html = '<form class="v6-dest" id="v6EF" autocomplete="off"><p class="v6-lead">Add what you saw so you can compare later. Only you type these; ZAPWISE doesn’t check prices.</p>' +
+    '<label class="v6-fl">Item<input id="v6Et" maxlength="80" value="' + esc(x.t) + '"></label>' +
+    '<label class="v6-fl">Price you saw<input id="v6Ep" inputmode="decimal" maxlength="20" placeholder="e.g. 199.99" value="' + esc(x.price || "") + '"></label>' +
+    '<label class="v6-fl">Store<input id="v6Es" maxlength="40" placeholder="e.g. Best Buy" value="' + esc(x.store || "") + '"></label>' +
+    '<label class="v6-fl">Product link (optional)<input id="v6Eu" type="url" inputmode="url" maxlength="400" placeholder="https://…" value="' + esc(x.url || "") + '"></label>' +
+    '<div class="v6-row"><button type="submit" class="chip accent">Save</button><button type="button" class="chip" id="v6EBack">← Back to Shop</button></div></form>';
+  sheet("EDIT ITEM", html, function (b) {
+    b.querySelector("#v6EBack").addEventListener("click", function () { v6OpenDest(id); });
+    b.querySelector("#v6EF").addEventListener("submit", function (e) {
+      e.preventDefault();
+      var t = b.querySelector("#v6Et").value.trim(), pr = b.querySelector("#v6Ep").value.trim().replace(/^\$/, ""), st = b.querySelector("#v6Es").value.trim(), u = b.querySelector("#v6Eu").value.trim();
+      if (!t) { toast("Item name is empty"); return; }
+      if (pr && !/^\d{1,7}(\.\d{1,2})?$/.test(pr.replace(/,/g, ""))) { toast("Price: numbers only, like 199.99"); return; }
+      if (u && !/^https:\/\/[^\s]+$/i.test(u)) { toast("Link must start with https://"); return; }
+      var L2 = v6Lists(), it = L2[id][i]; if (!it) return;
+      it.t = t.slice(0, 80); it.price = pr ? "$" + (+pr.replace(/,/g, "")).toFixed(2) : ""; it.store = st.slice(0, 40); it.url = u;
+      v6SaveLists(L2); toast("Saved on this device"); v6OpenDest(id);
+    });
+  });
+}
+function v6Compare() {
+  var L = v6Lists().shop.slice();
+  var priced = L.filter(function (x) { return x.price; }).sort(function (a, b) { return parseFloat(a.price.slice(1)) - parseFloat(b.price.slice(1)); });
+  var rest = L.filter(function (x) { return !x.price; });
+  var rows = priced.concat(rest);
+  var html = '<div class="v6-dest"><p class="v6-lead">Your saved items side by side, lowest price you entered first.</p>' +
+    (rows.length ? '<div class="v6-cmp" role="table" aria-label="Compare saved items"><div class="v6-cmp-r h" role="row"><span role="columnheader">Item</span><span role="columnheader">Store</span><span role="columnheader">Price you saw</span><span role="columnheader">Link</span></div>' +
+      rows.map(function (x, k) { return '<div class="v6-cmp-r" role="row"><span role="cell">' + esc(x.t) + (x.done ? " ✓" : "") + '</span><span role="cell">' + esc(x.store || "—") + '</span><span role="cell">' + esc(x.price || "—") + (k === 0 && x.price && priced.length > 1 ? ' <small class="v6-low">LOWEST</small>' : "") + '</span><span role="cell">' + (x.url ? '<button type="button" class="chip" data-cmp-url="' + k + '">Open ↗</button>' : "—") + '</span></div>'; }).join("") + '</div>'
+      : '<p class="dim v6-empty">Save a few items in Shop first, then tap ✎ to add the price you saw.</p>') +
+    '<p class="note">Prices here are the ones you typed on this device. ZAPWISE doesn’t check them, so confirm on the store’s page before buying.</p>' +
+    '<div class="v6-row"><button type="button" class="chip" id="v6CBack">← Back to Shop</button><button type="button" class="v6-home-btn" data-v6-home="1">⌂ Back to Home</button></div></div>';
+  sheet("COMPARE", html, function (b) {
+    b.addEventListener("click", function (e) {
+      if (e.target.closest("#v6CBack")) { v6OpenDest("shop"); return; }
+      if (e.target.closest("[data-v6-home]")) { v6GoHome(); return; }
+      var c = e.target.closest("[data-cmp-url]"); if (c) { var x = rows[+c.getAttribute("data-cmp-url")]; if (x && /^https:\/\//i.test(x.url)) go(x.url); }
+    });
   });
 }
 function v6Listen() {
