@@ -1,6 +1,6 @@
 {
-  "version": "4.13.2",
-  "built": "2026-11-05",
+  "version": "4.13.3",
+  "built": "2026-11-09",
   "channel": "stable",
-  "notes": "v4.13.2: Desktop Focus stretches to Phone height (bigger ring + session stats); Phone header no longer clips; equal-height paired rows."
+  "notes": "v4.13.3: Bank link always returns to ZAPWISE//OS (auto-redirect + Back button) after linking, OAuth return, cancel, or Already linked; OS shows Bank linked toast and refreshes balances."
 }

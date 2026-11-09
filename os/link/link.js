@@ -10,6 +10,28 @@
   var btn = document.getElementById("btnLink");
   var tipEl = document.getElementById("inAppTip");
   var btnCopy = document.getElementById("btnCopyLink");
+  var btnBack = document.getElementById("btnBack");
+  var RETURN_URL = "https://zapwiseai.com/os/?linked=1";
+  var HOME_URL = "https://zapwiseai.com/os/";
+
+  /* v4.14.0: always give a way home. Show a prominent Back button and auto-return. */
+  function showBack(label, href, primary) {
+    if (!btnBack) return;
+    btnBack.textContent = label || "Back to ZAPWISE//OS";
+    btnBack.href = href || HOME_URL;
+    btnBack.hidden = false;
+    btnBack.className = "btn " + (primary ? "primary" : "ghost");
+    if (primary && btn) btn.className = "btn ghost";
+  }
+  function goBack(href, delay) {
+    showBack("Back to ZAPWISE//OS", href, true);
+    setTimeout(function () {
+      try { location.replace(href); } catch (e) { location.href = href; }
+    }, delay == null ? 700 : delay);
+  }
+  function cleanUrl() {
+    try { history.replaceState(null, "", location.pathname); } catch (e) {}
+  }
 
   function setStatus(msg, isErr) {
     if (!statusEl) return;
@@ -90,7 +112,7 @@
       headers: headers(),
       body: "{}",
     });
-    if (r.status === 401) throw new Error("Setup is closed. Open OS on a linked phone and use Add this device.");
+    if (r.status === 401) { var e401 = new Error("setup_closed"); e401.code = 401; throw e401; }
     if (!r.ok) throw new Error("Could not start bank link (" + r.status + ").");
     var data = await r.json();
     if (!data.link_token) throw new Error("No link token.");
@@ -104,6 +126,7 @@
       headers: headers(),
       body: JSON.stringify({ public_token: public_token }),
     });
+    if (r.status === 401) { var e401 = new Error("setup_closed"); e401.code = 401; throw e401; }
     if (!r.ok) throw new Error("Could not finish linking (" + r.status + ").");
     var data = await r.json();
     if (!data.device_token) throw new Error("No device token.");
@@ -137,10 +160,35 @@
     setStatus("Saving link on this device…");
     await exchange(public_token);
     clearLinkToken();
-    setStatus("Linked. Taking you back…");
-    setTimeout(function () {
-      location.href = "/os/?bank=linked";
-    }, 500);
+    cleanUrl();
+    setStatus("Bank linked. Taking you back to ZAPWISE//OS…");
+    if (btn) btn.hidden = true;
+    goBack(RETURN_URL, 600);
+  }
+
+  function handleError(e) {
+    var msg = (e && e.message) || "Something went wrong.";
+    cleanUrl();
+    if (msg === "cancelled") {
+      clearLinkToken();
+      setStatus("Cancelled. Nothing was linked. You can try again or go back.");
+      showBack("Back to ZAPWISE//OS", HOME_URL, false);
+    } else if (msg === "setup_closed") {
+      clearLinkToken();
+      if (getToken()) {
+        setStatus("Already linked on this device. Taking you back…");
+        if (btn) btn.hidden = true;
+        goBack(RETURN_URL, 900);
+        return;
+      }
+      setStatus("Already linked. A bank is already connected to ZAPWISE//OS. To use it on this device, open OS on your linked phone and use Add this device.", true);
+      if (btn) btn.hidden = true;
+      showBack("Back to ZAPWISE//OS", HOME_URL, true);
+    } else {
+      setStatus(msg, true);
+      showBack("Back to ZAPWISE//OS", HOME_URL, false);
+    }
+    if (btn) btn.disabled = false;
   }
 
   async function runFresh() {
@@ -152,14 +200,7 @@
       var public_token = await openPlaid(link_token, null);
       await finishWithPublicToken(public_token);
     } catch (e) {
-      var msg = (e && e.message) || "Something went wrong.";
-      if (msg === "cancelled") {
-        clearLinkToken();
-        setStatus("Cancelled. You can try again anytime.");
-      } else {
-        setStatus(msg, true);
-      }
-      if (btn) btn.disabled = false;
+      handleError(e);
     }
   }
 
@@ -168,7 +209,16 @@
     setStatus("Finishing bank link…");
     var link_token = loadLinkToken();
     if (!link_token) {
-      setStatus("This bank sign-in opened in a new page and the first step was lost. Open this page in Safari, then tap Continue again.", true);
+      cleanUrl();
+      if (getToken()) {
+        /* Returned from the bank in a page that already has a device link: just go home. */
+        setStatus("Bank sign-in finished. Taking you back to ZAPWISE//OS…");
+        if (btn) btn.hidden = true;
+        goBack(RETURN_URL, 900);
+        return;
+      }
+      setStatus("Your bank sent you back to a new page, so the link step couldn't finish here. Tap Continue to bank login to try again in this browser, or go back.", true);
+      showBack("Back to ZAPWISE//OS", HOME_URL, false);
       if (btn) btn.disabled = false;
       return;
     }
@@ -176,14 +226,7 @@
       var public_token = await openPlaid(link_token, window.location.href);
       await finishWithPublicToken(public_token);
     } catch (e) {
-      var msg = (e && e.message) || "Something went wrong.";
-      if (msg === "cancelled") {
-        clearLinkToken();
-        setStatus("Cancelled. You can try again anytime.");
-      } else {
-        setStatus(msg, true);
-      }
-      if (btn) btn.disabled = false;
+      handleError(e);
     }
   }
 

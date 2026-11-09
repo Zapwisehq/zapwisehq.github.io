@@ -1,7 +1,7 @@
 /* ZAPWISE//OS web app v4.13.2 (Nov 5, 2026). Equal-height desktop Focus/Phone. Plaid-only Bank. Motion toggle. No tabs. Source: edit app.js → build.sh → app.min.js. */
 (function () {
 "use strict";
-var VERSION = '4.13.2';
+var VERSION = '4.13.3';
 var APP_VERSION = VERSION;
 
 // v4.5: default Lite on coarse/mobile unless user already chose
@@ -7550,12 +7550,21 @@ function renderBanks() {
 try { migrateManualBanksOut(); } catch (eMig) {}
 try { renderBanks(); } catch (eInitBk) {}
 try {
-  if (bankDeviceReady()) {
-    refreshBankAccountsFromLink().then(function () { try { renderBanks(); } catch (eR) {} });
-  } else if (location.search.indexOf("bank=linked") >= 0) {
+  var justLinked = /[?&](linked=1|bank=linked)(&|$)/.test(location.search);
+  if (justLinked) {
+    /* v4.14.0: returned from /os/link/ — toast, fresh balances, clean URL */
+    try {
+      var cu = new URL(location.href);
+      cu.searchParams.delete("linked"); cu.searchParams.delete("bank");
+      history.replaceState(null, "", cu.pathname + (cu.search || "") + cu.hash);
+    } catch (eCu) {}
     setTimeout(function () {
-      refreshBankAccountsFromLink({ refresh: true }).then(function () { try { renderBanks(); } catch (eR2) {} toast("Bank linked"); });
-    }, 200);
+      toast("Bank linked");
+      refreshBankAccountsFromLink({ refresh: true }).then(function () { try { renderBanks(); } catch (eR2) {} }).catch(function () {});
+      try { var hb = document.getElementById("hBk"); if (hb) hb.scrollIntoView({ block: "center", behavior: "smooth" }); } catch (eSc) {}
+    }, 300);
+  } else if (bankDeviceReady()) {
+    refreshBankAccountsFromLink().then(function () { try { renderBanks(); } catch (eR) {} });
   }
 } catch (eAutoBk) {}
 /* bank auto-refresh: every 15 min while visible + on focus via onReturn */
