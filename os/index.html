@@ -23,7 +23,7 @@
 <meta name="twitter:description" content="One neon HUD for your day: weather, live-traffic map, focus, balances that stay on your phone, your apps and ZAP AI.">
 <meta name="twitter:image" content="https://zapwiseai.com/os/icon-512.png">
 <meta name="theme-color" content="#070814">
-<meta name="zapos-version" content="4.24.0">
+<meta name="zapos-version" content="4.25.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="/os/manifest.webmanifest">
@@ -42,9 +42,9 @@
 <link rel="apple-touch-startup-image" media="(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/os/splash/splash-1206x2622.png">
 <link rel="apple-touch-startup-image" media="(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/os/splash/splash-1320x2868.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/os/icon-192.png">
-<link rel="stylesheet" href="/os/app.css?v=4.24.0">
-<link rel="stylesheet" href="/os/v5.css?v=4.24.0">
-<link rel="stylesheet" href="/os/v6.css?v=4.24.0">
+<link rel="stylesheet" href="/os/app.css?v=4.25.0">
+<link rel="stylesheet" href="/os/v5.css?v=4.25.0">
+<link rel="stylesheet" href="/os/v6.css?v=4.25.0">
 <style>
 @font-face{font-family:"Rajdhani";font-style:normal;font-weight:600;font-display:swap;src:url("/os/fonts/Rajdhani-SemiBold.woff2") format("woff2"),url("/os/fonts/Rajdhani-SemiBold.ttf") format("truetype")}
 @font-face{font-family:"Rajdhani";font-style:normal;font-weight:700;font-display:swap;src:url("/os/fonts/Rajdhani-Bold.woff2") format("woff2"),url("/os/fonts/Rajdhani-Bold.ttf") format("truetype")}
@@ -64,7 +64,7 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
 <div id="app">
 
  <header class="top sticky" id="top">
-  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver" data-app-ver>v4.24.0</span></div>
+  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver" data-app-ver>v4.25.0</span></div>
   <div class="top-r">
    <span class="sync" id="hSync"><i aria-hidden="true"></i>LIVE</span>
    <span class="hud-chip gps" id="hGpsLock" data-lock="0" hidden><i aria-hidden="true"></i>GPS —</span>
@@ -80,7 +80,7 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
 
  <main class="os-page v5-grid" id="osPage" tabindex="-1">
 
-  <!-- v4.24.0 layout: search · Today|Now Playing · Focus|Navigate · Banking|Investments · Apps · Phone -->
+  <!-- v4.25.0 layout: search · Today|Now Playing · Focus|Navigate · Banking|Investments · Apps · Phone -->
   <form class="h-srch v5-search" id="srch" role="search" autocomplete="off">
     <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M15.5 15.5L21 21" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
     <input id="srchQ" type="search" enterkeyhint="go" placeholder="Search apps, places, notes or the web" inputmode="search" aria-label="Search apps or the web" autocapitalize="off" spellcheck="false" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="srchDrop" aria-autocomplete="list">
@@ -306,6 +306,12 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
      <span class="hmk-day" id="hBkSub">Link your bank · balances stay on this phone</span>
     </div>
     <div class="bk-grid" id="hBkGrid" role="list"></div>
+    <section class="bk-spend" id="hBkSpend" aria-label="Spending" hidden>
+     <div class="bk-spend-h"><b>SPENDING</b>
+      <div class="bk-spend-days" role="group" aria-label="Time range"><button type="button" class="bk-d" data-days="30" aria-pressed="true">30d</button><button type="button" class="bk-d" data-days="60" aria-pressed="false">60d</button><button type="button" class="bk-d" data-days="90" aria-pressed="false">90d</button></div>
+     </div>
+     <div class="bk-spend-body" id="hBkSpendBody" aria-live="polite"></div>
+    </section>
     <p class="note bk-foot" id="hBkFoot">Only last 4 digits · never full account numbers</p>
    </div>
    <button type="button" class="v5-btn" id="v5BankView">View Account</button>
@@ -325,6 +331,10 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
     <div class="mk-items" id="hMkList"><span class="dim">Markets loading…</span></div>
     <button type="button" class="mk-add" data-hmk-add="1" id="hMkAct" aria-label="Add wallet, broker or holding">＋ Add</button>
    </div>
+   <section class="inv-plaid panel-inner" id="invPlaid" aria-label="Linked investment accounts" hidden>
+    <div class="inv-plaid-h"><b>LINKED ACCOUNTS · PLAID</b></div>
+    <div class="inv-plaid-body" id="invPlaidBody" aria-live="polite"></div>
+   </section>
    <p class="v5-counts" id="v5InvCounts">Holdings: 0 | Watchlist: 0</p>
    <button type="button" class="v5-btn" id="v5InvView">View Portfolio</button>
   </section>
@@ -428,9 +438,9 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/os/catalog.js?v=4.24.0"></script>
-<script src="/os/sky.js?v=4.24.0"></script>
-<script src="/os/bank-plaid.js?v=4.24.0"></script>
-<script src="/os/app.min.js?v=4.24.0"></script>
+<script src="/os/catalog.js?v=4.25.0"></script>
+<script src="/os/sky.js?v=4.25.0"></script>
+<script src="/os/bank-plaid.js?v=4.25.0"></script>
+<script src="/os/app.min.js?v=4.25.0"></script>
 </body>
 </html>

@@ -100,7 +100,27 @@
     });
   }
 
+  /* v4.25: read-only spending + investment holdings. Resolves {http, body}; never throws on 4xx/5xx
+     so the UI can show honest states (needs_consent, not_ready, not_supported, error). */
+  function getJSON(path) {
+    var t = getToken();
+    if (!t) return Promise.resolve({ http: 0, body: { state: "no_device" } });
+    return fetch(WORKER + path, { credentials: "omit", cache: "no-store", headers: authHeaders() }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (b) { return { http: r.status, body: b || {} }; });
+    }).catch(function () { return { http: 0, body: { state: "offline" } }; });
+  }
+  function fetchTransactions(days, refresh) {
+    return getJSON("/transactions?days=" + (days || 30) + (refresh ? "&refresh=1" : ""));
+  }
+  function fetchHoldings(refresh) { return getJSON("/holdings" + (refresh ? "?refresh=1" : "")); }
+  function itemProducts() { return getJSON("/item-products"); }
+
   global.ZAP_BANK_PLAID = {
+    fetchTransactions: fetchTransactions,
+    fetchHoldings: fetchHoldings,
+    itemProducts: itemProducts,
+    updateLinkPage: "/os/link/?update=1",
+    brokerageLinkPage: "/os/link/?brokerage=1",
     WORKER: WORKER,
     TOKEN_KEY: TOKEN_KEY,
     hasToken: hasToken,

@@ -1,7 +1,7 @@
 /* ZAPWISE//OS web app v4.13.2 (Nov 5, 2026). Equal-height desktop Focus/Phone. Plaid-only Bank. Motion toggle. No tabs. Source: edit app.js → build.sh → app.min.js. */
 (function () {
 "use strict";
-var VERSION = '4.24.0';
+var VERSION = '4.25.0';
 var APP_VERSION = VERSION;
 
 // v4.5: default Lite on coarse/mobile unless user already chose
@@ -246,7 +246,7 @@ function clone(o) { return o == null ? o : JSON.parse(JSON.stringify(o)); }
 var Store = (function () {
   var STATE_KEY = "zapos.state", DEVICE_KEY = "zapos.device", VER = 1;
   var PREF_KEYS = ["settings", "theme", "apps", "coins", "loc", "favs", "places", "holdings", "broker", "wallets", "accounts", "assistant"];                     // shared state (sync-ready)
-  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss", "mediaKey", "skipBoot", "bootDay", "uiSounds", "recentPins", "wxDay", "wxMode", "wxMode2", "portHist", "acctMigrated", "liteMode", "tiltCards", "motionTilt", "callLog", "zapChat", "focusStats", "wallpaper", "zapNotes", "zapReminders", "uiMotion", "welcomeSeen", "bankPrivacy", "mapTraffic", "bankManualCleared_v413", "searchProv", "focusCustom", "v5AppsOpen", "quickActions", "sugState", "v6lists", "v6List", "v6ha", "v6compare", "v6cal", "zaLog", "dash", "v7car", "v7tv"]; // this device only
+  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss", "mediaKey", "skipBoot", "bootDay", "uiSounds", "recentPins", "wxDay", "wxMode", "wxMode2", "portHist", "acctMigrated", "liteMode", "tiltCards", "motionTilt", "callLog", "zapChat", "focusStats", "wallpaper", "zapNotes", "zapReminders", "uiMotion", "welcomeSeen", "bankPrivacy", "mapTraffic", "bankManualCleared_v413", "searchProv", "focusCustom", "v5AppsOpen", "quickActions", "sugState", "v6lists", "v6List", "v6ha", "v6compare", "v6cal", "zaLog", "dash", "v7car", "v7tv", "v25days"]; // this device only
   function read(k) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
   function write(k, v) { if (dead) return false; try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
   var state = read(STATE_KEY), dev = read(DEVICE_KEY), subs = [], uiT = null, dead = false; // dead: after a reset, write nothing more
@@ -7901,7 +7901,7 @@ document.addEventListener("keydown", function (e) {
     var h = 0, w = 0;
     try { h = loadHoldings().length; } catch (e) {}
     try { w = (COINS || []).length; } catch (e2) {}
-    var t = "Holdings: " + h + " | Watchlist: " + w;
+    var t = "Holdings: " + h + " | Watchlist: " + w + (_plaidHoldN ? " | Linked: " + _plaidHoldN : "");
     if (el.textContent !== t) el.textContent = t;
   }
   var iv = $("#v5InvView");
@@ -8764,7 +8764,8 @@ function v6Services() {
     err: bankOn && _bankLastRefresh === 0 && bankLg && Date.now() - bankLg.at > 36e5 ? "Couldn’t refresh lately — showing the last balances we saved." : "",
     reads: V6_PLAID_READS(),
     shares: "This device sends a private device token to the ZAPWISE bank service (zapwise-bank Worker). The Worker talks to Plaid; your bank password never touches ZAPWISE.",
-    acts: bankOn ? [["refresh", "Refresh balances"], ["bankhide", "Hide/show balances"], ["bankforget", "Forget on this device"]] : [["banklink", "Link your bank ↗"]] });
+    perms: bankOn ? v25PermRows() : null,
+    acts: bankOn ? [["refresh", "Refresh balances"], ["bankhide", "Hide/show balances"], ["bankforget", "Forget on this device"]].concat(_bankProd && _bankProd.tx === "needs" ? [["spendallow", "Allow spending in Plaid ↗"]] : []).concat(_bankProd && (_bankProd.inv === "unsupported" || _bankProd.inv === "needs") ? [["brokerlink", "Link a brokerage ↗"]] : []) : [["banklink", "Link your bank ↗"]] });
   var gpsOn = !!(GPS && GPS.lat != null);
   S.push({ id: "loc", n: "Location (GPS)", grp: "device", on: gpsOn,
     st: GEO_OFF || V6_GEO_PERM === "denied" ? "Off — blocked in browser settings" : (gpsOn ? "On · last fix " + v6Ago(GPS.at) : (V6_GEO_PERM === "prompt" ? "Not allowed yet" : "Waiting for a fix")),
@@ -8801,7 +8802,7 @@ function v6Services() {
     reads: "Nothing in the background.", shares: "Your search words go to " + prov + " when you pick a web result. Change the provider in the search bar.", acts: [] });
   return S;
 }
-function V6_PLAID_READS() { return "Read-only: account names, type, balances and last 4 digits. ZAPWISE can’t move money."; }
+function V6_PLAID_READS() { return "Read-only: account names, type, balances and last 4 digits" + (_bankProd && _bankProd.tx === "on" ? "; transactions (merchant, amount, date, category)" : "") + (_bankProd && _bankProd.inv === "on" ? "; investment holdings and values" : "") + ". ZAPWISE can’t move money or trade."; }
 var V6_AVAIL = [
   ["Spotify", "Show the song that’s playing and play/pause from ZAPWISE.", "A free Spotify developer app and your sign-in (OAuth). Not set up."],
   ["Google Calendar (live)", "Today’s events without importing a file.", "Google sign-in with calendar read permission. Until then, use the .ics import."],
@@ -8817,6 +8818,7 @@ function openConnect() {
       return '<section class="v6-svc" aria-label="' + esc(s.n) + '"><div class="v6-svc-h"><b>' + esc(s.n) + '</b><span class="v6-st ' + stc + '">' + esc(s.st) + '</span></div>' +
         (s.err ? '<p class="v6-svc-err" role="status">' + esc(s.err) + '</p>' : "") +
         '<dl><dt>Can read</dt><dd>' + esc(s.reads) + '</dd><dt>Shared</dt><dd>' + esc(s.shares) + '</dd></dl>' +
+        (s.perms ? '<ul class="v25-perms" aria-label="Bank permissions">' + s.perms.map(function (p) { return '<li><b>' + esc(p[0]) + '</b><span class="v6-st ' + p[2] + '">' + esc(p[1]) + '</span></li>'; }).join("") + '</ul>' : "") +
         (s.note ? '<p class="note">' + esc(s.note) + '</p>' : "") +
         '<div class="v6-row">' + (s.toggle ? '<button type="button" class="chip' + (s.on ? " accent" : "") + '" role="switch" aria-checked="' + (!!s.on) + '" data-cx="tog-' + s.toggle + '">' + (s.on ? "ON · tap to turn off" : "OFF · tap to turn on") + '</button>' : "") +
         (s.acts || []).map(function (a) { return '<button type="button" class="chip" data-cx="' + a[0] + '">' + esc(a[1]) + '</button>'; }).join("") + '</div></section>';
@@ -8840,6 +8842,8 @@ function openConnect() {
         toast("Forgotten on this device"); again();
       }
       else if (k === "banklink") { location.href = "/os/link/"; }
+      else if (k === "spendallow") { location.href = "/os/link/?update=1"; }
+      else if (k === "brokerlink") { location.href = "/os/link/?brokerage=1"; }
       else if (k === "loccity") { openCity(); }
       else if (k === "locclear") { try { Store.setLocal("gpsLoc", null); Store.setLocal("gps", null); GPS = null; renderMap(true); } catch (eL) {} toast("Last position forgotten"); again(); }
       else if (k === "wxretry") { refreshWeather(true); toast("Refreshing weather…"); again(); }
@@ -9266,6 +9270,200 @@ function v7SetTv(on) {
   window.ZAPOS = window.ZAPOS || {}; window.ZAPOS.run = zaRun; window.ZAPOS.v7 = { setCar: v7SetCar, setTv: v7SetTv, inbox: v7Inbox, paint: paintAll };
   try { applyDash(); } catch (e3) {}
   var lastDesk = v7Desk(); addEventListener("resize", function () { var d = v7Desk(); if (d !== lastDesk) { lastDesk = d; if (!Store.getLocal("dash", null)) applyDash(); } });
+})();
+
+
+/* ========== v4.25 Spending (Plaid Transactions) + linked investments (Plaid Investments) ==========
+   Real data only, from the zapwise-bank Worker (device token). Honest states: loading, ready, empty,
+   needs your OK in Plaid, still gathering, not available at this bank, error + retry. Eye hides amounts. */
+var _bankProd = null;   /* { tx: "on"|"needs"|"unsupported"|"unknown", inv: …, at } */
+var _plaidHoldN = 0;
+function v25PermRows() {
+  var P = _bankProd;
+  if (!P) return [["Balances", "Allowed", "ok"], ["Spending (transactions)", "Checking…", "idle"], ["Investments", "Checking…", "idle"]];
+  function lab(v, what) {
+    if (v === "on") return ["Allowed", "ok"];
+    if (v === "needs") return ["Needs your OK in Plaid", "bad"];
+    if (v === "unsupported") return ["Not available at " + (P.inst || "this bank"), "idle"];
+    return ["Couldn’t check", "idle"];
+  }
+  var t = lab(P.tx), i = lab(P.inv);
+  return [["Balances", "Allowed", "ok"], ["Spending (transactions)", t[0], t[1]], ["Investments", i[0], i[1]]];
+}
+(function v25Money() {
+  var spend = $("#hBkSpend"), sBody = $("#hBkSpendBody"), inv = $("#invPlaid"), iBody = $("#invPlaidBody");
+  var TX = { days: Store.getLocal("v25days", 30) || 30, data: null, state: "idle", at: 0, busy: false };
+  var HD = { data: null, state: "idle", at: 0, busy: false };
+  if ([30, 60, 90].indexOf(+TX.days) < 0) TX.days = 30;
+  function priv() { try { return bankPrivacyOn(); } catch (e) { return false; } }
+  function money(n, cur) {
+    if (n == null || isNaN(+n)) return "—";
+    if (priv()) return "••••";
+    try { return (+n).toLocaleString("en-US", { style: "currency", currency: cur || "USD" }); } catch (e) { return bankMoney(+n); }
+  }
+  function l4(x) { return x ? (priv() ? " · ••••" : " · ••" + esc(x)) : ""; }
+  function dstr(d) { if (!d) return ""; try { var p = d.split("-"); return new Date(+p[0], +p[1] - 1, +p[2]).toLocaleDateString(undefined, { month: "short", day: "numeric" }); } catch (e) { return d; } }
+  function ago(t) { try { return v6Ago(t); } catch (e) { return bankClockStr(t); } }
+  function stateFrom(res) {
+    var b = (res && res.body) || {};
+    if (res.http === 0) return b.state === "no_device" ? "no_device" : "offline";
+    if (res.http === 401) return "no_device";
+    if (res.http === 429) return "rate";
+    return b.state || (res.http >= 400 ? "error" : "ok");
+  }
+  function msgBox(text, btns) {
+    return '<p class="bk-spend-msg">' + esc(text) + '</p>' + (btns ? '<div class="bk-spend-acts">' + btns + '</div>' : "");
+  }
+  var BTN_ALLOW = '<button type="button" class="v5-btn bk-allow" data-v25="allow">Allow spending in Plaid</button>';
+  var BTN_RETRY = '<button type="button" class="chip" data-v25="retry">↻ Retry</button>';
+  /* ---- Spending ---- */
+  function paintSpend() {
+    if (!spend || !sBody) return;
+    var ready = bankDeviceReady();
+    spend.hidden = !ready;
+    if (!ready) return;
+    [].forEach.call(spend.querySelectorAll(".bk-d"), function (b) { b.setAttribute("aria-pressed", String(+b.getAttribute("data-days") === +TX.days)); });
+    var st = TX.state, d = TX.data;
+    if (st === "idle" || (st === "loading" && !d)) { sBody.innerHTML = '<p class="bk-spend-msg dim">Loading spending from Plaid…</p>'; return; }
+    if (st === "needs_consent") { sBody.innerHTML = msgBox("Spending needs one more OK. Plaid will ask you to share transactions from your bank (read-only, free).", BTN_ALLOW); return; }
+    if (st === "needs_update") { sBody.innerHTML = msgBox("Your bank asked you to sign in again. Reconnect in Plaid to keep spending up to date.", BTN_ALLOW.replace("Allow spending in Plaid", "Reconnect in Plaid")); return; }
+    if (st === "not_ready") { sBody.innerHTML = msgBox("Plaid is still gathering your transactions. This can take a few minutes after you allow it.", BTN_RETRY); return; }
+    if (st === "not_supported") { sBody.innerHTML = msgBox("Your bank doesn’t share transactions through Plaid.", ""); return; }
+    if (st === "no_device") { sBody.innerHTML = msgBox("This device isn’t paired with your bank link.", ""); return; }
+    if (st !== "ok" || !d) {
+      sBody.innerHTML = msgBox(st === "offline" ? "You’re offline — spending will load when you’re back online." : (st === "rate" ? "Too many refreshes — try again in a minute." : "Couldn’t load spending from Plaid."), BTN_RETRY);
+      return;
+    }
+    var tx = d.transactions || [], sum = d.summary || [];
+    if (!tx.length) { sBody.innerHTML = msgBox("No transactions in the last " + TX.days + " days.", BTN_RETRY); return; }
+    var max = sum.length ? sum[0].total : 0;
+    var cats = sum.slice(0, 4).map(function (c) {
+      var w = max > 0 ? Math.max(4, Math.round(c.total / max * 100)) : 0;
+      return '<li><span class="bk-cat-n">' + esc(c.category) + '</span><span class="bk-cat-bar" aria-hidden="true"><i style="width:' + w + '%"></i></span><b class="bk-amt">' + esc(money(c.total)) + '</b></li>';
+    }).join("");
+    var rows = tx.slice(0, 5).map(rowHtml).join("");
+    sBody.innerHTML =
+      '<div class="bk-spend-tot"><span>Spent · ' + TX.days + ' days</span><b class="bk-amt">' + esc(money(d.spent)) + '</b>' + (d.income ? '<small>In ' + esc(money(d.income)) + '</small>' : "") + '</div>' +
+      (cats ? '<ul class="bk-cats" aria-label="Top categories">' + cats + '</ul>' : '<p class="bk-spend-msg dim">No spending in this period — only money in.</p>') +
+      '<div class="bk-tx-h"><b>RECENT</b></div><ul class="bk-tx" aria-label="Recent transactions">' + rows + '</ul>' +
+      '<div class="bk-spend-acts"><button type="button" class="chip" data-v25="all">All ' + (d.count || tx.length) + ' transactions</button>' + BTN_RETRY.replace("↻ Retry", "↻ Refresh") + '</div>' +
+      '<p class="bk-asof-line">Plaid · updated ' + esc(ago(d.asOf)) + ' · read-only</p>';
+  }
+  function rowHtml(x) {
+    var out = x.amount > 0;
+    return '<li class="' + (out ? "out" : "in") + '"><span class="bk-tx-m"><b>' + esc(x.merchant) + (x.pending ? ' <em>pending</em>' : "") + '</b><small>' + esc(x.category) + ' · ' + esc(dstr(x.date)) + l4(x.last4) + '</small></span><b class="bk-amt">' + (out ? "−" : "+") + esc(money(Math.abs(x.amount), x.currency)) + '</b></li>';
+  }
+  function loadSpend(refresh) {
+    if (!bankDeviceReady() || !window.ZAP_BANK_PLAID || !ZAP_BANK_PLAID.fetchTransactions) { paintSpend(); return Promise.resolve(); }
+    if (TX.busy) return Promise.resolve();
+    TX.busy = true; if (!TX.data) TX.state = "loading"; paintSpend();
+    return ZAP_BANK_PLAID.fetchTransactions(TX.days, !!refresh).then(function (res) {
+      var st = stateFrom(res);
+      TX.state = st; TX.at = Date.now();
+      if (st === "ok") TX.data = res.body; else if (st !== "offline" && st !== "rate") TX.data = null;
+      if (st === "ok" && _bankProd) _bankProd.tx = "on";
+      if (st === "needs_consent" && _bankProd) _bankProd.tx = "needs";
+    }).catch(function () { TX.state = "error"; }).then(function () { TX.busy = false; paintSpend(); });
+  }
+  function allSheet() {
+    var d = TX.data; if (!d) return;
+    var by = {};
+    (d.transactions || []).forEach(function (x) { (by[x.date] = by[x.date] || []).push(x); });
+    var html = '<div class="v6-dest bk-all"><p class="v6-lead">Last ' + TX.days + ' days from your linked bank via Plaid. Read-only. Showing ' + (d.transactions || []).length + ' of ' + (d.count || 0) + '.</p>' +
+      Object.keys(by).sort().reverse().map(function (k) { return '<h3>' + esc(dstr(k)) + '</h3><ul class="bk-tx">' + by[k].map(rowHtml).join("") + '</ul>'; }).join("") +
+      (d.summary && d.summary.length ? '<h3>BY CATEGORY</h3><ul class="bk-cats">' + d.summary.map(function (c) { return '<li><span class="bk-cat-n">' + esc(c.category) + ' (' + c.count + ')</span><b class="bk-amt">' + esc(money(c.total)) + '</b></li>'; }).join("") + '</ul>' : "") +
+      '<button type="button" class="v6-home-btn" data-v6-home="1">⌂ Back to Home</button></div>';
+    sheet("SPENDING", html, function (b) { b.addEventListener("click", function (e) { if (e.target.closest("[data-v6-home]")) { try { v6GoHome(); } catch (e2) { closeSheet(); } } }); });
+  }
+  /* ---- Linked investments ---- */
+  function paintCounts() {
+    var el = $("#v5InvCounts"); if (!el) return;
+    var t = el.textContent.replace(/ \| Linked: \d+$/, "") + (_plaidHoldN ? " | Linked: " + _plaidHoldN : "");
+    if (el.textContent !== t) el.textContent = t;
+  }
+  function paintInv() {
+    if (!inv || !iBody) return;
+    var ready = bankDeviceReady();
+    inv.hidden = !ready;
+    if (!ready) { _plaidHoldN = 0; paintCounts(); return; }
+    var st = HD.state, d = HD.data;
+    var brk = '<button type="button" class="chip" data-v25="broker">Link a brokerage ↗</button>';
+    if (st === "idle" || (st === "loading" && !d)) { iBody.innerHTML = '<p class="bk-spend-msg dim">Checking Plaid for investment accounts…</p>'; return; }
+    if (st === "not_supported" || st === "empty" || (st === "needs_consent" && _bankProd && _bankProd.inv === "unsupported")) {
+      _plaidHoldN = 0; paintCounts();
+      iBody.innerHTML = msgBox("No investment accounts in your Plaid link" + (_bankProd && _bankProd.inst ? " (" + _bankProd.inst + " doesn’t share them)" : "") + ". Link a brokerage to see real holdings here — free, read-only, can’t trade.", brk);
+      return;
+    }
+    if (st === "needs_consent") { iBody.innerHTML = msgBox("Investments need your OK in Plaid.", brk); return; }
+    if (st === "no_device") { iBody.innerHTML = msgBox("This device isn’t paired with your bank link.", ""); return; }
+    if (st !== "ok" || !d) { iBody.innerHTML = msgBox(st === "offline" ? "You’re offline." : "Couldn’t load holdings from Plaid.", BTN_RETRY.replace('data-v25="retry"', 'data-v25="iretry"')); return; }
+    var H = d.holdings || [];
+    _plaidHoldN = H.length; paintCounts();
+    iBody.innerHTML = '<div class="inv-plaid-tot"><span>Value</span><b class="bk-amt">' + esc(money(d.total)) + '</b><small>' + (d.accounts || []).length + ' account' + ((d.accounts || []).length === 1 ? "" : "s") + '</small></div>' +
+      (H.length ? '<ul class="bk-tx inv-h" aria-label="Holdings">' + H.slice(0, 4).map(function (h) {
+        return '<li><span class="bk-tx-m"><b>' + esc(h.ticker || h.name) + '</b><small>' + esc(h.ticker ? h.name : (h.type || "")) + (h.quantity != null ? " · " + (priv() ? "••" : esc(String(+(+h.quantity).toFixed(4)))) + " sh" : "") + l4(h.last4) + '</small></span><b class="bk-amt">' + esc(money(h.value, h.currency)) + '</b></li>';
+      }).join("") + '</ul>' : '<p class="bk-spend-msg dim">No holdings in these accounts.</p>') +
+      '<p class="bk-asof-line">Plaid · updated ' + esc(ago(d.asOf)) + ' · separate from Banking</p>';
+  }
+  function loadInv(refresh) {
+    if (!bankDeviceReady() || !window.ZAP_BANK_PLAID || !ZAP_BANK_PLAID.fetchHoldings) { paintInv(); return Promise.resolve(); }
+    if (HD.busy) return Promise.resolve();
+    HD.busy = true; if (!HD.data) HD.state = "loading"; paintInv();
+    return ZAP_BANK_PLAID.fetchHoldings(!!refresh).then(function (res) {
+      var st = stateFrom(res); HD.state = st; HD.at = Date.now();
+      if (st === "ok") HD.data = res.body; else if (st !== "offline" && st !== "rate") HD.data = null;
+    }).catch(function () { HD.state = "error"; }).then(function () { HD.busy = false; paintInv(); });
+  }
+  /* ---- Permissions (for ZAP Connect) ---- */
+  function loadProducts() {
+    if (!bankDeviceReady() || !window.ZAP_BANK_PLAID || !ZAP_BANK_PLAID.itemProducts) return Promise.resolve();
+    return ZAP_BANK_PLAID.itemProducts().then(function (res) {
+      var b = res.body || {}, it = (b.items || [])[0];
+      if (res.http !== 200 || !it) { _bankProd = { tx: "unknown", inv: "unknown", at: Date.now() }; return; }
+      function v(p) {
+        if ((it.not_supported || []).indexOf(p) >= 0) return "unsupported";
+        if ((it.needs_consent || []).indexOf(p) >= 0) return "needs";
+        return "on";
+      }
+      _bankProd = { tx: v("transactions"), inv: v("investments"), inst: it.institution || "", at: Date.now() };
+      /* several Items: investments count as on if any linked brokerage exists */
+      if ((b.items || []).some(function (x) { return (x.products || []).concat(x.consented_products || [], x.billed_products || []).indexOf("investments") >= 0; })) _bankProd.inv = "on";
+    }).catch(function () {}).then(function () {
+      paintInv();
+      if (document.querySelector(".v6-connect")) { try { openConnect(); } catch (e) {} }
+    });
+  }
+  /* ---- events ---- */
+  document.addEventListener("click", function (e) {
+    var t = e.target.closest && e.target.closest("[data-v25], .bk-d");
+    if (!t || !(spend && spend.contains(t)) && !(inv && inv.contains(t)) && !t.closest(".bk-all")) return;
+    e.preventDefault(); e.stopPropagation();
+    if (t.classList.contains("bk-d")) { TX.days = +t.getAttribute("data-days") || 30; Store.setLocal("v25days", TX.days); TX.data = null; TX.state = "loading"; loadSpend(false); return; }
+    var k = t.getAttribute("data-v25");
+    if (k === "allow") location.href = (ZAP_BANK_PLAID && ZAP_BANK_PLAID.updateLinkPage) || "/os/link/?update=1";
+    else if (k === "broker") location.href = (ZAP_BANK_PLAID && ZAP_BANK_PLAID.brokerageLinkPage) || "/os/link/?brokerage=1";
+    else if (k === "retry") loadSpend(true);
+    else if (k === "iretry") loadInv(true);
+    else if (k === "all") allSheet();
+  }, true);
+  var eye = $("#hBkEye"); if (eye) eye.addEventListener("click", function () { setTimeout(function () { paintSpend(); paintInv(); }, 0); });
+  /* returned from Plaid update mode */
+  var justUpdated = /[?&]updated=1(&|$)/.test(location.search);
+  if (justUpdated) {
+    try { var cu = new URL(location.href); cu.searchParams.delete("updated"); history.replaceState(null, "", cu.pathname + (cu.search || "") + cu.hash); } catch (eU) {}
+    setTimeout(function () { toast("Plaid updated — loading spending"); try { var hb = $("#hBk"); if (hb) hb.scrollIntoView({ block: "center", behavior: "smooth" }); } catch (eS) {} }, 300);
+  }
+  var justLinked = /[?&](linked=1|bank=linked)(&|$)/.test(location.search);
+  function boot() {
+    paintSpend(); paintInv();
+    if (!bankDeviceReady()) return;
+    loadProducts();
+    loadSpend(justUpdated || justLinked);
+    loadInv(justUpdated || justLinked);
+  }
+  boot();
+  setInterval(function () { if (document.visibilityState === "visible" && bankDeviceReady()) { loadSpend(false); loadInv(false); } }, 15 * 60 * 1000);
+  window.ZAPOS = window.ZAPOS || {}; window.ZAPOS.money = { spend: TX, hold: HD, reload: boot, products: function () { return _bankProd; } };
 })();
 
 })(); /* end ZAPWISE//OS app scope */
