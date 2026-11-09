@@ -1,7 +1,7 @@
 /* ZAPWISE//OS web app v4.13.2 (Nov 5, 2026). Equal-height desktop Focus/Phone. Plaid-only Bank. Motion toggle. No tabs. Source: edit app.js → build.sh → app.min.js. */
 (function () {
 "use strict";
-var VERSION = '4.19.0';
+var VERSION = '4.20.0';
 var APP_VERSION = VERSION;
 
 // v4.5: default Lite on coarse/mobile unless user already chose
@@ -4494,6 +4494,7 @@ $("#cityBtn").addEventListener("click", function () { openCity(); });
 function row(icon, label, sub, act) { return '<button class="mrow" data-go="' + act + '"><span class="mi" aria-hidden="true">' + icon + '</span><span class="grow">' + label + "<small>" + sub + '</small></span><span aria-hidden="true">›</span></button>'; }
 function openMenu() {
   sheet("☰ MENU",
+    "<h3>CONNECT</h3>" + row("⇄", "ZAP Connect", "Services, permissions, what’s shared, turn things off", "connect") +
     "<h3>APPS</h3>" + row("▦", "Edit apps", "Add, remove, show, hide or reorder apps", "apps") +
     "<h3>WEATHER</h3>" + row("☁", "Weather location", LOC.mode === "city" ? "City: " + esc(LOC.name) : "Using my location", "city") +
     "<h3>MARKETS</h3>" + row("₿", "Edit watchlist", COINS.map(function (c) { return esc(c.sym); }).join(" · ") || "Empty", "coins") +
@@ -4504,7 +4505,8 @@ function openMenu() {
     function (b) {
       b.addEventListener("click", function (e) {
         var g = e.target.closest("[data-go]"); if (!g) return; var k = g.getAttribute("data-go");
-        if (k === "apps") openEditApps();
+        if (k === "connect") openConnect();
+        else if (k === "apps") openEditApps();
         else if (k === "city") openCity();
         else if (k === "coins") openEditCoins();
         else if (k === "settings") openSettings();
@@ -8722,6 +8724,124 @@ try { v6PaintCalLine(); setInterval(v6PaintCalLine, 60000); } catch (eCl) {}
     best.focus({ preventScroll: true });
     try { best.scrollIntoView({ block: "nearest", inline: "nearest" }); } catch (eS) {}
   });
+})();
+
+/* ========== v4.20 ZAP CONNECT: every service, what it reads, what it shares, and how to turn it off ========== */
+function v6Ago(t) { if (!t) return "never"; var m = Math.round((Date.now() - t) / 60000); if (m < 1) return "just now"; if (m < 60) return m + " min ago"; var h = Math.round(m / 60); if (h < 48) return h + " h ago"; return Math.round(h / 24) + " days ago"; }
+function v6SmartOn() { try { return !!loadAssistantPrefs().smartMode; } catch (e) { return false; } }
+function v6SetSmart(on) {
+  var a = loadAssistantPrefs(); a.smartMode = !!on; saveAssistantPrefs(a);
+  var c = $("#zapSmart"); if (c) c.checked = !!on;
+  v6PaintSmartState();
+}
+function v6PaintSmartState() {
+  var on = v6SmartOn(), el = $("#zapSmartState");
+  if (el) { el.textContent = on ? "ON · Pollinations" : "OFF · on this device only"; el.className = "v6-st " + (on ? "warn" : "ok"); }
+}
+var V6_GEO_PERM = "unknown";
+try { if (navigator.permissions && navigator.permissions.query) navigator.permissions.query({ name: "geolocation" }).then(function (p) { V6_GEO_PERM = p.state; p.onchange = function () { V6_GEO_PERM = p.state; }; }).catch(function () {}); } catch (eGp) {}
+function v6Services() {
+  var S = [];
+  var bankOn = false, bankLg = null; try { bankOn = bankDeviceReady(); bankLg = ZAP_BANK_PLAID.loadLastGood(); } catch (e) {}
+  var bankAcc = []; try { bankAcc = getBankAccounts(); } catch (e2) {}
+  S.push({ id: "plaid", n: "Bank (Plaid)", grp: "money", on: bankOn,
+    st: bankOn ? ("Connected · " + bankAcc.length + " account" + (bankAcc.length === 1 ? "" : "s") + " · updated " + v6Ago(_bankLastRefresh || (bankLg && bankLg.at))) : "Not linked on this device",
+    err: bankOn && _bankLastRefresh === 0 && bankLg && Date.now() - bankLg.at > 36e5 ? "Couldn’t refresh lately — showing the last balances we saved." : "",
+    reads: V6_PLAID_READS(),
+    shares: "This device sends a private device token to the ZAPWISE bank service (zapwise-bank Worker). The Worker talks to Plaid; your bank password never touches ZAPWISE.",
+    acts: bankOn ? [["refresh", "Refresh balances"], ["bankhide", "Hide/show balances"], ["bankforget", "Forget on this device"]] : [["banklink", "Link your bank ↗"]] });
+  var gpsOn = !!(GPS && GPS.lat != null);
+  S.push({ id: "loc", n: "Location (GPS)", grp: "device", on: gpsOn,
+    st: GEO_OFF || V6_GEO_PERM === "denied" ? "Off — blocked in browser settings" : (gpsOn ? "On · last fix " + v6Ago(GPS.at) : (V6_GEO_PERM === "prompt" ? "Not allowed yet" : "Waiting for a fix")),
+    reads: "Your position while ZAPWISE is open (for the map, weather and ETAs).",
+    shares: "Rounded coordinates go to Open-Meteo (weather) and BigDataCloud (city name); map and traffic tiles for your area load from OpenStreetMap and TomTom (via the zapwise-traffic Worker).",
+    note: "To fully turn location off, change it in your browser or phone settings — a web page can’t revoke its own permission.",
+    acts: [["loccity", "Use a city instead"], ["locclear", "Forget last position"]] });
+  S.push({ id: "wx", n: "Weather (Open-Meteo)", grp: "data", on: !!(WX && WX.at),
+    st: WX && WX.at ? "Live · updated " + v6Ago(WX.at) + " · " + (WX.place || "") : (navigator.onLine === false ? "Offline" : "No weather yet — set a city"),
+    reads: "Forecast for your location or chosen city.", shares: "Coordinates only. Free, no account.", acts: [["wxretry", "Refresh"], ["loccity", "Change city"]] });
+  var cal = null; try { cal = v6Cal(); } catch (e3) {}
+  S.push({ id: "cal", n: "Calendar file (.ics)", grp: "data", on: !!cal,
+    st: cal ? (cal.ev.length + " events · imported " + v6Ago(cal.at)) : "Nothing imported",
+    reads: "Only the file you choose. Events for the next 60 days are kept.", shares: "Nothing. The file is read on this device.",
+    acts: cal ? [["calopen", "Open agenda"], ["calclear", "Remove imported calendar"]] : [["calopen", "Import a calendar file"]] });
+  var ap = {}; try { ap = loadAssistantPrefs(); } catch (e4) {}
+  S.push({ id: "ai", n: "Online answers (Pollinations)", grp: "ai", on: !!ap.smartMode,
+    st: ap.smartMode ? "ON — questions that aren’t commands are sent online" : "OFF — every question stays on this device",
+    reads: "The question you type or say, when it isn’t a ZAPWISE command.",
+    shares: "Question + local time, weather and BTC/Gold prices go to text.pollinations.ai (a free open-model service). Never bank or portfolio numbers, notes or places.",
+    toggle: "smart" });
+  S.push({ id: "brain", n: "Offline brain (WebLLM)", grp: "ai", on: !!(ap.modelCached || ZAP_LLM.engine),
+    st: !hasWebGPU() ? "Not available — this browser has no WebGPU" : (ap.modelCached || ZAP_LLM.engine ? (ap.webllm ? "Downloaded · ON" : "Downloaded · paused") : "Not downloaded (~290 MB)"),
+    reads: "Your chat questions, on this device.", shares: "Nothing after the one-time model download from Hugging Face / esm.run.",
+    acts: (ap.modelCached || ZAP_LLM.engine) ? [["braindel", "Delete the model"]] : (hasWebGPU() ? [["zapopen", "Open ZAP AI to download"]] : []) });
+  S.push({ id: "traffic", n: "Live traffic (TomTom)", grp: "data", on: trafficWanted() && !TRAFFIC.dead,
+    st: !trafficWanted() ? "Off" : (TRAFFIC.dead ? "Error — traffic service isn’t answering" : (TRAFFIC.lastOk ? "On · tiles loaded " + v6Ago(TRAFFIC.lastOk) : "On")),
+    reads: "Traffic colors for the map area you’re looking at.", shares: "Map tile numbers (area + zoom) go to the zapwise-traffic Worker, which asks TomTom. The TomTom key stays on the server.", toggle: "traffic" });
+  S.push({ id: "mk", n: "Market prices (CoinGecko / Binance)", grp: "data", on: !!(MK && MK.at) && !mkErr,
+    st: mkErr ? "Error — price service didn’t answer" + (MK && MK.at ? " · last prices " + v6Ago(MK.at) : "") : (MK && MK.at ? "Live · updated " + v6Ago(MK.at) : "Loading"),
+    reads: "Public prices for the coins in your watchlist and holdings.", shares: "Coin names only — never your amounts.", acts: [["mkretry", "Retry"]] });
+  var prov = "Google"; try { prov = searchProv().name || prov; } catch (e5) {}
+  S.push({ id: "search", n: "Web search (" + prov + ")", grp: "data", on: true, st: "Used only when you choose a web search",
+    reads: "Nothing in the background.", shares: "Your search words go to " + prov + " when you pick a web result. Change the provider in the search bar.", acts: [] });
+  return S;
+}
+function V6_PLAID_READS() { return "Read-only: account names, type, balances and last 4 digits. ZAPWISE can’t move money."; }
+var V6_AVAIL = [
+  ["Spotify", "Show the song that’s playing and play/pause from ZAPWISE.", "A free Spotify developer app and your sign-in (OAuth). Not set up."],
+  ["Google Calendar (live)", "Today’s events without importing a file.", "Google sign-in with calendar read permission. Until then, use the .ics import."],
+  ["Home Assistant (controls)", "Switch lights and devices from ZAPWISE.", "A Home Assistant long-lived token stored on this device. Today ZAPWISE only opens your dashboard."],
+  ["Apple Music / HomeKit / CarPlay", "Native Apple features.", "A native iPhone app (Apple Developer Program, paid). A website can’t use them."]
+];
+function openConnect() {
+  var S = v6Services();
+  var html = '<div class="v6-dest v6-connect"><p class="v6-lead">Everything ZAPWISE connects to, what it can read, what leaves this device, and how to turn it off.</p>' +
+    '<div class="v6-list-h"><b>CONNECTED &amp; IN USE</b></div>' +
+    S.map(function (s) {
+      var stc = s.err || /Error|Off —|blocked|isn’t answering/.test(s.st) ? "bad" : (s.on ? "ok" : "idle");
+      return '<section class="v6-svc" aria-label="' + esc(s.n) + '"><div class="v6-svc-h"><b>' + esc(s.n) + '</b><span class="v6-st ' + stc + '">' + esc(s.st) + '</span></div>' +
+        (s.err ? '<p class="v6-svc-err" role="status">' + esc(s.err) + '</p>' : "") +
+        '<dl><dt>Can read</dt><dd>' + esc(s.reads) + '</dd><dt>Shared</dt><dd>' + esc(s.shares) + '</dd></dl>' +
+        (s.note ? '<p class="note">' + esc(s.note) + '</p>' : "") +
+        '<div class="v6-row">' + (s.toggle ? '<button type="button" class="chip' + (s.on ? " accent" : "") + '" role="switch" aria-checked="' + (!!s.on) + '" data-cx="tog-' + s.toggle + '">' + (s.on ? "ON · tap to turn off" : "OFF · tap to turn on") + '</button>' : "") +
+        (s.acts || []).map(function (a) { return '<button type="button" class="chip" data-cx="' + a[0] + '">' + esc(a[1]) + '</button>'; }).join("") + '</div></section>';
+    }).join("") +
+    '<div class="v6-list-h"><b>AVAILABLE · NOT CONNECTED</b></div>' +
+    V6_AVAIL.map(function (a) { return '<section class="v6-svc idle"><div class="v6-svc-h"><b>' + esc(a[0]) + '</b><span class="v6-st idle">Not connected</span></div><dl><dt>Would let you</dt><dd>' + esc(a[1]) + '</dd><dt>Needs</dt><dd>' + esc(a[2]) + '</dd></dl></section>'; }).join("") +
+    '<button type="button" class="v6-home-btn" data-v6-home="1">⌂ Back to Home</button></div>';
+  sheet("ZAP CONNECT", html, function (b) {
+    b.addEventListener("click", function (e) {
+      if (e.target.closest("[data-v6-home]")) { v6GoHome(); return; }
+      var x = e.target.closest("[data-cx]"); if (!x) return; var k = x.getAttribute("data-cx");
+      var again = function () { setTimeout(openConnect, 250); };
+      if (k === "tog-smart") { v6SetSmart(!v6SmartOn()); toast(v6SmartOn() ? "Online answers on" : "Online answers off — questions stay here"); again(); }
+      else if (k === "tog-traffic") { setTrafficWanted(!trafficWanted()); toast(trafficWanted() ? "Live traffic on" : "Live traffic off"); again(); }
+      else if (k === "refresh") { toast("Refreshing balances…"); refreshBankAccountsFromLink({ refresh: true }).then(again, again); }
+      else if (k === "bankhide") { var eye = $("#hBkEye"); if (eye) eye.click(); toast("Balance privacy switched"); }
+      else if (k === "bankforget") {
+        if (!confirm("Forget the bank link on this device? Balances disappear here. Your bank stays linked on the ZAPWISE server; use Unlink in Bank settings to remove it there.")) return;
+        try { ZAP_BANK_PLAID.setToken(""); localStorage.removeItem("zapwise_bank_last_good"); } catch (eF) {}
+        try { renderBanks(); } catch (eR) {}
+        toast("Forgotten on this device"); again();
+      }
+      else if (k === "banklink") { location.href = "/os/link/"; }
+      else if (k === "loccity") { openCity(); }
+      else if (k === "locclear") { try { Store.setLocal("gpsLoc", null); Store.setLocal("gps", null); GPS = null; renderMap(true); } catch (eL) {} toast("Last position forgotten"); again(); }
+      else if (k === "wxretry") { refreshWeather(true); toast("Refreshing weather…"); again(); }
+      else if (k === "calopen") { v6Agenda(); }
+      else if (k === "calclear") { if (!confirm("Remove the imported calendar from this device?")) return; Store.setLocal("v6cal", null); try { v6PaintCalLine(); } catch (eC) {} toast("Calendar removed"); again(); }
+      else if (k === "braindel") { if (!confirm("Delete the offline brain from this device?")) return; deleteWebLLMCache(); again(); }
+      else if (k === "zapopen") { closeSheet(); openZapAssistant(); }
+      else if (k === "mkretry") { refreshMarkets(); toast("Retrying prices…"); again(); }
+    });
+  });
+}
+(function v6ConnectBoot() {
+  var row = $("#zapSmartRow");
+  if (row && !$("#zapSmartState")) { var s = document.createElement("span"); s.id = "zapSmartState"; s.setAttribute("role", "status"); row.querySelector(".zap-smart-lab").appendChild(s); }
+  var c = $("#zapSmart"); if (c) c.addEventListener("change", function () { setTimeout(v6PaintSmartState, 0); });
+  v6PaintSmartState();
+  window.ZAPOS = window.ZAPOS || {}; window.ZAPOS.openConnect = openConnect; window.ZAPOS.services = v6Services;
 })();
 
 })(); /* end ZAPWISE//OS app scope */

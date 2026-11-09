@@ -64,3 +64,10 @@ Newest last. Every entry was tested with Playwright (360/390/430/768/1366@1.25/1
 - Focus: header shows sessions and minutes focused today (e.g. "2 TODAY · 50 MIN"); pause/resume/reset/custom length unchanged.
 - TV / remote: at 1900 px+ (or ?tv=1) arrow keys move between controls by position, the orbit is one stop (left/right turn it, up/down leave it), bigger focus rings and text.
 - QA: agenda import (timed, all-day, UTC, repeating), focus minutes, TV arrow navigation, plus every v4.17/v4.18 suite, bank-link, gestures and a11y (0 small targets).
+
+## v4.20.0 — 2026-11-09 (ZAP CONNECT)
+- Backup `backups/pre_v420_20261109_134911`, git tag `checkpoint-v4.19.0`.
+- New ZAP CONNECT sheet (☰ Menu → ZAP Connect): Bank (Plaid), Location, Weather (Open-Meteo), Calendar file, Online answers (Pollinations), Offline brain, Live traffic (TomTom), Market prices, Web search. Each shows live status, errors, exactly what it can read, what leaves the device, and its controls (refresh, hide balances, forget bank on this device — the server link is untouched, use a city, forget last position, remove calendar, delete model, traffic on/off, retry).
+- Available but not connected: Spotify, Google Calendar (live), Home Assistant controls, Apple Music/HomeKit/CarPlay — each says what it would add and what it needs.
+- Online answers: one-tap on/off in Connect and a clear ON/OFF status next to the switch in ZAP AI. With it off, answers are labeled "BUILT-IN HELP ON THIS DEVICE".
+- QA: new qa420 (connect, toggle, labels) + full matrix (`site_tools/regress.sh`).

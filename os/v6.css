@@ -155,3 +155,14 @@
   .v6-orbit{height:460px}.v6-item{width:112px}.v6-ic{width:60px;height:60px}.v6-lbl{font-size:16px}
   #osPage.v5-grid .v5h b{font-size:15px}
 }
+/* v4.20 ZAP CONNECT */
+.v6-svc{display:flex;flex-direction:column;gap:6px;padding:12px;border-radius:14px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.09)}
+.v6-svc-h{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px}
+.v6-svc-h b{font-size:15px}
+.v6-st{font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;border:1px solid currentColor;line-height:1.3}
+.v6-st.ok{color:#3dff9e}.v6-st.bad{color:#ff6b8a}.v6-st.idle{color:var(--v6-dim)}.v6-st.warn{color:#ffb547}
+.v6-svc dl{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;margin:0;font-size:13px;line-height:1.4}
+.v6-svc dt{color:var(--v6-cy);font-weight:700;font-size:11.5px;letter-spacing:.06em;padding-top:2px}
+.v6-svc dd{margin:0;color:var(--v6-ink)}
+.v6-svc-err{margin:0;color:#ffb547;font-size:13px}
+#zapSmartState{margin-left:8px}
