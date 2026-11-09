@@ -1,7 +1,7 @@
 /* ZAPWISE//OS web app v4.13.2 (Nov 5, 2026). Equal-height desktop Focus/Phone. Plaid-only Bank. Motion toggle. No tabs. Source: edit app.js → build.sh → app.min.js. */
 (function () {
 "use strict";
-var VERSION = '4.18.0';
+var VERSION = '4.19.0';
 var APP_VERSION = VERSION;
 
 // v4.5: default Lite on coarse/mobile unless user already chose
@@ -221,7 +221,7 @@ function ydayKeyFromFocus() {
   var d = new Date(); d.setDate(d.getDate() - 1);
   return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
 }
-function bumpFocusSession() {
+function bumpFocusSession(mins) {
   var day = focusDayKey();
   var s = Store.getLocal("focusStats", null) || {};
   var yday = ydayKeyFromFocus();
@@ -230,6 +230,7 @@ function bumpFocusSession() {
     s = { day: day, count: 0, streak: cont ? ((+s.streak || 0) + 1) : 1 };
   }
   s.count = (+s.count || 0) + 1;
+  s.mins = (+s.mins || 0) + (+mins > 0 ? +mins : 0);
   if (!(+s.streak > 0)) s.streak = 1;
   Store.setLocal("focusStats", s);
   return s.count;
@@ -245,7 +246,7 @@ function clone(o) { return o == null ? o : JSON.parse(JSON.stringify(o)); }
 var Store = (function () {
   var STATE_KEY = "zapos.state", DEVICE_KEY = "zapos.device", VER = 1;
   var PREF_KEYS = ["settings", "theme", "apps", "coins", "loc", "favs", "places", "holdings", "broker", "wallets", "accounts", "assistant"];                     // shared state (sync-ready)
-  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss", "mediaKey", "skipBoot", "bootDay", "uiSounds", "recentPins", "wxDay", "wxMode", "wxMode2", "portHist", "acctMigrated", "liteMode", "tiltCards", "motionTilt", "callLog", "zapChat", "focusStats", "wallpaper", "zapNotes", "zapReminders", "uiMotion", "welcomeSeen", "bankPrivacy", "mapTraffic", "bankManualCleared_v413", "searchProv", "focusCustom", "v5AppsOpen", "quickActions", "sugState", "v6lists", "v6List", "v6ha", "v6compare"]; // this device only
+  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss", "mediaKey", "skipBoot", "bootDay", "uiSounds", "recentPins", "wxDay", "wxMode", "wxMode2", "portHist", "acctMigrated", "liteMode", "tiltCards", "motionTilt", "callLog", "zapChat", "focusStats", "wallpaper", "zapNotes", "zapReminders", "uiMotion", "welcomeSeen", "bankPrivacy", "mapTraffic", "bankManualCleared_v413", "searchProv", "focusCustom", "v5AppsOpen", "quickActions", "sugState", "v6lists", "v6List", "v6ha", "v6compare", "v6cal"]; // this device only
   function read(k) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
   function write(k, v) { if (dead) return false; try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
   var state = read(STATE_KEY), dev = read(DEVICE_KEY), subs = [], uiT = null, dead = false; // dead: after a reset, write nothing more
@@ -769,7 +770,7 @@ function renderFocus() {
       Store.setLocal("focus", FOC);
       left = focusMs();
       FOC_DONE_UNTIL = now + 6000;
-      try { bumpFocusSession(); } catch (e0) {}
+      try { bumpFocusSession(FOC.mins || 25); } catch (e0) {}
       toast("Focus done. Take 5.");
       try { navigator.vibrate && navigator.vibrate([180, 80, 180]); } catch (e) {}
     }
@@ -790,7 +791,8 @@ function renderFocus() {
   txt("#mFocL", FOC.st === "run" ? "FOCUSING" : FOC.st === "pause" ? "PAUSED" : done ? "DONE ✓" : "TAP TO START");
   var sessN = focusSessionsToday();
   var streakN = 0; try { streakN = focusStreak(); } catch (eSt) {}
-  txt("#focSess", sessN + " TODAY");
+  var _fm = 0; try { var _fs = Store.getLocal("focusStats", null) || {}; if (_fs.day === focusDayKey()) _fm = +_fs.mins || 0; } catch (eFm) {}
+  txt("#focSess", sessN + " TODAY · " + _fm + " MIN");
   txt("#focStatSessions", String(sessN));
   txt("#focStatStreak", String(streakN));
   txt("#focStatLen", String(FOC.mins || 25) + "m");
@@ -5866,7 +5868,7 @@ var menuBtn = $("#menuBtn"); if (menuBtn) menuBtn.addEventListener("click", open
 (function bindToday() {
   var cal = $("#tdCal"), note = $("#tdNote");
   function findById(id) { return APPS.filter(function (a) { return a.id === id; })[0]; }
-  if (cal) cal.addEventListener("click", function () { var a = findById("calendar"); if (a) openApp(a); else openApp({ url: "calshow://", web: "https://calendar.google.com" }); });
+  if (cal) cal.addEventListener("click", function () { try { v6Agenda(); } catch (eAg) { var a = findById("calendar"); if (a) openApp(a); else openApp({ url: "calshow://", web: "https://calendar.google.com" }); } });
   if (note) note.addEventListener("click", function () { var a = findById("notes"); if (a) openApp(a); else openApp({ url: "mobilenotes://", web: "https://keep.google.com" }); });
 })();
 
@@ -8556,6 +8558,7 @@ function v6Smart() {
   }
   host.addEventListener("keydown", function (e) {
     var k = e.key, i = items.indexOf(document.activeElement); if (i < 0) return;
+    if (!list && document.documentElement.classList.contains("tv-nav") && (k === "ArrowUp" || k === "ArrowDown")) return; /* remote: up/down leave the ring */
     var nx = null;
     if (k === "ArrowRight" || k === "ArrowDown") nx = i + 1;
     else if (k === "ArrowLeft" || k === "ArrowUp") nx = i - 1;
@@ -8617,6 +8620,108 @@ function v6Smart() {
     var r = e.target && e.target.closest && e.target.closest("[data-mk-retry]"); if (!r) return;
     e.preventDefault(); e.stopPropagation(); toast("Retrying prices…"); refreshMarkets();
   }, true);
+})();
+
+
+/* ---- v4.19 calendar: import an .ics file; events stay on this device ---- */
+function v6OpenCalApp() { var a = APPS.filter(function (x) { return x.id === "calendar"; })[0]; if (a) openApp(a); else openApp({ url: "calshow://", web: "https://calendar.google.com" }); }
+function v6IcsDate(v, params) {
+  if (!v) return null;
+  var m = v.match(/^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})?(Z)?)?$/); if (!m) return null;
+  if (!m[4]) return { t: new Date(+m[1], +m[2] - 1, +m[3]).getTime(), allDay: true };
+  var d = m[7] ? new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0))) : new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0));
+  return { t: d.getTime(), allDay: false };
+}
+function v6ParseIcs(txt) {
+  var lines = String(txt).replace(/\r\n[ \t]/g, "").replace(/\n[ \t]/g, "").split(/\r?\n/), out = [], ev = null, rec = 0;
+  lines.forEach(function (ln) {
+    if (ln === "BEGIN:VEVENT") { ev = {}; return; }
+    if (ln === "END:VEVENT") { if (ev && ev.s) { out.push(ev); if (ev.r) rec++; } ev = null; return; }
+    if (!ev) return;
+    var i = ln.indexOf(":"); if (i < 0) return;
+    var key = ln.slice(0, i), val = ln.slice(i + 1), name = key.split(";")[0].toUpperCase();
+    if (name === "SUMMARY") ev.t = val.replace(/\\,/g, ",").replace(/\\;/g, ";").replace(/\\n/gi, " ").slice(0, 120);
+    else if (name === "LOCATION") ev.l = val.replace(/\\,/g, ",").replace(/\\n/gi, " ").slice(0, 120);
+    else if (name === "DTSTART") { var d = v6IcsDate(val.trim(), key); if (d) { ev.s = d.t; ev.a = d.allDay; } }
+    else if (name === "DTEND") { var d2 = v6IcsDate(val.trim(), key); if (d2) ev.e = d2.t; }
+    else if (name === "RRULE") ev.r = 1;
+  });
+  return { events: out, recurring: rec };
+}
+function v6Cal() { var c = Store.getLocal("v6cal", null); return c && Array.isArray(c.ev) ? c : null; }
+function v6DayEvents(day) {
+  var c = v6Cal(); if (!c) return [];
+  var d0 = new Date(day.getFullYear(), day.getMonth(), day.getDate()).getTime(), d1 = d0 + 864e5;
+  return c.ev.filter(function (e) { var en = e.e || (e.s + (e.a ? 864e5 : 0)); return e.s < d1 && (en > d0 || e.s >= d0); }).sort(function (a, b) { return a.s - b.s; });
+}
+function v6EvTime(e) { if (e.a) return "All day"; var d = new Date(e.s), h = d.getHours(); return ((h % 12) || 12) + ":" + pad2(d.getMinutes()) + (h < 12 ? " AM" : " PM"); }
+function v6PaintCalLine() {
+  var v = $("#tdCalV"); if (!v) return;
+  var c = v6Cal(); if (!c) { v.textContent = "Open today’s schedule"; return; }
+  var now = Date.now(), list = v6DayEvents(new Date()).filter(function (e) { return e.a || (e.e || e.s) > now; });
+  v.textContent = list.length ? (v6EvTime(list[0]) + " · " + (list[0].t || "Event")) : "Nothing else today";
+}
+function v6Agenda() {
+  var c = v6Cal(), today = v6DayEvents(new Date()), tm = new Date(Date.now() + 864e5), tomorrow = v6DayEvents(tm);
+  function li(list) { return list.length ? list.map(function (e) { return '<div class="v6-ev"><b>' + esc(v6EvTime(e)) + '</b><span>' + esc(e.t || "Event") + (e.l ? '<small>' + esc(e.l) + '</small>' : "") + '</span></div>'; }).join("") : '<p class="dim v6-empty">No events.</p>'; }
+  var html = '<div class="v6-dest">' + (c
+    ? '<div class="v6-list-h"><b>TODAY</b></div>' + li(today) + '<div class="v6-list-h"><b>TOMORROW</b></div>' + li(tomorrow) +
+      '<p class="note">From the calendar file you imported ' + esc(new Date(c.at).toLocaleDateString()) + ' (' + c.ev.length + ' events). It doesn’t update by itself — import a fresh file to refresh.' + (c.rec ? ' ' + c.rec + (c.rec === 1 ? ' repeating event shows only its first date.' : ' repeating events show only their first date.') : "") + '</p>'
+    : '<p class="v6-lead">ZAPWISE can’t read your calendar account. To see today’s agenda here, export your calendar as an .ics file (Google Calendar: Settings → Import &amp; export → Export) and import it below. It stays on this device.</p>') +
+    '<div class="v6-next"><small>NEXT USEFUL ACTION</small><b>' + (c ? "Open your calendar app for changes" : "Import a calendar file") + '</b></div>' +
+    '<div class="v6-row"><button type="button" class="chip accent" id="v6CalApp">Open calendar app ↗</button><label class="chip" id="v6CalImpL">⇪ Import .ics<input type="file" id="v6CalImp" accept=".ics,text/calendar" hidden></label>' + (c ? '<button type="button" class="chip" id="v6CalDel">Remove imported calendar</button>' : "") + '</div>' +
+    '<button type="button" class="v6-home-btn" data-v6-home="1">⌂ Back to Home</button></div>';
+  sheet("TODAY’S AGENDA", html, function (b) {
+    b.querySelector("#v6CalApp").addEventListener("click", function () { closeSheet(); v6OpenCalApp(); });
+    b.addEventListener("click", function (e) { if (e.target.closest("[data-v6-home]")) v6GoHome(); if (e.target.closest("#v6CalDel")) { Store.setLocal("v6cal", null); v6PaintCalLine(); toast("Imported calendar removed"); v6Agenda(); } });
+    b.querySelector("#v6CalImp").addEventListener("change", function (e) {
+      var f = e.target.files && e.target.files[0]; if (!f) return;
+      if (f.size > 5 * 1024 * 1024) { toast("File is over 5 MB"); return; }
+      var r = new FileReader();
+      r.onload = function () {
+        var res = v6ParseIcs(r.result || ""), now = Date.now();
+        var keep = res.events.filter(function (x) { return (x.e || x.s) > now - 864e5 && x.s < now + 60 * 864e5; }).slice(0, 800);
+        if (!res.events.length) { toast("No events found in that file"); return; }
+        Store.setLocal("v6cal", { at: now, ev: keep, rec: res.recurring });
+        v6PaintCalLine(); toast(keep.length + " upcoming events imported"); v6Agenda();
+      };
+      r.onerror = function () { toast("Couldn’t read that file"); };
+      r.readAsText(f);
+    });
+  });
+}
+try { v6PaintCalLine(); setInterval(v6PaintCalLine, 60000); } catch (eCl) {}
+
+/* ---- v4.19 TV / remote: arrow keys move between controls on big screens ---- */
+(function v6Tv() {
+  var root = document.documentElement;
+  function upd() { var on = innerWidth >= 1900 || /[?&]tv=1/.test(location.search); root.classList.toggle("tv-nav", on); }
+  upd(); window.addEventListener("resize", upd);
+  var SEL = "#osPage button:not([disabled]), #osPage a[href], #osPage [tabindex='0'], #osPage select, #top button";
+  document.addEventListener("keydown", function (e) {
+    if (!root.classList.contains("tv-nav")) return;
+    var dir = { ArrowRight: [1, 0], ArrowLeft: [-1, 0], ArrowDown: [0, 1], ArrowUp: [0, -1] }[e.key];
+    if (!dir || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    var a = document.activeElement;
+    if (a && (a.closest("input,textarea,select,[contenteditable],#mapV,.wx-sw") || (a.closest("#v6Orbit:not(.is-list)") && dir[0] !== 0) || /INPUT|TEXTAREA|SELECT/.test(a.tagName))) return;
+    try { if (anyOverlayOpen()) return; } catch (eO) {}
+    var from = (a && a !== document.body && a.getBoundingClientRect) ? a.getBoundingClientRect() : { left: innerWidth / 2, top: -1, width: 0, height: 0 };
+    var fx = from.left + from.width / 2, fy = from.top + from.height / 2, best = null, bs = 1e9;
+    [].slice.call(document.querySelectorAll(SEL)).forEach(function (el) {
+      if (el === a || el.closest("[hidden]") || el.closest("#v6Orbit .v6-item[tabindex='-1']")) return;
+      var r = el.getBoundingClientRect(); if (!r.width || !r.height) return;
+      if (el.classList.contains("v6-item") && !el.closest(".is-list") && !(a && a.closest && a.closest("#v6Orbit"))) r = el.parentNode.getBoundingClientRect(); /* the ring is one stop for the remote */
+      var cx = r.left + r.width / 2, cy = r.top + r.height / 2, dx = cx - fx, dy = cy - fy;
+      var along = dx * dir[0] + dy * dir[1]; if (along <= 4) return;
+      var across = Math.abs(dx * dir[1] + dy * dir[0]);
+      var ov = dir[0] ? (r.top < from.top + from.height && r.bottom > from.top) : (r.left < from.left + from.width && r.right > from.left);
+      var sc = along + (ov ? across * 0.3 : across * 2.2 + 1600); if (sc < bs) { bs = sc; best = el; }
+    });
+    if (!best) return;
+    e.preventDefault();
+    best.focus({ preventScroll: true });
+    try { best.scrollIntoView({ block: "nearest", inline: "nearest" }); } catch (eS) {}
+  });
 })();
 
 })(); /* end ZAPWISE//OS app scope */

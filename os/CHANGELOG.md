@@ -58,3 +58,9 @@ Newest last. Every entry was tested with Playwright (360/390/430/768/1366@1.25/1
 - Food: favorite spots; Google Maps "near me", DoorDash, Uber Eats, Grubhub, Yelp searches; ZAPWISE never places orders or takes payment.
 - Listen: current provider shown and switchable; plain note that live track/controls need each service's sign-in.
 - QA: shop edit/compare/link validation, watch toggle, food links, plus the full v4.17 layout, interaction and gesture suites at all sizes.
+
+## v4.19.0 — 2026-11-09 (Spec steps 9 + 11: Focus, Calendar, Navigation, TV)
+- Calendar: tapping Calendar opens TODAY'S AGENDA. ZAPWISE can't read calendar accounts, so you can import an .ics export (Google Calendar → Settings → Import & export → Export); the next 60 days stay on this device. Today and tomorrow listed; the Today card shows the next event. Says when the file is stale and when repeating events show only their first date. Open calendar app ↗ is still one tap.
+- Focus: header shows sessions and minutes focused today (e.g. "2 TODAY · 50 MIN"); pause/resume/reset/custom length unchanged.
+- TV / remote: at 1900 px+ (or ?tv=1) arrow keys move between controls by position, the orbit is one stop (left/right turn it, up/down leave it), bigger focus rings and text.
+- QA: agenda import (timed, all-day, UTC, repeating), focus minutes, TV arrow navigation, plus every v4.17/v4.18 suite, bank-link, gestures and a11y (0 small targets).
