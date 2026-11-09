@@ -1,7 +1,7 @@
 /* ZAPWISE//OS web app v4.13.2 (Nov 5, 2026). Equal-height desktop Focus/Phone. Plaid-only Bank. Motion toggle. No tabs. Source: edit app.js → build.sh → app.min.js. */
 (function () {
 "use strict";
-var VERSION = '4.21.0';
+var VERSION = '4.22.0';
 var APP_VERSION = VERSION;
 
 // v4.5: default Lite on coarse/mobile unless user already chose
@@ -4495,6 +4495,7 @@ function row(icon, label, sub, act) { return '<button class="mrow" data-go="' + 
 function openMenu() {
   sheet("☰ MENU",
     "<h3>CONNECT</h3>" + row("⇄", "ZAP Connect", "Services, permissions, what’s shared, turn things off", "connect") +
+    "<h3>DASHBOARD</h3>" + row("⚙", "Customize dashboard", "Show, hide or reorder cards", "dash") +
     "<h3>APPS</h3>" + row("▦", "Edit apps", "Add, remove, show, hide or reorder apps", "apps") +
     "<h3>WEATHER</h3>" + row("☁", "Weather location", LOC.mode === "city" ? "City: " + esc(LOC.name) : "Using my location", "city") +
     "<h3>MARKETS</h3>" + row("₿", "Edit watchlist", COINS.map(function (c) { return esc(c.sym); }).join(" · ") || "Empty", "coins") +
@@ -4506,6 +4507,7 @@ function openMenu() {
       b.addEventListener("click", function (e) {
         var g = e.target.closest("[data-go]"); if (!g) return; var k = g.getAttribute("data-go");
         if (k === "connect") openConnect();
+        else if (k === "dash") openDashEdit();
         else if (k === "apps") openEditApps();
         else if (k === "city") openCity();
         else if (k === "coins") openEditCoins();
@@ -8347,6 +8349,7 @@ function v6Svg(id, sz) { return '<svg viewBox="0 0 24 24" width="' + (sz || 22) 
 function v6Flash(el) { if (!el) return; el.classList.remove("v6-flash"); void el.offsetWidth; el.classList.add("v6-flash"); setTimeout(function () { el.classList.remove("v6-flash"); }, 1600); }
 function v6GoCard(id) {
   var el = document.getElementById(id); if (!el) return;
+  try { dashPeek(id); } catch (eP) {}
   var reduce = !document.documentElement.classList.contains("motion-on");
   try { el.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" }); } catch (e) { el.scrollIntoView(); }
   v6Flash(el); v6ShowBack(true);
@@ -8881,7 +8884,7 @@ function zaDefs() {
     "portfolio.open": { n: "Portfolio", ic: "↗", kind: "device", run: function () { openCardDetail("mk", { fromUser: true }); return { status: "done" }; } },
     "connect.open": { n: "ZAP Connect", ic: "⇄", kind: "device", run: function () { openConnect(); return { status: "done" }; } },
     "zap.ask": { n: "Ask ZAP AI", ic: "✦", kind: "device", run: function (a) { openZapAssistant(); if (a && a.q) setTimeout(function () { try { zapHandle(a.q); } catch (e) {} }, 250); return { status: "done" }; } },
-    "dash.edit": { n: "Customize dashboard", ic: "⚙", kind: "device", run: function () { try { openDashEdit(); } catch (e) { toast("Not available"); } return { status: "done" }; } }
+    "dash.edit": { n: "Customize dashboard", ic: "⚙", kind: "device", run: function () { openDashEdit(); return { status: "done" }; } }
   };
   V6_DEST.forEach(function (d) { _ZA["dest." + d.id] = { n: d.n, ic: "◎", kind: "device", run: function (a) { v6OpenDest(d.id, a || {}); return { status: "done" }; } }; });
   return _ZA;
@@ -8982,5 +8985,90 @@ function zaIntent(q, orig) {
   if (nv && !v6Place(new RegExp(nv[1].replace(/[^\w ]/g, ""), "i"))) return { skill: "nav.search", kind: "NEEDS ANOTHER APP · TAP TO CONFIRM", text: "“" + nv[1] + "” isn’t a saved place. I can open your maps app to find it — the route and traffic are shown there.", action: { label: "Open maps for “" + nv[1].slice(0, 24) + "”", run: function () { closeZapAssistant(); zaRun("nav.search", { q: nv[1] }); } } };
   return null;
 }
+
+
+/* ===== v4.22 CUSTOMIZABLE DASHBOARD ===== */
+var DASH_CARDS = [
+  { id: "v6Hero", n: "Start here (ZAP AI + menu)", lock: true },
+  { id: "panelToday", n: "Today & weather" },
+  { id: "cardPlay", n: "Now playing" },
+  { id: "mFocus", n: "Focus mode" },
+  { id: "panelNav", n: "Navigate" },
+  { id: "panelMoney", n: "Banking" },
+  { id: "cardInvest", n: "Investments & markets" },
+  { id: "appsSection", n: "Apps" },
+  { id: "phoneMount", n: "Dial pad & favorites" }
+];
+function dashLoad() {
+  var d = Store.getLocal("dash", null), ids = DASH_CARDS.map(function (c) { return c.id; });
+  var order = (d && Array.isArray(d.order)) ? d.order.filter(function (x) { return ids.indexOf(x) >= 0; }) : [];
+  ids.forEach(function (x) { if (order.indexOf(x) < 0) order.push(x); });
+  var off = (d && Array.isArray(d.off)) ? d.off.filter(function (x) { return ids.indexOf(x) >= 0 && x !== "v6Hero"; }) : [];
+  return { order: order, off: off };
+}
+function dashSave(d) { Store.setLocal("dash", { order: d.order.slice(), off: d.off.slice() }); }
+function dashName(id) { for (var i = 0; i < DASH_CARDS.length; i++) if (DASH_CARDS[i].id === id) return DASH_CARDS[i]; return { n: id }; }
+function applyDash() {
+  var pg = document.getElementById("osPage"); if (!pg) return;
+  var d = dashLoad(), anchor = document.getElementById("dashEditRow") || document.getElementById("settingsMount");
+  d.order.forEach(function (id) {
+    var el = document.getElementById(id); if (!el || el.parentNode !== pg) return;
+    pg.insertBefore(el, anchor);
+    el.classList.toggle("dash-off", d.off.indexOf(id) >= 0);
+    el.classList.remove("dash-peek");
+  });
+  var mk = document.getElementById("xpMk"), wx = document.getElementById("xpWx");
+  [wx, mk].forEach(function (x) { if (x && x.parentNode === pg) pg.insertBefore(x, anchor); });
+}
+function dashPeek(id) {
+  var el = document.getElementById(id);
+  if (el && el.classList.contains("dash-off")) { el.classList.add("dash-peek"); toast("Showing a hidden card — Customize dashboard to keep it on"); }
+}
+function openDashEdit() {
+  var html = '<p class="note" style="margin-bottom:10px">Switch a card on or off and use ▲ ▼ to move it. Saved on this device only. Hidden cards still open from the menu, search and ZAP AI.</p><div id="dashList"></div>' +
+    '<button class="btn alt" id="dashReset" style="margin-top:12px">Reset dashboard to default</button>';
+  sheet("⚙ CUSTOMIZE DASHBOARD", html, function (b) {
+    function draw() {
+      var d = dashLoad(), L = b.querySelector("#dashList"); L.innerHTML = "";
+      d.order.forEach(function (id, i) {
+        var c = dashName(id), on = d.off.indexOf(id) < 0, r = document.createElement("div");
+        r.className = "erow" + (on ? "" : " off");
+        r.innerHTML = '<span class="en">' + esc(c.n) + (c.lock ? ' <small class="note">(always on)</small>' : "") + '</span>' +
+          '<button class="sq" data-m="up" aria-label="Move ' + esc(c.n) + ' up"' + (i ? "" : " disabled") + '>▲</button>' +
+          '<button class="sq" data-m="dn" aria-label="Move ' + esc(c.n) + ' down"' + (i < d.order.length - 1 ? "" : " disabled") + '>▼</button>' +
+          (c.lock ? "" : '<button class="sw" role="switch" aria-checked="' + on + '" aria-label="Show ' + esc(c.n) + '" data-m="tog"></button>');
+        r.addEventListener("click", function (e) {
+          var m = e.target.closest("[data-m]"); if (!m || m.disabled) return; m = m.getAttribute("data-m");
+          var dd = dashLoad(), j = dd.order.indexOf(id);
+          if (m === "tog") { var k = dd.off.indexOf(id); if (k >= 0) dd.off.splice(k, 1); else dd.off.push(id); }
+          else if (m === "up" && j > 0) { dd.order.splice(j, 1); dd.order.splice(j - 1, 0, id); }
+          else if (m === "dn" && j < dd.order.length - 1) { dd.order.splice(j, 1); dd.order.splice(j + 1, 0, id); }
+          dashSave(dd); applyDash(); draw();
+          var nb = b.querySelector('#dashList .erow:nth-child(' + (dd.order.indexOf(id) + 1) + ') [data-m="' + m + '"]');
+          if (nb && !nb.disabled) nb.focus();
+        });
+        L.appendChild(r);
+      });
+    }
+    b.querySelector("#dashReset").addEventListener("click", function () {
+      if (!confirm("Reset the dashboard to the default order with every card shown?")) return;
+      Store.setLocal("dash", null); applyDash(); draw(); toast("Dashboard reset");
+    });
+    draw();
+  });
+}
+(function dashInit() {
+  try {
+    var pg = document.getElementById("osPage"), sm = document.getElementById("settingsMount");
+    if (pg && sm && !document.getElementById("dashEditRow")) {
+      var r = document.createElement("div"); r.id = "dashEditRow"; r.className = "v6-dashrow";
+      r.innerHTML = '<button type="button" class="chip" id="dashEditBtn">⚙ Customize dashboard</button>';
+      pg.insertBefore(r, sm);
+      r.querySelector("#dashEditBtn").addEventListener("click", function () { openDashEdit(); });
+    }
+    applyDash();
+  } catch (e) {}
+  window.ZAPOS = window.ZAPOS || {}; window.ZAPOS.openDashEdit = openDashEdit; window.ZAPOS.applyDash = applyDash;
+})();
 
 })(); /* end ZAPWISE//OS app scope */

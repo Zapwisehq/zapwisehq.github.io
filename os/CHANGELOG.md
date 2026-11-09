@@ -80,3 +80,9 @@ Newest last. Every entry was tested with Playwright (360/390/430/768/1366@1.25/1
 - ZAP AI understands "add event … tomorrow at 3pm", "watch …", "order/find … food", "navigate to <any place>".
 - Local action log (last 50, on this device only).
 - QA: qa421 (website/product/map/web/AI results, handoff wording, quick actions via registry, event form → confirm → .ics content, reminder only after tap, orbit via registry) + full regression matrix.
+
+## v4.22.0 — 2026-11-09 — Customizable dashboard
+- "⚙ Customize dashboard" (button under the cards, Menu → Dashboard, search/ZAP Actions `dash.edit`): switch any card on/off and move it with ▲ ▼; "Start here" stays on so the orbit menu is always reachable.
+- Order and hidden cards saved on this device (`dash`); "Reset dashboard to default" restores everything.
+- Cards are moved in the DOM (keyboard/screen-reader order matches what you see). Hidden cards still open from the orbit, search and ZAP AI (shown temporarily with a note).
+- QA: qa422 at 390 and 1440 (hide, reorder, focus kept, persists after reload, hidden card reachable, search finds action, reset) + full regression.
