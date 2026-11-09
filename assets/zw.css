@@ -50,7 +50,7 @@ p{margin:0 0 var(--zw-s4)}
 .zw-logo{display:inline-flex;align-items:center;min-height:var(--zw-tap)}
 .zw-logo img{width:132px;height:auto}
 .zw-nav{display:flex;gap:2px;margin-left:auto;align-items:center}
-.zw-nav a{color:var(--zw-ink);text-decoration:none;font:600 1rem/1 var(--zw-head);letter-spacing:.06em;text-transform:uppercase;padding:0 12px;min-height:var(--zw-tap);display:inline-flex;align-items:center;border-radius:var(--zw-r-sm)}
+.zw-nav a{white-space:nowrap;color:var(--zw-ink);text-decoration:none;font:600 1rem/1 var(--zw-head);letter-spacing:.06em;text-transform:uppercase;padding:0 12px;min-height:var(--zw-tap);display:inline-flex;align-items:center;border-radius:var(--zw-r-sm)}
 .zw-nav a:hover,.zw-nav a[aria-current=page]{background:rgba(5,217,232,.1);color:#fff}
 .zw-nav a[aria-current=page]{box-shadow:inset 0 -2px 0 var(--zw-cyan)}
 .zw-menu{display:none;margin-left:auto}
@@ -60,7 +60,7 @@ p{margin:0 0 var(--zw-s4)}
 .zw-menu-pan{display:none;flex-direction:column;position:absolute;left:0;right:0;top:64px;background:rgba(9,11,26,.97);border-bottom:1px solid var(--zw-line);padding:8px max(20px,env(safe-area-inset-left)) 16px;max-height:calc(100vh - 64px);overflow:auto}
 .zw-menu-pan a{color:var(--zw-ink);text-decoration:none;padding:12px 4px;min-height:var(--zw-tap);border-bottom:1px solid var(--zw-line);font:600 1.1rem/1.2 var(--zw-head);letter-spacing:.05em;text-transform:uppercase}
 .zw-menu-pan a[aria-current=page]{color:var(--zw-cyan)}
-@media (max-width:1060px){.zw-nav{display:none}.zw-menu{display:block}.zw-hdr .zw-btn.cta{margin-left:0}}
+@media (max-width:720px){.zw-nav{display:none}.zw-menu{display:block}.zw-hdr .zw-btn.cta{margin-left:0}}
 @media (max-width:420px){.zw-hdr .zw-btn.cta span.lg{display:none}}
 /* buttons */
 .zw-btn{white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:var(--zw-tap);padding:0 20px;border-radius:var(--zw-pill);font:700 1rem/1 var(--zw-head);letter-spacing:.08em;text-transform:uppercase;text-decoration:none;border:1px solid var(--zw-line-2);color:var(--zw-ink);background:rgba(255,255,255,.03);transition:transform var(--zw-dur) var(--zw-ease),background var(--zw-dur),box-shadow var(--zw-dur);cursor:pointer}
