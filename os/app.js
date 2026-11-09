@@ -1,7 +1,7 @@
 /* ZAPWISE//OS web app v4.13.2 (Nov 5, 2026). Equal-height desktop Focus/Phone. Plaid-only Bank. Motion toggle. No tabs. Source: edit app.js → build.sh → app.min.js. */
 (function () {
 "use strict";
-var VERSION = '4.16.0';
+var VERSION = '4.17.0';
 var APP_VERSION = VERSION;
 
 // v4.5: default Lite on coarse/mobile unless user already chose
@@ -245,7 +245,7 @@ function clone(o) { return o == null ? o : JSON.parse(JSON.stringify(o)); }
 var Store = (function () {
   var STATE_KEY = "zapos.state", DEVICE_KEY = "zapos.device", VER = 1;
   var PREF_KEYS = ["settings", "theme", "apps", "coins", "loc", "favs", "places", "holdings", "broker", "wallets", "accounts", "assistant"];                     // shared state (sync-ready)
-  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss", "mediaKey", "skipBoot", "bootDay", "uiSounds", "recentPins", "wxDay", "wxMode", "wxMode2", "portHist", "acctMigrated", "liteMode", "tiltCards", "motionTilt", "callLog", "zapChat", "focusStats", "wallpaper", "zapNotes", "zapReminders", "uiMotion", "welcomeSeen", "bankPrivacy", "mapTraffic", "bankManualCleared_v413", "searchProv", "focusCustom", "v5AppsOpen", "quickActions", "sugState"]; // this device only
+  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss", "mediaKey", "skipBoot", "bootDay", "uiSounds", "recentPins", "wxDay", "wxMode", "wxMode2", "portHist", "acctMigrated", "liteMode", "tiltCards", "motionTilt", "callLog", "zapChat", "focusStats", "wallpaper", "zapNotes", "zapReminders", "uiMotion", "welcomeSeen", "bankPrivacy", "mapTraffic", "bankManualCleared_v413", "searchProv", "focusCustom", "v5AppsOpen", "quickActions", "sugState", "v6lists", "v6List", "v6ha", "v6compare"]; // this device only
   function read(k) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
   function write(k, v) { if (dead) return false; try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
   var state = read(STATE_KEY), dev = read(DEVICE_KEY), subs = [], uiT = null, dead = false; // dead: after a reset, write nothing more
@@ -1860,6 +1860,12 @@ function refreshMarkets() {
 }
 function chHTML(ch) { if (ch == null || isNaN(ch)) return '<span class="dim">--</span>'; return '<span class="' + (ch >= 0 ? "up" : "dn") + '">' + (ch >= 0 ? "▲" : "▼") + Math.abs(ch).toFixed(2) + "%</span>"; }
 function sparkSVG(ch, seed) {
+  /* v4.17: honest 24h direction glyph (a straight line), not an invented price path */
+  if (ch == null || isNaN(ch)) return '<svg class="mk-spark" viewBox="0 0 56 22" aria-hidden="true"></svg>';
+  var y1 = ch >= 0 ? 6 : 16, y0 = ch >= 0 ? 16 : 6;
+  return '<svg class="mk-spark" viewBox="0 0 56 22" aria-hidden="true"><path d="M2,' + y0 + ' L54,' + y1 + '" stroke="' + (ch >= 0 ? "#3ddc97" : "#ff5c7a") + '"/></svg>';
+}
+function sparkSVG_old(ch, seed) {
   var up = (ch == null || isNaN(ch)) ? true : ch >= 0;
   var col = up ? "#3ddc97" : "#ff5c7a";
   var pts = [], n = 12, base = 14, amp = Math.min(10, 2 + Math.abs(ch || 0) * 0.6);
@@ -1969,8 +1975,9 @@ function drawHoldChart(cv, stats) {
   c.clearRect(0, 0, W, H);
   var hist = Store.getLocal("portHist", null);
   var vals = Array.isArray(hist) ? hist.map(function (x) { return +x.v; }).filter(function (v) { return !isNaN(v); }) : [];
-  if (vals.length < 2) {
-    // soft placeholder from current total direction
+  if (vals.length < 2) { return; } /* v4.17: no invented chart until real history exists */
+  if (false) {
+    // (old soft placeholder)
     var up0 = !(stats.day < 0);
     var col0 = up0 ? "#3ddc97" : "#ff5c7a";
     var pts0 = [], n0 = 24, base0 = H * 0.55, amp0 = H * 0.22;
@@ -2060,7 +2067,9 @@ function drawMkMiniSpark(cv, stats) {
     c.clearRect(0, 0, W, H);
     var hist = Store.getLocal("portHist", null);
     var vals = Array.isArray(hist) ? hist.map(function (x) { return +x.v; }).filter(function (v) { return !isNaN(v); }) : [];
-    if (vals.length < 2) {
+    cv.style.display = vals.length < 2 ? "none" : "";
+    if (vals.length < 2) { return; } /* v4.17: no invented sparkline */
+    if (false) {
       var up0 = !(stats && stats.day < 0);
       var col0 = up0 ? "#3ddc97" : "#ff5c7a";
       c.beginPath();
@@ -2094,10 +2103,10 @@ function renderHomeMarkets(stats, accts) {
   if (port) port.hidden = false;
   if (!hasAcct) {
     if (totalEl) totalEl.textContent = "—";
-    if (dayEl) { dayEl.textContent = "No accounts yet"; dayEl.className = "hmk-day dim empty-state"; dayEl.setAttribute("role","status"); }
+    if (dayEl) { dayEl.textContent = "Nothing tracked yet · tap ＋ Add"; dayEl.className = "hmk-day dim empty-state"; dayEl.setAttribute("role","status"); }
     if (port && !totalEl) port.innerHTML = '<span class="hmk-day dim empty-state" role="status">No accounts yet</span>';
   } else {
-    if (totalEl) totalEl.textContent = money(stats.total);
+    if (totalEl) totalEl.textContent = stats.priced ? money(stats.total) : "—";
     else if (port) {
       var dayHtml = stats.priced
         ? ('<span class="hmk-day ' + (stats.day >= 0 ? "up" : "dn") + '">' + signedMoney(stats.day) + (stats.dayPct != null ? " · " + ((stats.dayPct >= 0 ? "+" : "") + stats.dayPct.toFixed(2) + "%") : "") + "</span>")
@@ -2119,8 +2128,11 @@ function renderHomeMarkets(stats, accts) {
 
 function renderHoldings() {
   var list = loadHoldings(), stats = portfolioStats(), accts = loadAccounts();
-  pushPortHist(stats.total);
-  animateHoldTotal(stats.total);
+  /* v4.17: never show $0 as if it were a real portfolio — "—" until a priced holding exists */
+  var _hasPort = list.length > 0;
+  if (_hasPort && stats.priced) { pushPortHist(stats.total); animateHoldTotal(stats.total); }
+  else { var _tv0 = $("#holdTotalV"); if (_tv0) _tv0.textContent = "—"; _dispTotal = null; }
+  try { var _kk = document.querySelector("#portHero .ph-kicker"); if (_kk) _kk.textContent = !_hasPort ? "PORTFOLIO · NOTHING ADDED YET" : (stats.priced ? (mkErr ? "PORTFOLIO · LAST SAVED PRICES" : "PORTFOLIO · PRICES LIVE") : "PORTFOLIO · PRICES UNAVAILABLE"); } catch (eKk) {}
   var dv = $("#holdDayV");
   if (dv) {
     if (!stats.priced) { dv.textContent = "—"; dv.className = ""; }
@@ -2143,7 +2155,7 @@ function renderHoldings() {
   accts.forEach(function (a) { byAcct[a.id] = a; });
   var host = $("#holdList");
   if (host) {
-    if (!list.length) host.innerHTML = '<div class="hold-empty"><button type="button" class="chip accent" id="holdEmptyAdd">＋ Add holding</button></div>';
+    if (!list.length) host.innerHTML = '<div class="hold-empty"><p class="v6-empty"><b>No holdings yet.</b> Add a coin or stock you own to track it here. Crypto prices come live from CoinGecko; stocks use a price you type. Nothing is added for you and nothing leaves this device.</p><p class="v6-empty dim">Brokerage sign-in (Fidelity, Schwab, Robinhood…) needs a secure connection provider and isn’t switched on.</p><button type="button" class="chip accent" id="holdEmptyAdd">＋ Add holding</button></div>';
     else host.innerHTML = list.map(function (h, i) {
       var px = holdingPrice(h), ch = holdingChange(h), qty = +h.qty || 0;
       var val = px != null ? px * qty : null;
@@ -2233,6 +2245,9 @@ function renderMarkets() {
     { id: "pax-gold", sym: "GOLD", name: "Gold" }
   ];
   mini += '<div class="mk-sec" data-hmk-port="1">WATCHLIST</div>';
+  var _anyQ = homePairs.some(function (c) { return d[c.id]; });
+  if (mkErr) mini += '<div class="v6-mkerr" role="status">' + (_anyQ ? ("Prices may be stale · saved " + (MK && MK.at ? short12(MK.at) : "--")) : (navigator.onLine === false ? "Offline · no saved prices yet" : "Price service didn’t answer")) + ' <button type="button" class="chip" data-mk-retry="1">↻ Retry</button></div>';
+  else if (!_anyQ) mini += '<div class="v6-mkerr dim" role="status">Loading live prices…</div>';
   homePairs.forEach(function (c, i) {
     var q = d[c.id], ch = q ? q.usd_24h_change : null;
     mini += '<div class="mk-row" data-hmk-port="1"><span class="sym">' + esc(c.sym) + '</span><span>' + sparkSVG(ch, (c.id || "").length + i) +
@@ -2725,7 +2740,7 @@ function renderMap(force) {
     var rad0 = v.querySelector(".map-radar"); if (rad0) rad0.style.opacity = "0";
     if (msg) {
       msg.hidden = false;
-      msg.textContent = GEO_OFF ? "LOCATION OFF · SHOWING CITY / LAST MAP" : (view.src === "default" ? "LOCATING… · NEON MAP PREVIEW" : "SHOWING SAVED / CITY MAP");
+      msg.textContent = GEO_OFF ? (view.src === "default" ? "LOCATION OFF · DEFAULT AREA (NOT YOU) · SET A CITY" : "LOCATION OFF · SHOWING YOUR CITY / LAST MAP") : (navigator.geolocation ? (view.src === "default" ? "FINDING YOU… · DEFAULT AREA FOR NOW" : "FINDING YOU… · SHOWING SAVED / CITY MAP") : "GPS NOT AVAILABLE ON THIS DEVICE");
     }
   }
   var W = v.clientWidth, H = v.clientHeight; if (!W || !H) return;
@@ -6387,6 +6402,7 @@ function zapAppend(role, text, action, opts) {
   var d = document.createElement("div");
   d.className = "zap-msg " + role + (opts.streaming ? " streaming" : "");
   d.textContent = text || "";
+  if (opts.kind) { d.setAttribute("data-kind", opts.kind); d.classList.add("has-kind"); }
   if (action && action.label && action.run) {
     var btn = document.createElement("button");
     btn.type = "button"; btn.className = "zap-act"; btn.textContent = action.label;
@@ -6550,8 +6566,7 @@ function zapDashContext() {
     }
   } catch (e2) {}
   try {
-    var st = portfolioStats();
-    if (st && st.priced) bits.push("Portfolio total " + money(st.total) + " today " + signedMoney(st.day));
+    /* v4.17: portfolio / bank numbers are never sent to the online model */
   } catch (e3) {}
   try {
     var md = MK && MK.d || {};
@@ -6641,7 +6656,7 @@ function zapOfflineFaq(raw) {
   if (/how (do i|to).*(note|calendar|reminder)/.test(q)) return "Say “add note …” or “remind me …”. Today’s card also opens Calendar and Notes.";
   if (/offline|no internet|airplane/.test(q)) return "You're offline. Phone, focus, notes, math, and saved data still work. Free-form chat needs a connection.";
   if (/^(mute|unmute)( voice)?[!?.]*$|^(voice|speak|talk)$/.test(q)) return "Tap the speaker in this chat to mute or unmute my voice. The rest of the OS stays silent.";
-  if (/download|offline brain|webllm|private ai/.test(q)) return "On WebGPU devices, tap Download offline brain (~1 GB) once. Then I can chat privately with no network.";
+  if (/download|offline brain|webllm|private ai/.test(q)) return "On WebGPU devices, tap Download offline brain (~290 MB) once. After it loads, chat answers are made on this device. The first load needs internet.";
   if (/^(joke|tell me a joke|funny)[!?.]*$/.test(q)) return "Why did the HUD go to therapy? Too many unresolved overlays.";
   return "Try: weather later, will it rain, how's BTC, portfolio, open Spotify, call mom, start focus 25, directions home, add note buy milk, remind me, convert 50 usd to eur, or ask anything.";
 }
@@ -6649,6 +6664,7 @@ function routeZapIntent(raw) {
   var q = String(raw || "").trim().toLowerCase();
   var orig = String(raw || "").trim();
   if (!q) return { skill: "help", text: HELP_TEXT };
+  var _rt = zapRoutine(q, orig); if (_rt) return _rt;
 
   // Exact FAQ / greetings only
   if (/^(hi|hello|hey|yo|sup|good (morning|afternoon|evening))[!?.]*$/.test(q) ||
@@ -6748,10 +6764,7 @@ function routeZapIntent(raw) {
       return { skill: "notes.list", text: notes.length ? ("Notes: " + notes.slice(0, 5).map(function (n) { return n.t; }).join(" · ")) : "No notes yet. Say “add note buy milk”.",
         action: { label: "Notes", run: function () { closeZapAssistant(); try { $("#tdNote").click(); } catch (e) {} } } };
     }
-    var arr = zapLoadNotes();
-    arr.unshift({ t: body.slice(0, 160), at: Date.now() });
-    zapSaveNotes(arr);
-    return { skill: "notes.add", text: "Saved note: “" + body.slice(0, 80) + "”." };
+    return { skill: "notes.add", text: "Save this note on this device: “" + body.slice(0, 80) + "”?", action: { label: "Save note", confirm: true, run: function () { var arr = zapLoadNotes(); arr.unshift({ t: body.slice(0, 160), at: Date.now() }); zapSaveNotes(arr); toast("Note saved"); } } };
   }
   if (/^(list|show|my)\s+notes?\b|^notes\b/.test(q) && !/add/.test(q)) {
     var ns = zapLoadNotes();
@@ -6761,10 +6774,7 @@ function routeZapIntent(raw) {
   // Reminders
   if (/\b(remind me|set (a )?reminder|reminder)\b/.test(q)) {
     var rb = orig.replace(/^(please\s+)?(remind me( to)?|set (a )?reminder( to| for)?|reminder:?)\s*/i, "").trim() || "something";
-    var rem = zapLoadReminders();
-    rem.unshift({ t: rb.slice(0, 160), at: Date.now() });
-    zapSaveReminders(rem);
-    return { skill: "reminder.add", text: "Reminder saved: “" + rb.slice(0, 80) + "”. (Shown here — enable phone reminders in your system app for alerts.)" };
+    return { skill: "reminder.add", text: "Save reminder “" + rb.slice(0, 80) + "”? It’s listed here only — ZAPWISE can’t send phone alerts yet.", action: { label: "Save reminder", confirm: true, run: function () { var rem = zapLoadReminders(); rem.unshift({ t: rb.slice(0, 160), at: Date.now() }); zapSaveReminders(rem); toast("Reminder saved"); } } };
   }
 
   if (/^call\b|\bdial\b/.test(q) || (/\bphone\b/.test(q) && /call|dial|favorite/.test(q))) {
@@ -6863,10 +6873,10 @@ function routeZapIntent(raw) {
     else if (/15|short/.test(q)) mins = 15;
     return {
       skill: "focus.start",
-      text: "Starting a " + mins + "-minute focus sprint.",
+      text: "Start a " + mins + "-minute focus session?",
       action: {
-        label: "Focus",
-        auto: true,
+        label: "Start focus",
+        confirm: true,
         run: function () {
           try { FOC = { st: "idle", mins: mins }; Store.setLocal("focus", FOC); if (FOC.st !== "run") focusToggle(); setHudTab("focus", { silent: true }); } catch (e) {}
         }
@@ -6908,6 +6918,7 @@ function refreshZapAiBar() {
   }
   if (note) note.hidden = true;
   if (btn) btn.hidden = false;
+  if (ZAP_LLM.engine || a.modelCached) { if (note) { note.hidden = false; note.textContent = "Offline brain: Qwen2.5 0.5B (~290 MB) in this browser’s storage. With BRAIN ON, chat answers are made on this device."; } }
   if (ZAP_LLM.loading) {
     if (st) st.textContent = "Downloading offline brain… " + Math.round((ZAP_LLM.progress || 0) * 100) + "%";
     if (btn) { btn.disabled = true; btn.textContent = "…"; }
@@ -6916,7 +6927,8 @@ function refreshZapAiBar() {
     if (btn) { btn.disabled = false; btn.textContent = a.webllm ? "BRAIN ON" : "BRAIN OFF"; }
   } else {
     if (st) st.textContent = "Optional offline brain";
-    if (btn) { btn.disabled = false; btn.textContent = "Download offline brain (~1 GB)"; }
+    if (btn) { btn.disabled = false; btn.textContent = "Download offline brain (~290 MB)"; }
+    if (note) { note.hidden = false; note.textContent = "Qwen2.5 0.5B via WebLLM. One-time ~290 MB download saved in this browser; needs WebGPU and about 1 GB of graphics memory. After it loads, answers are made on this device and your question isn’t sent anywhere. Quality is basic."; }
   }
 }
 
@@ -7043,17 +7055,38 @@ async function zapAskSmartOnce(q) {
   }
 }
 
-function zapFinishBot(elOrNull, text, action) {
+function zapFinishBot(elOrNull, text, action, kind) {
   var log = $("#zapLog");
   if (elOrNull && elOrNull.parentNode) {
     try { elOrNull.parentNode.removeChild(elOrNull); } catch (e) {}
   } else if (log && log.lastChild && log.lastChild.classList.contains("bot") && /…|Thinking|Smart|Rate|Private|Online/.test(log.lastChild.textContent || "")) {
     try { log.removeChild(log.lastChild); } catch (e2) {}
   }
-  var el = zapAppend("bot", "", action, { skipHist: true, streaming: true });
-  zapStreamInto(el, text, function () { updateZapBadge(); });
+  var el = zapAppend("bot", "", null, { skipHist: true, streaming: true, kind: kind || ZAP_KIND_CHAT() });
+  zapStreamInto(el, text, function () {
+    if (action && action.label && action.run && el) { var b2 = document.createElement("button"); b2.type = "button"; b2.className = "zap-act"; b2.textContent = action.label; b2.addEventListener("click", function () { try { action.run(); } catch (e) { toast("Action failed"); } }); el.appendChild(document.createElement("br")); el.appendChild(b2); }
+    updateZapBadge();
+  });
 }
 
+/* v4.17: every reply says what it is — an answer, a recommendation, an action on this device, or a hand-off to another service */
+var ZAP_EXTERNAL_SKILLS = { "apps.open": 1, "places.go": 1, "web.search": 1, "call.fav": 1, "maps.here": 1 };
+function ZAP_KIND_CHAT() {
+  var a = loadAssistantPrefs();
+  if (a.webllm && hasWebGPU() && (ZAP_LLM.engine || a.modelCached)) return "ANSWER · OFFLINE BRAIN ON THIS DEVICE";
+  if (navigator.onLine === false || !a.smartMode) return "ANSWER · BUILT-IN HELP ON THIS DEVICE";
+  return "ANSWER · POLLINATIONS (ONLINE OPEN MODEL)";
+}
+function zapKindFor(intent) {
+  var sk = intent.skill || "";
+  if (intent.kind) return intent.kind;
+  if (sk === "fx.convert") return "ANSWER · OPEN.ER-API.COM RATES";
+  if (sk === "dict.define") return "ANSWER · DICTIONARYAPI.DEV";
+  if (intent.action && ZAP_EXTERNAL_SKILLS[sk]) return "NEEDS ANOTHER APP · TAP TO CONFIRM";
+  if (intent.action && intent.action.auto) return "ACTION ON THIS DEVICE · DONE";
+  if (intent.action && intent.action.confirm) return "ACTION ON THIS DEVICE · TAP TO CONFIRM";
+  return "ANSWER · ON THIS DEVICE";
+}
 function zapHandle(raw) {
   var q = String(raw || "").trim();
   if (!q) return;
@@ -7061,15 +7094,17 @@ function zapHandle(raw) {
   zapAppend("user", q);
   var intent = routeZapIntent(q);
   if (intent.skill !== "chat") {
+    var kind = zapKindFor(intent);
     if (intent.async && typeof intent.runAsync === "function") {
-      var thinkA = zapAppend("bot", intent.text || "…", null, { skipHist: true });
+      var thinkA = zapAppend("bot", intent.text || "…", null, { skipHist: true, kind: kind });
       Promise.resolve()
         .then(function () { return intent.runAsync(); })
-        .then(function (txt) { zapFinishBot(thinkA, txt || intent.text, intent.action); updateZapBadge(); })
-        .catch(function () { zapFinishBot(thinkA, intent.text || "Couldn't finish that.", intent.action); updateZapBadge(); });
+        .then(function (txt) { zapFinishBot(thinkA, txt || intent.text, intent.action, kind); updateZapBadge(); })
+        .catch(function () { zapFinishBot(thinkA, intent.text || "Couldn't finish that.", intent.action, kind); updateZapBadge(); });
       return;
     }
-    zapAppend("bot", intent.text, intent.action);
+    var bm = zapAppend("bot", intent.text, intent.action, { kind: kind });
+    if (intent.extra && bm) { try { intent.extra(bm); } catch (eX) {} }
     if (intent.action && intent.action.auto) {
       try { intent.action.run(); } catch (eA) {}
     }
@@ -7081,7 +7116,7 @@ function zapHandle(raw) {
 
   function useFaq(prefix) {
     var txt = (prefix ? prefix + " " : "") + zapOfflineFaq(q);
-    zapFinishBot(null, txt);
+    zapFinishBot(null, txt, null, "ANSWER · BUILT-IN HELP ON THIS DEVICE");
   }
 
   // Offline path: WebLLM if ready, else solid FAQ — always reply
@@ -7090,7 +7125,7 @@ function zapHandle(raw) {
       var think0 = zapAppend("bot", "Thinking offline…", null, { skipHist: true });
       var p0 = ZAP_LLM.engine ? zapAskLLM(q) : loadWebLLMEngine().then(function () { return zapAskLLM(q); });
       p0.then(function (txt) { zapFinishBot(think0, txt); })
-        .catch(function () { zapFinishBot(think0, zapOfflineFaq(q) + " When you're online I can answer more."); });
+        .catch(function () { zapFinishBot(think0, zapOfflineFaq(q) + " When you're online I can answer more.", null, "ANSWER · BUILT-IN HELP ON THIS DEVICE"); });
       return;
     }
     useFaq("You're offline.");
@@ -7105,10 +7140,10 @@ function zapHandle(raw) {
       .catch(function () {
         if (a.smartMode) {
           if (think1) think1.textContent = "Trying online…";
-          zapEnqueueSmart(q).then(function (txt) { zapFinishBot(think1, txt); })
-            .catch(function (e2) { zapFinishBot(think1, zapOfflineFaq(q) + " (" + (e2 && e2.message ? e2.message : "online busy") + ")"); });
+          zapEnqueueSmart(q).then(function (txt) { zapFinishBot(think1, txt, null, "ANSWER · POLLINATIONS (ONLINE OPEN MODEL)"); })
+            .catch(function (e2) { zapFinishBot(think1, zapOfflineFaq(q) + " (" + (e2 && e2.message ? e2.message : "online busy") + ")", null, "ANSWER · BUILT-IN HELP ON THIS DEVICE"); });
         } else {
-          zapFinishBot(think1, zapOfflineFaq(q));
+          zapFinishBot(think1, zapOfflineFaq(q), null, "ANSWER · BUILT-IN HELP ON THIS DEVICE");
         }
       });
     return;
@@ -7123,7 +7158,7 @@ function zapHandle(raw) {
     }).catch(function (err) {
       try { if (window.ZAPFX3D) window.ZAPFX3D.setOrbMood("idle"); } catch (e) {}
       var note = err && err.message ? err.message : "Online AI busy.";
-      zapFinishBot(think2, zapOfflineFaq(q) + " " + note);
+      zapFinishBot(think2, zapOfflineFaq(q) + " " + note, null, "ANSWER · BUILT-IN HELP ON THIS DEVICE");
     });
     return;
   }
@@ -8096,7 +8131,7 @@ document.addEventListener("keydown", function (e) {
 
   /* ---- gestures: down (at top) = search, left = apps, right = quick actions. Never on map / scrollers / inputs / sheets ---- */
   var g = null;
-  var NOSWIPE = "#mapV, .map-v, input, textarea, select, [contenteditable], .places-scroller, .hw-hrs, .mk-ticker, .wx-temp-chart, .wx-sw, .sheet, .zap-sheet, .xp, .np-list, #dlPad, .srch-drop";
+  var NOSWIPE = "#mapV, .map-v, input, textarea, select, [contenteditable], .places-scroller, .hw-hrs, .mk-ticker, .wx-temp-chart, .wx-sw, .sheet, .zap-sheet, .xp, .np-list, #dlPad, .srch-drop, .v6-orbit";
   document.addEventListener("touchstart", function (e) {
     g = null;
     if (!e.touches || e.touches.length !== 1) return;
@@ -8189,4 +8224,356 @@ document.addEventListener("keydown", function (e) {
   setInterval(paintSug, 60000);
   try { Store.onChange(function () { paintSug(); }); } catch (eS) {}
 })();
+/* ========== v4.17 HOME: ZAP AI entry, orbit menu, destinations, honest states ========== */
+var V6_KIND_REC = "RECOMMENDATION · FROM DATA ON THIS DEVICE";
+function v6Btns(el, list) {
+  if (!el) return;
+  var row = document.createElement("div"); row.className = "zap-acts";
+  list.forEach(function (x) {
+    if (!x) return;
+    var b = document.createElement("button"); b.type = "button"; b.className = "zap-act" + (x.ext ? " ext" : ""); b.textContent = x.label;
+    if (x.ext) b.title = "Opens another app or site";
+    b.addEventListener("click", function () { try { x.run(); } catch (e) { toast("Action failed"); } });
+    row.appendChild(b);
+  });
+  el.appendChild(row);
+}
+function v6Clock() { var d = new Date(); return ((d.getHours() % 12) || 12) + ":" + pad2(d.getMinutes()) + (d.getHours() < 12 ? " AM" : " PM"); }
+function v6Place(rx) { var ps = []; try { ps = loadPlaces(); } catch (e) {} return ps.filter(function (p) { return rx.test((p.name || "") + " " + (p.id || "")); })[0] || null; }
+function v6StartFocus(m) { closeZapAssistant(); try { FOC = { st: "idle", mins: m }; Store.setLocal("focus", FOC); focusToggle(); } catch (e) {} v6GoCard("mFocus"); }
+function v6Reminders() { var r = []; try { r = zapLoadReminders(); } catch (e) {} return r; }
+function zapRoutine(q, orig) {
+  if (/(get|got) me ready for work|ready for work|morning (brief|routine)|start my (work ?)?day/.test(q)) {
+    var work = v6Place(/work|office|job/i), rem = v6Reminders();
+    var lines = ["It’s " + v6Clock() + "."];
+    lines.push(WX && WX.j ? zapWxSummary("now") : "Weather isn’t loaded yet — set your city on the Today card.");
+    lines.push("Calendar: ZAPWISE can’t read your calendar, so tap Calendar to open it.");
+    lines.push(work ? ("Commute: “" + work.name + "” is saved — Directions opens your Maps app with live traffic.") : "Commute: save Work on the Navigate card for one-tap directions.");
+    lines.push(rem.length ? ("Reminders: " + rem.slice(0, 3).map(function (x) { return x.t; }).join(" · ")) : "No reminders saved.");
+    return { skill: "routine.work", kind: V6_KIND_REC, text: lines.join("\n"), extra: function (el) {
+      v6Btns(el, [
+        { label: "Weather", run: function () { closeZapAssistant(); toggleXp("wx"); } },
+        { label: "Calendar", ext: 1, run: function () { closeZapAssistant(); $("#tdCal").click(); } },
+        work ? { label: "Directions to " + work.name, ext: 1, run: function () { closeZapAssistant(); openDirectionsTo(work); } } : { label: "Save Work", run: function () { closeZapAssistant(); v6GoCard("panelNav"); } },
+        { label: "Start 25-min focus", run: function () { v6StartFocus(25); } }
+      ]);
+    } };
+  }
+  if (/take me home|(go|head|heading|drive|get me) home\b/.test(q)) {
+    var home = v6Place(/home|house/i);
+    var t = home ? ("Directions to “" + home.name + "” open in your Maps app (that app shows the route and live traffic). The Navigate map here shows TomTom traffic colors.") : "No Home saved yet. Add Home on the Navigate card, then ask again.";
+    t += "\nHome devices: none connected, so there’s nothing to switch on yet.";
+    return { skill: "routine.home", kind: home ? "NEEDS ANOTHER APP · TAP TO CONFIRM" : V6_KIND_REC, text: t, extra: function (el) {
+      v6Btns(el, [
+        home ? { label: "Directions home", ext: 1, run: function () { closeZapAssistant(); openDirectionsTo(home); } } : { label: "Add Home", run: function () { closeZapAssistant(); v6GoCard("panelNav"); } },
+        { label: "Traffic map", run: function () { closeZapAssistant(); v6GoCard("panelNav"); } },
+        { label: "Smart Home", run: function () { closeZapAssistant(); v6OpenDest("smarthome"); } }
+      ]);
+    } };
+  }
+  if (/plan (my|the|out my) day|plan today|organi[sz]e my day|what('?s| is) (on )?my day/.test(q)) {
+    var rem2 = v6Reminders(), notes = []; try { notes = zapLoadNotes(); } catch (e) {}
+    var fs = 0; try { fs = focusSessionsToday(); } catch (e2) {}
+    var l2 = ["Here’s what this device knows for today:"];
+    l2.push(rem2.length ? ("Reminders (" + rem2.length + "): " + rem2.slice(0, 4).map(function (x) { return x.t; }).join(" · ")) : "Reminders: none saved — say “remind me to …”.");
+    l2.push("Notes: " + notes.length + " saved.");
+    l2.push("Focus: " + fs + " session" + (fs === 1 ? "" : "s") + " today. Suggestion: block a " + (fs ? "25" : "50") + "-minute focus session for your top task.");
+    l2.push("Appointments live in your calendar app — tap Calendar.");
+    return { skill: "routine.plan", kind: V6_KIND_REC, text: l2.join("\n"), extra: function (el) {
+      v6Btns(el, [
+        { label: "Start " + (fs ? 25 : 50) + "-min focus", run: function () { v6StartFocus(fs ? 25 : 50); } },
+        { label: "Calendar", ext: 1, run: function () { closeZapAssistant(); $("#tdCal").click(); } },
+        { label: "Notes", ext: 1, run: function () { closeZapAssistant(); $("#tdNote").click(); } }
+      ]);
+    } };
+  }
+  if (/^(help me )?(relax|wind down|chill)\b|help me relax/.test(q)) {
+    var m = currentMedia();
+    return { skill: "routine.relax", kind: "NEEDS ANOTHER APP · TAP TO CONFIRM", text: "Want some music? I’ll open " + m.name + " (your music app — playback happens there). Or take a 15-minute break timer.", extra: function (el) {
+      v6Btns(el, [
+        { label: "Open " + m.name, ext: 1, run: function () { closeZapAssistant(); var b = document.querySelector("#cardPlay .np-play"); if (b) b.click(); } },
+        { label: "15-min break timer", run: function () { v6StartFocus(15); } }
+      ]);
+    } };
+  }
+  var sm = q.match(/^(?:find|shop for|buy|compare|get) (?:me )?(?:the |a |an |some )?(?:best |cheap(?:est)? |good |new )?(.{2,60}?)[?.!]*$/);
+  if (sm && !/\b(place|restaurant|food|movie|show|my|way|route|direction)\b/.test(sm[1])) {
+    var item = sm[1].trim();
+    return { skill: "shop.find", kind: "NEEDS ANOTHER SERVICE · STORE SEARCH", text: "I can’t see live prices, stock or reviews, so I won’t make them up. Shop opens real store searches for “" + item + "” so you can compare there.", extra: function (el) {
+      v6Btns(el, [{ label: "Open Shop for “" + item.slice(0, 24) + "”", run: function () { closeZapAssistant(); v6OpenDest("shop", { q: item }); } }]);
+    } };
+  }
+  return null;
+}
+
+/* ---- destinations ---- */
+var V6_IC = {
+  home: "M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z",
+  shop: "M5 8h14l-1.2 12.2a1 1 0 0 1-1 .8H7.2a1 1 0 0 1-1-.8zM9 8V6a3 3 0 0 1 6 0v2",
+  watch: "M3 5h18v12H3zM10 8.5v5l4.5-2.5zM8 20h8",
+  listen: "M4 16v-4a8 8 0 0 1 16 0v4M4 15h3v5H4zM17 15h3v5h-3z",
+  food: "M7 3v18M4.5 3v5a2.5 2.5 0 0 0 5 0V3M17 21V3c-2.2 1.2-3.5 4-3.5 7.5H17",
+  navigate: "M12 21s-7-6.6-7-12a7 7 0 0 1 14 0c0 5.4-7 12-7 12zM12 11.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z",
+  smarthome: "M3 11.5l9-7.5 9 7.5M6 9.5V20h12V9.5M9 15.2a4.2 4.2 0 0 1 6 0M12 18h.01",
+  finance: "M4 20v-7M10 20V5M16 20v-9M3 20.5h18",
+  apps: "M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z",
+  zap: "M13 2 4.5 13.5H11L10 22l8.5-11.5H12z"
+};
+var V6_DEST = [
+  { id: "home", n: "Home", s: "Today & your dashboard", c: "#05d9e8" },
+  { id: "shop", n: "Shop", s: "Search real stores", c: "#ff4fd8" },
+  { id: "watch", n: "Watch", s: "Find where to stream", c: "#b26bff" },
+  { id: "listen", n: "Listen", s: "Your music app", c: "#ff4fd8" },
+  { id: "food", n: "Food", s: "Restaurants & delivery", c: "#ffb547" },
+  { id: "navigate", n: "Navigate", s: "Map, places, directions", c: "#2ee6ff" },
+  { id: "smarthome", n: "Smart Home", s: "Your connected devices", c: "#3dff9e" },
+  { id: "finance", n: "Finance", s: "Banking & investments", c: "#3dff9e" },
+  { id: "apps", n: "Apps", s: "All your apps", c: "#05d9e8" },
+  { id: "zap", n: "ZAP AI", s: "Say what you want to do", c: "#b26bff" }
+];
+function v6Svg(id, sz) { return '<svg viewBox="0 0 24 24" width="' + (sz || 22) + '" height="' + (sz || 22) + '" aria-hidden="true" focusable="false"><path d="' + V6_IC[id] + '" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'; }
+function v6Flash(el) { if (!el) return; el.classList.remove("v6-flash"); void el.offsetWidth; el.classList.add("v6-flash"); setTimeout(function () { el.classList.remove("v6-flash"); }, 1600); }
+function v6GoCard(id) {
+  var el = document.getElementById(id); if (!el) return;
+  var reduce = !document.documentElement.classList.contains("motion-on");
+  try { el.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" }); } catch (e) { el.scrollIntoView(); }
+  v6Flash(el); v6ShowBack(true);
+  setTimeout(function () { try { var f = el.querySelector("button,a,[tabindex='0']"); if (f) f.focus({ preventScroll: true }); } catch (e2) {} }, 450);
+}
+function v6GoHome() {
+  try { closeSheet(); } catch (e) {}
+  var h = document.getElementById("v6Hero");
+  var reduce = !document.documentElement.classList.contains("motion-on");
+  try { window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" }); } catch (e2) { window.scrollTo(0, 0); }
+  v6ShowBack(false);
+  setTimeout(function () { try { var a = document.querySelector("#v6Orbit .v6-item[tabindex='0']") || $("#v6Ask"); if (a) a.focus({ preventScroll: true }); } catch (e3) {} }, 350);
+}
+var V6_LASTGO = 0;
+function v6ShowBack(on) { if (on) V6_LASTGO = Date.now(); var b = $("#v6Back"); if (b) b.hidden = !on; }
+function v6Lists() { var o = Store.getLocal("v6lists", null); if (!o || typeof o !== "object") o = {}; ["shop", "watch", "food"].forEach(function (k) { if (!Array.isArray(o[k])) o[k] = []; }); return o; }
+function v6SaveLists(o) { Store.setLocal("v6lists", o); }
+var V6_STORES = {
+  shop: [
+    ["Amazon", "https://www.amazon.com/s?k="], ["Walmart", "https://www.walmart.com/search?q="], ["Target", "https://www.target.com/s?searchTerm="],
+    ["Best Buy", "https://www.bestbuy.com/site/searchpage.jsp?st="], ["eBay", "https://www.ebay.com/sch/i.html?_nkw="], ["Google Shopping", "https://www.google.com/search?tbm=shop&q="]
+  ],
+  watch: [
+    ["JustWatch (where to stream)", "https://www.justwatch.com/us/search?q="], ["YouTube", "https://www.youtube.com/results?search_query="], ["Netflix", "https://www.netflix.com/search?q="],
+    ["Prime Video", "https://www.amazon.com/s?i=instant-video&k="], ["Google", "https://www.google.com/search?q=where+to+watch+"]
+  ],
+  food: [
+    ["Google Maps", "https://www.google.com/maps/search/"], ["DoorDash", "https://www.doordash.com/search/store/"], ["Uber Eats", "https://www.ubereats.com/search?q="],
+    ["Grubhub", "https://www.grubhub.com/search?queryText="], ["Yelp", "https://www.yelp.com/search?find_desc="]
+  ]
+};
+function v6StoreUrl(kind, base, q) {
+  if (kind === "food" && /google\.com\/maps/.test(base)) return base + encodeURIComponent(q + " near me");
+  if (/doordash/.test(base)) return base + encodeURIComponent(q) + "/";
+  return base + encodeURIComponent(q);
+}
+var V6_COPY = {
+  shop: { t: "SHOP", lead: "Search real stores side by side. ZAPWISE doesn’t invent prices, stock or reviews — each button opens that store’s own results.", ph: "What are you shopping for?", next: "Type a product, then pick a store", saveL: "Shopping list", note: "No sponsored results and no affiliate links here. Prices and stock are on the store’s page." },
+  watch: { t: "WATCH", lead: "Find where a movie or show is streaming. ZAPWISE can’t see your streaming accounts, so Continue Watching stays in each app.", ph: "Movie or show title", next: "Type a title, then check where it streams", saveL: "Watchlist", note: "Links open the service’s own search. Availability is shown there." },
+  food: { t: "FOOD", lead: "Find restaurants near you or order delivery in the app you already use. Order status stays in that app.", ph: "Pizza, tacos, a restaurant name…", next: "Type what you’re craving, then pick a service", saveL: "Favorite spots", note: "ZAPWISE doesn’t place orders or take payments." }
+};
+function v6OpenDest(id, o) {
+  o = o || {};
+  if (id === "home") { v6GoHome(); v6GoCard("panelToday"); return; }
+  if (id === "navigate") { v6GoCard("panelNav"); return; }
+  if (id === "finance") { v6GoCard("panelMoney"); return; }
+  if (id === "apps") { try { window.ZAPOS.openAppsSheet(); } catch (e) { v6GoCard("appsSection"); } return; }
+  if (id === "zap") { openZapAssistant(); return; }
+  if (id === "listen") { v6Listen(); return; }
+  if (id === "smarthome") { v6Smart(); return; }
+  var C = V6_COPY[id]; if (!C) return;
+  var lists = v6Lists(), saved = lists[id];
+  var html = '<div class="v6-dest" data-dest="' + id + '">' +
+    '<p class="v6-lead">' + esc(C.lead) + '</p>' +
+    '<div class="v6-next"><small>NEXT USEFUL ACTION</small><b>' + esc(C.next) + '</b></div>' +
+    '<form class="v6-dform" id="v6DForm" autocomplete="off"><input id="v6DQ" type="search" enterkeyhint="search" placeholder="' + esc(C.ph) + '" aria-label="' + esc(C.ph) + '" value="' + esc(o.q || "") + '" maxlength="80"><button type="submit" class="chip accent">' + (id === "watch" ? "Find" : "Search") + '</button></form>' +
+    '<div class="v6-stores" id="v6Stores" role="list">' + V6_STORES[id].map(function (s, i) { return '<button type="button" class="v6-store" role="listitem" data-store="' + i + '"><b>' + esc(s[0]) + '</b><small>Opens ' + esc(s[0].replace(/ \(.*\)/, "")) + ' ↗</small></button>'; }).join("") + '</div>' +
+    '<p class="note">' + esc(C.note) + '</p>' +
+    '<div class="v6-list-h"><b>' + esc(C.saveL).toUpperCase() + ' · ON THIS DEVICE</b><button type="button" class="chip" id="v6DSave">＋ Save typed item</button></div>' +
+    '<div class="v6-saved" id="v6Saved" role="list"></div>' +
+    '<button type="button" class="v6-home-btn" data-v6-home="1">⌂ Back to Home</button></div>';
+  sheet(C.t, html, function (b) {
+    var inp = b.querySelector("#v6DQ");
+    function q() { return (inp.value || "").trim(); }
+    function paintSaved() {
+      var L = v6Lists()[id], host = b.querySelector("#v6Saved");
+      host.innerHTML = L.length ? L.map(function (x, i) { return '<div class="v6-sv" role="listitem"><button type="button" class="v6-sv-use" data-use="' + i + '">' + esc(x.t) + '</button>' + (id === "shop" ? '<button type="button" class="chip v6-done' + (x.done ? " on" : "") + '" data-done="' + i + '" aria-pressed="' + (!!x.done) + '" aria-label="Mark ' + esc(x.t) + ' as got it">' + (x.done ? "✓ Got it" : "Got it?") + '</button>' : "") + '<button type="button" class="chip" data-del="' + i + '" aria-label="Remove ' + esc(x.t) + '">✕</button></div>'; }).join("") : '<p class="dim v6-empty">Nothing saved yet. Type something above and tap ＋ Save.</p>';
+    }
+    paintSaved();
+    b.querySelector("#v6DForm").addEventListener("submit", function (e) { e.preventDefault(); if (!q()) { inp.focus(); toast("Type something first"); return; } var first = b.querySelector(".v6-store"); if (first) first.focus(); toast("Pick a " + (id === "shop" ? "store" : "service") + " below"); });
+    b.querySelector("#v6Stores").addEventListener("click", function (e) {
+      var s = e.target.closest("[data-store]"); if (!s) return;
+      if (!q()) { inp.focus(); toast("Type something first"); return; }
+      var st = V6_STORES[id][+s.getAttribute("data-store")]; go(v6StoreUrl(id, st[1], q()));
+    });
+    b.querySelector("#v6DSave").addEventListener("click", function () {
+      if (!q()) { inp.focus(); toast("Type something first"); return; }
+      var L = v6Lists(); if (L[id].some(function (x) { return x.t.toLowerCase() === q().toLowerCase(); })) { toast("Already saved"); return; }
+      if (L[id].length >= 50) { toast("Up to 50 items"); return; }
+      L[id].unshift({ t: q().slice(0, 80), at: Date.now() }); v6SaveLists(L); paintSaved(); toast("Saved on this device");
+    });
+    b.querySelector("#v6Saved").addEventListener("click", function (e) {
+      var u = e.target.closest("[data-use]"), d = e.target.closest("[data-del]"), dn = e.target.closest("[data-done]"), L = v6Lists();
+      if (u) { inp.value = L[id][+u.getAttribute("data-use")].t; inp.focus(); }
+      if (dn) { var it = L[id][+dn.getAttribute("data-done")]; it.done = !it.done; v6SaveLists(L); paintSaved(); }
+      if (d) { var i = +d.getAttribute("data-del"), gone = L[id][i]; L[id].splice(i, 1); v6SaveLists(L); paintSaved(); toast("Removed “" + gone.t.slice(0, 30) + "”"); }
+    });
+    b.addEventListener("click", function (e) { if (e.target.closest("[data-v6-home]")) v6GoHome(); });
+    if (!o.q) setTimeout(function () { try { if (matchMedia("(pointer:fine)").matches) inp.focus(); } catch (e) {} }, 80);
+  });
+}
+function v6Listen() {
+  var cur = currentMedia();
+  var html = '<div class="v6-dest"><p class="v6-lead">Music plays in your music app. ZAPWISE opens the one you choose — it can’t show the live track or control playback, because that needs each service’s sign-in, which isn’t connected.</p>' +
+    '<div class="v6-next"><small>NEXT USEFUL ACTION</small><b>Open ' + esc(cur.name) + '</b><button type="button" class="chip accent" id="v6LOpen">Open ' + esc(cur.name) + ' ↗</button></div>' +
+    '<div class="v6-list-h"><b>YOUR MUSIC APP</b></div><div class="v6-stores" role="radiogroup" aria-label="Music app">' +
+    HUB.map(function (k) { var m = MEDIA[k], on = m === cur; return '<button type="button" class="v6-store' + (on ? " on" : "") + '" role="radio" aria-checked="' + on + '" data-mk="' + k + '"><b>' + esc(m.name) + (on ? " ✓" : "") + '</b><small>' + (on ? "Current provider" : "Use this app") + '</small></button>'; }).join("") +
+    '</div><button type="button" class="v6-home-btn" data-v6-home="1">⌂ Back to Home</button></div>';
+  sheet("LISTEN", html, function (b) {
+    b.querySelector("#v6LOpen").addEventListener("click", function () { closeSheet(); var p = document.querySelector("#cardPlay .np-play"); if (p) p.click(); });
+    b.addEventListener("click", function (e) {
+      if (e.target.closest("[data-v6-home]")) { v6GoHome(); return; }
+      var k = e.target.closest("[data-mk]"); if (!k) return;
+      var opt = document.querySelector('#npList [data-m="' + k.getAttribute("data-mk") + '"]');
+      if (opt) opt.click(); else { MEDIA_KEY = k.getAttribute("data-mk"); Store.setLocal("mediaKey", MEDIA_KEY); try { renderNowPlaying(); } catch (e2) {} }
+      setTimeout(v6Listen, 60);
+    });
+  });
+}
+var V6_HOMEAPPS = [
+  ["Google Home", "https://home.google.com/"], ["SmartThings", "https://my.smartthings.com/"], ["Amazon Alexa", "https://alexa.amazon.com/"], ["Philips Hue", "https://www.philips-hue.com/"]
+];
+function v6Smart() {
+  var ha = Store.getLocal("v6ha", "") || "";
+  var html = '<div class="v6-dest"><div class="v6-state"><b>No devices connected yet.</b><span>ZAPWISE//OS runs in your browser, and browsers can’t talk to lights, locks or thermostats directly. So nothing here is switched on or off by ZAPWISE today.</span></div>' +
+    '<p class="v6-lead">What works now: open the home app you already use in one tap. If you run Home Assistant, save its address and ZAPWISE opens your dashboard.</p>' +
+    '<div class="v6-next"><small>NEXT USEFUL ACTION</small><b>Open your home app</b></div>' +
+    '<div class="v6-stores" role="list">' + (IOS ? '<button type="button" class="v6-store" role="listitem" data-ha-ios="1"><b>Apple Home</b><small>Opens Home ↗</small></button>' : "") +
+    V6_HOMEAPPS.map(function (s, i) { return '<button type="button" class="v6-store" role="listitem" data-ha-app="' + i + '"><b>' + esc(s[0]) + '</b><small>Opens ' + esc(s[0]) + ' ↗</small></button>'; }).join("") + '</div>' +
+    '<div class="v6-list-h"><b>HOME ASSISTANT</b></div>' +
+    '<form class="v6-dform" id="v6HaF" autocomplete="off"><input id="v6HaU" type="url" inputmode="url" placeholder="https://your-home-assistant:8123" aria-label="Home Assistant address" value="' + esc(ha) + '" maxlength="200"><button class="chip accent" type="submit">Save</button></form>' +
+    (ha ? '<button type="button" class="chip" id="v6HaOpen">Open Home Assistant ↗</button> <button type="button" class="chip" id="v6HaDel">Forget address</button>' : "") +
+    '<p class="note">Saved only on this device. ZAPWISE never asks for your home-app password.</p>' +
+    '<button type="button" class="v6-home-btn" data-v6-home="1">⌂ Back to Home</button></div>';
+  sheet("SMART HOME", html, function (b) {
+    b.addEventListener("click", function (e) {
+      if (e.target.closest("[data-v6-home]")) { v6GoHome(); return; }
+      if (e.target.closest("[data-ha-ios]")) { openApp({ id: "applehome", name: "Home", url: "com.apple.home://", web: "https://www.apple.com/home-app/" }); return; }
+      var a = e.target.closest("[data-ha-app]"); if (a) { go(V6_HOMEAPPS[+a.getAttribute("data-ha-app")][1]); return; }
+      if (e.target.closest("#v6HaOpen")) { go(Store.getLocal("v6ha", "")); return; }
+      if (e.target.closest("#v6HaDel")) { Store.setLocal("v6ha", ""); toast("Address removed"); v6Smart(); }
+    });
+    b.querySelector("#v6HaF").addEventListener("submit", function (e) {
+      e.preventDefault(); var u = (b.querySelector("#v6HaU").value || "").trim();
+      if (!/^https?:\/\/[^\s]{3,}$/i.test(u)) { toast("Enter an address starting with http:// or https://"); return; }
+      Store.setLocal("v6ha", u); toast("Saved on this device"); v6Smart();
+    });
+  });
+}
+
+/* ---- orbit menu ---- */
+(function v6Orbit() {
+  var host = $("#v6Orbit"); if (!host) return;
+  var N = V6_DEST.length, step = Math.PI * 2 / N, rot = 0, cur = 0, list = !!Store.getLocal("v6List", false);
+  host.insertAdjacentHTML("beforeend", V6_DEST.map(function (d, i) {
+    return '<button type="button" class="v6-item" role="menuitem" data-dest="' + d.id + '" data-i="' + i + '" tabindex="' + (i ? "-1" : "0") + '" style="--c:' + d.c + '" aria-label="' + esc(d.n) + ': ' + esc(d.s) + '"><span class="v6-ic">' + v6Svg(d.id, 22) + '</span><span class="v6-lbl">' + esc(d.n) + '</span><span class="v6-sub">' + esc(d.s) + '</span></button>';
+  }).join(""));
+  var items = [].slice.call(host.querySelectorAll(".v6-item"));
+  var tog = $("#v6View");
+  function layout() {
+    host.classList.toggle("is-list", list);
+    if (tog) { tog.setAttribute("aria-pressed", list ? "true" : "false"); tog.textContent = list ? "◎ ORBIT VIEW" : "☰ LIST VIEW"; }
+    if (list) { items.forEach(function (it) { it.style.transform = ""; it.style.zIndex = ""; it.style.opacity = ""; it.classList.remove("front"); }); return; }
+    var W = host.clientWidth, H = host.clientHeight; if (!W || !H) return;
+    var iw = items[0].offsetWidth || 76, ih = items[0].offsetHeight || 70;
+    var rx = Math.max(60, W / 2 - iw / 2 - 4), ry = Math.max(60, H / 2 - ih / 2 - 4);
+    if (W > 700) rx = Math.min(rx, H * 1.25);
+    items.forEach(function (it, i) {
+      var a = i * step + rot, x = Math.sin(a) * rx, y = Math.cos(a) * ry, dep = (Math.cos(a) + 1) / 2;
+      var sc = 0.8 + 0.2 * dep;
+      it.style.transform = "translate(" + (W / 2 + x - iw / 2).toFixed(1) + "px," + (H / 2 + y - ih / 2).toFixed(1) + "px) scale(" + sc.toFixed(3) + ")";
+      it.style.zIndex = String(10 + Math.round(dep * 10));
+      it.style.opacity = (0.78 + 0.22 * dep).toFixed(2);
+      it.classList.toggle("front", i === cur);
+    });
+  }
+  function setCur(i, focus, spin) {
+    cur = (i + N) % N;
+    items.forEach(function (it, k) { it.setAttribute("tabindex", k === cur ? "0" : "-1"); });
+    if (spin && !list) {
+      var target = -cur * step, d = target - rot;
+      d = ((d + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI; rot += d;
+    }
+    layout();
+    if (focus) items[cur].focus({ preventScroll: true });
+  }
+  host.addEventListener("keydown", function (e) {
+    var k = e.key, i = items.indexOf(document.activeElement); if (i < 0) return;
+    var nx = null;
+    if (k === "ArrowRight" || k === "ArrowDown") nx = i + 1;
+    else if (k === "ArrowLeft" || k === "ArrowUp") nx = i - 1;
+    else if (k === "Home") nx = 0; else if (k === "End") nx = N - 1;
+    if (nx == null) return;
+    e.preventDefault(); e.stopPropagation(); setCur(nx, true, true);
+  });
+  var lastPtr = 0;
+  host.addEventListener("pointerdown", function () { lastPtr = Date.now(); }, true);
+  /* keyboard / remote focus turns the ring; pointer focus must not move the item out from under the tap */
+  host.addEventListener("focusin", function (e) { if (Date.now() - lastPtr < 800) return; var i = items.indexOf(e.target); if (i >= 0 && i !== cur) setCur(i, false, true); });
+  /* drag / swipe the ring (orbit view only); a tap still opens */
+  var dr = null, suppress = 0;
+  host.addEventListener("pointerdown", function (e) { if (list || (e.pointerType === "mouse" && e.button !== 0)) return; dr = { x: e.clientX, r: rot, moved: false }; });
+  host.addEventListener("pointermove", function (e) {
+    if (!dr) return; var dx = e.clientX - dr.x;
+    if (!dr.moved && Math.abs(dx) < 10) return;
+    dr.moved = true; host.classList.add("dragging"); rot = dr.r + dx / Math.max(120, host.clientWidth / 2) * 1.4; layout();
+  });
+  function endDrag() {
+    if (!dr) return; var mv = dr.moved; dr = null; host.classList.remove("dragging");
+    if (mv) { suppress = Date.now(); var best = Math.round(-rot / step); setCur(((best % N) + N) % N, false, true); }
+  }
+  host.addEventListener("pointerup", endDrag); host.addEventListener("pointercancel", endDrag); host.addEventListener("pointerleave", endDrag);
+  host.addEventListener("click", function (e) {
+    var it = e.target.closest(".v6-item"); if (!it) return;
+    if (Date.now() - suppress < 350) { e.preventDefault(); return; }
+    v6OpenDest(it.getAttribute("data-dest"));
+    setCur(+it.getAttribute("data-i"), false, true);
+  });
+  if (tog) tog.addEventListener("click", function () { list = !list; Store.setLocal("v6List", list); layout(); });
+  layout();
+  try { new ResizeObserver(function () { layout(); }).observe(host); } catch (e) { window.addEventListener("resize", layout); }
+  window.ZAPOS = window.ZAPOS || {}; window.ZAPOS.v6 = { openDest: v6OpenDest, goHome: v6GoHome, setCur: function (i) { setCur(i, true, true); }, cur: function () { return cur; } };
+})();
+
+/* ---- ZAP AI entry ---- */
+(function v6Entry() {
+  var ask = $("#v6Ask");
+  if (ask) ask.addEventListener("click", function () { openZapAssistant(); });
+  var rt = $("#v6Routines");
+  if (rt) rt.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-zap]"); if (!b) return;
+    var cmd = b.getAttribute("data-zap");
+    openZapAssistant(); setTimeout(function () { try { zapHandle(cmd); } catch (e2) {} }, 200);
+  });
+  var back = $("#v6Back"); if (back) back.addEventListener("click", v6GoHome);
+  var hero = $("#v6Hero");
+  if (hero && window.IntersectionObserver) new IntersectionObserver(function (en) { if (en[0] && en[0].isIntersecting && Date.now() - V6_LASTGO > 1500) v6ShowBack(false); }, { threshold: 0.25 }).observe(hero);
+  /* voice: show mics only where speech recognition exists */
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { ["#srchMic", "#zapMic"].forEach(function (s) { var m = $(s); if (m) { m.hidden = true; m.style.display = "none"; } }); var tip = $("#zapMicTip"); if (tip) { tip.hidden = true; tip.style.display = "none"; } }
+  var zi = $("#zapIn"); if (zi) zi.placeholder = "What do you want to do?";
+  /* weather retry */
+  var wr = $("#tdWxRetry");
+  if (wr) wr.addEventListener("click", function (e) { e.stopPropagation(); toast(navigator.onLine === false ? "You’re offline — showing saved weather" : "Refreshing weather…"); refreshWeather(true); });
+  /* markets retry (inside the clickable Investments card) */
+  document.addEventListener("click", function (e) {
+    var r = e.target && e.target.closest && e.target.closest("[data-mk-retry]"); if (!r) return;
+    e.preventDefault(); e.stopPropagation(); toast("Retrying prices…"); refreshMarkets();
+  }, true);
+})();
+
 })(); /* end ZAPWISE//OS app scope */

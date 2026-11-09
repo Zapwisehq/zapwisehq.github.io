@@ -40,3 +40,14 @@ Newest last. Every entry was tested with Playwright (360/390/430/768/1366@1.25/1
 - On-device suggestion cards (Accept/Dismiss) from time of day, saved places, focus history and bank freshness. No data leaves the device.
 - `?` tour adds suggestion and gestures/keys steps.
 - QA: 6 sizes plus zoom, a11y, interaction, bank-link and link-return regressions all pass.
+
+## v4.17.0 — 2026-11-09 (Spec steps 1–5: audit, honest states, ZAP AI entry, orbit menu)
+- Backup `backups/pre_v417_20261109_130955`, git tag `checkpoint-v4.16.0`. Audit Page updated.
+- **ZAP AI entry**: big "What do you want to do?" button under search + routine chips (Get me ready for work, Help me plan my day, Take me home, Find me the best headphones). Routines use only data on this device (time, weather, saved places, reminders, notes, focus count) and every step is a button you tap.
+- **Reply labels**: every ZAP AI reply says ANSWER (and where: on this device, Pollinations, offline brain, open.er-api, dictionaryapi), RECOMMENDATION, ACTION ON THIS DEVICE · TAP TO CONFIRM, or NEEDS ANOTHER APP/SERVICE. Focus, notes and reminders now ask before acting.
+- **Privacy**: portfolio totals are no longer sent to the online model; the panel lists exactly what is shared (question, local time, weather, BTC/Gold). Offline brain shows its real size (~290 MB Qwen2.5 0.5B via WebLLM, WebGPU + ~1 GB graphics memory).
+- **Orbit menu** (original CSS/SVG): central Z, 10 labeled destinations (Home, Shop, Watch, Listen, Food, Navigate, Smart Home, Finance, Apps, ZAP AI). Mouse/touch tap, swipe to turn, arrow keys/Home/End/Enter (remote-style), list view toggle (saved), Motion toggle + reduced-motion respected.
+- **Destinations**: Shop/Watch/Food sheets open real store/service searches (no invented prices, stock, reviews; no sponsored or affiliate links) + saved list on this device; Listen shows the current provider and switches it; Smart Home says "No devices connected yet" and explains why, with home-app shortcuts and an optional Home Assistant address. Every sheet has ⌂ Back to Home; jumping to a card shows a floating Back to Home pill.
+- **Honest states**: portfolio shows "—" / "NOTHING ADDED YET" instead of $0; no invented sparklines or chart placeholders; watchlist shows "Price service didn't answer · ↻ Retry"; weather ↻ refresh button; map says "DEFAULT AREA (NOT YOU)" when location is off; mics hidden where voice isn't supported.
+- **44px targets**: fixed 12 controls under 44px found in the audit.
+- QA: 360/390/768/1024/1440/1920 + 1366@1.25 layout suite, 37 interaction checks (orbit keys/swipe/list, all destinations, routines, labels, markets error + retry, empty states), gestures/search regression, bank-link regression, a11y scan (0 small, 0 unnamed).

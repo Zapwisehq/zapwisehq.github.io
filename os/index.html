@@ -22,7 +22,7 @@
 <meta name="twitter:description" content="One neon HUD for your day: weather, live-traffic map, focus, balances that stay on your phone, your apps and ZAP AI.">
 <meta name="twitter:image" content="https://zapwiseai.com/os/icon-512.png">
 <meta name="theme-color" content="#070814">
-<meta name="zapos-version" content="4.16.0">
+<meta name="zapos-version" content="4.17.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="/os/manifest.webmanifest">
@@ -41,8 +41,9 @@
 <link rel="apple-touch-startup-image" media="(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/os/splash/splash-1206x2622.png">
 <link rel="apple-touch-startup-image" media="(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/os/splash/splash-1320x2868.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/os/icon-192.png">
-<link rel="stylesheet" href="/os/app.css?v=4.16.0">
-<link rel="stylesheet" href="/os/v5.css?v=4.16.0">
+<link rel="stylesheet" href="/os/app.css?v=4.17.0">
+<link rel="stylesheet" href="/os/v5.css?v=4.17.0">
+<link rel="stylesheet" href="/os/v6.css?v=4.17.0">
 <style>
 @font-face{font-family:"Rajdhani";font-style:normal;font-weight:600;font-display:swap;src:url("/os/fonts/Rajdhani-SemiBold.woff2") format("woff2"),url("/os/fonts/Rajdhani-SemiBold.ttf") format("truetype")}
 @font-face{font-family:"Rajdhani";font-style:normal;font-weight:700;font-display:swap;src:url("/os/fonts/Rajdhani-Bold.woff2") format("woff2"),url("/os/fonts/Rajdhani-Bold.ttf") format("truetype")}
@@ -62,7 +63,7 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
 <div id="app">
 
  <header class="top sticky" id="top">
-  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver" data-app-ver>v4.16.0</span></div>
+  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver" data-app-ver>v4.17.0</span></div>
   <div class="top-r">
    <span class="sync" id="hSync"><i aria-hidden="true"></i>LIVE</span>
    <span class="hud-chip gps" id="hGpsLock" data-lock="0" hidden><i aria-hidden="true"></i>GPS —</span>
@@ -78,7 +79,7 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
 
  <main class="os-page v5-grid" id="osPage" tabindex="-1">
 
-  <!-- v4.16.0 layout: search · Today|Now Playing · Focus|Navigate · Banking|Investments · Apps · Phone -->
+  <!-- v4.17.0 layout: search · Today|Now Playing · Focus|Navigate · Banking|Investments · Apps · Phone -->
   <form class="h-srch v5-search" id="srch" role="search" autocomplete="off">
     <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M15.5 15.5L21 21" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
     <input id="srchQ" type="search" enterkeyhint="go" placeholder="Search apps, places, notes or the web" inputmode="search" aria-label="Search apps or the web" autocapitalize="off" spellcheck="false" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="srchDrop" aria-autocomplete="list">
@@ -93,6 +94,31 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
      </select>
     </label>
    </form>
+
+  <!-- v4.17: one clear start — ZAP AI entry + ZAPWISE orbit menu (original CSS/SVG art) -->
+  <section class="card br v5c v6-hero" id="v6Hero" aria-label="Start here" style="--acc:#b26bff">
+   <div class="v6-start">
+    <button type="button" class="v6-ask" id="v6Ask" aria-label="Ask ZAP AI: what do you want to do?">
+     <span class="v6-ask-z" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26"><path d="M13 2 4.5 13.5H11L10 22l8.5-11.5H12z" fill="currentColor"/></svg></span>
+     <span class="v6-ask-t"><b>What do you want to do?</b><small>Ask ZAP AI · answers, plans and actions you confirm</small></span>
+     <span class="v6-ask-go" aria-hidden="true">ASK</span>
+    </button>
+    <div class="v6-routines" id="v6Routines" role="list" aria-label="Try a routine">
+     <button type="button" class="v6-rt" role="listitem" data-zap="Get me ready for work">Get me ready for work</button>
+     <button type="button" class="v6-rt" role="listitem" data-zap="Help me plan my day">Help me plan my day</button>
+     <button type="button" class="v6-rt" role="listitem" data-zap="Take me home">Take me home</button>
+     <button type="button" class="v6-rt" role="listitem" data-zap="Find me the best headphones">Find me the best headphones</button>
+    </div>
+   </div>
+   <div class="v6-nav">
+    <div class="v6-nav-h"><b>EXPLORE</b><button type="button" class="chip" id="v6View" aria-pressed="false" aria-controls="v6Orbit">☰ LIST VIEW</button></div>
+    <div class="v6-orbit" id="v6Orbit" role="menu" aria-label="ZAPWISE destinations. Use arrow keys to move, Enter to open.">
+     <div class="v6-rings" aria-hidden="true"><i></i><i></i><i></i></div>
+     <div class="v6-core" aria-hidden="true"><svg viewBox="0 0 64 64" width="64" height="64"><defs><linearGradient id="v6zg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#05d9e8"/><stop offset="1" stop-color="#b26bff"/></linearGradient></defs><path d="M16 16h32v6L26 42h22v6H16v-6l22-20H16z" fill="url(#v6zg)"/></svg></div>
+    </div>
+    <p class="v6-hint" aria-hidden="true">Tap a destination · swipe or use arrow keys to turn the ring</p>
+   </div>
+  </section>
 
   <section class="card br v5c v5-today" id="panelToday" aria-label="Today" style="--acc:#05d9e8">
    <div class="v5h"><b>TODAY</b></div>
@@ -128,6 +154,7 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
    </span>
   </button>
    <button type="button" class="td-city" id="tdCity" aria-label="Weather location"><svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path fill="currentColor" d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg><span id="tdCityV">Set your city</span></button>
+   <button type="button" class="td-retry" id="tdWxRetry" aria-label="Refresh weather" title="Refresh weather">↻</button>
    </div>
    <div class="today panel-inner" id="today">
     <div class="td-ico" aria-hidden="true"><small>TODAY</small><b id="tdDay">—</b></div>
@@ -377,13 +404,13 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
  <p class="zap-mic-tip" id="zapMicTip" hidden></p>
  <form class="zap-form" id="zapForm" autocomplete="off">
   <button type="button" class="zap-mic" id="zapMic" aria-label="Talk to ZAP AI">🎤</button>
-  <input id="zapIn" type="text" enterkeyhint="send" placeholder="Ask ZAP AI anything…" aria-label="Message ZAP AI" maxlength="400">
+  <input id="zapIn" type="text" enterkeyhint="send" placeholder="What do you want to do?" aria-label="Message ZAP AI" maxlength="400">
   <button type="submit" class="zap-send" aria-label="Send">GO</button>
  </form>
  <div class="zap-ai" id="zapAiBar">
   <div class="zap-smart" id="zapSmartRow">
    <label class="zap-smart-lab"><input type="checkbox" id="zapSmart" checked> Online answers</label>
-   <small class="zap-smart-note" id="zapSmartNote">Commands run on this device. With Online answers on, other questions go to a free open model (Pollinations). Turn it off to keep questions here.</small>
+   <small class="zap-smart-note" id="zapSmartNote">Commands and routines run on this device. With Online answers on, other questions are sent to Pollinations (text.pollinations.ai, a free open-model service) with your local time, weather and BTC/Gold prices for context — never bank or portfolio numbers. Turn it off to keep every question on this device.</small>
   </div>
   <div class="zap-ai-row">
    <small id="zapAiStatus">Optional offline brain</small>
@@ -396,11 +423,13 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
  </div>
 </div>
 
+<button type="button" class="v6-back" id="v6Back" hidden>⌂ Back to Home</button>
+
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/os/catalog.js?v=4.16.0"></script>
-<script src="/os/sky.js?v=4.16.0"></script>
-<script src="/os/bank-plaid.js?v=4.16.0"></script>
-<script src="/os/app.min.js?v=4.16.0"></script>
+<script src="/os/catalog.js?v=4.17.0"></script>
+<script src="/os/sky.js?v=4.17.0"></script>
+<script src="/os/bank-plaid.js?v=4.17.0"></script>
+<script src="/os/app.min.js?v=4.17.0"></script>
 </body>
 </html>
