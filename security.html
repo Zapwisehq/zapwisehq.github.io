@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; media-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>Security and trust | Zapwise AI</title>
+<meta name="description" content="How ZAPWISE//OS protects your data: server-side secrets, read-only bank access, data on your device, confirm-first actions and how to disconnect.">
+<!-- GO-PUBLIC SWITCH: keep "noindex,follow" until SNOWFALL says "go public", then change to "index,follow" and add this page to /sitemap.xml. -->
+<meta name="robots" content="noindex,follow">
+<link rel="canonical" href="https://zapwiseai.com/security.html">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#070814">
+<meta property="og:type" content="website"><meta property="og:site_name" content="Zapwise AI">
+<meta property="og:title" content="Security and trust | Zapwise AI"><meta property="og:description" content="How ZAPWISE//OS protects your data: server-side secrets, read-only bank access, data on your device, confirm-first actions and how to disconnect.">
+<meta property="og:url" content="https://zapwiseai.com/security.html"><meta property="og:image" content="https://zapwiseai.com/img/og-company.jpg">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:site" content="@Zapwisehq">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon-32.png" sizes="32x32"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<link rel="preload" href="/fonts/rajdhani-700.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/assets/zw.css?v=1">
+</head>
+<body>
+<a class="zw-skip" href="#main">Skip to content</a>
+<header class="zw-hdr"><div class="zw-wrap">
+<a class="zw-logo" href="/" aria-label="Zapwise AI home"><img src="/img/brand/zapwise-logo-v2.svg" alt="Zapwise" width="132" height="30"></a>
+<nav class="zw-nav" aria-label="Main"><a href="/features.html">Product</a><a href="/os/">Live demo</a><a href="/access.html">Get access</a><a href="/shortcuts.html">Learn</a><a href="/shortcuts.html#shop">Shop</a><a href="/shorts/">Shorts</a><a href="/tools.html">Tools</a><a href="/support.html">Support</a></nav>
+<details class="zw-menu"><summary aria-label="Open menu">Menu</summary><nav class="zw-menu-pan" aria-label="Main (mobile)"><a href="/features.html">Product</a><a href="/os/">Live demo</a><a href="/access.html">Get access</a><a href="/shortcuts.html">Learn</a><a href="/shortcuts.html#shop">Shop</a><a href="/shorts/">Shorts</a><a href="/tools.html">Tools</a><a href="/support.html">Support</a></nav></details>
+<a class="zw-btn pri cta" href="/os/">Try <span class="lg">the&nbsp;</span>demo</a>
+</div></header>
+<main id="main"><section class="zw-phead"><div class="zw-wrap"><p class="zw-crumb"><a href="/">Zapwise AI</a> › Security</p><span class="zw-kick">Security</span><h1>Security and <span class="zw-grad">trust</span></h1><p class="zw-lead">Security is part of the product. Here is exactly how ZAPWISE//OS handles your data today, including its limits.</p></div></section><section class="zw-sec tight"><div class="zw-wrap"><div class="zw-prose">
+<h2>How it's built</h2><ul>
+<li><b>No secrets in the app.</b> API keys (Plaid, TomTom traffic) live only as secrets in our Cloudflare Workers. The web app never contains them.</li>
+<li><b>Locked-down pages.</b> ZAPWISE//OS and our company pages use a Content Security Policy that only allows scripts from this site and network requests to the services listed in ZAP Connect.</li>
+<li><b>Rate limits.</b> Our bank and traffic Workers limit requests per address and reject unexpected requests.</li>
+<li><b>Static hosting.</b> The site is static files on GitHub Pages over HTTPS. There's no ZAPWISE database of users.</li>
+</ul>
+<h2>Your data</h2><ul>
+<li><b>On your device.</b> Notes, reminders, lists, saved places, prices you type, settings and the calendar file you import are saved in your browser's storage.</li>
+<li><b>What leaves your device.</b> Only what a feature needs: your location (or city) to the weather and map services, map tiles, and your question to the online AI model while Online answers is on. ZAP Connect lists each one.</li>
+<li><b>Bank (closed beta).</b> Read-only through Plaid. You sign in to your bank on Plaid's screen; ZAPWISE never sees your bank password and can't move money. Bank and portfolio numbers are never sent to the AI.</li>
+<li><b>No ads or trackers.</b> No analytics, ad networks or tracking pixels.</li>
+</ul>
+<h2>You stay in control</h2><ul>
+<li>Every consequential action asks first, and hand-offs to other apps say “Opened”, not “Done”.</li>
+<li>ZAP Connect lets you switch off or forget each service. Clearing this site's data in your browser removes everything ZAPWISE saved.</li>
+<li>ZAPWISE never claims an integration works when it doesn't. Unavailable services are labeled “not connected”.</li>
+</ul>
+<h2>Known limits</h2><ul>
+<li>GitHub Pages can't send custom security headers, so our Content Security Policy is set in each page instead (this can't block other sites from framing a page).</li>
+<li>Data saved in your browser is only as safe as the device and browser. Use a screen lock, and don't use ZAPWISE on shared computers for personal data.</li>
+<li>There are no accounts yet, so there's no remote “delete my account”: your data is on your device, and bank links on our server are removed when you email us.</li>
+</ul>
+<h2>Report a security issue</h2>
+<p>Email <a href="mailto:zapwisehq@gmail.com?subject=Security%20report">zapwisehq@gmail.com</a> with the subject “Security report”. Please don't test against other people's data or publish details before we've fixed the issue.</p>
+<p class="zw-small">See also: <a href="/privacy.html">Privacy Policy</a> · <a href="/support.html">Support</a></p>
+</div></div></section></main><footer class="zw-ftr"><div class="zw-wrap">
+<div class="zw-fcols">
+<div><a class="zw-logo" href="/" aria-label="Zapwise AI home"><img src="/img/brand/zapwise-logo-v2.svg" alt="Zapwise" width="132" height="30" loading="lazy"></a>
+<p class="zw-small zw-ftag">Your connected digital command center. Less searching. Less switching. Less effort. More doing.</p>
+<div class="zw-soc"><a href="https://www.youtube.com/@Zapwisehq"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="1.5" y="5" width="21" height="14" rx="4.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M10 9.2v5.6l5-2.8z" fill="currentColor"/></svg><span>YouTube</span></a><a href="https://x.com/Zapwisehq" aria-label="Zapwise on X (@Zapwisehq)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.8 3h3.1l-6.8 7.8L22 21h-6.2l-4.9-6.4L5.3 21H2.2l7.3-8.3L2 3h6.4l4.4 5.8zm-1.1 16.2h1.7L7.4 4.7H5.6z" fill="currentColor"/></svg><span>X</span></a></div></div>
+<div><h2>ZAPWISE</h2><ul><li><a href="/features.html">Product overview</a></li><li><a href="/os/">Live demo</a></li><li><a href="/access.html">Get access</a></li><li><a href="/os/get/">Every device</a></li></ul></div>
+<div><h2>Learn</h2><ul><li><a href="/shortcuts.html">AI shortcuts hub</a></li><li><a href="/shorts/">Shorts</a></li><li><a href="/ai-shortcuts-for-work.html">AI shortcuts for work</a></li><li><a href="/ai-hacks-for-work.html">AI hacks for work</a></li><li><a href="/spreadsheet-formula-shortcuts.html">Spreadsheet formulas</a></li><li><a href="/ai-prompt-builder.html">Shortcut Builder</a></li><li><a href="/tools.html">AI tools</a></li></ul></div>
+<div><h2>Shop</h2><ul><li><a href="https://payhip.com/b/62aMn?utm_source=website&utm_medium=footer_company&utm_campaign=shop">Free 10 prompts</a></li><li><a href="/shortcuts.html#shop">All guides</a></li><li><a href="/p/bundle.html">4-PDF Bundle</a></li></ul></div>
+<div><h2>Company</h2><ul><li><a href="/#about">About</a></li><li><a href="/shortcuts.html#how-we-test">How we test</a></li><li><a href="/work-with-us.html">Work with us</a></li><li><a href="/work-with-us.html#affiliates">Affiliate program</a></li></ul></div>
+<div><h2>Support</h2><ul><li><a href="/support.html">Support &amp; contact</a></li><li><a href="/security.html">Security</a></li><li><a href="/privacy.html">Privacy</a></li><li><a href="/terms.html">Terms</a></li><li><a href="/affiliate-disclosure.html">Affiliate disclosure</a></li><li><a href="/corrections.html">Corrections</a></li></ul></div>
+</div>
+<div class="zw-fbot">
+<p>© 2026 Zapwise AI. ZAPWISE and ZAPWISE//OS are original Zapwise AI products. Zapwise AI isn't affiliated with the companies whose apps and services ZAPWISE//OS links to; their names belong to their owners.</p>
+<p>Zapwise has no token or coin. Anything claiming to be one is not affiliated with us. Contact: <a href="mailto:zapwisehq@gmail.com">zapwisehq@gmail.com</a></p>
+</div>
+</div></footer>
+<script src="/assets/zw.js?v=1" defer></script>
+</body>
+</html>

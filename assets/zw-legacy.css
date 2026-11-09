@@ -1,0 +1,66 @@
+/* ZAPWISE design system — bridge for older pages (Learn hub, guides, Shorts, products, policies).
+   Gives them the shared header and the OS colors without rewriting each page. Tokens: docs-internal/design-system.md */
+@font-face{font-family:"Rajdhani";font-weight:600;font-display:swap;src:url(/fonts/rajdhani-600.woff2) format("woff2")}
+@font-face{font-family:"Rajdhani";font-weight:700;font-display:swap;src:url(/fonts/rajdhani-700.woff2) format("woff2")}
+@font-face{font-family:"Inter";font-weight:100 900;font-display:swap;src:url(/fonts/inter.woff2) format("woff2")}
+:root{
+  --zw-bg:#070814;--zw-bg-2:#0b1026;--zw-surface:rgba(14,18,38,.72);--zw-surface-2:rgba(20,24,48,.86);
+  --zw-line:rgba(160,210,255,.14);--zw-line-2:rgba(160,210,255,.26);
+  --zw-ink:#e9f6ff;--zw-dim:#9fb3c8;--zw-faint:#7c8ea3;
+  --zw-cyan:#05d9e8;--zw-cyan-soft:#5ce1e6;--zw-purple:#b26bff;--zw-magenta:#ff4fd8;
+  --zw-ok:#3ddc97;--zw-warn:#ffb020;--zw-bad:#ff5c7a;
+  --zw-on-cyan:#041016;
+  --zw-font:"Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --zw-head:"Rajdhani","Inter",system-ui,sans-serif;
+  --zw-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --zw-r-sm:10px;--zw-r:16px;--zw-r-lg:24px;--zw-pill:999px;
+  --zw-s1:4px;--zw-s2:8px;--zw-s3:12px;--zw-s4:16px;--zw-s5:24px;--zw-s6:32px;--zw-s7:48px;--zw-s8:72px;
+  --zw-glow:0 0 0 1px rgba(5,217,232,.35),0 8px 28px rgba(5,217,232,.18);
+  --zw-shadow:0 10px 40px rgba(0,0,0,.35);
+  --zw-ease:cubic-bezier(.2,.7,.2,1);--zw-dur:.22s;
+  --zw-max:1180px;--zw-tap:44px;
+}
+.zw-hdr{position:sticky;top:0;z-index:50;background:rgba(7,8,20,.82);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--zw-line)}
+.zw-hdr .zw-wrap{display:flex;align-items:center;gap:var(--zw-s4);min-height:64px}
+.zw-logo{display:inline-flex;align-items:center;min-height:var(--zw-tap)}
+.zw-logo img{width:132px;height:auto}
+.zw-nav{display:flex;gap:2px;margin-left:auto;align-items:center}
+.zw-nav a{color:var(--zw-ink);text-decoration:none;font:600 1rem/1 var(--zw-head);letter-spacing:.06em;text-transform:uppercase;padding:0 12px;min-height:var(--zw-tap);display:inline-flex;align-items:center;border-radius:var(--zw-r-sm)}
+.zw-nav a:hover,.zw-nav a[aria-current=page]{background:rgba(5,217,232,.1);color:#fff}
+.zw-nav a[aria-current=page]{box-shadow:inset 0 -2px 0 var(--zw-cyan)}
+.zw-menu{display:none;margin-left:auto}
+.zw-menu summary{list-style:none;cursor:pointer;min-height:var(--zw-tap);min-width:var(--zw-tap);display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--zw-line-2);border-radius:var(--zw-r-sm);padding:0 14px;font:600 .95rem/1 var(--zw-head);letter-spacing:.08em;text-transform:uppercase}
+.zw-menu summary::-webkit-details-marker{display:none}
+.zw-menu[open] .zw-menu-pan{display:flex}
+.zw-menu-pan{display:none;flex-direction:column;position:absolute;left:0;right:0;top:64px;background:rgba(9,11,26,.97);border-bottom:1px solid var(--zw-line);padding:8px max(20px,env(safe-area-inset-left)) 16px;max-height:calc(100vh - 64px);overflow:auto}
+.zw-menu-pan a{color:var(--zw-ink);text-decoration:none;padding:12px 4px;min-height:var(--zw-tap);border-bottom:1px solid var(--zw-line);font:600 1.1rem/1.2 var(--zw-head);letter-spacing:.05em;text-transform:uppercase}
+.zw-menu-pan a[aria-current=page]{color:var(--zw-cyan)}
+@media (max-width:1060px){.zw-nav{display:none}.zw-menu{display:block}.zw-hdr .zw-btn.cta{margin-left:0}}
+@media (max-width:420px){.zw-hdr .zw-btn.cta span.lg{display:none}}
+.zw-btn{white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:var(--zw-tap);padding:0 20px;border-radius:var(--zw-pill);font:700 1rem/1 var(--zw-head);letter-spacing:.08em;text-transform:uppercase;text-decoration:none;border:1px solid var(--zw-line-2);color:var(--zw-ink);background:rgba(255,255,255,.03);transition:transform var(--zw-dur) var(--zw-ease),background var(--zw-dur),box-shadow var(--zw-dur);cursor:pointer}
+.zw-btn:hover{background:rgba(255,255,255,.08);color:#fff;transform:translateY(-1px)}
+.zw-btn.pri{background:var(--zw-cyan);color:var(--zw-on-cyan);border-color:transparent;box-shadow:var(--zw-glow)}
+.zw-btn.pri:hover{background:#3ee8f3;color:var(--zw-on-cyan)}
+.zw-btn.sec{border-color:rgba(178,107,255,.55);background:rgba(178,107,255,.12)}
+.zw-btn.lg{min-height:54px;padding:0 26px;font-size:1.1rem}
+.zw-row{display:flex;flex-wrap:wrap;gap:var(--zw-s3);align-items:center}
+/* shared header on older pages */
+header.zw-hdr{position:sticky!important;top:0;z-index:60;background:rgba(7,8,20,.86)!important;border-bottom:1px solid var(--zw-line)!important;box-shadow:none!important;font-family:var(--zw-font)}
+header.zw-hdr .zw-wrap{max-width:var(--zw-max);margin:0 auto;padding:0 max(20px,env(safe-area-inset-left));display:flex;align-items:center;gap:16px;min-height:64px}
+header.zw-hdr a{text-shadow:none}
+header.zw-hdr .zw-btn.pri{color:var(--zw-on-cyan)!important;background:var(--zw-cyan)!important;clip-path:none!important;filter:none!important}
+.zw-skip{position:absolute;left:-999px;top:8px;background:var(--zw-cyan);color:var(--zw-on-cyan);padding:10px 14px;border-radius:8px;z-index:100;font-weight:600}
+.zw-skip:focus{left:8px}
+/* calmer: no heading scramble, no boot sweep */
+.hxo{display:none!important}.hxdg{color:inherit!important}
+.boot{display:none!important}
+h1,h2{font-family:"Rajdhani","Chakra Petch",system-ui,sans-serif;letter-spacing:.01em}
+::selection{background:#b26bff;color:#070814}
+.zw-lcrumb{max-width:var(--zw-max);margin:10px auto 0;padding:0 max(20px,env(safe-area-inset-left));font:500 .85rem/1.4 var(--zw-mono);color:var(--zw-faint)}.zw-lcrumb a{color:var(--zw-dim)}
+header.zw-hdr .zw-nav a{font:600 15px/1 var(--zw-head)!important;letter-spacing:.06em!important;padding:0 10px!important;white-space:nowrap;text-transform:uppercase;color:var(--zw-ink)!important;background:none}
+header.zw-hdr .zw-nav a:hover,header.zw-hdr .zw-nav a[aria-current=page]{background:rgba(5,217,232,.1)!important;color:#fff!important}
+header.zw-hdr .zw-nav a::before,header.zw-hdr .zw-nav a::after{content:none!important}
+header.zw-hdr .zw-btn{font:700 15px/1 var(--zw-head)!important;letter-spacing:.08em!important}
+header.zw-hdr .zw-menu summary{font:600 15px/1 var(--zw-head)!important;color:var(--zw-ink)}
+header.zw-hdr .zw-menu-pan a{font:600 17px/1.2 var(--zw-head)!important;color:var(--zw-ink)!important}
+header.zw-hdr .zw-logo img{width:132px;height:auto}

@@ -2,3 +2,5 @@ Chakra Petch (c) The Chakra Petch Project Authors (Cadson Demak), Inter (c) The 
 Space Grotesk (c) The Space Grotesk Project Authors and JetBrains Mono (c) The JetBrains Mono Project Authors.
 All licensed under the SIL Open Font License 1.1: https://openfontlicense.org
 Files here are Latin subsets converted to WOFF2.
+Rajdhani (c) Indian Type Foundry, licensed under the SIL Open Font License 1.1: https://openfontlicense.org
+(rajdhani-600/700.woff2 are copies of the files used by ZAPWISE//OS in /os/fonts/.)
