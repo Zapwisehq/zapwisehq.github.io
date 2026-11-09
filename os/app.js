@@ -1,7 +1,7 @@
 /* ZAPWISE//OS web app v4.13.2 (Nov 5, 2026). Equal-height desktop Focus/Phone. Plaid-only Bank. Motion toggle. No tabs. Source: edit app.js → build.sh → app.min.js. */
 (function () {
 "use strict";
-var VERSION = '4.20.0';
+var VERSION = '4.21.0';
 var APP_VERSION = VERSION;
 
 // v4.5: default Lite on coarse/mobile unless user already chose
@@ -246,7 +246,7 @@ function clone(o) { return o == null ? o : JSON.parse(JSON.stringify(o)); }
 var Store = (function () {
   var STATE_KEY = "zapos.state", DEVICE_KEY = "zapos.device", VER = 1;
   var PREF_KEYS = ["settings", "theme", "apps", "coins", "loc", "favs", "places", "holdings", "broker", "wallets", "accounts", "assistant"];                     // shared state (sync-ready)
-  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss", "mediaKey", "skipBoot", "bootDay", "uiSounds", "recentPins", "wxDay", "wxMode", "wxMode2", "portHist", "acctMigrated", "liteMode", "tiltCards", "motionTilt", "callLog", "zapChat", "focusStats", "wallpaper", "zapNotes", "zapReminders", "uiMotion", "welcomeSeen", "bankPrivacy", "mapTraffic", "bankManualCleared_v413", "searchProv", "focusCustom", "v5AppsOpen", "quickActions", "sugState", "v6lists", "v6List", "v6ha", "v6compare", "v6cal"]; // this device only
+  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss", "mediaKey", "skipBoot", "bootDay", "uiSounds", "recentPins", "wxDay", "wxMode", "wxMode2", "portHist", "acctMigrated", "liteMode", "tiltCards", "motionTilt", "callLog", "zapChat", "focusStats", "wallpaper", "zapNotes", "zapReminders", "uiMotion", "welcomeSeen", "bankPrivacy", "mapTraffic", "bankManualCleared_v413", "searchProv", "focusCustom", "v5AppsOpen", "quickActions", "sugState", "v6lists", "v6List", "v6ha", "v6compare", "v6cal", "zaLog", "dash"]; // this device only
   function read(k) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
   function write(k, v) { if (dead) return false; try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
   var state = read(STATE_KEY), dev = read(DEVICE_KEY), subs = [], uiT = null, dead = false; // dead: after a reset, write nothing more
@@ -6668,7 +6668,7 @@ function routeZapIntent(raw) {
   var q = String(raw || "").trim().toLowerCase();
   var orig = String(raw || "").trim();
   if (!q) return { skill: "help", text: HELP_TEXT };
-  var _rt = zapRoutine(q, orig); if (_rt) return _rt;
+  var _rt = zapRoutine(q, orig) || zaIntent(q, orig); if (_rt) return _rt;
 
   // Exact FAQ / greetings only
   if (/^(hi|hello|hey|yo|sup|good (morning|afternoon|evening))[!?.]*$/.test(q) ||
@@ -8033,6 +8033,13 @@ document.addEventListener("keydown", function (e) {
     theme: { n: "Theme", ic: "◐", run: function () { openTheme(); } },
     tour: { n: "Page tour", ic: "?", run: function () { startTour(); } }
   };
+  /* v4.21: Quick Actions run through the shared ZAP ACTIONS registry */
+  var QA_MAP = { focus: "focus.start", home: "nav.home", work: "nav.work", weather: "weather.show", zap: "zap.ask", music: "media.open", bank: "bank.refresh", portfolio: "portfolio.open", calendar: "cal.agenda" };
+  Object.keys(QA_MAP).forEach(function (k) { if (QA[k]) QA[k].run = function () { zaRun(QA_MAP[k]); }; });
+  QA.event = { n: "New calendar event", ic: "▦", run: function () { zaRun("cal.event"); } };
+  QA.reminder = { n: "Save a reminder", ic: "⏰", run: function () { zaRun("reminder.add"); } };
+  QA.shop = { n: "Shop", ic: "🛍", run: function () { zaRun("shop.search"); } };
+  QA.connect = { n: "ZAP Connect", ic: "⇄", run: function () { zaRun("connect.open"); } };
   var QA_DEFAULT = ["focus", "home", "work", "weather", "zap", "music", "bank", "portfolio"];
   function qaList() { var l = Store.getLocal("quickActions", null); if (!Array.isArray(l)) l = QA_DEFAULT.slice(); return l.filter(function (k) { return QA[k]; }); }
   function runQA(k) { var a = QA[k]; if (!a) return; try { closeSheet(); } catch (e) {} setTimeout(function () { try { a.run(); } catch (e2) {} }, 80); }
@@ -8178,9 +8185,10 @@ document.addEventListener("keydown", function (e) {
     var out = [];
     try { loadPlaces().forEach(function (p) { if (norm(p.name).indexOf(q) >= 0) out.push({ k: "place", label: p.name, sub: "PLACE · DIRECTIONS", run: function () { openDirectionsTo(p); } }); }); } catch (e) {}
     try { zapLoadNotes().forEach(function (n) { if (norm(n.t).indexOf(q) >= 0 && out.length < 12) out.push({ k: "note", label: n.t, sub: "NOTE", run: function () { openZap("list notes"); } }); }); } catch (e2) {}
-    Object.keys(QA).forEach(function (k) { if (norm(QA[k].n).indexOf(q) >= 0 || norm(k).indexOf(q) === 0) out.push({ k: "cmd", label: QA[k].n, sub: "COMMAND", run: function () { QA[k].run(); } }); });
-    out.push({ k: "zap", label: "Ask ZAP AI: “" + String(inp.value).trim().slice(0, 40) + "”", sub: "ZAP AI", run: function () { openZap(String(inp.value).trim()); } });
-    return out.slice(0, 10);
+    out.forEach(function (o) { if (o.k === "place") o.sub = "SAVED PLACE · OPENS DIRECTIONS IN YOUR MAPS APP"; if (o.k === "note") o.sub = "NOTE · ON THIS DEVICE"; });
+    try { out = out.concat(zaSearchExtras(q, inp.value)); } catch (eX) {}
+    out.push({ k: "zap", label: "Ask ZAP AI: “" + String(inp.value).trim().slice(0, 40) + "”", sub: "AI QUESTION · " + (v6SmartOn() ? "ANSWERED ONLINE (POLLINATIONS) UNLESS IT’S A COMMAND" : "ANSWERED ON THIS DEVICE"), run: function () { zaRun("zap.ask", { q: String(inp.value).trim() }); } });
+    return out.slice(0, 14);
   }
   function augment() {
     if (busy || !drop || !inp || drop.hidden) return;
@@ -8190,7 +8198,7 @@ document.addEventListener("keydown", function (e) {
       uHits = uResults(inp.value);
       if (uHits.length) {
         var sec = document.createElement("div"); sec.className = "u-sec";
-        sec.innerHTML = '<div class="u-h">PLACES · NOTES · COMMANDS</div>' + uHits.map(function (h, i) {
+        sec.innerHTML = '<div class="u-h">PLACES · NOTES · ACTIONS · PRODUCTS · WEB · AI</div>' + uHits.map(function (h, i) {
           return '<button type="button" class="srch-item u-item" role="option" data-u="' + i + '"><span class="u-ic u-' + h.k + '" aria-hidden="true"></span><span class="meta"><b>' + esc(h.label) + "</b><small>" + esc(h.sub) + "</small></span></button>";
         }).join("");
         drop.appendChild(sec);
@@ -8588,7 +8596,7 @@ function v6Smart() {
   host.addEventListener("click", function (e) {
     var it = e.target.closest(".v6-item"); if (!it) return;
     if (Date.now() - suppress < 350) { e.preventDefault(); return; }
-    v6OpenDest(it.getAttribute("data-dest"));
+    zaRun("dest." + it.getAttribute("data-dest"));
     setCur(+it.getAttribute("data-i"), false, true);
   });
   if (tog) tog.addEventListener("click", function () { list = !list; Store.setLocal("v6List", list); layout(); });
@@ -8843,5 +8851,136 @@ function openConnect() {
   v6PaintSmartState();
   window.ZAPOS = window.ZAPOS || {}; window.ZAPOS.openConnect = openConnect; window.ZAPOS.services = v6Services;
 })();
+
+/* ========== v4.21 ZAP ACTIONS: one action registry for search, ZAP AI, Quick Actions, the orbit and TV ==========
+   Each action says what kind it is: "device" (done here), "handoff" (opens another app/site — never reported as completed)
+   or "prepare" (makes something you finish yourself, like a calendar file). confirm:true asks first. */
+var _ZA = null;
+function zaDefs() {
+  if (_ZA) return _ZA;
+  function place(rx) { return v6Place(rx); }
+  _ZA = {
+    "focus.start": { n: "Start focus", ic: "◔", kind: "device", run: function (a) { var m = (a && a.mins) || FOC.mins || 25; if (FOC.st === "run") return { status: "done", msg: "Focus is already running" }; FOC = { st: "idle", mins: m }; Store.setLocal("focus", FOC); focusToggle(); v6GoCard("mFocus"); return { status: "done", msg: m + "-minute focus started" }; } },
+    "reminder.add": { n: "Save a reminder", ic: "⏰", kind: "device", confirm: function (a) { return "Save reminder “" + (a.text || "").slice(0, 80) + "” on this device? It won’t send phone alerts."; }, run: function (a) { if (!a || !a.text) { zaPrefillZap("remind me to "); return { status: "cancelled" }; } var r = zapLoadReminders(); r.unshift({ t: String(a.text).slice(0, 160), at: Date.now() }); zapSaveReminders(r); return { status: "done", msg: "Reminder saved on this device" }; } },
+    "note.add": { n: "Save a note", ic: "✎", kind: "device", confirm: function (a) { return "Save this note on this device: “" + (a.text || "").slice(0, 80) + "”?"; }, run: function (a) { if (!a || !a.text) { zaPrefillZap("add note "); return { status: "cancelled" }; } var n = zapLoadNotes(); n.unshift({ t: String(a.text).slice(0, 160), at: Date.now() }); zapSaveNotes(n); return { status: "done", msg: "Note saved" }; } },
+    "cal.event": { n: "Prepare a calendar event", ic: "▦", kind: "prepare", run: function (a) { zaEventSheet(a || {}); return { status: "opened" }; } },
+    "cal.agenda": { n: "Today’s agenda", ic: "▦", kind: "device", run: function () { v6Agenda(); return { status: "done" }; } },
+    "search.web": { n: "Search the web", ic: "⌕", kind: "handoff", run: function (a) { if (!a || !a.q) { v6GoHome(); setTimeout(function () { var i = $("#srchQ"); if (i) i.focus(); }, 300); return { status: "cancelled" }; } go(webSearchUrl(a.q)); return { status: "handoff", msg: "Opened " + searchProv().name + " — results are there" }; } },
+    "site.open": { n: "Open website", ic: "↗", kind: "handoff", run: function (a) { var u = zaSafeUrl(a && a.url); if (!u) return { status: "failed", msg: "That isn’t a valid web address" }; go(u); return { status: "handoff", msg: "Opened " + u.replace(/^https:\/\//, "").slice(0, 40) }; } },
+    "nav.place": { n: "Directions to a saved place", ic: "➤", kind: "handoff", run: function (a) { var p = a && a.place; if (!p) return { status: "failed", msg: "Save the place in Navigate first" }; openDirectionsTo(p); return { status: "handoff", msg: "Opened your maps app with directions to " + (p.name || "the place") }; } },
+    "nav.home": { n: "Take me home", ic: "⌂", kind: "handoff", run: function () { var p = place(/home|house/i); if (!p) { v6GoCard("panelNav"); return { status: "failed", msg: "Add Home in Navigate → ＋ ADD first" }; } openDirectionsTo(p); return { status: "handoff", msg: "Opened your maps app with directions home" }; } },
+    "nav.work": { n: "Directions to Work", ic: "▣", kind: "handoff", run: function () { var p = place(/work|office/i); if (!p) { v6GoCard("panelNav"); return { status: "failed", msg: "Add Work in Navigate → ＋ ADD first" }; } openDirectionsTo(p); return { status: "handoff", msg: "Opened your maps app with directions to Work" }; } },
+    "nav.search": { n: "Find on the map", ic: "⌖", kind: "handoff", run: function (a) { var q = (a && a.q) || ""; go((IOS ? "https://maps.apple.com/?q=" : "https://www.google.com/maps/search/") + encodeURIComponent(q)); return { status: "handoff", msg: "Opened maps for “" + q.slice(0, 30) + "”" }; } },
+    "media.open": { n: "Play music", ic: "♪", kind: "handoff", run: function () { var m = currentMedia(); openApp(m); return { status: "handoff", msg: "Opened " + m.name + " — playback happens there" }; } },
+    "shop.search": { n: "Shop", ic: "🛍", kind: "device", run: function (a) { v6OpenDest("shop", { q: a && a.q }); return { status: "done" }; } },
+    "watch.search": { n: "Find something to watch", ic: "▶", kind: "device", run: function (a) { v6OpenDest("watch", { q: a && a.q }); return { status: "done" }; } },
+    "food.search": { n: "Find food", ic: "🍴", kind: "device", run: function (a) { v6OpenDest("food", { q: a && a.q }); return { status: "done" }; } },
+    "app.open": { n: "Open an app", ic: "▦", kind: "handoff", run: function (a) { if (!a || !a.app) { try { window.ZAPOS.openAppsSheet(); } catch (e) {} return { status: "cancelled" }; } openApp(a.app); return { status: "handoff", msg: "Opened " + (a.app.name || "the app") }; } },
+    "weather.show": { n: "Weather detail", ic: "☁", kind: "device", run: function () { toggleXp("wx"); return { status: "done" }; } },
+    "bank.refresh": { n: "Refresh balances", ic: "$", kind: "device", run: function () { if (!bankDeviceReady()) { location.href = "/os/link/"; return { status: "handoff", msg: "Opening bank link" }; } refreshBankAccountsFromLink({ refresh: true }).then(function () { toast("Balances updated"); }, function () { toast("Couldn’t refresh — showing saved balances"); }); return { status: "pending", msg: "Refreshing balances…" }; } },
+    "portfolio.open": { n: "Portfolio", ic: "↗", kind: "device", run: function () { openCardDetail("mk", { fromUser: true }); return { status: "done" }; } },
+    "connect.open": { n: "ZAP Connect", ic: "⇄", kind: "device", run: function () { openConnect(); return { status: "done" }; } },
+    "zap.ask": { n: "Ask ZAP AI", ic: "✦", kind: "device", run: function (a) { openZapAssistant(); if (a && a.q) setTimeout(function () { try { zapHandle(a.q); } catch (e) {} }, 250); return { status: "done" }; } },
+    "dash.edit": { n: "Customize dashboard", ic: "⚙", kind: "device", run: function () { try { openDashEdit(); } catch (e) { toast("Not available"); } return { status: "done" }; } }
+  };
+  V6_DEST.forEach(function (d) { _ZA["dest." + d.id] = { n: d.n, ic: "◎", kind: "device", run: function (a) { v6OpenDest(d.id, a || {}); return { status: "done" }; } }; });
+  return _ZA;
+}
+function zaPrefillZap(t) { openZapAssistant(); setTimeout(function () { var i = $("#zapIn"); if (i) { i.value = t; i.focus(); } }, 120); }
+function zaSafeUrl(u) {
+  u = String(u || "").trim(); if (!u) return "";
+  if (!/^https?:\/\//i.test(u)) u = "https://" + u;
+  try { var x = new URL(u); if (!/^https?:$/.test(x.protocol) || !/\./.test(x.hostname) || /\s/.test(u)) return ""; return x.protocol === "http:" ? "https://" + x.host + x.pathname + x.search : x.href; } catch (e) { return ""; }
+}
+function zaConfirm(text, yes) {
+  sheet("CONFIRM", '<div class="v6-dest"><p class="v6-lead">' + esc(text) + '</p><div class="v6-row"><button type="button" class="chip accent" id="zaYes">Confirm</button><button type="button" class="chip" id="zaNo">Cancel</button></div></div>', function (b) {
+    b.querySelector("#zaYes").addEventListener("click", function () { closeSheet(); setTimeout(yes, 60); });
+    b.querySelector("#zaNo").addEventListener("click", function () { closeSheet(); toast("Cancelled — nothing changed"); });
+    setTimeout(function () { try { b.querySelector("#zaYes").focus(); } catch (e) {} }, 60);
+  });
+}
+/* the one entry point: run(id, args, {source}) → reports honestly what happened */
+function zaRun(id, args, opt) {
+  opt = opt || {};
+  var d = zaDefs()[id]; if (!d) { toast("Unknown action"); return; }
+  function go2() {
+    var r; try { r = d.run(args || {}) || { status: "done" }; } catch (e) { r = { status: "failed", msg: "That didn’t work — try again" }; }
+    if (r.msg && !opt.quiet) toast(r.msg);
+    try { var log = Store.getLocal("zaLog", null) || []; log.unshift({ id: id, s: r.status, at: Date.now() }); Store.setLocal("zaLog", log.slice(0, 30)); } catch (eL) {}
+    return r;
+  }
+  if (d.confirm && !opt.confirmed) { zaConfirm(typeof d.confirm === "function" ? d.confirm(args || {}) : String(d.confirm), go2); return { status: "asking" }; }
+  return go2();
+}
+function zaLabel(id) { var d = zaDefs()[id]; return d ? d.n : id; }
+function zaKindTag(id) { var d = zaDefs()[id]; if (!d) return ""; return d.kind === "handoff" ? "OPENS ANOTHER APP" : (d.kind === "prepare" ? "YOU FINISH IT" : "ON THIS DEVICE"); }
+/* calendar event → .ics file you add yourself (ZAPWISE can’t write to your calendar) */
+function zaIcsStamp(d) { return d.getUTCFullYear() + pad2(d.getUTCMonth() + 1) + pad2(d.getUTCDate()) + "T" + pad2(d.getUTCHours()) + pad2(d.getUTCMinutes()) + "00Z"; }
+function zaIcsEsc(s) { return String(s || "").replace(/[\\;,]/g, function (c) { return "\\" + c; }).replace(/\r?\n/g, "\\n"); }
+function zaMakeIcs(title, start, mins, loc) {
+  var end = new Date(start.getTime() + mins * 60000);
+  return ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//ZAPWISE//OS//EN", "BEGIN:VEVENT", "UID:" + Date.now() + "-" + Math.random().toString(36).slice(2) + "@zapwiseai.com", "DTSTAMP:" + zaIcsStamp(new Date()), "DTSTART:" + zaIcsStamp(start), "DTEND:" + zaIcsStamp(end), "SUMMARY:" + zaIcsEsc(title)].concat(loc ? ["LOCATION:" + zaIcsEsc(loc)] : []).concat(["END:VEVENT", "END:VCALENDAR"]).join("\r\n");
+}
+function zaParseWhen(q) {
+  var d = new Date(), out = {};
+  if (/\btomorrow\b/.test(q)) d.setDate(d.getDate() + 1);
+  var wd = q.match(/\b(sun|mon|tue|wed|thu|fri|sat)[a-z]*\b/); if (wd && !/\btomorrow|today\b/.test(q)) { var tgt = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"].indexOf(wd[1]); var add = (tgt - d.getDay() + 7) % 7 || 7; d.setDate(d.getDate() + add); }
+  var tm = q.match(/\b(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/) || q.match(/\bat\s+(\d{1,2})(?::(\d{2}))\b/);
+  if (tm) { var h = +tm[1] % 12; if (tm[3] === "pm") h += 12; if (!tm[3]) h = +tm[1]; d.setHours(h, +(tm[2] || 0), 0, 0); out.time = true; }
+  out.date = d; return out;
+}
+function zaEventSheet(a) {
+  var w = a.when || new Date(Date.now() + 36e5); var dv = w.getFullYear() + "-" + pad2(w.getMonth() + 1) + "-" + pad2(w.getDate()), tv = pad2(w.getHours()) + ":" + pad2(a.hasTime ? w.getMinutes() : 0);
+  var html = '<form class="v6-dest" id="zaEvF" autocomplete="off"><p class="v6-lead">ZAPWISE can’t write to your calendar, so it prepares a calendar file. Open it and your phone or computer asks where to add it.</p>' +
+    '<label class="v6-fl">Title<input id="zaEvT" maxlength="100" required value="' + esc(a.title || "") + '"></label>' +
+    '<div class="v6-row"><label class="v6-fl">Date<input id="zaEvD" type="date" required value="' + dv + '"></label><label class="v6-fl">Time<input id="zaEvH" type="time" required value="' + tv + '"></label><label class="v6-fl">Minutes<input id="zaEvM" type="number" min="5" max="1440" step="5" value="' + (a.mins || 60) + '"></label></div>' +
+    '<label class="v6-fl">Location (optional)<input id="zaEvL" maxlength="120" value="' + esc(a.loc || "") + '"></label>' +
+    '<div class="v6-row"><button type="submit" class="chip accent">Prepare calendar file</button><button type="button" class="v6-home-btn" data-v6-home="1">⌂ Back to Home</button></div></form>';
+  sheet("NEW EVENT", html, function (b) {
+    b.addEventListener("click", function (e) { if (e.target.closest("[data-v6-home]")) v6GoHome(); });
+    b.querySelector("#zaEvF").addEventListener("submit", function (e) {
+      e.preventDefault();
+      var t = b.querySelector("#zaEvT").value.trim(), dd = b.querySelector("#zaEvD").value, hh = b.querySelector("#zaEvH").value, mm = Math.max(5, Math.min(1440, +b.querySelector("#zaEvM").value || 60)), loc = b.querySelector("#zaEvL").value.trim();
+      var m = dd.match(/^(\d{4})-(\d{2})-(\d{2})$/), h = hh.match(/^(\d{2}):(\d{2})$/);
+      if (!t || !m || !h) { toast("Add a title, date and time"); return; }
+      var st = new Date(+m[1], +m[2] - 1, +m[3], +h[1], +h[2]);
+      zaConfirm("Prepare “" + t.slice(0, 60) + "” on " + st.toLocaleDateString() + " at " + v6EvTime({ s: st.getTime() }) + "? You’ll add it to your calendar yourself.", function () {
+        try {
+          var blob = new Blob([zaMakeIcs(t.slice(0, 100), st, mm, loc.slice(0, 120))], { type: "text/calendar" });
+          var url = URL.createObjectURL(blob), aEl = document.createElement("a");
+          aEl.href = url; aEl.download = (t.replace(/[^\w\- ]+/g, "").trim().slice(0, 40) || "event") + ".ics"; document.body.appendChild(aEl); aEl.click();
+          setTimeout(function () { URL.revokeObjectURL(url); aEl.remove(); }, 4000);
+          toast("Calendar file ready — open it to add the event. It isn’t in your calendar until you do.");
+        } catch (eB) { toast("Couldn’t prepare the file"); }
+      });
+    });
+  });
+}
+/* universal search extras: websites, products, map, watch, food, actions, web, AI — each with its next action */
+function zaSearchExtras(q, raw) {
+  var out = [], r = String(raw || "").trim();
+  if (r.length < 2) return out;
+  if (/^(https?:\/\/)?[a-z0-9-]+(\.[a-z0-9-]+)+(\/\S*)?$/i.test(r) && zaSafeUrl(r)) out.push({ k: "web", label: "Open " + r.replace(/^https?:\/\//, "").slice(0, 40), sub: "WEBSITE · OPENS IN BROWSER", run: function () { zaRun("site.open", { url: r }); } });
+  Object.keys(zaDefs()).forEach(function (id) { var d = zaDefs()[id]; if (id.indexOf("dest.") === 0) return; if (d.n.toLowerCase().indexOf(q) >= 0) out.push({ k: "cmd", label: d.n, sub: "ACTION · " + zaKindTag(id), run: function () { zaRun(id); } }); });
+  out.push({ k: "shop", label: "Shop for “" + r.slice(0, 30) + "”", sub: "PRODUCTS · COMPARE STORES (OPENS STORE SEARCH)", run: function () { zaRun("shop.search", { q: r }); } });
+  out.push({ k: "place", label: "Find “" + r.slice(0, 30) + "” on the map", sub: "MAPS · OPENS YOUR MAPS APP", run: function () { zaRun("nav.search", { q: r }); } });
+  out.push({ k: "web", label: "Search " + searchProv().name + " for “" + r.slice(0, 30) + "”", sub: "WEB · OPENS " + searchProv().name.toUpperCase(), run: function () { zaRun("search.web", { q: r }); } });
+  return out;
+}
+/* ZAP AI → actions from natural language */
+function zaIntent(q, orig) {
+  var ev = q.match(/^(?:add|create|make|new|schedule|put)\s+(?:an?\s+)?(?:event|meeting|appointment)\s*(?:called|for|:)?\s*(.*)$/) || q.match(/^schedule\s+(.+)$/);
+  if (ev) {
+    var w = zaParseWhen(q), title = orig.replace(/^(?:add|create|make|new|schedule|put)\s+(?:an?\s+)?(?:event|meeting|appointment)?\s*(?:called|for|:)?\s*/i, "").replace(/\b(today|tomorrow|on\s+\w+day|(?:at\s+)?\d{1,2}(?::\d{2})?\s*(?:am|pm)|at\s+\d{1,2}:\d{2})\b/gi, "").replace(/\s+/g, " ").trim();
+    return { skill: "cal.event", kind: "PREPARES A FILE · YOU ADD IT", text: "I’ll prepare a calendar file for “" + (title || "New event") + "”" + (w.time ? " on " + w.date.toLocaleDateString() + " at " + v6EvTime({ s: w.date.getTime() }) : "") + ". ZAPWISE can’t write to your calendar — you add it.", action: { label: "Review event", run: function () { closeZapAssistant(); zaRun("cal.event", { title: title, when: w.date, hasTime: w.time }); } } };
+  }
+  var wt = q.match(/^(?:watch|stream|where (?:can i|to) watch)\s+(.{2,60})$/);
+  if (wt) return { skill: "watch.search", kind: "NEEDS ANOTHER SERVICE · STREAMING SEARCH", text: "I can’t see what’s streaming where, so Watch opens real searches for “" + wt[1] + "”.", action: { label: "Open Watch", run: function () { closeZapAssistant(); zaRun("watch.search", { q: wt[1] }); } } };
+  var fd = q.match(/^(?:order|i want|i'?m hungry for|get me|find)\s+(?:some\s+)?(pizza|tacos?|sushi|burgers?|wings|thai|chinese|indian|mexican|coffee|breakfast|lunch|dinner|food.*)$/);
+  if (fd) return { skill: "food.search", kind: "NEEDS ANOTHER SERVICE · ORDERING APP", text: "ZAPWISE doesn’t place orders. Food opens restaurants near you and your delivery apps for “" + fd[1] + "”.", action: { label: "Open Food", run: function () { closeZapAssistant(); zaRun("food.search", { q: fd[1] }); } } };
+  var nv = q.match(/^(?:navigate|directions|drive|take me)\s+to\s+(.{2,60})$/);
+  if (nv && !v6Place(new RegExp(nv[1].replace(/[^\w ]/g, ""), "i"))) return { skill: "nav.search", kind: "NEEDS ANOTHER APP · TAP TO CONFIRM", text: "“" + nv[1] + "” isn’t a saved place. I can open your maps app to find it — the route and traffic are shown there.", action: { label: "Open maps for “" + nv[1].slice(0, 24) + "”", run: function () { closeZapAssistant(); zaRun("nav.search", { q: nv[1] }); } } };
+  return null;
+}
 
 })(); /* end ZAPWISE//OS app scope */

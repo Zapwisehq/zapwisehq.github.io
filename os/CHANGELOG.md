@@ -71,3 +71,12 @@ Newest last. Every entry was tested with Playwright (360/390/430/768/1366@1.25/1
 - Available but not connected: Spotify, Google Calendar (live), Home Assistant controls, Apple Music/HomeKit/CarPlay — each says what it would add and what it needs.
 - Online answers: one-tap on/off in Connect and a clear ON/OFF status next to the switch in ZAP AI. With it off, answers are labeled "BUILT-IN HELP ON THIS DEVICE".
 - QA: new qa420 (connect, toggle, labels) + full matrix (`site_tools/regress.sh`).
+
+## v4.21.0 — 2026-11-09 — ZAP Actions
+- One action registry (`zaDefs`/`zaRun`) used by universal search, ZAP AI, Quick Actions and the orbit: focus, reminder, note, calendar event (.ics), agenda, web search, open website, navigate (place/home/work/search), media, shop/watch/food search, apps, weather, bank refresh, portfolio, ZAP Connect, ask ZAP AI, every destination.
+- Every action has a kind: on this device, opens another app (hand-off), or prepares a file. Hand-offs say "Opened …" — never "done".
+- Reminders and notes save only after a tap; calendar events go through a form + confirmation and download as an .ics file ("isn’t in your calendar until you open it").
+- Universal search shows websites, matching actions, "Shop for…", "Find on the map", web search and an AI question, each with its next action label.
+- ZAP AI understands "add event … tomorrow at 3pm", "watch …", "order/find … food", "navigate to <any place>".
+- Local action log (last 50, on this device only).
+- QA: qa421 (website/product/map/web/AI results, handoff wording, quick actions via registry, event form → confirm → .ics content, reminder only after tap, orbit via registry) + full regression matrix.

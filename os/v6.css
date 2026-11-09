@@ -166,3 +166,6 @@
 .v6-svc dd{margin:0;color:var(--v6-ink)}
 .v6-svc-err{margin:0;color:#ffb547;font-size:13px}
 #zapSmartState{margin-left:8px}
+/* v4.21 actions */
+.u-ic.u-web::before{content:"↗"}.u-ic.u-shop::before{content:"🛍"}
+.v6-row .v6-fl{flex:1;min-width:110px}
