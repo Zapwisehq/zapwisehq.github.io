@@ -116,3 +116,32 @@ Newest last. Every entry was tested with Playwright (360/390/430/768/1366@1.25/1
 - Investments card: LINKED ACCOUNTS · PLAID — real value, accounts, top holdings, "separate from Banking"; or "No investment accounts in your Plaid link (USAA doesn't share them)" + Link a brokerage. Manual holdings/watchlist unchanged; counts add "Linked: N".
 - ZAP Connect: Bank (Plaid) lists Balances / Spending (transactions) / Investments with Allowed, Needs your OK in Plaid, or Not available at USAA, plus Allow spending / Link a brokerage buttons.
 - QA: qa425 (mocked Worker) at 360/390/768/1024/1440/1366@1.25/1920 — ready, needs consent, not ready, empty, error + retry, no device token, eye, 30/60/90, All sheet, Connect rows, update-mode round trip, OAuth return in update mode, normal link still exchanges, brokerage link; zero console errors, no overflow, 44 px targets. Worker unit tests (mock Plaid) + deployed endpoint checks (401 without/with bad token, 403 bad origin, 405, admin key limited to /item-products). Full regression matrix.
+
+## v4.26.0 — 2026-11-09 — One simple screen
+Why: the founder's iPhone recording showed a home screen with too many ways in (big AI card, orbit ring, floating "next action" pill, bottom bar, sidebar on desktop), a two-column phone grid with stretched empty cards, and text that looked doubled.
+
+**Removed from the home screen**
+- Big "What do you want to do?" ZAP AI card, the EXPLORE orbit ring and list view, the floating "ZAP AI · YOUR NEXT ACTION" pill, the fixed Home/Search/Profile bottom bar, the desktop sidebar, the bell/profile/clock header group, the header mic/?/theme buttons and the "Back to Home" floating pill.
+- Decorative holographic sweep layers on cards (`.card-holo`) — semi-transparent moving text-colored layers that read as "ghost text" when scrolled or blurred.
+- Automatic TV view (≥1900 px or TV user agent). TV (`?tv=1`) and car (`?car=1`) views now only turn on when you choose them (Menu → View).
+
+**Moved**
+- ZAP AI → the search bar ("Search or ask ZAP AI"); chips under it: ✦ Ask ZAP AI (uses what you typed), Get me ready for work, Plan my day, What can you do?. Typing also offers "Ask ZAP AI: …" in the results.
+- Destinations → tiles in the Apps card: Shop, Watch, Food, Smart Home, Phone, More (More = every destination, also Menu → Shortcuts → All destinations).
+- Phone dial pad, comms log and favorites → the Phone tile (opens in a sheet, same dialer).
+- Quick Actions → swipe right, `Q`, or Menu → Shortcuts. Inbox → Menu → Shortcuts. Theme and Page tour → Menu.
+- Investments → when nothing is linked, a one-line row inside Money ("Nothing linked yet · watching BTC, GOLD", Watchlist, Link a brokerage when the bank is set up on this device). The full Investments card returns as soon as there are holdings (manual or Plaid). Banking and investment data stay separate.
+
+**Order (phone = one full-width column; tablet 2 columns, desktop 3 columns, no sidebar)**
+Header (ZAPWISE//OS · LIVE · settings) → search / Ask ZAP AI + chips → Today → Now Playing → Navigate (same map) → Focus → Money (Banking + investments line) → Apps → Customize dashboard (last, nothing fixed over it).
+- Empty cards are hidden until they have something: Shop smart (shows when you save an item), Investments (shows with holdings). "Home" appears once (Navigate places).
+- Existing custom card orders are reset once so everyone gets the new order; Customize dashboard still shows/hides/reorders.
+- Calmer look: lighter shadows, more padding, larger body text (15 px), cards keep their own height (no stretched rows).
+
+**Kept**: gestures (down → search, left → Apps, right → Quick Actions), keyboard shortcuts (`/`, `A`, `Q`), ZAP Connect (Menu), Plaid banking + "Allow spending in Plaid", honest empty states, Motion toggle, car and TV views, every destination and action (via tiles, Menu, search and ZAP AI).
+
+**Ghost text finding**: frame-by-frame review of the recording found no duplicated DOM text. The doubled look came from (1) the iOS Low Battery alert's glass blur at ~3.5–4.5 s, (2) scroll motion in the recording, (3) the semi-transparent fixed bottom bar showing cards through it, and (4) the moving `.card-holo` sweep layers. 1, 2 are outside the app; 3 and 4 are removed. A WebKit (iPhone 13 / SE / iPad mini) scan of every visible text node at every scroll position now finds 0 overlapping or duplicated text. The scan did find one real overlap — the map's "LOCATION OFF…" caption sitting on the OpenStreetMap/TomTom credits — fixed by lifting the caption.
+
+**Also**: map caption no longer covers map credits; weather button is ≥44 px tall; CLS 0.002.
+
+**QA**: new `qa426.mjs` — 9 sizes across WebKit (iPhone 13, iPhone SE, iPad mini, 1440) and Chromium (iPhone 13, Pixel 7, 1024, 1440, 1920): card order, removed UI absent, no fixed element over content while scrolling, Customize button reachable and uncovered at the bottom, no overlapping/duplicate visible text, 0 console errors, no horizontal overflow, ≥44 px targets, Phone sheet round-trip, All destinations, Ask ZAP AI (chip + typed), Menu shortcuts, `Q`, empty cards appear with content, `?tv=1`/`?car=1`, no automatic TV at 1920. Older suites (qa417_fn, qa419, qa421–qa424, interact_v5) updated where they asserted removed UI (orbit, sidebar, bottom bar, ZAP/Quick Actions cards, auto TV at 1920, 12 dashboard cards, 2 nav landmarks); originals backed up.
