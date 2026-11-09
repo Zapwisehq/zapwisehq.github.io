@@ -1,7 +1,7 @@
 /* ZAPWISE//OS web app v4.13.2 (Nov 5, 2026). Equal-height desktop Focus/Phone. Plaid-only Bank. Motion toggle. No tabs. Source: edit app.js → build.sh → app.min.js. */
 (function () {
 "use strict";
-var VERSION = '4.13.3';
+var VERSION = '4.14.0';
 var APP_VERSION = VERSION;
 
 // v4.5: default Lite on coarse/mobile unless user already chose
@@ -1717,7 +1717,7 @@ function refreshWeather(force) {
       $("#hwNow").textContent = "LOCATION OFF · TAP TO SET A CITY";
       $("#wxCond").textContent = "SET YOUR CITY";
       var adv = $("#hwAdvice"); if (adv) adv.textContent = "Turn on location or tap to pick a city";
-      var ht = $("#hwTemp"); if (ht) ht.textContent = "--°";
+      var ht = $("#hwTemp"); if (ht) ht.textContent = "—";
     } else if (!WX) {
       $("#hwNow").textContent = navigator.onLine === false ? "OFFLINE · NO WEATHER SAVED YET" : "WEATHER BUSY · RETRYING SOON";
       var adv2 = $("#hwAdvice"); if (adv2) adv2.textContent = navigator.onLine === false ? "Showing last saved weather when available" : "Retrying live forecast…";
@@ -6118,7 +6118,7 @@ function placeNeonRing(v, dx, dy) {
     }
     last = now; lx = p.clientX; ly = p.clientY;
   }, { passive: false });
-  document.addEventListener("gesturestart", function (e) { try { e.preventDefault(); } catch (err) {} }, { passive: false });
+  /* v4.14.0: pinch zoom allowed (accessibility) — gesturestart no longer blocked */
 })();
 // ========== 13. boot ==========
 try { if ("scrollRestoration" in history) history.scrollRestoration = "manual"; } catch (eSR) {}
@@ -7489,7 +7489,7 @@ function renderBanks() {
   var st = bankStats();
   var ready = bankDeviceReady();
   var linked = ready && banks.length > 0;
-  if (totalEl) totalEl.textContent = priv ? "••••••" : bankMoney(st.priced ? st.total : 0);
+  if (totalEl) totalEl.textContent = priv ? "••••••" : (banks.length && st.priced ? bankMoney(st.total) : "—");
   if (subEl) {
     if (!ready && !banks.length) subEl.textContent = "Link your bank · balances stay on this phone";
     else if (!banks.length) subEl.textContent = "Pulling balances…";
@@ -7718,3 +7718,14 @@ try { window.ZAPOS.startTour = startTour; window.ZAPOS.endTour = endTour; window
 setTimeout(showWelcomeOnce, 1400);
 if (!Store.getLocal("seenHelp", false)) { var _sa = false; try { _sa = window.navigator.standalone === true || (window.matchMedia && matchMedia("(display-mode: standalone)").matches); } catch (eTip) {} if (!_sa) { Store.setLocal("seenHelp", true); } else { Store.setLocal("seenHelp", true); } }
 })();
+
+/* ========== v4.14.0 keyboard: Enter/Space activate role=button cards (e.g. Markets, bank cards) ========== */
+document.addEventListener("keydown", function (e) {
+  if (e.key !== "Enter" && e.key !== " ") return;
+  var t = e.target;
+  if (!t || !t.matches) return;
+  if (t.matches("button, a, input, select, textarea, [contenteditable]")) return;
+  if (!t.matches('[role="button"][tabindex], .bk-card[tabindex]')) return;
+  e.preventDefault();
+  try { t.click(); } catch (err) {}
+});

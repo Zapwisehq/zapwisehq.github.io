@@ -2,12 +2,27 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>ZAPWISE//OS</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ZAPWISE//OS · Neon command center for your day</title>
+<!-- GO-PUBLIC SWITCH: keep "noindex,nofollow" until SNOWFALL says "go public", then change this one line to "index,follow" (and allow /os/ in /robots.txt). -->
 <meta name="robots" content="noindex,nofollow">
-<meta name="description" content="ZAPWISE//OS: calm glass HUD — clock, weather, map, markets, focus, apps.">
+<meta name="description" content="ZAPWISE//OS is a neon cyberpunk command center for your day: clock, weather, live-traffic map, focus timer, bank and crypto balances that stay on your phone, your apps and ZAP AI in one screen.">
+<link rel="canonical" href="https://zapwiseai.com/os/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ZAPWISE//OS">
+<meta property="og:title" content="ZAPWISE//OS · Neon command center for your day">
+<meta property="og:description" content="One neon HUD for your day: weather, live-traffic map, focus, balances that stay on your phone, your apps and ZAP AI.">
+<meta property="og:url" content="https://zapwiseai.com/os/">
+<meta property="og:image" content="https://zapwiseai.com/os/icon-512.png">
+<meta property="og:image:width" content="512">
+<meta property="og:image:height" content="512">
+<meta property="og:image:alt" content="ZAPWISE//OS neon app icon">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="ZAPWISE//OS · Neon command center for your day">
+<meta name="twitter:description" content="One neon HUD for your day: weather, live-traffic map, focus, balances that stay on your phone, your apps and ZAP AI.">
+<meta name="twitter:image" content="https://zapwiseai.com/os/icon-512.png">
 <meta name="theme-color" content="#070814">
-<meta name="zapos-version" content="4.13.3">
+<meta name="zapos-version" content="4.14.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="/os/manifest.webmanifest">
@@ -26,7 +41,7 @@
 <link rel="apple-touch-startup-image" media="(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/os/splash/splash-1206x2622.png">
 <link rel="apple-touch-startup-image" media="(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="/os/splash/splash-1320x2868.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/os/icon-192.png">
-<link rel="stylesheet" href="/os/app.css?v=4.13.3">
+<link rel="stylesheet" href="/os/app.css?v=4.14.0">
 <style>
 @font-face{font-family:"Rajdhani";font-style:normal;font-weight:600;font-display:swap;src:url("/os/fonts/Rajdhani-SemiBold.woff2") format("woff2"),url("/os/fonts/Rajdhani-SemiBold.ttf") format("truetype")}
 @font-face{font-family:"Rajdhani";font-style:normal;font-weight:700;font-display:swap;src:url("/os/fonts/Rajdhani-Bold.woff2") format("woff2"),url("/os/fonts/Rajdhani-Bold.ttf") format("truetype")}
@@ -37,6 +52,7 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
 </script>
 </head>
 <body class="cyber">
+<a class="skip-link" href="#osPage">Skip to dashboard</a>
 <div id="boot" class="boot" aria-hidden="true">
  <div class="boot-logo">ZAPWISE<b>//OS</b></div>
  <div class="boot-bar"><i></i></div>
@@ -45,7 +61,7 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
 <div id="app">
 
  <header class="top sticky" id="top">
-  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver" data-app-ver>v4.13.3</span></div>
+  <div class="brand">ZAPWISE<b>//OS</b> <span class="decode" id="brandDecode" aria-hidden="true"></span> <span class="ver" data-app-ver>v4.14.0</span></div>
   <div class="top-r">
    <span class="sync" id="hSync"><i aria-hidden="true"></i>LIVE</span>
    <span class="hud-chip gps" id="hGpsLock" data-lock="0" hidden><i aria-hidden="true"></i>GPS —</span>
@@ -59,7 +75,7 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
   </div>
  </header>
 
- <main class="os-page" id="osPage">
+ <main class="os-page" id="osPage" tabindex="-1">
 
   <!-- TOP: Clock + Music + Today (one panel) -->
   <section class="card br panel-group panel-today" id="panelToday" aria-label="Today">
@@ -112,8 +128,8 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
    <span class="hw-in">
     <span class="hw-top">
      <span>
-      <span class="hw-temp" id="hwTemp">--°</span>
-      <span class="hw-cond" id="hwNow">Weather loading…</span>
+      <span class="hw-temp" id="hwTemp">—</span>
+      <span class="hw-cond" id="hwNow">Getting your weather…</span>
       <span class="hw-advice" id="hwAdvice">Tap to set your city or allow location</span>
      </span>
      <span class="hw-ic" id="hwIc" aria-hidden="true">·</span>
@@ -215,7 +231,7 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
    <div class="panel-sec-lab">BANK</div>
    <div class="h-bk panel-inner" id="hBk" role="region" aria-label="Banks">
     <div class="bk-hero" id="hBkPort">
-     <b class="hmk-total" id="hBkTotal">$0.00</b>
+     <b class="hmk-total" id="hBkTotal">—</b>
      <span class="hmk-day" id="hBkSub">Link your bank · balances stay on this phone</span>
     </div>
     <div class="bk-grid" id="hBkGrid" role="list"></div>
@@ -345,7 +361,7 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
  <div class="zap-ai" id="zapAiBar">
   <div class="zap-smart" id="zapSmartRow">
    <label class="zap-smart-lab"><input type="checkbox" id="zapSmart" checked> Online answers</label>
-   <small class="zap-smart-note" id="zapSmartNote">Actions stay on-device. Runs on open models.</small>
+   <small class="zap-smart-note" id="zapSmartNote">Commands run on this device. With Online answers on, other questions go to a free open model (Pollinations). Turn it off to keep questions here.</small>
   </div>
   <div class="zap-ai-row">
    <small id="zapAiStatus">Optional offline brain</small>
@@ -360,9 +376,9 @@ try{var t=localStorage.getItem("zapos.pref");if(t){var p=JSON.parse(t);if(p&&p.t
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/os/catalog.js?v=4.13.3"></script>
-<script src="/os/sky.js?v=4.13.3"></script>
-<script src="/os/bank-plaid.js?v=4.13.3"></script>
-<script src="/os/app.min.js?v=4.13.3"></script>
+<script src="/os/catalog.js?v=4.14.0"></script>
+<script src="/os/sky.js?v=4.14.0"></script>
+<script src="/os/bank-plaid.js?v=4.14.0"></script>
+<script src="/os/app.min.js?v=4.14.0"></script>
 </body>
 </html>
