@@ -1,0 +1,71 @@
+/* ZAPWISE//OS v4.31: focus beside the clock, music as a mini player */
+html.v12 .v10-time{align-items:stretch}
+.v12-row{display:flex;align-items:center;justify-content:center;gap:12px 18px;flex-wrap:wrap;width:100%}
+.v12-foc{display:inline-flex;align-items:center;gap:8px;min-height:44px;min-width:44px;padding:0 12px 0 8px;border:1px solid rgba(178,107,255,.5);background:rgba(178,107,255,.1);color:#eaf6ff;font:inherit;cursor:pointer;clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
+.v12-foc svg{width:28px;height:28px;flex:none}
+.v12-foc .t{fill:none;stroke:rgba(234,246,255,.16);stroke-width:3}
+.v12-foc .p{fill:none;stroke:#b26bff;stroke-width:3;stroke-linecap:butt}
+.v12-foc.running .p{stroke:#05d9e8}
+.v12-foc.paused .p{stroke:#ffb547}
+.v12-foc-tx{display:flex;flex-direction:column;align-items:flex-start;line-height:1.05;min-width:0}
+.v12-foc b{font-family:"Rajdhani",var(--font);font-weight:700;font-size:22px;font-variant-numeric:tabular-nums;color:#eaf6ff}
+.v12-foc small{font-family:var(--v9-mono);font-size:10px;letter-spacing:.14em;color:#c9a6ff}
+.v12-foc.running small{color:#05d9e8}
+.v12-foc:hover,.v12-foc:focus-visible{outline:none;border-color:#b26bff;box-shadow:0 0 14px rgba(178,107,255,.45)}
+html:not(.motion-on) .v12-foc .p{transition:none}
+@media (prefers-reduced-motion:reduce){.v12-foc .p,.v12-foc{transition:none;animation:none}}
+
+/* the big Focus card leaves the dashboard; the same card opens over the page */
+html.v12 #mFocus.fz{display:none!important}
+html.v12.focus-open body > #mFocus{display:flex!important;position:fixed!important;z-index:8600!important;left:50%!important;top:50%!important;right:auto!important;bottom:auto!important;transform:translate(-50%,-50%)!important;width:min(440px,calc(100vw - 24px))!important;max-height:min(92dvh,780px)!important;overflow:auto!important;margin:0!important}
+html.v12.focus-open body{overflow:hidden}
+html.v12 #mFocus .fz-h{display:flex;align-items:center;gap:8px}
+html.v12 #mFocus .v12-x{margin-left:auto;min-width:44px;min-height:44px;border:1px solid rgba(234,246,255,.28);background:transparent;color:#eaf6ff;font-size:18px;cursor:pointer;clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
+html.v12 #mFocus .v12-x:hover,html.v12 #mFocus .v12-x:focus-visible{outline:none;border-color:#05d9e8;box-shadow:0 0 12px rgba(5,217,232,.4)}
+.v12-foc-bg{position:fixed;inset:0;z-index:8590;border:0;padding:0;background:rgba(3,4,10,.72);cursor:pointer}
+.v12-foc-bg[hidden]{display:none!important}
+
+/* music: one row until the title is tapped */
+html.v12 #cardPlay{position:relative;align-self:start!important;height:auto!important}
+html.v12 #cardPlay.v12-mini{padding:8px 10px!important}
+html.v12 #cardPlay.v12-mini .v5h,
+html.v12 #cardPlay.v12-mini #v11ProgW,
+html.v12 #cardPlay.v12-mini #v11Live,
+html.v12 #cardPlay.v12-mini .v11-row,
+html.v12 #cardPlay.v12-mini #v11Credit,
+html.v12 #cardPlay.v12-mini .v11-album,
+html.v12 #cardPlay.v12-mini .v11-src,
+html.v12 #cardPlay.v12-mini [data-m11="prev"]{display:none!important}
+html.v12 #cardPlay.v12-mini .v11{display:grid!important;grid-template-columns:48px minmax(0,1fr) 40px 44px 44px;grid-template-areas:"art meta viz pp next";gap:8px;align-items:center;padding-top:0}
+html.v12 #cardPlay.v12-mini .v11-top{display:contents}
+html.v12 #cardPlay.v12-mini .v11-art{grid-area:art;width:48px!important;height:48px!important}
+html.v12 #cardPlay.v12-mini .v11-meta{grid-area:meta;position:relative;min-width:0;min-height:44px}
+html.v12 #cardPlay.v12-mini .v11-viz{grid-area:viz;width:40px!important;height:36px!important}
+html.v12 #cardPlay.v12-mini .v10-ctl{display:contents}
+html.v12 #cardPlay.v12-mini [data-m11="toggle"]{grid-area:pp}
+html.v12 #cardPlay.v12-mini [data-m11="next"]{grid-area:next}
+html.v12 #cardPlay.v12-mini .v10-c,
+html.v12 #cardPlay.v12-mini .v10-c.v10-pp{width:44px!important;height:44px!important}
+html.v12 #cardPlay.v12-mini .v11-title{font-size:16px;color:#eaf6ff;-webkit-line-clamp:1}
+html.v12 #cardPlay.v12-mini .v11-artist{font-size:13px;color:rgba(234,246,255,.82);-webkit-line-clamp:1}
+html.v12 .v12-st{font-family:var(--v9-mono);font-size:10px;letter-spacing:.12em;color:rgba(234,246,255,.72)}
+html.v12 .v12-st:empty{display:none}
+html.v12 #cardPlay.v12-mini .v12-st{display:block}
+html.v12 .v12-echo{display:none;align-items:center;gap:8px;min-height:48px;color:#eaf6ff}
+html.v12 #cardPlay.v12-mini .v12-echo{display:none!important}
+html.v12 #cardPlay:not(.v12-mini) .v12-echo{display:flex!important}
+html.v12 #v11.v12-sheet{position:fixed;z-index:8500;left:50%;bottom:0;transform:translateX(-50%);width:min(520px,100%);max-height:min(92dvh,740px);overflow:auto;box-sizing:border-box;margin:0;padding:16px 16px calc(16px + env(safe-area-inset-bottom));background:#070814;border:1px solid rgba(255,79,216,.4);box-shadow:0 -16px 40px rgba(0,0,0,.5)}
+html.v12 .v12-echo b{font-size:15px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html.v12 .v12-echo span{font-family:var(--v9-mono);font-size:11px;letter-spacing:.08em;color:rgba(234,246,255,.72);white-space:nowrap}
+.v12-play-bg{position:fixed;inset:0;z-index:8490;border:0;padding:0;background:rgba(3,4,10,.55);cursor:pointer}
+.v12-play-bg[hidden]{display:none!important}
+@media (prefers-reduced-motion:reduce){html.v12 #cardPlay:not(.v12-mini) .v11{transition:none}}
+html.v12 #cardPlay.v12-mini #v12Exp{position:absolute;inset:0;z-index:2;border:0;background:transparent;color:inherit;cursor:pointer;min-height:44px;padding:0}
+html.v12 #v11.v12-sheet #v12Exp{position:absolute;top:8px;right:62px;z-index:3;width:48px;height:48px;border:1px solid rgba(5,217,232,.45);background:rgba(5,217,232,.08);color:#05d9e8;font-family:var(--v9-mono);font-size:11px;font-weight:700;letter-spacing:.06em;cursor:pointer;clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
+html.v12 #v11.v12-sheet #v12Exp::before{content:"MIN"}
+html.v12 #v12Exp:focus-visible{outline:2px solid #05d9e8;outline-offset:2px}
+@media (max-width:339px){
+  html.v12 #cardPlay.v12-mini .v11{grid-template-columns:44px minmax(0,1fr) 44px 44px;grid-template-areas:"art meta pp next"}
+  html.v12 #cardPlay.v12-mini .v11-viz{display:none!important}
+  html.v12 #cardPlay.v12-mini .v11-art{width:44px!important;height:44px!important}
+}
