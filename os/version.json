@@ -1,6 +1,6 @@
 {
-  "version": "4.30.0",
+  "version": "4.31.0",
   "built": "2026-11-10",
   "channel": "stable",
-  "notes": "v4.30.0: Now Playing is six live genres — Rock, Heavy Rock, Techno, Deep House, Jazz and Lo-fi. Each genre is a short list of free stations the operator names for that genre. A failed stream tries the same station’s other address, then the other station in that genre. It does not switch genre. Say or type \"play techno\", \"play deep house\", \"play heavy rock\", \"play jazz\" or \"play lo-fi\"."
+  "notes": "v4.31.0: Focus sits beside the clock as a small timer. Tap it for the full timer. Music is a compact player; tap the title for the full controls. Same six genres, and playback keeps going when you expand."
 }

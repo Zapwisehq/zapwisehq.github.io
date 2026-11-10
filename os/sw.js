@@ -1,11 +1,11 @@
-/* ZAPWISE//OS service worker v4.30.0
+/* ZAPWISE//OS service worker v4.31.0
    - Network-first for navigations + shell (index, app.js/css, catalog, sky, manifest).
    - Cache-first only for icons / images.
    - version.json is NEVER intercepted (always hits network for update checks).
    - skipWaiting on install; clients.claim + delete old caches on activate.
    Traffic tiles use network-first ≤2 min cache. OSM tiles stay longer offline cache. */
-const VER = "zapos-v4.30.0";
-const APP_VER = "4.30.0";
+const VER = "zapos-v4.31.0";
+const APP_VER = "4.31.0";
 const SHELL = [
   "/os/",
   "/os/index.html",
@@ -16,6 +16,7 @@ const SHELL = [
   "/os/v9.css?v=" + APP_VER,
   "/os/v10.css?v=" + APP_VER,
   "/os/v11.css?v=" + APP_VER,
+  "/os/v12.css?v=" + APP_VER,
   "/os/app.min.js?v=" + APP_VER,
   "/os/fonts/Rajdhani-Bold.woff2",
   "/os/fonts/Rajdhani-SemiBold.woff2",
@@ -106,7 +107,7 @@ function networkFirst(req, fallbackUrl) {
 
 function isShellPath(path) {
   if (path === "/os/" || path === "/os/index.html") return true;
-  if (path === "/os/app.js" || path === "/os/app.min.js" || path === "/os/app.css" || path === "/os/v5.css" || path === "/os/v6.css" || path === "/os/v8.css" || path === "/os/v9.css" || path === "/os/v10.css" || path === "/os/v11.css" || path === "/os/spotify.json") return true;
+  if (path === "/os/app.js" || path === "/os/app.min.js" || path === "/os/app.css" || path === "/os/v5.css" || path === "/os/v6.css" || path === "/os/v8.css" || path === "/os/v9.css" || path === "/os/v10.css" || path === "/os/v11.css" || path === "/os/v12.css" || path === "/os/spotify.json") return true;
   if (path === "/os/catalog.js" || path === "/os/sky.js") return true;
   if (path === "/os/manifest.webmanifest") return true;
   return false;
