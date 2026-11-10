@@ -1,7 +1,7 @@
 /* ZAPWISE//OS web app v4.13.2 (Nov 5, 2026). Equal-height desktop Focus/Phone. Plaid-only Bank. Motion toggle. No tabs. Source: edit app.js → build.sh → app.min.js. */
 (function () {
 "use strict";
-var VERSION = '4.28.0';
+var VERSION = '4.29.0';
 var APP_VERSION = VERSION;
 
 // v4.5: default Lite on coarse/mobile unless user already chose
@@ -246,7 +246,7 @@ function clone(o) { return o == null ? o : JSON.parse(JSON.stringify(o)); }
 var Store = (function () {
   var STATE_KEY = "zapos.state", DEVICE_KEY = "zapos.device", VER = 1;
   var PREF_KEYS = ["settings", "theme", "apps", "coins", "loc", "favs", "places", "holdings", "broker", "wallets", "accounts", "assistant"];                     // shared state (sync-ready)
-  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss", "mediaKey", "skipBoot", "bootDay", "uiSounds", "recentPins", "wxDay", "wxMode", "wxMode2", "portHist", "acctMigrated", "liteMode", "tiltCards", "motionTilt", "callLog", "zapChat", "focusStats", "wallpaper", "zapNotes", "zapReminders", "uiMotion", "welcomeSeen", "bankPrivacy", "mapTraffic", "bankManualCleared_v413", "searchProv", "focusCustom", "v5AppsOpen", "quickActions", "sugState", "v6lists", "v6List", "v6ha", "v6compare", "v6cal", "zaLog", "dash", "v7car", "v7tv", "v25days", "v426", "v9pref", "v9use", "v10task"]; // this device only
+  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss", "mediaKey", "skipBoot", "bootDay", "uiSounds", "recentPins", "wxDay", "wxMode", "wxMode2", "portHist", "acctMigrated", "liteMode", "tiltCards", "motionTilt", "callLog", "zapChat", "focusStats", "wallpaper", "zapNotes", "zapReminders", "uiMotion", "welcomeSeen", "bankPrivacy", "mapTraffic", "bankManualCleared_v413", "searchProv", "focusCustom", "v5AppsOpen", "quickActions", "sugState", "v6lists", "v6List", "v6ha", "v6compare", "v6cal", "zaLog", "dash", "v7car", "v7tv", "v25days", "v426", "v9pref", "v9use", "v10task", "v11music"]; // this device only
   function read(k) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
   function write(k, v) { if (dead) return false; try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
   var state = read(STATE_KEY), dev = read(DEVICE_KEY), subs = [], uiT = null, dead = false; // dead: after a reset, write nothing more
@@ -7670,7 +7670,7 @@ function tourSteps() {
   var S = [
     ["#srch", "Search", "Search your apps, or the web with the provider you pick. The mic searches by voice."],
     ["#panelToday", "Today", "Time, date and weather. Tap the weather for hourly and days ahead. Calendar and Note open below."],
-    ["#cardPlay", "Now Playing", "What’s playing, with album art and controls. Connect Spotify, or play music saved on this device."],
+    ["#cardPlay", "Now Playing", "Free music and live radio that play right here: song, artist, cover art and controls. ··· picks a genre or station."],
     ["#mFocus", "Focus", "Pick 15, 25 or 50 minutes, type what you’re working on, and tap Full screen to hide everything else."],
     ["#panelNav", "Navigate", "Live map with traffic plus your saved places. Tap a place for directions."],
     ["#panelMoney", "Banking", "Your linked bank via Plaid. Only the last 4 digits show. The eye hides balances."],
@@ -8889,7 +8889,7 @@ function zaDefs() {
     "nav.home": { n: "Take me home", ic: "⌂", kind: "handoff", run: function () { var p = place(/home|house/i); if (!p) { v6GoCard("panelNav"); return { status: "failed", msg: "Add Home in Navigate → ＋ ADD first" }; } openDirectionsTo(p); return { status: "handoff", msg: "Opened your maps app with directions home" }; } },
     "nav.work": { n: "Directions to Work", ic: "▣", kind: "handoff", run: function () { var p = place(/work|office/i); if (!p) { v6GoCard("panelNav"); return { status: "failed", msg: "Add Work in Navigate → ＋ ADD first" }; } openDirectionsTo(p); return { status: "handoff", msg: "Opened your maps app with directions to Work" }; } },
     "nav.search": { n: "Find on the map", ic: "⌖", kind: "handoff", run: function (a) { var q = (a && a.q) || ""; go((IOS ? "https://maps.apple.com/?q=" : "https://www.google.com/maps/search/") + encodeURIComponent(q)); return { status: "handoff", msg: "Opened maps for “" + q.slice(0, 30) + "”" }; } },
-    "media.open": { n: "Play music", ic: "♪", kind: "handoff", run: function () { var m = currentMedia(); openApp(m); return { status: "handoff", msg: "Opened " + m.name + " — playback happens there" }; } },
+    "media.open": { n: "Play music", ic: "♪", kind: "device", run: function () { v11GoCard(); v11Play(); return { status: "done", msg: "Playing in ZAPWISE" }; } },
     "shop.search": { n: "Shop", ic: "🛍", kind: "device", run: function (a) { v6OpenDest("shop", { q: a && a.q }); return { status: "done" }; } },
     "watch.search": { n: "Find something to watch", ic: "▶", kind: "device", run: function (a) { v6OpenDest("watch", { q: a && a.q }); return { status: "done" }; } },
     "food.search": { n: "Find food", ic: "🍴", kind: "device", run: function (a) { v6OpenDest("food", { q: a && a.q }); return { status: "done" }; } },
@@ -10418,7 +10418,7 @@ function v10FocPaint() {
   if (td && td.textContent !== s) td.textContent = s;
   var o = $("#v10Imm"); if (!o || o.hidden) return;
   var F = v10FocState(), sec = Math.ceil(F.left / 1000), C = 917.35;
-  var tm = Math.floor(sec / 60) + ":" + pad2(sec % 60), el = $("#v10ImmTime"); if (el.textContent !== tm) el.textContent = tm;
+  var mv = $("#mFocV"), tm = mv && mv.textContent ? mv.textContent : Math.floor(sec / 60) + ":" + pad2(sec % 60), el = $("#v10ImmTime"); if (el.textContent !== tm) el.textContent = tm;
   var stt = F.st === "run" ? "FOCUSING" : F.st === "pause" ? "PAUSED" : "READY · " + (FOC.mins || 25) + " MIN"; el = $("#v10ImmSt"); if (el.textContent !== stt) el.textContent = stt;
   $("#v10ImmRing").setAttribute("stroke-dashoffset", (C * (1 - F.pct)).toFixed(2));
   var go = $("#v10ImmGo"), gl = F.st === "run" ? "PAUSE" : F.st === "pause" ? "RESUME" : "START"; if (go.textContent !== gl) go.textContent = gl;
@@ -10468,5 +10468,376 @@ var _v10AOO = anyOverlayOpen;
 anyOverlayOpen = function () { return _v10AOO() || v10ImmIsOpen(); };
 v10FocPaint(); setInterval(v10FocPaint, 500);
 try { window.ZAPOS = window.ZAPOS || {}; window.ZAPOS.v10 = { state: function () { return { active: v10Active(), np: ($("#v10Np") || {}).getAttribute && $("#v10Np").getAttribute("data-state"), sp: !!V10.sp, ready: v10SpReady(), cfgDone: V10.cfgDone, q: V10.q.length }; }, setCfg: function (id) { V10.cfg = id ? { clientId: id } : null; v10NpPaint(); }, poll: v10SpPoll, loadFiles: v10LoadFiles, focusOpen: v10ImmOpen, focusClose: v10ImmClose }; } catch (e) {}
+
+/* ========== v4.29 MUSIC INSIDE ZAPWISE: free full tracks (Internet Archive, CC) + live radio (Radio Browser), no sign-in ========== */
+var V11_GEN = [
+  { id: "lofi", n: "Lofi", ia: 'lofi OR "lo-fi" OR lofihiphop', rb: "lofi", c: "#b26bff" },
+  { id: "hiphop", n: "Hip-hop", ia: '"hip hop" OR hiphop OR rap OR "hip-hop"', rb: "hiphop", c: "#ff4fd8" },
+  { id: "electronic", n: "Electronic", ia: "electronic OR techno OR house OR electronica", rb: "electronic", c: "#05d9e8" },
+  { id: "chill", n: "Chill", ia: "ambient OR chillout OR downtempo", rb: "chillout", c: "#3dff9e" },
+  { id: "pop", n: "Pop", ia: "pop OR synthpop OR electropop", rb: "pop", c: "#ffb547" },
+  { id: "rock", n: "Rock", ia: "rock OR indie OR punk", rb: "rock", c: "#ff5a5a" },
+  { id: "jazz", n: "Jazz", ia: "jazz OR nujazz OR \"nu jazz\"", rb: "jazz", c: "#7aa7ff" }
+];
+var V11_RB = ["de1", "de2", "fi1"], V11_NPW = "https://zapwise-radio.zapwisehq.workers.dev/np?u=";
+function v11G(id) { for (var i = 0; i < V11_GEN.length; i++) if (V11_GEN[i].id === id) return V11_GEN[i]; return V11_GEN[0]; }
+function v11Saved() { var s = Store.getLocal("v11music", null); return s && typeof s === "object" ? s : {}; }
+function v11Save(p) { var s = v11Saved(); for (var k in p) s[k] = p[k]; try { Store.setLocal("v11music", s); } catch (e) {} }
+var M11 = (function () { var s = v11Saved(); return { mode: s.mode === "radio" && s.st ? "radio" : "tracks", gen: v11G(s.gen || "lofi").id, st: s.st || null, vol: typeof s.vol === "number" ? Math.max(0, Math.min(1, s.vol)) : 0.8, q: [], qi: 0, albums: {}, played: {}, stations: [], si: 0, np: null, state: "idle", el: null, an: null, ctx: null, raf: 0, vis: true, npT: 0, fails: 0, loadTok: 0, local: [], li: 0 }; })();
+var V11_CORS_A = null, V11_PLAIN_A = null;
+function v11El(cors) {
+  if (cors && !V11_CORS_A) { V11_CORS_A = new Audio(); V11_CORS_A.crossOrigin = "anonymous"; V11_CORS_A.preload = "none"; v11Bind(V11_CORS_A); }
+  if (!cors && !V11_PLAIN_A) { V11_PLAIN_A = new Audio(); V11_PLAIN_A.preload = "none"; v11Bind(V11_PLAIN_A); }
+  var el = cors ? V11_CORS_A : V11_PLAIN_A, other = cors ? V11_PLAIN_A : V11_CORS_A;
+  if (other && !other.paused) { try { other.pause(); } catch (e) {} }
+  if (other) { try { other.removeAttribute("src"); other.load(); } catch (e) {} }
+  el.volume = M11.vol; M11.el = el; return el;
+}
+function v11Bind(a) {
+  a.setAttribute("playsinline", ""); a.setAttribute("webkit-playsinline", "");
+  a.addEventListener("playing", function () { if (a !== M11.el) return; M11.state = "playing"; M11.fails = 0; v11Paint(); v11Viz(); v11Session(); v11NpPoll(true); });
+  a.addEventListener("pause", function () { if (a !== M11.el) return; if (M11.state !== "loading") M11.state = "paused"; v11Paint(); v11Session(); });
+  a.addEventListener("waiting", function () { if (a !== M11.el) return; if (M11.state === "playing") { M11.state = "loading"; v11Paint(); } });
+  a.addEventListener("timeupdate", function () { if (a === M11.el) v11Prog(); });
+  a.addEventListener("loadedmetadata", function () { if (a === M11.el) { v11Prog(); v11Session(); } });
+  a.addEventListener("ended", function () { if (a === M11.el) v11Next(); });
+  a.addEventListener("error", function () { if (a !== M11.el || !a.getAttribute("src")) return; v11Fail(a); });
+}
+function v11Fail(a) {
+  if (M11.mode === "radio" && a === V11_CORS_A && M11.st && !M11.st.plain) { M11.st.plain = 1; v11StartStation(M11.st, true); return; } /* station has no CORS: play it without the analyser */
+  M11.fails++;
+  if (M11.fails > 4) { M11.state = "error"; v11Paint(); toast("Couldn’t play that. Check your connection"); return; }
+  toast(M11.mode === "radio" ? "Station offline, trying the next one" : "Track unavailable, skipping");
+  v11Next();
+}
+function v11Analyser() {
+  if (IOS || M11.an || !V11_CORS_A) return; /* iPhone: keep audio outside Web Audio so it keeps playing when the screen locks */
+  try { var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return; M11.ctx = M11.ctx || new AC(); var s = M11.ctx.createMediaElementSource(V11_CORS_A), an = M11.ctx.createAnalyser(); an.fftSize = 128; an.smoothingTimeConstant = 0.8; s.connect(an); an.connect(M11.ctx.destination); M11.an = an; } catch (e) { M11.an = null; }
+}
+function v11Go(el, url) {
+  el.src = url; if (el === V11_CORS_A) v11Analyser();
+  try { if (M11.ctx && M11.ctx.state === "suspended") M11.ctx.resume(); } catch (e) {}
+  var p = el.play(); if (p && p.catch) p.catch(function (err) { if (err && err.name === "NotAllowedError") { M11.state = "paused"; v11Paint(); toast("Tap ▶ to start"); } });
+}
+/* ---- Internet Archive netlabels: Creative Commons full tracks with real title / artist / album / cover ---- */
+function v11IaSearch(q, rows) {
+  var url = "https://archive.org/advancedsearch.php?q=" + encodeURIComponent("collection:netlabels AND mediatype:audio AND licenseurl:*creativecommons* AND (" + q + ")") + "&fl[]=identifier&fl[]=title&fl[]=creator&fl[]=licenseurl&sort[]=downloads+desc&rows=" + (rows || 60) + "&output=json";
+  return fetch(url).then(function (r) { if (!r.ok) throw new Error("ia " + r.status); return r.json(); }).then(function (j) { return ((j.response && j.response.docs) || []).filter(function (d) { return !V11_RUDE.test(String(d.title || "") + " " + String(d.creator || "")); }); });
+}
+var V11_RUDE = /(vagina|penis|fuck|shit|porn|sex|cock|pussy|nigg|cunt|bitch|whore|slut|rape|nazi|cum\b|dick\b|tits?\b)/i;
+function v11Dur(s) { var p = String(s || "").split(":").map(Number); if (p.some(isNaN)) return +s || 0; return p.reduce(function (a, b) { return a * 60 + b; }, 0); }
+function v11IaTracks(id) {
+  return fetch("https://archive.org/metadata/" + encodeURIComponent(id)).then(function (r) { if (!r.ok) throw new Error("md"); return r.json(); }).then(function (d) {
+    var md = d.metadata || {}, lic = String(md.licenseurl || ""); if (!/creativecommons\.org|publicdomain/.test(lic)) return [];
+    var seen = {}, out = [];
+    (d.files || []).forEach(function (f) {
+      if (!/^(VBR MP3|MP3|128Kbps MP3|64Kbps MP3|256Kbps MP3|320Kbps MP3)$/.test(f.format || "")) return;
+      var nm = String(f.name || ""); if (!nm || /_vbr\.mp3$/i.test(nm) && seen.vbrskip) return;
+      var key = (f.track || "") + "|" + String(f.title || nm.replace(/(_vbr)?\.mp3$/i, "")).toLowerCase(); if (seen[key]) return; seen[key] = 1;
+      var dur = v11Dur(f.length); if (dur && dur < 30) return;
+      var fromName = v10FromName(nm.split("/").pop());
+      var cre = Array.isArray(md.creator) ? md.creator.join(", ") : md.creator;
+      var tt = String(f.title || fromName.title || nm).replace(/^\s*\d{1,3}\s*[-.)_]\s*/, ""), ar = String(f.artist || f.creator || cre || fromName.artist || "");
+      var sp = tt.match(/^(.{1,60}?)\s+[-\u2013]\s+(.+)$/); if (sp && (!ar || /^(various|va|various artists)$/i.test(ar.trim()))) { ar = sp[1]; tt = sp[2]; } else if (sp && ar && sp[1].toLowerCase() === ar.trim().toLowerCase()) tt = sp[2];
+      var alb = String(f.album || (Array.isArray(md.title) ? md.title[0] : md.title) || "").replace(/^[a-z]{1,8}\d{1,5}\s*[-:]\s*(various\s*-\s*)?/i, "");
+      if (V11_RUDE.test(tt + " " + ar)) return;
+      out.push({ title: tt.slice(0, 140), artist: (ar || "Unknown artist").slice(0, 120), album: alb.slice(0, 140), art: "https://archive.org/services/img/" + encodeURIComponent(id), url: "https://archive.org/download/" + encodeURIComponent(id) + "/" + nm.split("/").map(encodeURIComponent).join("/"), dur: dur, item: id, lic: lic, n: +String(f.track || "").split("/")[0] || 999 });
+    });
+    out.sort(function (a, b) { return a.n - b.n; });
+    return out.slice(0, 40);
+  });
+}
+function v11LoadAlbum(gen, query) {
+  var tok = ++M11.loadTok, key = query ? "q:" + query : gen;
+  var docs = M11.albums[key] ? Promise.resolve(M11.albums[key]) : v11IaSearch(query ? '"' + query.replace(/"/g, "") + '"' : v11G(gen).ia, query ? 30 : 80).then(function (d) { M11.albums[key] = d; return d; });
+  return docs.then(function (d) {
+    if (!d.length) throw new Error("none");
+    var pool = d.filter(function (x) { return !M11.played[x.identifier]; }); if (!pool.length) { M11.played = {}; pool = d; }
+    var top = pool.slice(0, Math.max(8, Math.min(pool.length, 40))), tries = 0;
+    function attempt() {
+      var pick = top[Math.floor(Math.random() * top.length)]; M11.played[pick.identifier] = 1;
+      return v11IaTracks(pick.identifier).then(function (t) { if (t.length) return t; if (++tries > 4) throw new Error("none"); return attempt(); });
+    }
+    return attempt();
+  }).then(function (tracks) { if (tok !== M11.loadTok) return null; return tracks; });
+}
+function v11PlayGenre(gen, opt) {
+  opt = opt || {}; gen = v11G(gen).id;
+  M11.mode = "tracks"; M11.gen = gen; M11.np = null; M11.state = "loading"; M11.q = []; M11.qi = 0; v11Save({ mode: "tracks", gen: gen }); v11Recent({ k: "gen:" + gen, mode: "tracks", gen: gen, n: v11G(gen).n });
+  var el = v11El(true); try { el.pause(); } catch (e) {}
+  if (!IOS) v11Analyser();
+  v11Paint();
+  return v11LoadAlbum(gen, opt.query).then(function (t) { if (!t) return; M11.q = t; M11.qi = 0; v11PlayIdx(0); }).catch(function () { M11.state = "error"; v11Paint(); toast(opt.query ? "No free music found for “" + opt.query + "”" : "Free music didn’t load. Check your connection"); });
+}
+function v11PlayIdx(i) { var t = M11.q[i]; if (!t) return; M11.qi = i; M11.state = "loading"; v11Paint(); v11Go(v11El(true), t.url); v11Session(); }
+/* ---- live radio: Radio Browser directory; song info only when the station shares it ---- */
+function v11Rb(path) {
+  var hosts = V11_RB.slice(), i = 0;
+  function tryNext() { if (i >= hosts.length) return Promise.reject(new Error("rb")); var h = hosts[i++]; return fetch("https://" + h + ".api.radio-browser.info" + path).then(function (r) { if (!r.ok) throw new Error("rb " + r.status); return r.json(); }).catch(function () { return tryNext(); }); }
+  return tryNext();
+}
+function v11Stations(gen) {
+  var g = v11G(gen); if (M11["rb_" + g.id]) return Promise.resolve(M11["rb_" + g.id]);
+  return v11Rb("/json/stations/bytag/" + encodeURIComponent(g.rb) + "?hidebroken=true&order=clickcount&reverse=true&limit=80").then(function (list) {
+    var seen = {}, out = (list || []).filter(function (s) { var u = String(s.url_resolved || ""); if (!/^https:\/\//.test(u) || !/^(MP3|AAC|AAC\+|OGG)$/i.test(s.codec || "") || +s.lastcheckok !== 1) return false; var k = String(s.name || "").toLowerCase().trim(); if (!k || seen[k]) return false; seen[k] = 1; return true; }).slice(0, 30).map(function (s) {
+      return { uuid: s.stationuuid, name: (String(s.name).replace(/^[^A-Za-z0-9\u00C0-\uFFFF]+/, "").replace(/\s*(-{2,}>|\|).*$/, "").replace(/\s+/g, " ").trim() || String(s.name).trim()).slice(0, 60), url: s.url_resolved, fav: /^https:\/\//.test(s.favicon || "") ? s.favicon : "", cc: s.countrycode || "", br: +s.bitrate || 0, codec: s.codec, home: /^https?:\/\//.test(s.homepage || "") ? s.homepage : "", gen: g.id };
+    });
+    M11["rb_" + g.id] = out; return out;
+  });
+}
+function v11PlayRadio(gen, st) {
+  gen = v11G(gen).id; M11.mode = "radio"; M11.gen = gen; M11.state = "loading"; M11.np = null; v11Paint();
+  var go = function (list) { M11.stations = list; if (!list.length) throw new Error("none"); var i = 0; if (st) { i = list.findIndex(function (x) { return x.uuid === st.uuid; }); if (i < 0) { list.unshift(st); i = 0; } } M11.si = i; v11StartStation(list[i]); };
+  return v11Stations(gen).then(go).catch(function () { if (st) { M11.stations = [st]; M11.si = 0; v11StartStation(st); return; } M11.state = "error"; v11Paint(); toast("Live radio didn’t load. Check your connection"); });
+}
+function v11StartStation(st, plain) {
+  M11.mode = "radio"; M11.st = st; M11.np = null; M11.state = "loading"; v11Save({ mode: "radio", gen: st.gen || M11.gen, st: { uuid: st.uuid, name: st.name, url: st.url, fav: st.fav, cc: st.cc, br: st.br, codec: st.codec, gen: st.gen } }); v11Recent({ k: "st:" + st.uuid, mode: "radio", st: st, n: st.name });
+  v11Paint(); v11Go(v11El(!(plain || st.plain)), st.url); v11Session();
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(st.uuid || "")) try { v11Rb("/json/url/" + encodeURIComponent(st.uuid)).catch(function () {}); } catch (e) {} /* Radio Browser click count, as its API asks */
+}
+function v11NpPoll(now) {
+  clearTimeout(M11.npT);
+  if (M11.mode !== "radio" || !M11.st || M11.state !== "playing" || document.hidden) { if (M11.mode === "radio") M11.npT = setTimeout(v11NpPoll, 30000); return; }
+  var st = M11.st;
+  fetch(V11_NPW + encodeURIComponent(st.url)).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+    if (st !== M11.st) return;
+    var nn = j && j.ok && j.title ? { title: j.title, artist: j.artist || "", art: /^https:\/\//.test(j.art || "") ? j.art : "" } : null;
+    var ch = JSON.stringify(nn) !== JSON.stringify(M11.np); M11.np = nn; if (ch) { v11Paint(); v11Session(); }
+  }).catch(function () {}).then(function () { M11.npT = setTimeout(v11NpPoll, 20000); });
+}
+/* ---- device files (kept) ---- */
+function v11LoadFiles(list) {
+  var files = [].slice.call(list || []).filter(function (f) { return /^audio\//.test(f.type) || /\.(mp3|m4a|aac|wav|ogg|oga|flac|opus)$/i.test(f.name); });
+  if (!files.length) { toast("Pick an audio file"); return; }
+  M11.local.forEach(function (t) { try { URL.revokeObjectURL(t.url); if (t.art) URL.revokeObjectURL(t.art); } catch (e) {} });
+  M11.local = files.map(function (f) { var nm = v10FromName(f.name); return { file: f, url: URL.createObjectURL(f), title: nm.title, artist: nm.artist || "Unknown artist", album: "", art: "" }; });
+  M11.local.forEach(function (t) { v10Id3(t.file).then(function (m) { if (m.title) t.title = m.title; if (m.artist) t.artist = m.artist; if (m.album) t.album = m.album; if (m.art) t.art = m.art; v11Paint(); v11Session(); }); });
+  M11.mode = "local"; M11.q = M11.local; v11PlayIdx(0);
+}
+/* ---- controls ---- */
+function v11Cur() { if (M11.mode === "radio") return null; return M11.q[M11.qi] || null; }
+function v11Play() {
+  if (M11.el && M11.el.getAttribute("src") && M11.state !== "error") { try { if (M11.ctx && M11.ctx.state === "suspended") M11.ctx.resume(); } catch (e) {} var p = M11.el.play(); if (p && p.catch) p.catch(function () {}); return; }
+  if (M11.mode === "radio" && M11.st) return v11PlayRadio(M11.st.gen || M11.gen, M11.st);
+  if (M11.mode === "local" && M11.local.length) return v11PlayIdx(M11.qi);
+  return v11PlayGenre(M11.gen);
+}
+function v11Pause() { if (M11.el) M11.el.pause(); }
+function v11Toggle() { if (M11.el && !M11.el.paused && M11.state !== "error") v11Pause(); else v11Play(); }
+function v11Next() {
+  if (M11.mode === "radio") { if (!M11.stations.length) return v11PlayRadio(M11.gen); M11.si = (M11.si + 1) % M11.stations.length; return v11StartStation(M11.stations[M11.si]); }
+  if (M11.mode === "local") { if (M11.qi < M11.q.length - 1) return v11PlayIdx(M11.qi + 1); toast("End of your files"); return; }
+  if (M11.qi < M11.q.length - 1) return v11PlayIdx(M11.qi + 1);
+  return v11PlayGenre(M11.gen); /* end of album: next album in this genre */
+}
+function v11Prev() {
+  if (M11.mode === "radio") { if (!M11.stations.length) return; M11.si = (M11.si - 1 + M11.stations.length) % M11.stations.length; return v11StartStation(M11.stations[M11.si]); }
+  if (M11.el && M11.el.currentTime > 4) { M11.el.currentTime = 0; return; }
+  if (M11.qi > 0) return v11PlayIdx(M11.qi - 1);
+  if (M11.el) M11.el.currentTime = 0;
+}
+function v11SetVol(v) { M11.vol = Math.max(0, Math.min(1, v)); if (M11.el) M11.el.volume = M11.vol; v11Save({ vol: M11.vol }); }
+/* ---- favorites / recent ---- */
+function v11Key() { return M11.mode === "radio" && M11.st ? "st:" + M11.st.uuid : M11.mode === "tracks" ? "gen:" + M11.gen : ""; }
+function v11Recent(e) { var r = (v11Saved().recent || []).filter(function (x) { return x.k !== e.k; }); r.unshift(e); v11Save({ recent: r.slice(0, 8) }); }
+function v11IsFav(k) { return (v11Saved().favs || []).some(function (x) { return x.k === k; }); }
+function v11ToggleFav() {
+  var k = v11Key(); if (!k) return; var f = v11Saved().favs || [];
+  if (v11IsFav(k)) { f = f.filter(function (x) { return x.k !== k; }); toast("Removed from favorites"); }
+  else { f.unshift(M11.mode === "radio" ? { k: k, mode: "radio", st: M11.st, n: M11.st.name } : { k: k, mode: "tracks", gen: M11.gen, n: v11G(M11.gen).n }); toast("Saved to favorites"); }
+  v11Save({ favs: f.slice(0, 20) }); v11Paint();
+}
+function v11Run(e) { if (!e) return; if (e.mode === "radio" && e.st) v11PlayRadio(e.st.gen || M11.gen, e.st); else v11PlayGenre(e.gen || "lofi"); }
+/* ---- media session (lock screen) ---- */
+function v11Meta() {
+  var g = v11G(M11.gen);
+  if (M11.mode === "radio" && M11.st) {
+    var n = M11.np;
+    return { title: n ? n.title : M11.st.name, artist: n ? (n.artist || M11.st.name) : "Live radio", album: n ? M11.st.name : (M11.st.cc ? M11.st.cc + " · " : "") + g.n, art: (n && n.art) || M11.st.fav || "", src: "LIVE RADIO · " + g.n.toUpperCase(), honest: !n };
+  }
+  var t = v11Cur();
+  if (t) return { title: t.title, artist: t.artist, album: t.album, art: t.art, src: M11.mode === "local" ? "THIS DEVICE · " + (M11.qi + 1) + "/" + M11.q.length : "FREE MUSIC · " + g.n.toUpperCase() };
+  return { title: M11.mode === "radio" ? "Live radio" : g.n, artist: "", album: "", art: "", src: (M11.mode === "radio" ? "LIVE RADIO · " : "FREE MUSIC · ") + g.n.toUpperCase() };
+}
+function v11Session() {
+  if (!("mediaSession" in navigator)) return;
+  try {
+    var m = v11Meta(), art = m.art ? [{ src: m.art, sizes: "512x512" }] : [{ src: "/os/icon-512.png", sizes: "512x512", type: "image/png" }];
+    if (M11.el && M11.el.getAttribute("src")) navigator.mediaSession.metadata = new MediaMetadata({ title: m.title || "ZAPWISE//OS", artist: m.artist || "", album: m.album || "ZAPWISE//OS", artwork: art });
+    navigator.mediaSession.playbackState = M11.el && !M11.el.paused ? "playing" : (M11.el && M11.el.getAttribute("src") ? "paused" : "none");
+    if (M11.mode !== "radio" && M11.el && isFinite(M11.el.duration) && M11.el.duration > 0 && navigator.mediaSession.setPositionState) navigator.mediaSession.setPositionState({ duration: M11.el.duration, position: Math.min(M11.el.currentTime || 0, M11.el.duration), playbackRate: 1 });
+  } catch (e) {}
+}
+(function v11Handlers() {
+  if (!("mediaSession" in navigator)) return;
+  var H = { play: v11Play, pause: v11Pause, stop: v11Pause, previoustrack: v11Prev, nexttrack: v11Next, seekto: function (d) { if (M11.mode !== "radio" && M11.el && d && d.seekTime != null) M11.el.currentTime = d.seekTime; } };
+  Object.keys(H).forEach(function (k) { try { navigator.mediaSession.setActionHandler(k, H[k]); } catch (e) {} });
+})();
+/* ---- card ---- */
+function v11Build() {
+  var card = $("#cardPlay"); if (!card || $("#v11")) return;
+  card.classList.add("v10-np-card", "v11-card");
+  card.innerHTML = '<div class="v5h"><b>NOW PLAYING</b><button type="button" class="v10-np-more" id="v11More" aria-label="Music: genres, stations, favorites">···</button></div>' +
+    '<div class="v11" id="v11" data-state="idle">' +
+    '<div class="v11-top"><div class="v11-art" id="v11ArtBox"><img id="v11Art" alt="" hidden referrerpolicy="no-referrer"><span class="v11-ph" aria-hidden="true">' + V10_NOTE_SVG + '</span></div>' +
+    '<div class="v11-meta"><small class="v11-src" id="v11Src"></small><b class="v11-title" id="v11Title"></b><span class="v11-artist" id="v11Artist"></span><span class="v11-album" id="v11Album"></span></div></div>' +
+    '<canvas class="v10-viz v11-viz" id="v11Viz" aria-hidden="true"></canvas>' +
+    '<div class="v11-prog" id="v11ProgW"><div class="v10-track"><i id="v11Bar"></i></div><div class="v10-times"><span id="v11Pos"></span><span id="v11Dur"></span></div></div>' +
+    '<div class="v11-live" id="v11Live" hidden><i aria-hidden="true"></i>LIVE</div>' +
+    '<div class="v10-ctl v11-ctl" role="group" aria-label="Playback controls"><button type="button" class="v10-c" data-m11="prev" aria-label="Previous">' + v10Ico("prev") + '</button><button type="button" class="v10-c v10-pp" data-m11="toggle" id="v11PP" aria-label="Play">' + v10Ico("play") + '</button><button type="button" class="v10-c" data-m11="next" aria-label="Next">' + v10Ico("next") + '</button></div>' +
+    '<div class="v11-row"><button type="button" class="v11-pick" data-m11="pick">Genres &amp; stations</button><button type="button" class="v11-fav" id="v11Fav" data-m11="fav" aria-pressed="false" aria-label="Save to favorites">☆</button>' +
+    '<label class="v11-vol" id="v11VolW"><span class="sr-only">Volume</span><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9zm12.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4z"/></svg><input type="range" id="v11Vol" min="0" max="100" step="1" aria-label="Volume"></label></div>' +
+    '<p class="v11-credit" id="v11Credit"></p>' +
+    '<input type="file" id="v11File" accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.flac,.opus" multiple hidden></div>';
+  card.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-m11],#v11More"); if (!b) return; e.preventDefault(); e.stopPropagation();
+    var k = b.id === "v11More" ? "pick" : b.getAttribute("data-m11");
+    if (k === "toggle") v11Toggle(); else if (k === "next") v11Next(); else if (k === "prev") v11Prev(); else if (k === "fav") v11ToggleFav(); else if (k === "pick") v11Picker();
+  });
+  var vol = $("#v11Vol"); vol.value = String(Math.round(M11.vol * 100));
+  vol.addEventListener("input", function () { v11SetVol(+vol.value / 100); });
+  ["pointerdown", "touchstart"].forEach(function (t) { vol.addEventListener(t, function (e) { e.stopPropagation(); }, { passive: true }); });
+  if (IOS) $("#v11VolW").hidden = true; /* iPhone volume is the hardware buttons; Safari ignores page volume */
+  $("#v11File").addEventListener("change", function (e) { v11LoadFiles(e.target.files); });
+  try { new IntersectionObserver(function (en) { M11.vis = en[0].isIntersecting; if (M11.vis) v11Viz(); }).observe(card); } catch (e) {}
+}
+function v11Paint() {
+  var w = $("#v11"); if (!w) return;
+  var m = v11Meta(), playing = M11.state === "playing", g = v11G(M11.gen), hasSrc = !!(M11.el && M11.el.getAttribute("src"));
+  w.setAttribute("data-state", M11.state); w.setAttribute("data-mode", M11.mode); w.style.setProperty("--g", g.c);
+  function set(id, v) { var el = $("#" + id); if (el && el.textContent !== v) el.textContent = v; }
+  set("v11Src", m.src);
+  var title = m.title, artist = m.artist, album = m.album;
+  var cur0 = v11Cur(); if (cur0 || (M11.mode === "radio" && M11.st && M11.state === "loading")) hasSrc = hasSrc || M11.state === "loading";
+  if (M11.state === "loading" && !hasSrc) { artist = "Loading…"; album = ""; }
+  else if (M11.state === "loading") { artist = artist || "Loading…"; }
+  else if (M11.state === "error") { artist = "Didn’t load · tap ▶ to try again"; album = ""; }
+  else if (!hasSrc) { artist = M11.mode === "radio" ? (M11.st ? M11.st.name : "Live stations") : "Free full tracks · tap ▶"; album = M11.mode === "radio" && M11.st ? "Live radio · tap ▶" : ""; if (M11.mode === "radio" && M11.st) { title = M11.st.name; artist = "Live radio · tap ▶"; album = ""; } }
+  else if (M11.mode === "radio" && m.honest) { artist = "Live · this station doesn’t share song info"; }
+  set("v11Title", title); set("v11Artist", artist); set("v11Album", album);
+  var img = $("#v11Art"), src = hasSrc || M11.mode === "radio" ? (m.art || "") : "";
+  if (img) { if (src) { if (img.getAttribute("src") !== src) { img.hidden = true; img.onload = function () { img.hidden = false; }; img.onerror = function () { img.hidden = true; }; img.src = src; } else if (img.complete && img.naturalWidth) img.hidden = false; img.alt = album ? "Cover: " + album : "Cover art"; } else { img.hidden = true; img.removeAttribute("src"); } }
+  var pp = $("#v11PP"); if (pp) { var lab = playing || M11.state === "loading" && M11.el && !M11.el.paused ? "Pause" : "Play"; if (pp.getAttribute("aria-label") !== lab) { pp.setAttribute("aria-label", lab); pp.innerHTML = v10Ico(lab === "Pause" ? "pause" : "play"); } }
+  $("#v11ProgW").hidden = M11.mode === "radio" || !hasSrc; $("#v11Live").hidden = !(M11.mode === "radio" && playing);
+  var fav = $("#v11Fav"), k = v11Key(), on = k && v11IsFav(k); if (fav) { fav.hidden = !k; fav.textContent = on ? "★" : "☆"; fav.setAttribute("aria-pressed", on ? "true" : "false"); fav.setAttribute("aria-label", on ? "Remove from favorites" : "Save to favorites"); }
+  var cr = $("#v11Credit"), t = v11Cur(), ch = "";
+  if (M11.mode === "tracks" && t) ch = "Internet Archive · " + v11Lic(t.lic);
+  else if (M11.mode === "tracks") ch = "Free Creative Commons music from the Internet Archive";
+  else if (M11.mode === "radio" && M11.st) { var h = ""; try { h = new URL(M11.st.url).hostname; } catch (e) {} ch = "Station stream from " + h + " · directory: radio-browser.info" + (M11.np ? " · song info from the station" : ""); }
+  else if (M11.mode === "local") ch = "Playing from this device";
+  if (cr && cr.textContent !== ch) cr.textContent = ch;
+  $("#cardPlay").classList.toggle("is-playing", playing);
+  v11Prog(); v11Viz();
+}
+function v11Lic(u) { var m = String(u || "").match(/licenses\/([a-z-]+)\/([\d.]+)/i); return m ? "CC " + m[1].toUpperCase() + " " + m[2] : /publicdomain/.test(u) ? "Public domain" : "Creative Commons"; }
+function v11Prog() {
+  var bar = $("#v11Bar"); if (!bar || !M11.el) return;
+  var d = isFinite(M11.el.duration) ? M11.el.duration : 0, p = M11.el.currentTime || 0;
+  if (!d && v11Cur() && v11Cur().dur) d = v11Cur().dur;
+  bar.style.transform = "scaleX(" + (d ? Math.min(1, p / d) : 0).toFixed(4) + ")";
+  var a = $("#v11Pos"), b = $("#v11Dur"), ps = d ? v10Fmt(p * 1000) : "", ds = d ? v10Fmt(d * 1000) : ""; if (a.textContent !== ps) a.textContent = ps; if (b.textContent !== ds) b.textContent = ds;
+}
+var V11_LV = new Array(32).fill(0);
+function v11Viz() {
+  if (M11.raf) return; var cv = $("#v11Viz"); if (!cv) return;
+  function frame(ts) {
+    M11.raf = 0; var w = cv.clientWidth, h = cv.clientHeight; if (!w || !h) return;
+    var playing = M11.state === "playing", motion = v9Motion() && !matchMedia("(prefers-reduced-motion: reduce)").matches, N = V11_LV.length;
+    var dpr = Math.min(2, window.devicePixelRatio || 1); if (cv.width !== Math.round(w * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+    var g = cv.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+    var data = null; if (playing && M11.an && M11.el === V11_CORS_A) { data = new Uint8Array(M11.an.frequencyBinCount); M11.an.getByteFrequencyData(data); }
+    var t = (ts || 0) / 1000;
+    for (var i = 0; i < N; i++) {
+      var tg;
+      if (!playing) tg = 0.06 + 0.04 * Math.sin(i * 0.9);
+      else if (data) tg = Math.pow((data[Math.min(data.length - 1, 1 + Math.floor(i * (data.length * 0.7) / N))] || 0) / 255, 1.4);
+      else if (!motion) tg = 0.25 + 0.35 * Math.abs(Math.sin(i * 1.7));
+      else tg = 0.18 + 0.62 * Math.abs(Math.sin(t * (1.6 + (i % 5) * 0.37) + i * 0.8) * Math.sin(t * 0.9 + i * 0.33));
+      V11_LV[i] += (tg - V11_LV[i]) * (motion ? 0.4 : 1);
+    }
+    var gap = 3, bw = Math.max(2, (w - gap * (N - 1)) / N), gr = g.createLinearGradient(0, h, 0, 0);
+    gr.addColorStop(0, "#05d9e8"); gr.addColorStop(0.6, "#b26bff"); gr.addColorStop(1, "#ff4fd8");
+    g.fillStyle = gr; g.shadowColor = playing ? "rgba(255,79,216,.55)" : "transparent"; g.shadowBlur = playing ? 8 : 0;
+    for (var j = 0; j < N; j++) { var bh = Math.max(2, V11_LV[j] * (h - 4)); g.globalAlpha = playing ? 0.95 : 0.35; g.fillRect(j * (bw + gap), (h - bh) / 2, bw, bh); }
+    g.globalAlpha = 1;
+    if (playing && motion && M11.vis && !document.hidden) M11.raf = requestAnimationFrame(frame);
+  }
+  M11.raf = requestAnimationFrame(frame);
+}
+document.addEventListener("visibilitychange", function () { if (!document.hidden) { v11Viz(); v11NpPoll(); } });
+try { new MutationObserver(function () { v11Viz(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["class"] }); } catch (e) {}
+/* ---- picker sheet: genres (full tracks), live radio, favorites, recent, device ---- */
+function v11Picker(tab) {
+  var s = v11Saved(), favs = s.favs || [], rec = s.recent || [];
+  function chips(kind) { return '<div class="v11-chips">' + V11_GEN.map(function (g) { var on = M11.gen === g.id && ((kind === "radio") === (M11.mode === "radio")); return '<button type="button" class="v11-chip' + (on ? " on" : "") + '" data-p-' + kind + '="' + g.id + '" style="--g:' + g.c + '">' + esc(g.n) + "</button>"; }).join("") + "</div>"; }
+  function rows(list) { return list.map(function (e, i) { return '<button type="button" class="mrow v11-row-i" data-p-e="' + i + '"><span class="grow"><b>' + esc(e.n) + "</b><small>" + (e.mode === "radio" ? "Live radio" : "Free music · " + esc(v11G(e.gen).n)) + '</small></span><span aria-hidden="true">▶</span></button>'; }).join(""); }
+  var html = '<h3 class="v11-h">// FREE MUSIC · FULL TRACKS</h3>' + chips("tracks") +
+    '<h3 class="v11-h">// LIVE RADIO</h3>' + chips("radio") + '<div id="v11StList" class="v11-stlist"></div>' +
+    (favs.length ? '<h3 class="v11-h">// FAVORITES</h3><div data-list="f">' + rows(favs) + "</div>" : "") +
+    (rec.length ? '<h3 class="v11-h">// RECENTLY PLAYED</h3><div data-list="r">' + rows(rec.slice(0, 6)) + "</div>" : "") +
+    '<h3 class="v11-h">// THIS DEVICE</h3><button type="button" class="mrow" data-p-file="1"><span class="grow">Play music saved on this device</span><span aria-hidden="true">›</span></button>' +
+    '<p class="note v11-src-note">Free music: Creative Commons netlabel releases on the Internet Archive (archive.org). Live radio: public station streams listed by radio-browser.info; song info shows only when the station shares it. No account, no ads added.</p>' +
+    '<button type="button" class="v11-ext" data-p-app="1">Open ' + esc(currentMedia().name) + ' instead ↗</button>';
+  sheet("♫ MUSIC", html, function (b) {
+    function stList(gen) {
+      var box = b.querySelector("#v11StList"); if (!box) return; box.innerHTML = '<p class="note">Loading stations…</p>';
+      v11Stations(gen).then(function (list) {
+        box.innerHTML = list.length ? list.slice(0, 15).map(function (st, i) { var on = M11.mode === "radio" && M11.st && M11.st.uuid === st.uuid; return '<button type="button" class="mrow v11-st' + (on ? " on" : "") + '" data-p-st="' + i + '"><span class="grow"><b>' + esc(st.name) + "</b><small>" + esc([st.cc, st.codec, st.br ? st.br + " kbps" : ""].filter(Boolean).join(" · ")) + '</small></span><span aria-hidden="true">' + (on ? "●" : "▶") + "</span></button>"; }).join("") : '<p class="note">No stations right now.</p>';
+        box._list = list;
+      }).catch(function () { box.innerHTML = '<p class="note">Live radio didn’t load.</p>'; });
+    }
+    if (M11.mode === "radio") stList(M11.gen);
+    b.addEventListener("click", function (e) {
+      var x = e.target.closest("[data-p-tracks],[data-p-radio],[data-p-st],[data-p-e],[data-p-file],[data-p-app]"); if (!x) return;
+      e.preventDefault();
+      if (x.hasAttribute("data-p-tracks")) { closeSheet(); v11PlayGenre(x.getAttribute("data-p-tracks")); }
+      else if (x.hasAttribute("data-p-radio")) { var gid = x.getAttribute("data-p-radio"); [].forEach.call(b.querySelectorAll("[data-p-radio]"), function (c) { c.classList.toggle("on", c === x); }); stList(gid); v11PlayRadio(gid); }
+      else if (x.hasAttribute("data-p-st")) { var box = b.querySelector("#v11StList"), st = box._list[+x.getAttribute("data-p-st")]; M11.stations = box._list; M11.si = +x.getAttribute("data-p-st"); closeSheet(); M11.gen = st.gen; v11StartStation(st); }
+      else if (x.hasAttribute("data-p-e")) { var lst = x.closest("[data-list]").getAttribute("data-list") === "f" ? favs : rec; closeSheet(); v11Run(lst[+x.getAttribute("data-p-e")]); }
+      else if (x.hasAttribute("data-p-file")) { closeSheet(); var f = $("#v11File"); if (f) { f.value = ""; f.click(); } }
+      else if (x.hasAttribute("data-p-app")) { closeSheet(); openApp(currentMedia()); }
+    });
+  });
+}
+/* ---- one-shot: orbit Listen, "play music", "play lofi", "hip hop radio", "pause", "next song" ---- */
+var V11_SYN = [["lofi", /\b(lo-?fi|lo fi|lofi|study beats|chill beats|beats to study)\b/], ["hiphop", /\b(hip ?-?hop|rap|trap|r&b|rnb)\b/], ["electronic", /\b(electronic|edm|techno|house|dance|electro|trance|dnb|drum and bass)\b/], ["chill", /\b(chill|ambient|relax(ing)?|sleep|calm|downtempo|chillout)\b/], ["pop", /\bpop\b/], ["rock", /\b(rock|indie|punk|metal|alternative)\b/], ["jazz", /\b(jazz|blues|soul|swing)\b/]];
+function v11GenOf(s) { for (var i = 0; i < V11_SYN.length; i++) if (V11_SYN[i][1].test(s)) return V11_SYN[i][0]; return ""; }
+function v11GoCard() { try { v6GoCard("cardPlay"); } catch (e) { var c = $("#cardPlay"); if (c) c.scrollIntoView({ block: "center" }); } }
+function v11Intent(raw) {
+  var n = String(raw || "").toLowerCase().trim().replace(/[!.?]+$/, ""); if (!n) return null;
+  var tag = "ZAPWISE PLAYER · NO SIGN-IN";
+  if (/^(pause|stop)( the)?( music| song| radio| playing)?$/.test(n) && M11.el && !M11.el.paused) return { intent: "media", icon: "listen", title: "Pause music", sub: v11Meta().title, tag: tag, primary: { label: "Pause", run: v11Pause }, more: [] };
+  if (/^(next|skip)( song| track| station)?$|^(next|skip) (this )?(song|track|station)$/.test(n)) return { intent: "media", icon: "listen", title: M11.mode === "radio" ? "Next station" : "Next track", sub: "In Now Playing", tag: tag, primary: { label: "Skip", run: function () { v11GoCard(); v11Next(); } }, more: [] };
+  if (/^(previous|prev|back)( song| track| station)?$/.test(n)) return { intent: "media", icon: "listen", title: "Previous", sub: "In Now Playing", tag: tag, primary: { label: "Back", run: function () { v11GoCard(); v11Prev(); } }, more: [] };
+  var pm = n.match(/^(?:play|put on|listen to|i want to hear)(?: some| me| the| a)?(?:\s+(.*))?$/), isMusic = /\b(music|songs?|radio|station|tunes|beats|playlist)\b/.test(n), gen = v11GenOf(n), radio = /\b(radio|station|live)\b/.test(n);
+  if (!pm) {
+    var rest = n; V11_SYN.forEach(function (x) { rest = rest.replace(new RegExp(x[1].source, "g"), " "); });
+    rest = rest.replace(/\b(music|songs?|radio|stations?|tunes|beats|playlist|some|live|free|please|online|a|the|my|me)\b/g, " ").trim();
+    if (rest || (!gen && !isMusic)) return null;
+  }
+  if (pm) pm[1] = pm[1] || "";
+  var what = pm ? pm[1].replace(/\b(music|songs?|radio|station|tunes|please|for me|now|some|live)\b/g, "").replace(/\s+/g, " ").trim() : "";
+  var more = [{ label: "Pick a genre or station", run: function () { v11GoCard(); v11Picker(); } }, { label: "Play music from this device", run: function () { v11GoCard(); var f = $("#v11File"); if (f) { f.value = ""; f.click(); } } }];
+  if (gen) {
+    var g = v11G(gen);
+    if (radio) return { intent: "media", icon: "listen", title: "Live " + g.n + " radio", sub: "Public stations via radio-browser.info · plays here", tag: tag, primary: { label: "Play", run: function () { v11GoCard(); v11PlayRadio(gen); } }, more: [{ label: "Free " + g.n + " tracks instead", run: function () { v11GoCard(); v11PlayGenre(gen); } }].concat(more) };
+    return { intent: "media", icon: "listen", title: "Play " + g.n, sub: "Free full tracks with song + artist · plays here", tag: tag, primary: { label: "Play", run: function () { v11GoCard(); v11PlayGenre(gen); } }, more: [{ label: "Live " + g.n + " radio", run: function () { v11GoCard(); v11PlayRadio(gen); } }].concat(more) };
+  }
+  if (what && what.length >= 2 && !/^(something|anything|a song|my music|music)$/.test(what)) return { intent: "media", icon: "listen", title: "Play “" + what + "”", sub: "Searches free Creative Commons music · plays here", tag: tag, primary: { label: "Play", run: function () { v11GoCard(); v11PlayGenre(M11.gen, { query: what }); } }, more: more };
+  var last = M11.mode === "radio" && M11.st ? M11.st.name : v11G(M11.gen).n;
+  return { intent: "media", icon: "listen", title: "Play music", sub: last + " · plays here", tag: tag, primary: { label: "Play", run: function () { v11GoCard(); v11Play(); } }, more: more };
+}
+var _v11Parse = v9Parse;
+v9Parse = function (raw) { var r = null; try { r = v11Intent(raw); } catch (e) {} if (r) return r; r = _v11Parse(raw); if (r && r.intent === "media") { var x = v11Intent("play music"); return x; } return r; };
+var _v11Zap = zapHandle;
+zapHandle = function (raw) { var r = null; try { r = v11Intent(raw); } catch (e) {} _v11Zap(raw); if (r && r.primary) { try { r.primary.run(); closeZapAssistant(); } catch (e2) {} } };
+var _v11OpenDest = v6OpenDest;
+v6OpenDest = function (id, o) { if (id === "listen") { v11GoCard(); if (!(M11.el && !M11.el.paused)) v11Play(); var c = $("#cardPlay"); if (c) { c.classList.add("v10-pulse"); setTimeout(function () { c.classList.remove("v10-pulse"); }, 1400); } return; } return _v11OpenDest(id, o); };
+(function v11Init() {
+  var old = $("#v10Np"); if (old) { try { var a = $("#v10Audio"); if (a) a.pause(); } catch (e) {} }
+  var card = $("#cardPlay"); if (card) { card.innerHTML = ""; }
+  v11Build(); v11Paint();
+  try { window.ZAPOS = window.ZAPOS || {}; window.ZAPOS.v11 = { M: M11, play: v11Play, pause: v11Pause, next: v11Next, prev: v11Prev, genre: v11PlayGenre, radio: v11PlayRadio, meta: v11Meta, intent: v11Intent }; } catch (e) {}
+})();
 
 })(); /* end ZAPWISE//OS app scope */

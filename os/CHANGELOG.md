@@ -201,3 +201,18 @@ Header (ZAPWISE//OS · LIVE · settings) → search / Ask ZAP AI + chips → Tod
 **Desktop ≥1200 px**: time + orbit hero (2 columns) with Now Playing and Focus beside it; Navigate spans 2 columns next to Banking; Apps full width.
 
 **QA**: new `qa428.mjs` — 9 sizes WebKit (iPhone 13/SE/iPad mini/1440) + Chromium (iPhone 13/Pixel 7/1024/1440/1920): time above the orbit and ≥56 px, no duplicate clock, no Wind down/Accept/onboarding anywhere (also on a first visit), card order, no overflow/overlap, ≥44 px targets, 0 console errors; Now Playing not-connected, connected-ready (PKCE authorize URL), connected (mocked Spotify in the test: track, artist, album art, progress, pause/next calls, URL cleanup, no secret), device files (ID3, Media Session, visualizer, next, pause); Focus ring, task, full screen, Esc, reset; plus all qa427 orbit/one-answer/Shop checks. 481/481. qa427 is superseded (it expects the Today card).
+
+## v4.29.0 — 2026-11-10 — Music plays inside ZAPWISE (no sign-in)
+- Now Playing is a real player now. You don't need an account, there are no keys, and it never hands you off to another app. It has big cover art, the song title, artist and album or station, play/pause, previous/next, a volume slider (iPhone uses its hardware buttons), favorites ★, and a live visualizer. The visualizer shows a real Web Audio spectrum where the stream allows CORS, and animates otherwise. It respects the Motion setting, and iOS skips Web Audio so playback keeps going when the screen locks.
+- Sources (all free and legal to stream, credited on the card):
+  - **Internet Archive netlabels**: full tracks, Creative Commons licenses only (the license is shown per track). Title, artist, album and cover come from the archive.org metadata API. Clips under 30 s are skipped, and a basic word filter drops explicit item names.
+  - **Radio Browser** (radio-browser.info): community directory of public stations by genre. Only https streams that passed their last check are used, and plays are reported as the API asks.
+  - **Station song info**: each station's own AzuraCast now-playing API or ICY StreamTitle, read through the new $0 Cloudflare Worker `zapwise-radio` (https://zapwise-radio.zapwisehq.workers.dev/np, CORS limited to zapwiseai.com, 15 s cache). When a station shares no song info, the card says so and shows only the station name.
+  - SomaFM is **not** used: its terms (Sep 2026) forbid third-party apps.
+- Genres: Lofi, Hip-hop, Electronic, Chill, Pop, Rock and Jazz, each as free tracks or live radio. The "Genres & stations" sheet adds the station list, Favorites, Recently played, Play files from this device, a sources note, and a tiny "Open … instead ↗" link (the only hand-off left).
+- ZAP one-shot: "play music", "play lofi", "play hip hop", "jazz radio", "play <anything>" (searches CC music), "pause", "next", "skip" and "previous" act right away from the search bar or the ZAP sheet. The ZAP sheet closes itself. The orbit's Listen starts playback on the card.
+- Lock screen: Media Session title/artist/album/artwork, play/pause/next/previous/seek, and position state.
+- Remembers the last genre or station, volume, favorites and recent plays on this device (`v11music`).
+- Spotify connect is removed from the card (the PKCE code stays dormant). Device files with ID3 tags still work.
+- CSP: connect-src adds archive.org, the radio-browser hosts and the worker. media-src allows https streams.
+- QA: qa429 556/556 (Chromium + WebKit iPhone/iPad/desktop matrix, mocked sources). qa429_live 11/11 (real IA tracks, real AzuraCast station song info through the deployed worker, a real radio-browser station, analyser spectrum, Media Session, no navigation, 0 console errors).
