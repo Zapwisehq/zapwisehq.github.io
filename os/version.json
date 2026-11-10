@@ -1,6 +1,6 @@
 {
-  "version": "4.29.0",
+  "version": "4.30.0",
   "built": "2026-11-10",
   "channel": "stable",
-  "notes": "v4.29.0: Music plays right inside ZAPWISE, no sign-in. Pick a genre (Lofi, Hip-hop, Electronic, Chill, Pop, Rock, Jazz) for free full tracks with the song, artist and cover, or live radio stations. Play, pause, next, previous, volume, favorites and recently played, a live visualizer, and lock-screen controls. Say or type \"play lofi\" and it starts here."
+  "notes": "v4.30.0: Now Playing is six live genres — Rock, Heavy Rock, Techno, Deep House, Jazz and Lo-fi. Each genre is a short list of free stations the operator names for that genre. A failed stream tries the same station’s other address, then the other station in that genre. It does not switch genre. Say or type \"play techno\", \"play deep house\", \"play heavy rock\", \"play jazz\" or \"play lo-fi\"."
 }

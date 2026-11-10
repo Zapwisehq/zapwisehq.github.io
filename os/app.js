@@ -1,7 +1,7 @@
 /* ZAPWISE//OS web app v4.13.2 (Nov 5, 2026). Equal-height desktop Focus/Phone. Plaid-only Bank. Motion toggle. No tabs. Source: edit app.js → build.sh → app.min.js. */
 (function () {
 "use strict";
-var VERSION = '4.29.0';
+var VERSION = '4.30.0';
 var APP_VERSION = VERSION;
 
 // v4.5: default Lite on coarse/mobile unless user already chose
@@ -7670,7 +7670,7 @@ function tourSteps() {
   var S = [
     ["#srch", "Search", "Search your apps, or the web with the provider you pick. The mic searches by voice."],
     ["#panelToday", "Today", "Time, date and weather. Tap the weather for hourly and days ahead. Calendar and Note open below."],
-    ["#cardPlay", "Now Playing", "Free music and live radio that play right here: song, artist, cover art and controls. ··· picks a genre or station."],
+    ["#cardPlay", "Now Playing", "Six live genres play right here: Rock, Heavy Rock, Techno, Deep House, Jazz and Lo-fi. ··· picks a genre or station."],
     ["#mFocus", "Focus", "Pick 15, 25 or 50 minutes, type what you’re working on, and tap Full screen to hide everything else."],
     ["#panelNav", "Navigate", "Live map with traffic plus your saved places. Tap a place for directions."],
     ["#panelMoney", "Banking", "Your linked bank via Plaid. Only the last 4 digits show. The eye hides balances."],
@@ -10469,28 +10469,84 @@ anyOverlayOpen = function () { return _v10AOO() || v10ImmIsOpen(); };
 v10FocPaint(); setInterval(v10FocPaint, 500);
 try { window.ZAPOS = window.ZAPOS || {}; window.ZAPOS.v10 = { state: function () { return { active: v10Active(), np: ($("#v10Np") || {}).getAttribute && $("#v10Np").getAttribute("data-state"), sp: !!V10.sp, ready: v10SpReady(), cfgDone: V10.cfgDone, q: V10.q.length }; }, setCfg: function (id) { V10.cfg = id ? { clientId: id } : null; v10NpPaint(); }, poll: v10SpPoll, loadFiles: v10LoadFiles, focusOpen: v10ImmOpen, focusClose: v10ImmClose }; } catch (e) {}
 
-/* ========== v4.29 MUSIC INSIDE ZAPWISE: free full tracks (Internet Archive, CC) + live radio (Radio Browser), no sign-in ========== */
+/* ========== v4.30 MUSIC: six curated live stations, no sign-in ==========
+   Genre taps used to search Internet Archive and Radio Browser by a broad tag
+   ("electronic", "rock", …). That search returned other genres, including metal
+   for Electronic. Playback is now a fixed list. Each station is one the operator
+   names for that genre, and each backup is the same genre. SomaFM is not used. */
 var V11_GEN = [
-  { id: "lofi", n: "Lofi", ia: 'lofi OR "lo-fi" OR lofihiphop', rb: "lofi", c: "#b26bff" },
-  { id: "hiphop", n: "Hip-hop", ia: '"hip hop" OR hiphop OR rap OR "hip-hop"', rb: "hiphop", c: "#ff4fd8" },
-  { id: "electronic", n: "Electronic", ia: "electronic OR techno OR house OR electronica", rb: "electronic", c: "#05d9e8" },
-  { id: "chill", n: "Chill", ia: "ambient OR chillout OR downtempo", rb: "chillout", c: "#3dff9e" },
-  { id: "pop", n: "Pop", ia: "pop OR synthpop OR electropop", rb: "pop", c: "#ffb547" },
-  { id: "rock", n: "Rock", ia: "rock OR indie OR punk", rb: "rock", c: "#ff5a5a" },
-  { id: "jazz", n: "Jazz", ia: "jazz OR nujazz OR \"nu jazz\"", rb: "jazz", c: "#7aa7ff" }
+  { id: "rock", n: "Rock", c: "#ff5a5a", forbid: /\b(metal|techno|house|jazz|hip-?hop|edm|punk)\b/i },
+  { id: "heavy", n: "Heavy Rock", c: "#ff7a18", forbid: /\b(techno|house|jazz|hip-?hop|lo-?fi|edm|pop)\b/i },
+  { id: "techno", n: "Techno", c: "#05d9e8", forbid: /\b(metal|rock|jazz|hip-?hop|punk|house)\b/i },
+  { id: "deephouse", n: "Deep House", c: "#ff4fd8", forbid: /\b(metal|techno|rock|jazz|hip-?hop|punk)\b/i },
+  { id: "jazz", n: "Jazz", c: "#7aa7ff", forbid: /\b(metal|techno|house|rock|hip-?hop|punk|edm)\b/i },
+  { id: "lofi", n: "Lo-fi", c: "#b26bff", forbid: /\b(metal|techno|rock|punk|house|edm)\b/i }
 ];
+var V11_KEEP = { lofi: "lofi", jazz: "jazz", rock: "rock" };
+/* Operator pages and stream metadata checked 2026-11-10. alt is the same station’s other published URL. */
+var V11_CURATED = {
+  rock: [
+    { id: "rp-rock", name: "Radio Paradise Rock Mix", url: "https://stream.radioparadise.com/rock-320", alt: "https://stream.radioparadise.com/rock-128", home: "https://radioparadise.com/listen/stream-links", codec: "AAC", br: 320, cc: "US", gen: "rock", line: "Modern and classic rock · radioparadise.com", via: "Stream link published for other players" },
+    { id: "flux-alt", name: "Radio Alternative", url: "https://channels.fluxfm.de/alternative/externalembedflxhp/stream.mp3", alt: "https://channels.fluxfm.de/alternative/externalembedflxhp/stream.aac", home: "https://www.fluxfm.de/flux-musik-streams", codec: "MP3", br: 256, cc: "DE", gen: "rock", line: "Indie rock · fluxfm.de", via: "FluxFM external-player URL" }
+  ],
+  heavy: [
+    { id: "flux-metal", name: "MetalFM", url: "https://channels.fluxfm.de/metal-fm/externalembedflxhp/stream.mp3", alt: "https://channels.fluxfm.de/metal-fm/externalembedflxhp/stream.aac", home: "https://www.fluxfm.de/channels/c07531b0-a882-42f2-ae6d-645435c634db", codec: "MP3", br: 320, cc: "DE", gen: "heavy", line: "Heavy · rock through metal · fluxfm.de", via: "FluxFM external-player URL" },
+    { id: "hrh", name: "Hard Rock Heaven", url: "https://ais-sa2.cdnstream1.com/1521_128", alt: "", home: "https://www.hrhradio.com/", codec: "MP3", br: 128, cc: "US", gen: "heavy", uuid: "aeb82637-ba20-4cee-9072-50cab4f9e723", line: "80s hard rock and hair metal · hrhradio.com", via: "Station publishes a stream for VLC and other players" }
+  ],
+  techno: [
+    { id: "flux-techno", name: "Techno Underground", url: "https://channels.fluxfm.de/techno-underground/externalembedflxhp/stream.mp3", alt: "https://channels.fluxfm.de/techno-underground/externalembedflxhp/stream.aac", home: "https://www.fluxfm.de/channels/39773beb-7f28-4c18-9b8b-2bad32190ce9", codec: "MP3", br: 256, cc: "DE", gen: "techno", line: "24/7 pure techno · fluxfm.de", via: "FluxFM external-player URL" }
+  ],
+  deephouse: [
+    { id: "edh", name: "Extreme Deep House", url: "https://stream3.rcast.net/72921", alt: "https://whsh4u-panel.com/proxy/yfryujzw/stream", home: "https://www.extremedeephouse.com/", codec: "MP3", br: 320, cc: "BG", gen: "deephouse", uuid: "105e5e91-67bd-4638-80d5-004124e50cce", line: "Deep house · extremedeephouse.com", via: "Operator publishes the stream for sites and apps" },
+    { id: "flux-beach", name: "Berlin Beach House", url: "https://channels.fluxfm.de/berlin-beach-house/externalembedflxhp/stream.mp3", alt: "https://channels.fluxfm.de/berlin-beach-house/externalembedflxhp/stream.aac", home: "https://www.fluxfm.de/channels/46832ac0-dd71-42c4-be02-2646d919207c", codec: "MP3", br: 256, cc: "DE", gen: "deephouse", line: "Slow, deep house mixes · fluxfm.de", via: "FluxFM external-player URL" }
+  ],
+  jazz: [
+    { id: "jazz24", name: "Jazz24", url: "https://knkx-live-a.edge.audiocdn.com/6285_128k", alt: "https://knkx-live-a.edge.audiocdn.com/6285_256k", home: "https://www.jazz24.org/listening", codec: "MP3", br: 128, cc: "US", gen: "jazz", uuid: "c60cb1ef-b88f-4bbc-a24b-e911a534259f", line: "Jazz · jazz24.org", via: "Stream link published for VLC and other players" },
+    { id: "flux-jazz", name: "Jazzradio Schwarzenstein", url: "https://channels.fluxfm.de/jazz-schwarzenstein/externalembedflxhp/stream.mp3", alt: "https://channels.fluxfm.de/jazz-schwarzenstein/externalembedflxhp/stream.aac", home: "https://www.fluxfm.de/channels/f71292b4-14b1-4353-96b5-2114a0793334", codec: "MP3", br: 256, cc: "DE", gen: "jazz", line: "Jazz · fluxfm.de", via: "FluxFM external-player URL" }
+  ],
+  lofi: [
+    { id: "flux-chill", name: "Chillhop", url: "https://channels.fluxfm.de/chillhop/externalembedflxhp/stream.mp3", alt: "https://channels.fluxfm.de/chillhop/externalembedflxhp/stream.aac", home: "https://www.fluxfm.de/flux-musik-streams", codec: "MP3", br: 320, cc: "DE", gen: "lofi", line: "Lo-fi hip hop · fluxfm.de", via: "FluxFM external-player URL" },
+    { id: "rey-lofi", name: "REYFM Lo-fi", url: "https://listen.reyfm.de/lofi_320kbps.mp3", alt: "https://listen.reyfm.de/lofi_128kbps.mp3", home: "https://rey.fm/", codec: "MP3", br: 320, cc: "DE", gen: "lofi", uuid: "4e681355-3ebb-4b6c-a79a-d7cc81a0afd5", line: "Lo-fi · rey.fm", via: "Station channel stream" }
+  ]
+};
 var V11_RB = ["de1", "de2", "fi1"], V11_NPW = "https://zapwise-radio.zapwisehq.workers.dev/np?u=";
-function v11G(id) { for (var i = 0; i < V11_GEN.length; i++) if (V11_GEN[i].id === id) return V11_GEN[i]; return V11_GEN[0]; }
+var V11_GONE = [["Electronic", /\belectronic\b|\bedm\b/], ["Hip-hop", /\bhip[\s-]?hop\b|\brap\b/], ["Chill", /\bchill(?:out)?\b|\bambient\b/], ["Pop", /\bpop\b/]];
+function v11G(id) {
+  id = V11_KEEP[id] || id;
+  for (var i = 0; i < V11_GEN.length; i++) if (V11_GEN[i].id === id) return V11_GEN[i];
+  return null;
+}
+function v11GOr(id) { return v11G(id) || { id: "", n: "Music", c: "#05d9e8", forbid: /$a/ }; }
+function v11Clone(st) {
+  return { id: st.id, name: st.name, url: st.url, alt: st.alt || "", home: st.home || "", codec: st.codec || "", br: st.br || 0, cc: st.cc || "", gen: st.gen, uuid: st.uuid || "", line: st.line || "", via: st.via || "", fav: "" };
+}
+function v11MatchStation(raw) {
+  if (!raw) return null;
+  var g = v11G(raw.gen);
+  var lists = g ? [V11_CURATED[g.id]] : [];
+  if (!g) { for (var k in V11_CURATED) lists.push(V11_CURATED[k]); }
+  for (var a = 0; a < lists.length; a++) {
+    var list = lists[a] || [];
+    for (var i = 0; i < list.length; i++) {
+      var st = list[i];
+      if ((raw.id && st.id === raw.id) || (raw.uuid && st.uuid && st.uuid === raw.uuid) || (raw.url && st.url === raw.url)) return st;
+    }
+  }
+  return null;
+}
 function v11Saved() { var s = Store.getLocal("v11music", null); return s && typeof s === "object" ? s : {}; }
 function v11Save(p) { var s = v11Saved(); for (var k in p) s[k] = p[k]; try { Store.setLocal("v11music", s); } catch (e) {} }
-var M11 = (function () { var s = v11Saved(); return { mode: s.mode === "radio" && s.st ? "radio" : "tracks", gen: v11G(s.gen || "lofi").id, st: s.st || null, vol: typeof s.vol === "number" ? Math.max(0, Math.min(1, s.vol)) : 0.8, q: [], qi: 0, albums: {}, played: {}, stations: [], si: 0, np: null, state: "idle", el: null, an: null, ctx: null, raf: 0, vis: true, npT: 0, fails: 0, loadTok: 0, local: [], li: 0 }; })();
+var M11 = (function () {
+  var s = v11Saved(), g = v11G(s.gen), known = v11MatchStation(s.st);
+  return { mode: "radio", gen: g ? g.id : "", st: known ? v11Clone(known) : null, vol: typeof s.vol === "number" ? Math.max(0, Math.min(1, s.vol)) : 0.8, q: [], qi: 0, stations: [], si: 0, np: null, state: "idle", el: null, an: null, ctx: null, raf: 0, vis: true, npT: 0, fails: 0, playTok: 0, local: [], li: 0 };
+})();
 var V11_CORS_A = null, V11_PLAIN_A = null;
 function v11El(cors) {
   if (cors && !V11_CORS_A) { V11_CORS_A = new Audio(); V11_CORS_A.crossOrigin = "anonymous"; V11_CORS_A.preload = "none"; v11Bind(V11_CORS_A); }
   if (!cors && !V11_PLAIN_A) { V11_PLAIN_A = new Audio(); V11_PLAIN_A.preload = "none"; v11Bind(V11_PLAIN_A); }
   var el = cors ? V11_CORS_A : V11_PLAIN_A, other = cors ? V11_PLAIN_A : V11_CORS_A;
   if (other && !other.paused) { try { other.pause(); } catch (e) {} }
-  if (other) { try { other.removeAttribute("src"); other.load(); } catch (e) {} }
+  if (other) { try { other.removeAttribute("src"); other.load(); } catch (e2) {} }
   el.volume = M11.vol; M11.el = el; return el;
 }
 function v11Bind(a) {
@@ -10501,107 +10557,133 @@ function v11Bind(a) {
   a.addEventListener("timeupdate", function () { if (a === M11.el) v11Prog(); });
   a.addEventListener("loadedmetadata", function () { if (a === M11.el) { v11Prog(); v11Session(); } });
   a.addEventListener("ended", function () { if (a === M11.el) v11Next(); });
-  a.addEventListener("error", function () { if (a !== M11.el || !a.getAttribute("src")) return; v11Fail(a); });
+  a.addEventListener("error", function () { if (a !== M11.el || !a.getAttribute("src")) return; if (a.error && a.error.code === 1) return; v11Fail(a); });
+}
+function v11StreamUrl(st) {
+  if (st.using === "alt" && st.alt) return st.alt;
+  if (st.using === "rb" && st.rbUrl) return st.rbUrl;
+  return st.url;
 }
 function v11Fail(a) {
-  if (M11.mode === "radio" && a === V11_CORS_A && M11.st && !M11.st.plain) { M11.st.plain = 1; v11StartStation(M11.st, true); return; } /* station has no CORS: play it without the analyser */
-  M11.fails++;
-  if (M11.fails > 4) { M11.state = "error"; v11Paint(); toast("Couldn’t play that. Check your connection"); return; }
-  toast(M11.mode === "radio" ? "Station offline, trying the next one" : "Track unavailable, skipping");
-  v11Next();
+  if (M11.mode === "local") {
+    if (M11._handled === M11.playTok) return;
+    M11._handled = M11.playTok; M11.fails++;
+    if (M11.fails > 3 || M11.qi >= M11.q.length - 1) { M11.state = "error"; v11Paint(); toast("Couldn’t play that file"); return; }
+    toast("Track unavailable, skipping"); v11PlayIdx(M11.qi + 1); return;
+  }
+  var st = M11.st;
+  if (!st || st._handled === M11.playTok) return;
+  if (a === V11_CORS_A && !st.plain) { st.plain = 1; v11StartStation(st, true); return; }
+  st._handled = M11.playTok;
+  if (st.alt && st.using !== "alt" && st.using !== "rb") {
+    st.using = "alt"; st.plain = 0; toast(st.name + " didn’t start, trying its other stream"); v11StartStation(st, false); return;
+  }
+  if (st.uuid && !st.rbTried) {
+    st.rbTried = 1;
+    v11RefreshSame(st).then(function (url) {
+      if (st !== M11.st) return;
+      if (!url || url === st.url || url === st.alt) { v11FailOver(); return; }
+      st.using = "rb"; st.rbUrl = url; st.plain = 0; toast("Trying the station’s updated stream"); v11StartStation(st, false);
+    }).catch(function () { if (st === M11.st) v11FailOver(); });
+    return;
+  }
+  v11FailOver();
+}
+function v11FailOver() {
+  var g = v11G(M11.gen), list = M11.stations || [], start = M11.si, name = g ? g.n : "That station";
+  if (list[start]) list[start]._dead = 1;
+  for (var n = 1; n < list.length; n++) {
+    var i = (start + n) % list.length;
+    if (!list[i]._dead) { M11.si = i; toast(name + " didn’t start, trying the other " + name + " station"); v11StartStation(list[i], false); return; }
+  }
+  M11.state = "error"; v11Paint(); toast(name + " didn’t load. Nothing from another genre was played.");
 }
 function v11Analyser() {
   if (IOS || M11.an || !V11_CORS_A) return; /* iPhone: keep audio outside Web Audio so it keeps playing when the screen locks */
-  try { var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return; M11.ctx = M11.ctx || new AC(); var s = M11.ctx.createMediaElementSource(V11_CORS_A), an = M11.ctx.createAnalyser(); an.fftSize = 128; an.smoothingTimeConstant = 0.8; s.connect(an); an.connect(M11.ctx.destination); M11.an = an; } catch (e) { M11.an = null; }
+  try {
+    var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+    M11.ctx = M11.ctx || new AC();
+    var arm = function () {
+      if (M11.an || !V11_CORS_A || !M11.ctx || M11.ctx.state !== "running") return;
+      try { var s = M11.ctx.createMediaElementSource(V11_CORS_A), an = M11.ctx.createAnalyser(); an.fftSize = 128; an.smoothingTimeConstant = 0.8; s.connect(an); an.connect(M11.ctx.destination); M11.an = an; v11Viz(); } catch (e) { M11.an = null; }
+    };
+    if (M11.ctx.state === "running") arm();
+    else { var p = M11.ctx.resume(); if (p && p.then) p.then(arm).catch(function () {}); }
+  } catch (e) { M11.an = null; }
 }
 function v11Go(el, url) {
   el.src = url; if (el === V11_CORS_A) v11Analyser();
   try { if (M11.ctx && M11.ctx.state === "suspended") M11.ctx.resume(); } catch (e) {}
-  var p = el.play(); if (p && p.catch) p.catch(function (err) { if (err && err.name === "NotAllowedError") { M11.state = "paused"; v11Paint(); toast("Tap ▶ to start"); } });
+  try {
+    var p = el.play();
+    if (p && p.catch) p.catch(function (err) { if (err && (err.name === "NotAllowedError" || err.name === "InvalidStateError")) { M11.state = "paused"; v11Paint(); if (err.name === "NotAllowedError") toast("Tap ▶ to start"); } });
+  } catch (err) { M11.state = "paused"; v11Paint(); }
 }
-/* ---- Internet Archive netlabels: Creative Commons full tracks with real title / artist / album / cover ---- */
-function v11IaSearch(q, rows) {
-  var url = "https://archive.org/advancedsearch.php?q=" + encodeURIComponent("collection:netlabels AND mediatype:audio AND licenseurl:*creativecommons* AND (" + q + ")") + "&fl[]=identifier&fl[]=title&fl[]=creator&fl[]=licenseurl&sort[]=downloads+desc&rows=" + (rows || 60) + "&output=json";
-  return fetch(url).then(function (r) { if (!r.ok) throw new Error("ia " + r.status); return r.json(); }).then(function (j) { return ((j.response && j.response.docs) || []).filter(function (d) { return !V11_RUDE.test(String(d.title || "") + " " + String(d.creator || "")); }); });
-}
-var V11_RUDE = /(vagina|penis|fuck|shit|porn|sex|cock|pussy|nigg|cunt|bitch|whore|slut|rape|nazi|cum\b|dick\b|tits?\b)/i;
-function v11Dur(s) { var p = String(s || "").split(":").map(Number); if (p.some(isNaN)) return +s || 0; return p.reduce(function (a, b) { return a * 60 + b; }, 0); }
-function v11IaTracks(id) {
-  return fetch("https://archive.org/metadata/" + encodeURIComponent(id)).then(function (r) { if (!r.ok) throw new Error("md"); return r.json(); }).then(function (d) {
-    var md = d.metadata || {}, lic = String(md.licenseurl || ""); if (!/creativecommons\.org|publicdomain/.test(lic)) return [];
-    var seen = {}, out = [];
-    (d.files || []).forEach(function (f) {
-      if (!/^(VBR MP3|MP3|128Kbps MP3|64Kbps MP3|256Kbps MP3|320Kbps MP3)$/.test(f.format || "")) return;
-      var nm = String(f.name || ""); if (!nm || /_vbr\.mp3$/i.test(nm) && seen.vbrskip) return;
-      var key = (f.track || "") + "|" + String(f.title || nm.replace(/(_vbr)?\.mp3$/i, "")).toLowerCase(); if (seen[key]) return; seen[key] = 1;
-      var dur = v11Dur(f.length); if (dur && dur < 30) return;
-      var fromName = v10FromName(nm.split("/").pop());
-      var cre = Array.isArray(md.creator) ? md.creator.join(", ") : md.creator;
-      var tt = String(f.title || fromName.title || nm).replace(/^\s*\d{1,3}\s*[-.)_]\s*/, ""), ar = String(f.artist || f.creator || cre || fromName.artist || "");
-      var sp = tt.match(/^(.{1,60}?)\s+[-\u2013]\s+(.+)$/); if (sp && (!ar || /^(various|va|various artists)$/i.test(ar.trim()))) { ar = sp[1]; tt = sp[2]; } else if (sp && ar && sp[1].toLowerCase() === ar.trim().toLowerCase()) tt = sp[2];
-      var alb = String(f.album || (Array.isArray(md.title) ? md.title[0] : md.title) || "").replace(/^[a-z]{1,8}\d{1,5}\s*[-:]\s*(various\s*-\s*)?/i, "");
-      if (V11_RUDE.test(tt + " " + ar)) return;
-      out.push({ title: tt.slice(0, 140), artist: (ar || "Unknown artist").slice(0, 120), album: alb.slice(0, 140), art: "https://archive.org/services/img/" + encodeURIComponent(id), url: "https://archive.org/download/" + encodeURIComponent(id) + "/" + nm.split("/").map(encodeURIComponent).join("/"), dur: dur, item: id, lic: lic, n: +String(f.track || "").split("/")[0] || 999 });
-    });
-    out.sort(function (a, b) { return a.n - b.n; });
-    return out.slice(0, 40);
-  });
-}
-function v11LoadAlbum(gen, query) {
-  var tok = ++M11.loadTok, key = query ? "q:" + query : gen;
-  var docs = M11.albums[key] ? Promise.resolve(M11.albums[key]) : v11IaSearch(query ? '"' + query.replace(/"/g, "") + '"' : v11G(gen).ia, query ? 30 : 80).then(function (d) { M11.albums[key] = d; return d; });
-  return docs.then(function (d) {
-    if (!d.length) throw new Error("none");
-    var pool = d.filter(function (x) { return !M11.played[x.identifier]; }); if (!pool.length) { M11.played = {}; pool = d; }
-    var top = pool.slice(0, Math.max(8, Math.min(pool.length, 40))), tries = 0;
-    function attempt() {
-      var pick = top[Math.floor(Math.random() * top.length)]; M11.played[pick.identifier] = 1;
-      return v11IaTracks(pick.identifier).then(function (t) { if (t.length) return t; if (++tries > 4) throw new Error("none"); return attempt(); });
-    }
-    return attempt();
-  }).then(function (tracks) { if (tok !== M11.loadTok) return null; return tracks; });
-}
-function v11PlayGenre(gen, opt) {
-  opt = opt || {}; gen = v11G(gen).id;
-  M11.mode = "tracks"; M11.gen = gen; M11.np = null; M11.state = "loading"; M11.q = []; M11.qi = 0; v11Save({ mode: "tracks", gen: gen }); v11Recent({ k: "gen:" + gen, mode: "tracks", gen: gen, n: v11G(gen).n });
-  var el = v11El(true); try { el.pause(); } catch (e) {}
-  if (!IOS) v11Analyser();
-  v11Paint();
-  return v11LoadAlbum(gen, opt.query).then(function (t) { if (!t) return; M11.q = t; M11.qi = 0; v11PlayIdx(0); }).catch(function () { M11.state = "error"; v11Paint(); toast(opt.query ? "No free music found for “" + opt.query + "”" : "Free music didn’t load. Check your connection"); });
-}
-function v11PlayIdx(i) { var t = M11.q[i]; if (!t) return; M11.qi = i; M11.state = "loading"; v11Paint(); v11Go(v11El(true), t.url); v11Session(); }
-/* ---- live radio: Radio Browser directory; song info only when the station shares it ---- */
 function v11Rb(path) {
   var hosts = V11_RB.slice(), i = 0;
   function tryNext() { if (i >= hosts.length) return Promise.reject(new Error("rb")); var h = hosts[i++]; return fetch("https://" + h + ".api.radio-browser.info" + path).then(function (r) { if (!r.ok) throw new Error("rb " + r.status); return r.json(); }).catch(function () { return tryNext(); }); }
   return tryNext();
 }
-function v11Stations(gen) {
-  var g = v11G(gen); if (M11["rb_" + g.id]) return Promise.resolve(M11["rb_" + g.id]);
-  return v11Rb("/json/stations/bytag/" + encodeURIComponent(g.rb) + "?hidebroken=true&order=clickcount&reverse=true&limit=80").then(function (list) {
-    var seen = {}, out = (list || []).filter(function (s) { var u = String(s.url_resolved || ""); if (!/^https:\/\//.test(u) || !/^(MP3|AAC|AAC\+|OGG)$/i.test(s.codec || "") || +s.lastcheckok !== 1) return false; var k = String(s.name || "").toLowerCase().trim(); if (!k || seen[k]) return false; seen[k] = 1; return true; }).slice(0, 30).map(function (s) {
-      return { uuid: s.stationuuid, name: (String(s.name).replace(/^[^A-Za-z0-9\u00C0-\uFFFF]+/, "").replace(/\s*(-{2,}>|\|).*$/, "").replace(/\s+/g, " ").trim() || String(s.name).trim()).slice(0, 60), url: s.url_resolved, fav: /^https:\/\//.test(s.favicon || "") ? s.favicon : "", cc: s.countrycode || "", br: +s.bitrate || 0, codec: s.codec, home: /^https?:\/\//.test(s.homepage || "") ? s.homepage : "", gen: g.id };
-    });
-    M11["rb_" + g.id] = out; return out;
+function v11RefreshSame(st) {
+  var g = v11G(st.gen);
+  return v11Rb("/json/stations/byuuid/" + encodeURIComponent(st.uuid)).then(function (list) {
+    var s = list && list[0]; if (!s || s.stationuuid !== st.uuid) return null;
+    var blob = (String(s.tags || "") + " " + String(s.name || "")).toLowerCase();
+    if (g && g.forbid && g.forbid.test(blob)) return null;
+    var u = String(s.url_resolved || "");
+    if (!/^https:\/\//.test(u)) return null;
+    if (s.codec && !/^(MP3|AAC|AAC\+)$/i.test(s.codec)) return null;
+    if (+s.lastcheckok === 0) return null;
+    return u;
   });
 }
-function v11PlayRadio(gen, st) {
-  gen = v11G(gen).id; M11.mode = "radio"; M11.gen = gen; M11.state = "loading"; M11.np = null; v11Paint();
-  var go = function (list) { M11.stations = list; if (!list.length) throw new Error("none"); var i = 0; if (st) { i = list.findIndex(function (x) { return x.uuid === st.uuid; }); if (i < 0) { list.unshift(st); i = 0; } } M11.si = i; v11StartStation(list[i]); };
-  return v11Stations(gen).then(go).catch(function () { if (st) { M11.stations = [st]; M11.si = 0; v11StartStation(st); return; } M11.state = "error"; v11Paint(); toast("Live radio didn’t load. Check your connection"); });
+function v11Stations(gen) {
+  var g = v11G(gen);
+  return Promise.resolve(g ? (V11_CURATED[g.id] || []).map(v11Clone) : []);
 }
+function v11PlayRadio(gen, st) {
+  var g = v11G(gen || (st && st.gen));
+  if (!g) { M11.state = "idle"; v11Paint(); toast("Pick Rock, Heavy Rock, Techno, Deep House, Jazz or Lo-fi"); return Promise.resolve(); }
+  M11.mode = "radio"; M11.gen = g.id; M11.state = "loading"; M11.np = null; M11.fails = 0; v11Save({ mode: "radio", gen: g.id }); v11Paint();
+  return v11Stations(g.id).then(function (list) {
+    if (!list.length) throw new Error("none");
+    var i = 0;
+    if (st) {
+      i = -1;
+      for (var n = 0; n < list.length; n++) if (list[n].id === st.id || (st.uuid && list[n].uuid === st.uuid) || list[n].url === st.url) i = n;
+      if (i < 0) { var err = new Error("foreign"); throw err; }
+    }
+    M11.stations = list; M11.si = i; v11StartStation(list[i], false);
+  }).catch(function (err) {
+    if (err && err.message === "foreign") { toast("That station isn’t in this genre"); M11.state = "error"; v11Paint(); return; }
+    M11.state = "error"; v11Paint(); toast(g.n + " didn’t load. Nothing from another genre was played.");
+  });
+}
+function v11PlayGenre(gen) { return v11PlayRadio(gen); }
 function v11StartStation(st, plain) {
-  M11.mode = "radio"; M11.st = st; M11.np = null; M11.state = "loading"; v11Save({ mode: "radio", gen: st.gen || M11.gen, st: { uuid: st.uuid, name: st.name, url: st.url, fav: st.fav, cc: st.cc, br: st.br, codec: st.codec, gen: st.gen } }); v11Recent({ k: "st:" + st.uuid, mode: "radio", st: st, n: st.name });
-  v11Paint(); v11Go(v11El(!(plain || st.plain)), st.url); v11Session();
-  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(st.uuid || "")) try { v11Rb("/json/url/" + encodeURIComponent(st.uuid)).catch(function () {}); } catch (e) {} /* Radio Browser click count, as its API asks */
+  M11.mode = "radio"; M11.st = st; M11.np = null; M11.state = "loading"; M11.playTok++; st._handled = 0;
+  if (plain) st.plain = 1;
+  var playUrl = v11StreamUrl(st);
+  v11Save({ mode: "radio", gen: st.gen || M11.gen, st: { id: st.id, uuid: st.uuid || "", name: st.name, url: st.url, alt: st.alt || "", home: st.home || "", codec: st.codec || "", br: st.br || 0, cc: st.cc || "", gen: st.gen, line: st.line || "", via: st.via || "" } });
+  v11Recent({ k: "st:" + st.id, mode: "radio", st: { id: st.id, uuid: st.uuid || "", name: st.name, url: st.url, gen: st.gen }, n: st.name, gen: st.gen });
+  v11Paint(); v11Go(v11El(!st.plain), playUrl); v11Session();
+  if (!st.plain && st.using !== "alt" && st.using !== "rb" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(st.uuid || "")) try { v11Rb("/json/url/" + encodeURIComponent(st.uuid)).catch(function () {}); } catch (e) {}
+}
+function v11SongOk(title, artist, stationName) {
+  title = String(title || "").trim(); artist = String(artist || "").trim();
+  if (!title) return false;
+  if (stationName && title.toLowerCase() === String(stationName).toLowerCase()) return false;
+  if (/will continue after this break|commercial break|this station will|advertisement/i.test(title + " " + artist)) return false;
+  if (/^adwtag/i.test(artist) || /^adwtag/i.test(title)) return false;
+  return true;
 }
 function v11NpPoll(now) {
   clearTimeout(M11.npT);
   if (M11.mode !== "radio" || !M11.st || M11.state !== "playing" || document.hidden) { if (M11.mode === "radio") M11.npT = setTimeout(v11NpPoll, 30000); return; }
-  var st = M11.st;
-  fetch(V11_NPW + encodeURIComponent(st.url)).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+  var st = M11.st, url = v11StreamUrl(st);
+  fetch(V11_NPW + encodeURIComponent(url)).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
     if (st !== M11.st) return;
-    var nn = j && j.ok && j.title ? { title: j.title, artist: j.artist || "", art: /^https:\/\//.test(j.art || "") ? j.art : "" } : null;
+    var nn = j && j.ok && v11SongOk(j.title, j.artist, st.name) ? { title: String(j.title).trim().slice(0, 140), artist: String(j.artist || "").trim().slice(0, 120), art: /^https:\/\//.test(j.art || "") ? j.art : "" } : null;
     var ch = JSON.stringify(nn) !== JSON.stringify(M11.np); M11.np = nn; if (ch) { v11Paint(); v11Session(); }
   }).catch(function () {}).then(function () { M11.npT = setTimeout(v11NpPoll, 20000); });
 }
@@ -10615,49 +10697,77 @@ function v11LoadFiles(list) {
   M11.mode = "local"; M11.q = M11.local; v11PlayIdx(0);
 }
 /* ---- controls ---- */
-function v11Cur() { if (M11.mode === "radio") return null; return M11.q[M11.qi] || null; }
+function v11Cur() { if (M11.mode !== "local") return null; return M11.q[M11.qi] || null; }
 function v11Play() {
   if (M11.el && M11.el.getAttribute("src") && M11.state !== "error") { try { if (M11.ctx && M11.ctx.state === "suspended") M11.ctx.resume(); } catch (e) {} var p = M11.el.play(); if (p && p.catch) p.catch(function () {}); return; }
-  if (M11.mode === "radio" && M11.st) return v11PlayRadio(M11.st.gen || M11.gen, M11.st);
   if (M11.mode === "local" && M11.local.length) return v11PlayIdx(M11.qi);
-  return v11PlayGenre(M11.gen);
+  if (M11.mode === "radio" && M11.st && M11.gen) return v11PlayRadio(M11.st.gen || M11.gen, M11.st);
+  if (M11.gen) return v11PlayGenre(M11.gen);
+  v11Picker(); toast("Pick Rock, Heavy Rock, Techno, Deep House, Jazz or Lo-fi");
 }
 function v11Pause() { if (M11.el) M11.el.pause(); }
 function v11Toggle() { if (M11.el && !M11.el.paused && M11.state !== "error") v11Pause(); else v11Play(); }
+function v11Step(dir) {
+  if (!M11.stations.length) return v11PlayRadio(M11.gen);
+  if (M11.stations.length === 1) {
+    var only = v11G(M11.gen);
+    toast("Only one " + (only ? only.n : "") + " station");
+    if (M11.state === "error") { var one = M11.stations[0]; one.using = ""; one.plain = 0; one._dead = 0; one.rbTried = 0; v11StartStation(one, false); }
+    return;
+  }
+  M11.si = (M11.si + dir + M11.stations.length) % M11.stations.length;
+  var st = M11.stations[M11.si];
+  st.using = ""; st.plain = 0; st._dead = 0; st.rbTried = 0; v11StartStation(st, false);
+}
 function v11Next() {
-  if (M11.mode === "radio") { if (!M11.stations.length) return v11PlayRadio(M11.gen); M11.si = (M11.si + 1) % M11.stations.length; return v11StartStation(M11.stations[M11.si]); }
   if (M11.mode === "local") { if (M11.qi < M11.q.length - 1) return v11PlayIdx(M11.qi + 1); toast("End of your files"); return; }
-  if (M11.qi < M11.q.length - 1) return v11PlayIdx(M11.qi + 1);
-  return v11PlayGenre(M11.gen); /* end of album: next album in this genre */
+  return v11Step(1);
 }
 function v11Prev() {
-  if (M11.mode === "radio") { if (!M11.stations.length) return; M11.si = (M11.si - 1 + M11.stations.length) % M11.stations.length; return v11StartStation(M11.stations[M11.si]); }
-  if (M11.el && M11.el.currentTime > 4) { M11.el.currentTime = 0; return; }
-  if (M11.qi > 0) return v11PlayIdx(M11.qi - 1);
-  if (M11.el) M11.el.currentTime = 0;
+  if (M11.mode === "local") {
+    if (M11.el && M11.el.currentTime > 4) { M11.el.currentTime = 0; return; }
+    if (M11.qi > 0) return v11PlayIdx(M11.qi - 1);
+    if (M11.el) M11.el.currentTime = 0; return;
+  }
+  if (M11.el && M11.el.currentTime > 4 && M11.mode !== "radio") { M11.el.currentTime = 0; return; }
+  return v11Step(-1);
 }
-function v11SetVol(v) { M11.vol = Math.max(0, Math.min(1, v)); if (M11.el) M11.el.volume = M11.vol; v11Save({ vol: M11.vol }); }
+function v11PlayIdx(i) { var t = M11.q[i]; if (!t) return; M11.qi = i; M11.mode = "local"; M11.state = "loading"; M11.playTok++; v11Paint(); v11Go(v11El(true), t.url); v11Session(); }
+function v11SetVol(v) { M11.vol = Math.max(0, Math.min(1, v)); if (M11.el) M11.el.volume = M11.vol; if (V11_CORS_A) V11_CORS_A.volume = M11.vol; if (V11_PLAIN_A) V11_PLAIN_A.volume = M11.vol; v11Save({ vol: M11.vol }); }
 /* ---- favorites / recent ---- */
-function v11Key() { return M11.mode === "radio" && M11.st ? "st:" + M11.st.uuid : M11.mode === "tracks" ? "gen:" + M11.gen : ""; }
+function v11Key() { return M11.mode === "radio" && M11.st ? "st:" + M11.st.id : ""; }
 function v11Recent(e) { var r = (v11Saved().recent || []).filter(function (x) { return x.k !== e.k; }); r.unshift(e); v11Save({ recent: r.slice(0, 8) }); }
 function v11IsFav(k) { return (v11Saved().favs || []).some(function (x) { return x.k === k; }); }
 function v11ToggleFav() {
-  var k = v11Key(); if (!k) return; var f = v11Saved().favs || [];
+  var k = v11Key(); if (!k || !M11.st) return; var f = v11Saved().favs || [];
   if (v11IsFav(k)) { f = f.filter(function (x) { return x.k !== k; }); toast("Removed from favorites"); }
-  else { f.unshift(M11.mode === "radio" ? { k: k, mode: "radio", st: M11.st, n: M11.st.name } : { k: k, mode: "tracks", gen: M11.gen, n: v11G(M11.gen).n }); toast("Saved to favorites"); }
+  else { f.unshift({ k: k, mode: "radio", gen: M11.st.gen, st: { id: M11.st.id, uuid: M11.st.uuid || "", name: M11.st.name, url: M11.st.url, gen: M11.st.gen }, n: M11.st.name }); toast("Saved to favorites"); }
   v11Save({ favs: f.slice(0, 20) }); v11Paint();
 }
-function v11Run(e) { if (!e) return; if (e.mode === "radio" && e.st) v11PlayRadio(e.st.gen || M11.gen, e.st); else v11PlayGenre(e.gen || "lofi"); }
+function v11Run(e) {
+  if (!e) return;
+  var g = v11G(e.gen || (e.st && e.st.gen));
+  if (!g) { toast("That saved genre isn’t in the player. Pick Rock, Heavy Rock, Techno, Deep House, Jazz or Lo-fi"); v11Picker(); return; }
+  if (e.st) {
+    var known = v11MatchStation(e.st);
+    if (!known || known.gen !== g.id) { toast("That station isn’t in " + g.n); return; }
+    return v11PlayRadio(g.id, known);
+  }
+  return v11PlayGenre(g.id);
+}
 /* ---- media session (lock screen) ---- */
+function v11Host(u) { try { return new URL(u).hostname.replace(/^www\./, ""); } catch (e) { return ""; } }
 function v11Meta() {
-  var g = v11G(M11.gen);
+  var g = v11GOr(M11.gen);
+  if (M11.mode === "local") {
+    var t = v11Cur();
+    if (t) return { title: t.title, artist: t.artist, album: t.album, art: t.art, src: "THIS DEVICE · " + (M11.qi + 1) + "/" + M11.q.length, honest: false };
+  }
   if (M11.mode === "radio" && M11.st) {
     var n = M11.np;
-    return { title: n ? n.title : M11.st.name, artist: n ? (n.artist || M11.st.name) : "Live radio", album: n ? M11.st.name : (M11.st.cc ? M11.st.cc + " · " : "") + g.n, art: (n && n.art) || M11.st.fav || "", src: "LIVE RADIO · " + g.n.toUpperCase(), honest: !n };
+    return { title: n ? n.title : M11.st.name, artist: n ? (n.artist || M11.st.name) : "Live radio", album: n ? M11.st.name : g.n, art: (n && n.art) || "", src: "LIVE · " + g.n.toUpperCase(), honest: !n };
   }
-  var t = v11Cur();
-  if (t) return { title: t.title, artist: t.artist, album: t.album, art: t.art, src: M11.mode === "local" ? "THIS DEVICE · " + (M11.qi + 1) + "/" + M11.q.length : "FREE MUSIC · " + g.n.toUpperCase() };
-  return { title: M11.mode === "radio" ? "Live radio" : g.n, artist: "", album: "", art: "", src: (M11.mode === "radio" ? "LIVE RADIO · " : "FREE MUSIC · ") + g.n.toUpperCase() };
+  return { title: g.id ? g.n : "Pick a genre", artist: "", album: "", art: "", src: g.id ? ("LIVE · " + g.n.toUpperCase()) : "LIVE RADIO" };
 }
 function v11Session() {
   if (!("mediaSession" in navigator)) return;
@@ -10665,12 +10775,12 @@ function v11Session() {
     var m = v11Meta(), art = m.art ? [{ src: m.art, sizes: "512x512" }] : [{ src: "/os/icon-512.png", sizes: "512x512", type: "image/png" }];
     if (M11.el && M11.el.getAttribute("src")) navigator.mediaSession.metadata = new MediaMetadata({ title: m.title || "ZAPWISE//OS", artist: m.artist || "", album: m.album || "ZAPWISE//OS", artwork: art });
     navigator.mediaSession.playbackState = M11.el && !M11.el.paused ? "playing" : (M11.el && M11.el.getAttribute("src") ? "paused" : "none");
-    if (M11.mode !== "radio" && M11.el && isFinite(M11.el.duration) && M11.el.duration > 0 && navigator.mediaSession.setPositionState) navigator.mediaSession.setPositionState({ duration: M11.el.duration, position: Math.min(M11.el.currentTime || 0, M11.el.duration), playbackRate: 1 });
+    if (M11.mode === "local" && M11.el && isFinite(M11.el.duration) && M11.el.duration > 0 && navigator.mediaSession.setPositionState) navigator.mediaSession.setPositionState({ duration: M11.el.duration, position: Math.min(M11.el.currentTime || 0, M11.el.duration), playbackRate: 1 });
   } catch (e) {}
 }
 (function v11Handlers() {
   if (!("mediaSession" in navigator)) return;
-  var H = { play: v11Play, pause: v11Pause, stop: v11Pause, previoustrack: v11Prev, nexttrack: v11Next, seekto: function (d) { if (M11.mode !== "radio" && M11.el && d && d.seekTime != null) M11.el.currentTime = d.seekTime; } };
+  var H = { play: v11Play, pause: v11Pause, stop: v11Pause, previoustrack: v11Prev, nexttrack: v11Next, seekto: function (d) { if (M11.mode === "local" && M11.el && d && d.seekTime != null) M11.el.currentTime = d.seekTime; } };
   Object.keys(H).forEach(function (k) { try { navigator.mediaSession.setActionHandler(k, H[k]); } catch (e) {} });
 })();
 /* ---- card ---- */
@@ -10703,39 +10813,41 @@ function v11Build() {
 }
 function v11Paint() {
   var w = $("#v11"); if (!w) return;
-  var m = v11Meta(), playing = M11.state === "playing", g = v11G(M11.gen), hasSrc = !!(M11.el && M11.el.getAttribute("src"));
+  var m = v11Meta(), playing = M11.state === "playing", g = v11GOr(M11.gen), hasSrc = !!(M11.el && M11.el.getAttribute("src"));
   w.setAttribute("data-state", M11.state); w.setAttribute("data-mode", M11.mode); w.style.setProperty("--g", g.c);
   function set(id, v) { var el = $("#" + id); if (el && el.textContent !== v) el.textContent = v; }
   set("v11Src", m.src);
   var title = m.title, artist = m.artist, album = m.album;
-  var cur0 = v11Cur(); if (cur0 || (M11.mode === "radio" && M11.st && M11.state === "loading")) hasSrc = hasSrc || M11.state === "loading";
-  if (M11.state === "loading" && !hasSrc) { artist = "Loading…"; album = ""; }
+  if (M11.mode === "radio" && (M11.st || M11.state === "loading")) hasSrc = hasSrc || M11.state === "loading";
+  if (!g.id && M11.mode !== "local") { title = "Pick a genre"; artist = "Rock, Heavy Rock, Techno, Deep House, Jazz, Lo-fi"; album = ""; }
+  else if (M11.state === "loading" && !hasSrc) { artist = "Loading…"; album = ""; }
   else if (M11.state === "loading") { artist = artist || "Loading…"; }
   else if (M11.state === "error") { artist = "Didn’t load · tap ▶ to try again"; album = ""; }
-  else if (!hasSrc) { artist = M11.mode === "radio" ? (M11.st ? M11.st.name : "Live stations") : "Free full tracks · tap ▶"; album = M11.mode === "radio" && M11.st ? "Live radio · tap ▶" : ""; if (M11.mode === "radio" && M11.st) { title = M11.st.name; artist = "Live radio · tap ▶"; album = ""; } }
-  else if (M11.mode === "radio" && m.honest) { artist = "Live · this station doesn’t share song info"; }
+  else if (!hasSrc) {
+    if (M11.mode === "local") { artist = artist || "Play a file from this device"; }
+    else if (M11.st) { title = M11.st.name; artist = "Live · tap ▶"; album = g.n; }
+    else { title = g.n; artist = "Live · tap ▶"; album = ""; }
+  } else if (M11.mode === "radio" && m.honest) { artist = "Live · this station doesn’t share song info"; album = g.n; }
   set("v11Title", title); set("v11Artist", artist); set("v11Album", album);
-  var img = $("#v11Art"), src = hasSrc || M11.mode === "radio" ? (m.art || "") : "";
+  var img = $("#v11Art"), src = (M11.mode === "local" || (M11.mode === "radio" && hasSrc)) ? (m.art || "") : "";
   if (img) { if (src) { if (img.getAttribute("src") !== src) { img.hidden = true; img.onload = function () { img.hidden = false; }; img.onerror = function () { img.hidden = true; }; img.src = src; } else if (img.complete && img.naturalWidth) img.hidden = false; img.alt = album ? "Cover: " + album : "Cover art"; } else { img.hidden = true; img.removeAttribute("src"); } }
   var pp = $("#v11PP"); if (pp) { var lab = playing || M11.state === "loading" && M11.el && !M11.el.paused ? "Pause" : "Play"; if (pp.getAttribute("aria-label") !== lab) { pp.setAttribute("aria-label", lab); pp.innerHTML = v10Ico(lab === "Pause" ? "pause" : "play"); } }
-  $("#v11ProgW").hidden = M11.mode === "radio" || !hasSrc; $("#v11Live").hidden = !(M11.mode === "radio" && playing);
+  var prog = $("#v11ProgW"); if (prog) prog.hidden = M11.mode !== "local" || !hasSrc;
+  var live = $("#v11Live"); if (live) live.hidden = !(M11.mode === "radio" && playing);
   var fav = $("#v11Fav"), k = v11Key(), on = k && v11IsFav(k); if (fav) { fav.hidden = !k; fav.textContent = on ? "★" : "☆"; fav.setAttribute("aria-pressed", on ? "true" : "false"); fav.setAttribute("aria-label", on ? "Remove from favorites" : "Save to favorites"); }
-  var cr = $("#v11Credit"), t = v11Cur(), ch = "";
-  if (M11.mode === "tracks" && t) ch = "Internet Archive · " + v11Lic(t.lic);
-  else if (M11.mode === "tracks") ch = "Free Creative Commons music from the Internet Archive";
-  else if (M11.mode === "radio" && M11.st) { var h = ""; try { h = new URL(M11.st.url).hostname; } catch (e) {} ch = "Station stream from " + h + " · directory: radio-browser.info" + (M11.np ? " · song info from the station" : ""); }
+  var cr = $("#v11Credit"), ch = "";
+  if (M11.mode === "radio" && M11.st) ch = M11.st.name + " · " + (v11Host(v11StreamUrl(M11.st)) || v11Host(M11.st.url)) + " · " + (M11.st.via || "Live stream") + (M11.np ? " · song info from the station" : "");
   else if (M11.mode === "local") ch = "Playing from this device";
+  else ch = "Six live genres. No account. Song title only when the station sends it.";
   if (cr && cr.textContent !== ch) cr.textContent = ch;
-  $("#cardPlay").classList.toggle("is-playing", playing);
+  var card = $("#cardPlay"); if (card) card.classList.toggle("is-playing", playing);
   v11Prog(); v11Viz();
 }
-function v11Lic(u) { var m = String(u || "").match(/licenses\/([a-z-]+)\/([\d.]+)/i); return m ? "CC " + m[1].toUpperCase() + " " + m[2] : /publicdomain/.test(u) ? "Public domain" : "Creative Commons"; }
 function v11Prog() {
-  var bar = $("#v11Bar"); if (!bar || !M11.el) return;
+  var bar = $("#v11Bar"); if (!bar || !M11.el || M11.mode === "radio") return;
   var d = isFinite(M11.el.duration) ? M11.el.duration : 0, p = M11.el.currentTime || 0;
-  if (!d && v11Cur() && v11Cur().dur) d = v11Cur().dur;
   bar.style.transform = "scaleX(" + (d ? Math.min(1, p / d) : 0).toFixed(4) + ")";
-  var a = $("#v11Pos"), b = $("#v11Dur"), ps = d ? v10Fmt(p * 1000) : "", ds = d ? v10Fmt(d * 1000) : ""; if (a.textContent !== ps) a.textContent = ps; if (b.textContent !== ds) b.textContent = ds;
+  var a = $("#v11Pos"), b = $("#v11Dur"), ps = d ? v10Fmt(p * 1000) : "", ds = d ? v10Fmt(d * 1000) : ""; if (a && a.textContent !== ps) a.textContent = ps; if (b && b.textContent !== ds) b.textContent = ds;
 }
 var V11_LV = new Array(32).fill(0);
 function v11Viz() {
@@ -10766,65 +10878,78 @@ function v11Viz() {
 }
 document.addEventListener("visibilitychange", function () { if (!document.hidden) { v11Viz(); v11NpPoll(); } });
 try { new MutationObserver(function () { v11Viz(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["class"] }); } catch (e) {}
-/* ---- picker sheet: genres (full tracks), live radio, favorites, recent, device ---- */
-function v11Picker(tab) {
-  var s = v11Saved(), favs = s.favs || [], rec = s.recent || [];
-  function chips(kind) { return '<div class="v11-chips">' + V11_GEN.map(function (g) { var on = M11.gen === g.id && ((kind === "radio") === (M11.mode === "radio")); return '<button type="button" class="v11-chip' + (on ? " on" : "") + '" data-p-' + kind + '="' + g.id + '" style="--g:' + g.c + '">' + esc(g.n) + "</button>"; }).join("") + "</div>"; }
-  function rows(list) { return list.map(function (e, i) { return '<button type="button" class="mrow v11-row-i" data-p-e="' + i + '"><span class="grow"><b>' + esc(e.n) + "</b><small>" + (e.mode === "radio" ? "Live radio" : "Free music · " + esc(v11G(e.gen).n)) + '</small></span><span aria-hidden="true">▶</span></button>'; }).join(""); }
-  var html = '<h3 class="v11-h">// FREE MUSIC · FULL TRACKS</h3>' + chips("tracks") +
-    '<h3 class="v11-h">// LIVE RADIO</h3>' + chips("radio") + '<div id="v11StList" class="v11-stlist"></div>' +
+/* ---- picker: one tap per genre, then that genre’s stations only ---- */
+function v11Picker() {
+  var s = v11Saved();
+  var favs = (s.favs || []).filter(function (e) { return v11G(e.gen || (e.st && e.st.gen)) && (!e.st || v11MatchStation(e.st)); });
+  var rec = (s.recent || []).filter(function (e) { return v11G(e.gen || (e.st && e.st.gen)) && (!e.st || v11MatchStation(e.st)); });
+  function chips() { return '<div class="v11-chips">' + V11_GEN.map(function (g) { var on = M11.gen === g.id; return '<button type="button" class="v11-chip' + (on ? " on" : "") + '" data-p-gen="' + g.id + '" style="--g:' + g.c + '">' + esc(g.n) + "</button>"; }).join("") + "</div>"; }
+  function rows(list) { return list.map(function (e, i) { return '<button type="button" class="mrow v11-row-i" data-p-e="' + i + '"><span class="grow"><b>' + esc(e.n) + "</b><small>" + esc(v11GOr(e.gen || (e.st && e.st.gen)).n) + '</small></span><span aria-hidden="true">▶</span></button>'; }).join(""); }
+  var html = '<h3 class="v11-h">// GENRE</h3>' + chips() + '<div id="v11StList" class="v11-stlist"></div>' +
     (favs.length ? '<h3 class="v11-h">// FAVORITES</h3><div data-list="f">' + rows(favs) + "</div>" : "") +
     (rec.length ? '<h3 class="v11-h">// RECENTLY PLAYED</h3><div data-list="r">' + rows(rec.slice(0, 6)) + "</div>" : "") +
     '<h3 class="v11-h">// THIS DEVICE</h3><button type="button" class="mrow" data-p-file="1"><span class="grow">Play music saved on this device</span><span aria-hidden="true">›</span></button>' +
-    '<p class="note v11-src-note">Free music: Creative Commons netlabel releases on the Internet Archive (archive.org). Live radio: public station streams listed by radio-browser.info; song info shows only when the station shares it. No account, no ads added.</p>' +
+    '<p class="note v11-src-note">Rock, Heavy Rock, Techno, Deep House, Jazz and Lo-fi. Each one is a free live station whose operator names that genre. If a stream fails, ZAPWISE tries that station’s other address, then the other station in the same genre. It does not switch genre. Song title and artist show only when the station sends them. No account. SomaFM is not used.</p>' +
     '<button type="button" class="v11-ext" data-p-app="1">Open ' + esc(currentMedia().name) + ' instead ↗</button>';
   sheet("♫ MUSIC", html, function (b) {
     function stList(gen) {
-      var box = b.querySelector("#v11StList"); if (!box) return; box.innerHTML = '<p class="note">Loading stations…</p>';
-      v11Stations(gen).then(function (list) {
-        box.innerHTML = list.length ? list.slice(0, 15).map(function (st, i) { var on = M11.mode === "radio" && M11.st && M11.st.uuid === st.uuid; return '<button type="button" class="mrow v11-st' + (on ? " on" : "") + '" data-p-st="' + i + '"><span class="grow"><b>' + esc(st.name) + "</b><small>" + esc([st.cc, st.codec, st.br ? st.br + " kbps" : ""].filter(Boolean).join(" · ")) + '</small></span><span aria-hidden="true">' + (on ? "●" : "▶") + "</span></button>"; }).join("") : '<p class="note">No stations right now.</p>';
-        box._list = list;
-      }).catch(function () { box.innerHTML = '<p class="note">Live radio didn’t load.</p>'; });
+      var box = b.querySelector("#v11StList"); if (!box) return;
+      var g = v11G(gen) || v11G(M11.gen);
+      if (!g) { box.innerHTML = '<p class="note">Pick a genre above.</p>'; box._list = []; return; }
+      var list = (V11_CURATED[g.id] || []).map(v11Clone);
+      box._list = list;
+      box.innerHTML = list.map(function (st, i) { var on = M11.mode === "radio" && M11.st && M11.st.id === st.id; return '<button type="button" class="mrow v11-st' + (on ? " on" : "") + '" data-p-st="' + i + '"><span class="grow"><b>' + esc(st.name) + "</b><small>" + esc(st.line || [st.cc, st.codec, st.br ? st.br + " kbps" : ""].filter(Boolean).join(" · ")) + '</small></span><span aria-hidden="true">' + (on ? "●" : "▶") + "</span></button>"; }).join("");
     }
-    if (M11.mode === "radio") stList(M11.gen);
+    stList(M11.gen);
     b.addEventListener("click", function (e) {
-      var x = e.target.closest("[data-p-tracks],[data-p-radio],[data-p-st],[data-p-e],[data-p-file],[data-p-app]"); if (!x) return;
+      var x = e.target.closest("[data-p-gen],[data-p-st],[data-p-e],[data-p-file],[data-p-app]"); if (!x) return;
       e.preventDefault();
-      if (x.hasAttribute("data-p-tracks")) { closeSheet(); v11PlayGenre(x.getAttribute("data-p-tracks")); }
-      else if (x.hasAttribute("data-p-radio")) { var gid = x.getAttribute("data-p-radio"); [].forEach.call(b.querySelectorAll("[data-p-radio]"), function (c) { c.classList.toggle("on", c === x); }); stList(gid); v11PlayRadio(gid); }
-      else if (x.hasAttribute("data-p-st")) { var box = b.querySelector("#v11StList"), st = box._list[+x.getAttribute("data-p-st")]; M11.stations = box._list; M11.si = +x.getAttribute("data-p-st"); closeSheet(); M11.gen = st.gen; v11StartStation(st); }
+      if (x.hasAttribute("data-p-gen")) { var gid = x.getAttribute("data-p-gen"); [].forEach.call(b.querySelectorAll("[data-p-gen]"), function (c) { c.classList.toggle("on", c === x); }); v11PlayRadio(gid).then(function () { stList(gid); }); }
+      else if (x.hasAttribute("data-p-st")) { var box = b.querySelector("#v11StList"), st = box._list[+x.getAttribute("data-p-st")]; if (!st) return; M11.stations = box._list; M11.si = +x.getAttribute("data-p-st"); closeSheet(); M11.gen = st.gen; v11StartStation(st, false); }
       else if (x.hasAttribute("data-p-e")) { var lst = x.closest("[data-list]").getAttribute("data-list") === "f" ? favs : rec; closeSheet(); v11Run(lst[+x.getAttribute("data-p-e")]); }
       else if (x.hasAttribute("data-p-file")) { closeSheet(); var f = $("#v11File"); if (f) { f.value = ""; f.click(); } }
       else if (x.hasAttribute("data-p-app")) { closeSheet(); openApp(currentMedia()); }
     });
   });
 }
-/* ---- one-shot: orbit Listen, "play music", "play lofi", "hip hop radio", "pause", "next song" ---- */
-var V11_SYN = [["lofi", /\b(lo-?fi|lo fi|lofi|study beats|chill beats|beats to study)\b/], ["hiphop", /\b(hip ?-?hop|rap|trap|r&b|rnb)\b/], ["electronic", /\b(electronic|edm|techno|house|dance|electro|trance|dnb|drum and bass)\b/], ["chill", /\b(chill|ambient|relax(ing)?|sleep|calm|downtempo|chillout)\b/], ["pop", /\bpop\b/], ["rock", /\b(rock|indie|punk|metal|alternative)\b/], ["jazz", /\b(jazz|blues|soul|swing)\b/]];
+/* ---- "play techno", "play deep house", "play heavy rock", "play jazz", "play lo-fi" ---- */
+var V11_SYN = [
+  ["heavy", /\b(heavy[\s-]?rock|hard[\s-]?rock|hair[\s-]?metal|heavy[\s-]?metal|metal)\b/],
+  ["deephouse", /\bdeep[\s-]?house\b/],
+  ["lofi", /\b(lo-?fi|lo fi|lofi|chillhop|chill[\s-]?hop)\b/],
+  ["techno", /\btechno\b/],
+  ["jazz", /\bjazz\b/],
+  ["rock", /\brock\b/]
+];
 function v11GenOf(s) { for (var i = 0; i < V11_SYN.length; i++) if (V11_SYN[i][1].test(s)) return V11_SYN[i][0]; return ""; }
+function v11Gone(s) { for (var i = 0; i < V11_GONE.length; i++) if (V11_GONE[i][1].test(s)) return V11_GONE[i][0]; return ""; }
 function v11GoCard() { try { v6GoCard("cardPlay"); } catch (e) { var c = $("#cardPlay"); if (c) c.scrollIntoView({ block: "center" }); } }
+function v11Choices() { return { intent: "media", icon: "listen", title: "Pick a genre", sub: "Rock, Heavy Rock, Techno, Deep House, Jazz, Lo-fi", tag: "ZAPWISE PLAYER · NO SIGN-IN", primary: { label: "Genres", run: function () { v11GoCard(); v11Picker(); } }, more: [] }; }
 function v11Intent(raw) {
   var n = String(raw || "").toLowerCase().trim().replace(/[!.?]+$/, ""); if (!n) return null;
   var tag = "ZAPWISE PLAYER · NO SIGN-IN";
   if (/^(pause|stop)( the)?( music| song| radio| playing)?$/.test(n) && M11.el && !M11.el.paused) return { intent: "media", icon: "listen", title: "Pause music", sub: v11Meta().title, tag: tag, primary: { label: "Pause", run: v11Pause }, more: [] };
-  if (/^(next|skip)( song| track| station)?$|^(next|skip) (this )?(song|track|station)$/.test(n)) return { intent: "media", icon: "listen", title: M11.mode === "radio" ? "Next station" : "Next track", sub: "In Now Playing", tag: tag, primary: { label: "Skip", run: function () { v11GoCard(); v11Next(); } }, more: [] };
-  if (/^(previous|prev|back)( song| track| station)?$/.test(n)) return { intent: "media", icon: "listen", title: "Previous", sub: "In Now Playing", tag: tag, primary: { label: "Back", run: function () { v11GoCard(); v11Prev(); } }, more: [] };
-  var pm = n.match(/^(?:play|put on|listen to|i want to hear)(?: some| me| the| a)?(?:\s+(.*))?$/), isMusic = /\b(music|songs?|radio|station|tunes|beats|playlist)\b/.test(n), gen = v11GenOf(n), radio = /\b(radio|station|live)\b/.test(n);
+  if (/^(next|skip)( song| track| station)?$|^(next|skip) (this )?(song|track|station)$/.test(n)) return { intent: "media", icon: "listen", title: "Next station", sub: "Same genre", tag: tag, primary: { label: "Skip", run: function () { v11GoCard(); v11Next(); } }, more: [] };
+  if (/^(previous|prev|back)( song| track| station)?$/.test(n)) return { intent: "media", icon: "listen", title: "Previous", sub: "Same genre", tag: tag, primary: { label: "Back", run: function () { v11GoCard(); v11Prev(); } }, more: [] };
+  var pm = n.match(/^(?:play|put on|listen to|i want to hear)(?: some| me| the| a)?(?:\s+(.*))?$/), isMusic = /\b(music|songs?|radio|station|tunes|beats|playlist)\b/.test(n), gen = v11GenOf(n);
   if (!pm) {
-    var rest = n; V11_SYN.forEach(function (x) { rest = rest.replace(new RegExp(x[1].source, "g"), " "); });
-    rest = rest.replace(/\b(music|songs?|radio|stations?|tunes|beats|playlist|some|live|free|please|online|a|the|my|me)\b/g, " ").trim();
-    if (rest || (!gen && !isMusic)) return null;
+    var rest0 = n; V11_SYN.forEach(function (x) { rest0 = rest0.replace(x[1], " "); });
+    rest0 = rest0.replace(/\b(music|songs?|radio|stations?|tunes|beats|playlist|some|live|free|please|online|a|the|my|me)\b/g, " ").trim();
+    if (rest0 || (!gen && !isMusic)) return null;
   }
-  if (pm) pm[1] = pm[1] || "";
-  var what = pm ? pm[1].replace(/\b(music|songs?|radio|station|tunes|please|for me|now|some|live)\b/g, "").replace(/\s+/g, " ").trim() : "";
+  var gone = !gen && v11Gone(n);
   var more = [{ label: "Pick a genre or station", run: function () { v11GoCard(); v11Picker(); } }, { label: "Play music from this device", run: function () { v11GoCard(); var f = $("#v11File"); if (f) { f.value = ""; f.click(); } } }];
   if (gen) {
     var g = v11G(gen);
-    if (radio) return { intent: "media", icon: "listen", title: "Live " + g.n + " radio", sub: "Public stations via radio-browser.info · plays here", tag: tag, primary: { label: "Play", run: function () { v11GoCard(); v11PlayRadio(gen); } }, more: [{ label: "Free " + g.n + " tracks instead", run: function () { v11GoCard(); v11PlayGenre(gen); } }].concat(more) };
-    return { intent: "media", icon: "listen", title: "Play " + g.n, sub: "Free full tracks with song + artist · plays here", tag: tag, primary: { label: "Play", run: function () { v11GoCard(); v11PlayGenre(gen); } }, more: [{ label: "Live " + g.n + " radio", run: function () { v11GoCard(); v11PlayRadio(gen); } }].concat(more) };
+    return { intent: "media", icon: "listen", title: "Play " + g.n, sub: "Live station · plays here · no sign-in", tag: tag, primary: { label: "Play", run: function () { v11GoCard(); v11PlayGenre(gen); } }, more: more };
   }
-  if (what && what.length >= 2 && !/^(something|anything|a song|my music|music)$/.test(what)) return { intent: "media", icon: "listen", title: "Play “" + what + "”", sub: "Searches free Creative Commons music · plays here", tag: tag, primary: { label: "Play", run: function () { v11GoCard(); v11PlayGenre(M11.gen, { query: what }); } }, more: more };
-  var last = M11.mode === "radio" && M11.st ? M11.st.name : v11G(M11.gen).n;
+  if (gone) return { intent: "media", icon: "listen", title: gone + " isn’t a choice", sub: "Use Rock, Heavy Rock, Techno, Deep House, Jazz or Lo-fi", tag: tag, primary: { label: "Genres", run: function () { v11GoCard(); v11Picker(); toast(gone + " isn’t a choice. Nothing else was played."); } }, more: more };
+  if (pm) {
+    var what = (pm[1] || "").replace(/\b(music|songs?|radio|station|tunes|please|for me|now|some|live)\b/g, "").replace(/\s+/g, " ").trim();
+    if (what && what.length >= 2 && !/^(something|anything|a song|my music|music)$/.test(what)) return { intent: "media", icon: "listen", title: "No station for “" + what + "”", sub: "Rock, Heavy Rock, Techno, Deep House, Jazz, Lo-fi", tag: tag, primary: { label: "Genres", run: function () { v11GoCard(); v11Picker(); toast("No station for “" + what + "”. Pick one of the six genres."); } }, more: more };
+  }
+  if (!M11.gen && !(M11.mode === "local" && M11.local.length) && !(M11.st)) return v11Choices();
+  var last = M11.mode === "radio" && M11.st ? M11.st.name : (v11G(M11.gen) ? v11G(M11.gen).n : "Music");
   return { intent: "media", icon: "listen", title: "Play music", sub: last + " · plays here", tag: tag, primary: { label: "Play", run: function () { v11GoCard(); v11Play(); } }, more: more };
 }
 var _v11Parse = v9Parse;
@@ -10837,7 +10962,7 @@ v6OpenDest = function (id, o) { if (id === "listen") { v11GoCard(); if (!(M11.el
   var old = $("#v10Np"); if (old) { try { var a = $("#v10Audio"); if (a) a.pause(); } catch (e) {} }
   var card = $("#cardPlay"); if (card) { card.innerHTML = ""; }
   v11Build(); v11Paint();
-  try { window.ZAPOS = window.ZAPOS || {}; window.ZAPOS.v11 = { M: M11, play: v11Play, pause: v11Pause, next: v11Next, prev: v11Prev, genre: v11PlayGenre, radio: v11PlayRadio, meta: v11Meta, intent: v11Intent }; } catch (e) {}
+  try { window.ZAPOS = window.ZAPOS || {}; window.ZAPOS.v11 = { M: M11, play: v11Play, pause: v11Pause, next: v11Next, prev: v11Prev, genre: v11PlayGenre, radio: v11PlayRadio, meta: v11Meta, intent: v11Intent, genres: V11_GEN, curated: V11_CURATED }; } catch (e) {}
 })();
 
 })(); /* end ZAPWISE//OS app scope */
