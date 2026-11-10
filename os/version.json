@@ -1,6 +1,6 @@
 {
-  "version": "4.27.0",
-  "built": "2026-11-09",
+  "version": "4.28.0",
+  "built": "2026-11-10",
   "channel": "stable",
-  "notes": "v4.27.0: The orbit is back as the one way around \u2014 a bigger 3D-style ring under the search bar (drag to spin, tap to open, arrow keys). Typing gives one best answer (\"pizza\" \u2192 Pizza near you), Enter does it, More ways only if you tap. New Shop with categories and store cards. New cyber HUD look."
+  "notes": "v4.28.0: Calmer home. A big glowing time and date sit above the orbit; the Wind down / Accept suggestions are gone, along with extra pills and the separate Today card. Now Playing shows the real song, artist and album art with a live visualizer and play, pause, next and previous here (music from this device now; Spotify once it is switched on). New full-screen focus ring with your task and today's total."
 }

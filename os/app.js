@@ -1,7 +1,7 @@
 /* ZAPWISE//OS web app v4.13.2 (Nov 5, 2026). Equal-height desktop Focus/Phone. Plaid-only Bank. Motion toggle. No tabs. Source: edit app.js → build.sh → app.min.js. */
 (function () {
 "use strict";
-var VERSION = '4.27.0';
+var VERSION = '4.28.0';
 var APP_VERSION = VERSION;
 
 // v4.5: default Lite on coarse/mobile unless user already chose
@@ -246,7 +246,7 @@ function clone(o) { return o == null ? o : JSON.parse(JSON.stringify(o)); }
 var Store = (function () {
   var STATE_KEY = "zapos.state", DEVICE_KEY = "zapos.device", VER = 1;
   var PREF_KEYS = ["settings", "theme", "apps", "coins", "loc", "favs", "places", "holdings", "broker", "wallets", "accounts", "assistant"];                     // shared state (sync-ready)
-  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss", "mediaKey", "skipBoot", "bootDay", "uiSounds", "recentPins", "wxDay", "wxMode", "wxMode2", "portHist", "acctMigrated", "liteMode", "tiltCards", "motionTilt", "callLog", "zapChat", "focusStats", "wallpaper", "zapNotes", "zapReminders", "uiMotion", "welcomeSeen", "bankPrivacy", "mapTraffic", "bankManualCleared_v413", "searchProv", "focusCustom", "v5AppsOpen", "quickActions", "sugState", "v6lists", "v6List", "v6ha", "v6compare", "v6cal", "zaLog", "dash", "v7car", "v7tv", "v25days", "v426", "v9pref", "v9use"]; // this device only
+  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss", "mediaKey", "skipBoot", "bootDay", "uiSounds", "recentPins", "wxDay", "wxMode", "wxMode2", "portHist", "acctMigrated", "liteMode", "tiltCards", "motionTilt", "callLog", "zapChat", "focusStats", "wallpaper", "zapNotes", "zapReminders", "uiMotion", "welcomeSeen", "bankPrivacy", "mapTraffic", "bankManualCleared_v413", "searchProv", "focusCustom", "v5AppsOpen", "quickActions", "sugState", "v6lists", "v6List", "v6ha", "v6compare", "v6cal", "zaLog", "dash", "v7car", "v7tv", "v25days", "v426", "v9pref", "v9use", "v10task"]; // this device only
   function read(k) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
   function write(k, v) { if (dead) return false; try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
   var state = read(STATE_KEY), dev = read(DEVICE_KEY), subs = [], uiT = null, dead = false; // dead: after a reset, write nothing more
@@ -7670,8 +7670,8 @@ function tourSteps() {
   var S = [
     ["#srch", "Search", "Search your apps, or the web with the provider you pick. The mic searches by voice."],
     ["#panelToday", "Today", "Time, date and weather. Tap the weather for hourly and days ahead. Calendar and Note open below."],
-    ["#cardPlay", "Now Playing", "Pick your music app, then tap to open it."],
-    ["#mFocus", "Focus", "A focus timer. Pick 15, 25 or 50 minutes, or tap ✎ for your own length."],
+    ["#cardPlay", "Now Playing", "What’s playing, with album art and controls. Connect Spotify, or play music saved on this device."],
+    ["#mFocus", "Focus", "Pick 15, 25 or 50 minutes, type what you’re working on, and tap Full screen to hide everything else."],
     ["#panelNav", "Navigate", "Live map with traffic plus your saved places. Tap a place for directions."],
     ["#panelMoney", "Banking", "Your linked bank via Plaid. Only the last 4 digits show. The eye hides balances."],
     ["#cardInvest", "Investments", "Crypto prices, your holdings and watchlist. Tap View Portfolio for details."],
@@ -7782,6 +7782,7 @@ function welcomeOutside(e) {
 function showWelcomeOnce() {
   if (Store.getLocal("welcomeSeen", false)) return;
   try { Store.setLocal("welcomeSeen", true); } catch (e) {}
+  return; /* v4.28: no onboarding card on the home screen */
   var w = document.createElement("div");
   w.id = "welcomeCard"; w.className = "welcome-card"; w.setAttribute("role", "status");
   w.innerHTML = '<button type="button" class="wc-x" id="wcClose" aria-label="Close">✕</button>' +
@@ -8240,7 +8241,7 @@ document.addEventListener("keydown", function (e) {
 
   /* ---- suggestion strip under search ---- */
   var srch = $("#srch");
-  if (srch && !$("#v5Sug")) {
+  if (false && srch && !$("#v5Sug")) { /* v4.28: suggestion strip (Wind down · Accept) removed */
     var box = document.createElement("div"); box.id = "v5Sug"; box.className = "v5-sugbar"; box.hidden = true; box.setAttribute("aria-live", "polite");
     srch.parentNode.insertBefore(box, srch.nextSibling);
   }
@@ -9598,12 +9599,12 @@ function v9SetPref(k, v) { var p = v9Prefs(); if (v == null) delete p[k]; else p
   var ch = $("#v8Chips"); if (ch) ch.remove(); /* v4.27: the search bar answers directly; no extra AI chips row */
   var card = document.createElement("section");
   card.className = "card br v5c v9-orbit-card"; card.id = "v9OrbitCard"; card.setAttribute("aria-label", "Explore ZAPWISE"); card.style.setProperty("--acc", "#05d9e8");
-  card.innerHTML = '<div class="v5h"><b>EXPLORE</b><small class="v9-hint" aria-hidden="true">DRAG TO SPIN · TAP TO OPEN</small></div>' +
+  card.innerHTML = '<div class="v10-time" id="v10Time" role="group" aria-label="Time and date"><div class="v10-clock" aria-live="off"><span class="v10-hm" id="v10Hm">--:--</span><span class="v10-ap" id="v10Ap"></span></div><div class="v10-sub"><span class="v10-date" id="v10Date"></span><button type="button" class="v10-wx" id="v10Wx" hidden aria-label="Open weather"><span id="v10WxT"></span><small id="v10WxC"></small></button></div></div>' +
     '<div class="v9-orbit" id="v9Orbit" role="menu" aria-label="ZAPWISE destinations. Arrow keys turn the ring, Enter opens.">' +
     '<div class="v9-stage" aria-hidden="true"><div class="v9-grid"></div><div class="v9-ring r1"><i></i></div><div class="v9-ring r2"><i></i></div><div class="v9-ring r3"></div>' +
     '<div class="v9-core"><span class="v9-core-glow"></span><svg viewBox="0 0 64 64" width="58" height="58"><defs><linearGradient id="v9zg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#05d9e8"/><stop offset=".55" stop-color="#b26bff"/><stop offset="1" stop-color="#ff4fd8"/></linearGradient></defs><path d="M16 15h32v7L27 42h21v7H16v-7l21-20H16z" fill="url(#v9zg)"/></svg></div></div>' +
     V9_ORBIT.map(function (id, i) { var d = v9D(id); return '<button type="button" class="v9-item" role="menuitem" data-dest="' + id + '" data-i="' + i + '" tabindex="' + (i ? "-1" : "0") + '" style="--c:' + d.c + '" aria-label="' + esc(d.n) + ': ' + esc(V9_SUB[id]) + '"><span class="v9-ic">' + v6Svg(id, 22) + '</span><span class="v9-lbl">' + esc(d.n) + '</span></button>'; }).join("") +
-    '</div><div class="v9-front" id="v9Front" aria-hidden="true"><b></b><small></small></div>';
+    '</div>';
   srch.parentNode.insertBefore(card, srch.nextSibling);
   var sug = $("#v5Sug"); if (sug) srch.parentNode.insertBefore(sug, card); /* suggestions stay with the search, above the orbit */
   var host = $("#v9Orbit"), stage = host.querySelector(".v9-stage"), items = [].slice.call(host.querySelectorAll(".v9-item")), front = $("#v9Front");
@@ -10013,5 +10014,459 @@ function v9Shop(o) {
 }
 var _v9OpenDest = v6OpenDest;
 v6OpenDest = function (id, o) { if (id === "shop") return v9Shop(o || {}); return _v9OpenDest(id, o); };
+
+/* ========== v4.28 DECLUTTER: time hero, real Now Playing, cyber Focus ========== */
+document.documentElement.classList.add("v10");
+["#hSync", "#hBat", "#hGpsLock"].forEach(function (q) { var e = $(q); if (e) e.hidden = true; }); /* status pills tucked away */
+var V10_BOOT_Q = (function () { try { return new URLSearchParams(location.search); } catch (e) { return null; } })();
+/* ---- time hero above the orbit (mirrors the one clock engine, no second clock) ---- */
+(function v10TimeInit() {
+  var hm = $("#v10Hm"), ap = $("#v10Ap"), dt = $("#v10Date"), wx = $("#v10Wx");
+  if (!hm) return;
+  var lastD = "";
+  function tick() {
+    var shm = $("#hcHm"), sap = $("#hAmpm"), d = new Date();
+    var t = shm && /\d/.test(shm.textContent) ? shm.textContent : (d.getHours() % 12 || 12) + ":" + pad2(d.getMinutes());
+    var a = sap && /^(AM|PM)$/i.test(sap.textContent.trim()) ? sap.textContent.trim().toUpperCase() : (shm && /\d/.test(shm.textContent) ? "" : (d.getHours() < 12 ? "AM" : "PM"));
+    if (hm.textContent !== t) hm.textContent = t;
+    if (ap.textContent !== a) ap.textContent = a;
+    var ds = d.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+    if (ds !== lastD) { lastD = ds; dt.textContent = ds; }
+    var te = $("#hwTemp"), ce = $("#hwNow");
+    var tv = te ? te.textContent.trim() : "", cv = ce ? ce.textContent.trim() : "";
+    var ok = /\d/.test(tv);
+    if (wx) {
+      wx.hidden = !ok;
+      if (ok) { var tt = $("#v10WxT"), cc = $("#v10WxC"); if (tt.textContent !== tv) tt.textContent = tv; if (cc.textContent !== cv) cc.textContent = cv; wx.setAttribute("aria-label", "Weather " + tv + " " + cv + ". Open the forecast"); }
+    }
+  }
+  tick(); setInterval(tick, 1000);
+  if (wx) wx.addEventListener("click", function (e) { e.preventDefault(); e.stopPropagation(); try { zaRun("weather.show", {}, { quiet: true }); } catch (e1) { var b = $("#hWx"); if (b) b.click(); } });
+})();
+/* tour: Today now lives in the hero */
+var _v10TourSteps = tourSteps;
+tourSteps = function () { return _v10TourSteps().filter(function (s) { return s[0] !== "#v5Sug" && s[0] !== "#panelToday"; }); };
+
+/* ---- NOW PLAYING: real track from Spotify (PKCE) or music played here ---- */
+var V10_SP_SCOPES = "user-read-currently-playing user-read-playback-state user-modify-playback-state";
+var V10_SP_KEY = "zapos.spotify", V10_PK_KEY = "zapos.spotify.pkce";
+var V10 = { cfg: null, cfgDone: false, sp: null, spNow: null, spAt: 0, src: "", q: [], qi: 0, au: null, an: null, ctx: null, raf: 0, vis: true, poll: 0 };
+function v10SpLoad() { try { var t = JSON.parse(localStorage.getItem(V10_SP_KEY) || "null"); return t && t.at ? t : null; } catch (e) { return null; } }
+function v10SpSave(t) { try { if (t) localStorage.setItem(V10_SP_KEY, JSON.stringify(t)); else localStorage.removeItem(V10_SP_KEY); } catch (e) {} V10.sp = t || null; }
+function v10Redirect() { return location.origin + "/os/"; }
+function v10B64u(buf) { var b = new Uint8Array(buf), s = ""; for (var i = 0; i < b.length; i++) s += String.fromCharCode(b[i]); return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
+function v10Form(o) { return Object.keys(o).map(function (k) { return encodeURIComponent(k) + "=" + encodeURIComponent(o[k]); }).join("&"); }
+function v10SpReady() { return !!(V10.cfg && V10.cfg.clientId); }
+function v10SpConnect() {
+  if (!v10SpReady()) { v10SpSetupSheet(); return; }
+  if (!window.crypto || !crypto.subtle) { toast("This browser can’t do a secure Spotify sign-in"); return; }
+  var ver = v10B64u(crypto.getRandomValues(new Uint8Array(48))), state = v10B64u(crypto.getRandomValues(new Uint8Array(16)));
+  crypto.subtle.digest("SHA-256", new TextEncoder().encode(ver)).then(function (h) {
+    try { localStorage.setItem(V10_PK_KEY, JSON.stringify({ v: ver, s: state, t: Date.now() })); } catch (e) {}
+    var url = "https://accounts.spotify.com/authorize?" + v10Form({ client_id: V10.cfg.clientId, response_type: "code", redirect_uri: v10Redirect(), scope: V10_SP_SCOPES, code_challenge_method: "S256", code_challenge: v10B64u(h), state: state });
+    location.assign(url);
+  });
+}
+function v10SpCallback() {
+  var q = V10_BOOT_Q; if (!q) return;
+  var code = q.get("code"), state = q.get("state"), err = q.get("error");
+  if (!state || (!code && !err)) return;
+  var pk = null; try { pk = JSON.parse(localStorage.getItem(V10_PK_KEY) || "null"); } catch (e) {}
+  try { localStorage.removeItem(V10_PK_KEY); } catch (e) {}
+  try { var u = new URL(location.href); ["code", "state", "error"].forEach(function (k) { u.searchParams.delete(k); }); history.replaceState(null, "", u.pathname + u.search + u.hash); } catch (e) {}
+  if (!pk || pk.s !== state || Date.now() - pk.t > 15 * 60000) { if (pk || code) toast("Spotify sign-in expired. Try Connect again"); return; }
+  if (err) { toast(err === "access_denied" ? "Spotify not connected" : "Spotify sign-in failed"); return; }
+  if (!v10SpReady()) return;
+  fetch("https://accounts.spotify.com/api/token", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: v10Form({ grant_type: "authorization_code", code: code, redirect_uri: v10Redirect(), client_id: V10.cfg.clientId, code_verifier: pk.v }) })
+    .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+    .then(function (j) { v10SpSave({ at: j.access_token, rt: j.refresh_token, exp: Date.now() + (j.expires_in || 3600) * 1000 }); toast("Spotify connected"); V10.src = "spotify"; v10SpPoll(); })
+    .catch(function () { toast("Spotify sign-in failed. Try again"); });
+}
+function v10SpToken() {
+  var t = V10.sp; if (!t) return Promise.reject("none");
+  if (t.exp - 60000 > Date.now()) return Promise.resolve(t.at);
+  if (!t.rt || !v10SpReady()) { v10SpSave(null); return Promise.reject("expired"); }
+  return fetch("https://accounts.spotify.com/api/token", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: v10Form({ grant_type: "refresh_token", refresh_token: t.rt, client_id: V10.cfg.clientId }) })
+    .then(function (r) { if (r.status === 400 || r.status === 401) { v10SpSave(null); v10NpPaint(); return Promise.reject("revoked"); } return r.ok ? r.json() : Promise.reject(r.status); })
+    .then(function (j) { v10SpSave({ at: j.access_token, rt: j.refresh_token || t.rt, exp: Date.now() + (j.expires_in || 3600) * 1000 }); return j.access_token; });
+}
+function v10SpApi(method, path, body) {
+  return v10SpToken().then(function (at) {
+    var h = { Authorization: "Bearer " + at }; if (body) h["Content-Type"] = "application/json";
+    return fetch("https://api.spotify.com/v1" + path, { method: method, headers: h, body: body ? JSON.stringify(body) : undefined });
+  }).then(function (r) { if (r.status === 401) { v10SpSave(null); v10NpPaint(); } return r; });
+}
+function v10SpPoll() {
+  clearTimeout(V10.poll);
+  if (!V10.sp) { V10.spNow = null; v10NpPaint(); return; }
+  if (document.hidden) { V10.poll = setTimeout(v10SpPoll, 15000); return; }
+  v10SpApi("GET", "/me/player/currently-playing?additional_types=track,episode").then(function (r) {
+    if (r.status === 204) return null;
+    if (r.status === 429) return V10.spNow;
+    return r.ok ? r.json() : null;
+  }).then(function (j) {
+    var it = j && j.item;
+    V10.spNow = it ? {
+      playing: !!j.is_playing, pos: +j.progress_ms || 0, dur: +it.duration_ms || 0, at: Date.now(),
+      title: it.name || "", artist: it.artists ? it.artists.map(function (a) { return a.name; }).join(", ") : (it.show ? it.show.name : ""),
+      album: it.album ? it.album.name : (it.show ? it.show.publisher || "" : ""),
+      art: ((it.album && it.album.images) || it.images || [])[0] ? ((it.album && it.album.images) || it.images)[0].url : ""
+    } : null;
+    v10NpPaint();
+    V10.poll = setTimeout(v10SpPoll, V10.spNow && V10.spNow.playing ? 5000 : 12000);
+  }).catch(function () { v10NpPaint(); V10.poll = setTimeout(v10SpPoll, 20000); });
+}
+function v10SpCmd(kind) {
+  var map = { play: ["PUT", "/me/player/play"], pause: ["PUT", "/me/player/pause"], next: ["POST", "/me/player/next"], prev: ["POST", "/me/player/previous"] }, m = map[kind]; if (!m) return;
+  if (V10.spNow && (kind === "play" || kind === "pause")) { V10.spNow.playing = kind === "play"; V10.spNow.pos = v10SpPos(); V10.spNow.at = Date.now(); v10NpPaint(); }
+  v10SpApi(m[0], m[1]).then(function (r) {
+    if (r.status === 404) toast("Open Spotify on any device first, then try again");
+    else if (r.status === 403) toast("Spotify only allows playback control with Premium");
+    setTimeout(v10SpPoll, 450);
+  }).catch(function () { toast("Spotify didn’t answer"); });
+}
+function v10SpPos() { var n = V10.spNow; if (!n) return 0; return Math.min(n.dur || 0, n.pos + (n.playing ? Date.now() - n.at : 0)); }
+function v10SpSetupSheet() {
+  sheet("CONNECT SPOTIFY", '<p class="note v10-note">Spotify sign-in isn’t switched on for this site yet. It needs a free Spotify developer app, set up once by the site owner. Nothing is shown until then.</p>' +
+    '<p class="note v10-note">You can still play music saved on this device right here.</p>' +
+    '<div class="v10-sheet-acts"><button type="button" class="v5-btn" id="v10SheetFile">Play from this device</button></div>', function (b) {
+    var f = b.querySelector("#v10SheetFile"); if (f) f.addEventListener("click", function () { closeSheet(); v10PickFiles(); });
+  });
+}
+/* ---- music played inside ZAPWISE (files on this device) ---- */
+function v10PickFiles() { var i = $("#v10File"); if (i) { i.value = ""; i.click(); } }
+function v10Txt(b, enc, a, z) {
+  var sub = b.subarray(a, z), i;
+  try {
+    if (enc === 1 || enc === 2) { var le = enc === 1 ? !(sub[0] === 0xfe && sub[1] === 0xff) : false, st = (enc === 1 && (sub[0] === 0xff || sub[0] === 0xfe)) ? 2 : 0, out = ""; for (i = st; i + 1 < sub.length; i += 2) { var c = le ? sub[i] | (sub[i + 1] << 8) : (sub[i] << 8) | sub[i + 1]; if (!c) break; out += String.fromCharCode(c); } return out; }
+    if (enc === 3) return new TextDecoder("utf-8").decode(sub).replace(/\0[\s\S]*$/, "");
+    var s = ""; for (i = 0; i < sub.length && sub[i]; i++) s += String.fromCharCode(sub[i]); return s;
+  } catch (e) { return ""; }
+}
+function v10Id3(file) {
+  if (!file.slice || !file.slice(0, 1).arrayBuffer) return Promise.resolve({});
+  return file.slice(0, 10).arrayBuffer().then(function (hb) {
+    var h = new Uint8Array(hb); if (h[0] !== 73 || h[1] !== 68 || h[2] !== 51) return {};
+    var ver = h[3], size = ((h[6] & 127) << 21) | ((h[7] & 127) << 14) | ((h[8] & 127) << 7) | (h[9] & 127);
+    if (ver < 3 || ver > 4) return {};
+    return file.slice(10, 10 + Math.min(size, 6e6)).arrayBuffer().then(function (ab) {
+      var b = new Uint8Array(ab), p = 0, out = {};
+      if (h[5] & 0x40) { var es = ver === 4 ? ((b[0] & 127) << 21) | ((b[1] & 127) << 14) | ((b[2] & 127) << 7) | (b[3] & 127) : ((b[0] << 24) | (b[1] << 16) | (b[2] << 8) | b[3]) + 4; p = es; }
+      while (p + 10 <= b.length) {
+        var id = String.fromCharCode(b[p], b[p + 1], b[p + 2], b[p + 3]); if (!/^[A-Z0-9]{4}$/.test(id)) break;
+        var fs = ver === 4 ? ((b[p + 4] & 127) << 21) | ((b[p + 5] & 127) << 14) | ((b[p + 6] & 127) << 7) | (b[p + 7] & 127) : ((b[p + 4] << 24) | (b[p + 5] << 16) | (b[p + 6] << 8) | b[p + 7]) >>> 0;
+        var a = p + 10, z = a + fs; if (fs <= 0 || z > b.length) break;
+        if (id === "TIT2") out.title = v10Txt(b, b[a], a + 1, z);
+        else if (id === "TPE1") out.artist = v10Txt(b, b[a], a + 1, z);
+        else if (id === "TALB") out.album = v10Txt(b, b[a], a + 1, z);
+        else if (id === "APIC" && !out.art) {
+          var enc = b[a], q = a + 1, mime = ""; while (q < z && b[q]) mime += String.fromCharCode(b[q++]); q += 2;
+          if (enc === 1 || enc === 2) { while (q + 1 < z && (b[q] || b[q + 1])) q += 2; q += 2; } else { while (q < z && b[q]) q++; q++; }
+          if (q < z && /^image\/(jpe?g|png|webp)$/i.test(mime || "image/jpeg")) out.art = URL.createObjectURL(new Blob([b.subarray(q, z)], { type: mime || "image/jpeg" }));
+        }
+        p = z;
+      }
+      return out;
+    });
+  }).catch(function () { return {}; });
+}
+function v10FromName(n) {
+  var base = String(n || "").replace(/\.[a-z0-9]{2,5}$/i, "").replace(/[_]+/g, " ").trim(), m = base.match(/^(.+?)\s+-\s+(.+)$/);
+  return m ? { artist: m[1].replace(/^\d+[\s.-]+/, ""), title: m[2] } : { artist: "", title: base };
+}
+function v10LoadFiles(list) {
+  var files = [].slice.call(list || []).filter(function (f) { return /^audio\//.test(f.type) || /\.(mp3|m4a|aac|wav|ogg|oga|flac|opus)$/i.test(f.name); });
+  if (!files.length) { toast("Pick an audio file"); return; }
+  V10.q.forEach(function (t) { try { URL.revokeObjectURL(t.url); if (t.art) URL.revokeObjectURL(t.art); } catch (e) {} });
+  V10.q = files.map(function (f) { var nm = v10FromName(f.name); return { file: f, url: URL.createObjectURL(f), title: nm.title, artist: nm.artist, album: "", art: "" }; });
+  V10.q.forEach(function (t) { v10Id3(t.file).then(function (m) { if (m.title) t.title = m.title; if (m.artist) t.artist = m.artist; if (m.album) t.album = m.album; if (m.art) t.art = m.art; v10NpPaint(); v10Session(); }); });
+  V10.src = "local"; v10PlayIdx(0);
+}
+function v10Audio() {
+  if (V10.au) return V10.au;
+  var au = V10.au = $("#v10Audio") || new Audio();
+  au.addEventListener("play", function () { v10NpPaint(); v10Viz(); v10Session(); });
+  au.addEventListener("pause", function () { v10NpPaint(); v10Session(); });
+  au.addEventListener("timeupdate", function () { v10Prog(); });
+  au.addEventListener("loadedmetadata", function () { v10Prog(); v10Session(); });
+  au.addEventListener("ended", function () { if (V10.qi < V10.q.length - 1) v10PlayIdx(V10.qi + 1); else { v10NpPaint(); } });
+  au.addEventListener("error", function () { toast("This file can’t be played here"); v10NpPaint(); });
+  return au;
+}
+function v10Analyser() {
+  if (V10.an || !V10.au) return;
+  try {
+    var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+    V10.ctx = V10.ctx || new AC();
+    var srcN = V10.ctx.createMediaElementSource(V10.au), an = V10.ctx.createAnalyser();
+    an.fftSize = 128; an.smoothingTimeConstant = 0.78; srcN.connect(an); an.connect(V10.ctx.destination); V10.an = an;
+  } catch (e) { V10.an = null; }
+}
+function v10PlayIdx(i) {
+  var t = V10.q[i]; if (!t) return;
+  V10.qi = i; var au = v10Audio(); au.src = t.url; v10Analyser();
+  try { if (V10.ctx && V10.ctx.state === "suspended") V10.ctx.resume(); } catch (e) {}
+  var p = au.play(); if (p && p.catch) p.catch(function () { v10NpPaint(); });
+  v10NpPaint(); v10Session();
+}
+function v10Session() {
+  if (!("mediaSession" in navigator) || V10.src !== "local") return;
+  var t = V10.q[V10.qi]; if (!t) return;
+  try {
+    navigator.mediaSession.metadata = new MediaMetadata({ title: t.title || "Untitled", artist: t.artist || "", album: t.album || "", artwork: t.art ? [{ src: t.art, sizes: "512x512" }] : [{ src: "/os/icon-512.png", sizes: "512x512", type: "image/png" }] });
+    navigator.mediaSession.playbackState = V10.au && !V10.au.paused ? "playing" : "paused";
+    if (V10.au && V10.au.duration && isFinite(V10.au.duration) && navigator.mediaSession.setPositionState) navigator.mediaSession.setPositionState({ duration: V10.au.duration, position: Math.min(V10.au.currentTime, V10.au.duration), playbackRate: 1 });
+  } catch (e) {}
+}
+(function v10SessionHandlers() {
+  if (!("mediaSession" in navigator)) return;
+  var H = { play: function () { v10Cmd("play"); }, pause: function () { v10Cmd("pause"); }, previoustrack: function () { v10Cmd("prev"); }, nexttrack: function () { v10Cmd("next"); }, seekto: function (d) { if (V10.au && d && d.seekTime != null) V10.au.currentTime = d.seekTime; } };
+  Object.keys(H).forEach(function (k) { try { navigator.mediaSession.setActionHandler(k, H[k]); } catch (e) {} });
+})();
+function v10Active() {
+  var hasLocal = V10.q.length && V10.au && V10.au.src;
+  if (V10.src === "local" && hasLocal) return "local";
+  if (V10.sp && V10.spNow) return "spotify";
+  if (hasLocal) return "local";
+  if (V10.sp) return "spotify-idle";
+  return "";
+}
+function v10Cmd(kind) {
+  var a = v10Active();
+  if (a === "local") {
+    var au = V10.au;
+    if (kind === "play" || (kind === "toggle" && au.paused)) { try { if (V10.ctx && V10.ctx.state === "suspended") V10.ctx.resume(); } catch (e) {} var p = au.play(); if (p && p.catch) p.catch(function () {}); }
+    else if (kind === "pause" || kind === "toggle") au.pause();
+    else if (kind === "next") { if (V10.qi < V10.q.length - 1) v10PlayIdx(V10.qi + 1); else toast("End of your list"); }
+    else if (kind === "prev") { if (au.currentTime > 4 || V10.qi === 0) au.currentTime = 0; else v10PlayIdx(V10.qi - 1); }
+    return;
+  }
+  if (a === "spotify" || a === "spotify-idle") {
+    if (kind === "toggle") kind = V10.spNow && V10.spNow.playing ? "pause" : "play";
+    v10SpCmd(kind); return;
+  }
+}
+function v10Fmt(ms) { var s = Math.max(0, Math.floor(ms / 1000)); return Math.floor(s / 60) + ":" + pad2(s % 60); }
+function v10Prog() {
+  var a = v10Active(), pos = 0, dur = 0;
+  if (a === "local" && V10.au) { pos = (V10.au.currentTime || 0) * 1000; dur = isFinite(V10.au.duration) ? V10.au.duration * 1000 : 0; }
+  else if (a === "spotify") { pos = v10SpPos(); dur = V10.spNow.dur; }
+  var bar = $("#v10Bar"), p = $("#v10Pos"), d = $("#v10Dur"); if (!bar) return;
+  bar.style.transform = "scaleX(" + (dur ? Math.min(1, pos / dur) : 0).toFixed(4) + ")";
+  var ps = dur ? v10Fmt(pos) : "", ds = dur ? v10Fmt(dur) : "";
+  if (p.textContent !== ps) p.textContent = ps; if (d.textContent !== ds) d.textContent = ds;
+}
+var V10_NOTE_SVG = '<svg viewBox="0 0 48 48" width="40" height="40" aria-hidden="true"><path d="M18 34V12l20-4v22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/><circle cx="13" cy="34" r="5" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="33" cy="30" r="5" fill="none" stroke="currentColor" stroke-width="2.4"/></svg>';
+function v10Ico(n) {
+  var P = { prev: "M7 6h2v12H7zM20 6v12l-9-6z", next: "M15 6h2v12h-2zM4 6v12l9-6z", play: "M8 5v14l11-7z", pause: "M7 5h4v14H7zM13 5h4v14h-4z" };
+  return '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="' + P[n] + '"/></svg>';
+}
+function v10NpBuild() {
+  var card = $("#cardPlay"); if (!card || $("#v10Np")) return;
+  card.classList.add("v10-np-card");
+  card.innerHTML = '<div class="v5h"><b>NOW PLAYING</b><button type="button" class="v10-np-more" id="v10NpMore" aria-label="Music options">···</button></div>' +
+    '<div class="v10-np" id="v10Np" data-state="idle">' +
+    '<div class="v10-np-top"><div class="v10-art" id="v10ArtBox"><img id="v10Art" alt="" hidden><span class="v10-art-ph">' + V10_NOTE_SVG + '</span></div>' +
+    '<div class="v10-meta"><small class="v10-srcl" id="v10SrcL"></small><b class="v10-title" id="v10Title">Nothing playing</b><span class="v10-artist" id="v10Artist"></span><span class="v10-album" id="v10Album"></span></div></div>' +
+    '<canvas class="v10-viz" id="v10Viz" aria-hidden="true"></canvas>' +
+    '<div class="v10-prog" id="v10ProgW"><div class="v10-track"><i id="v10Bar"></i></div><div class="v10-times"><span id="v10Pos"></span><span id="v10Dur"></span></div></div>' +
+    '<div class="v10-ctl" id="v10Ctl" role="group" aria-label="Playback controls"><button type="button" class="v10-c" data-np="prev" aria-label="Previous track">' + v10Ico("prev") + '</button><button type="button" class="v10-c v10-pp" data-np="toggle" id="v10PP" aria-label="Play">' + v10Ico("play") + '</button><button type="button" class="v10-c" data-np="next" aria-label="Next track">' + v10Ico("next") + '</button></div>' +
+    '<div class="v10-src" id="v10SrcRow"><button type="button" class="v10-sbtn pri" data-np="connect" id="v10Connect">Connect Spotify</button><button type="button" class="v10-sbtn" data-np="file">Play from this device</button></div>' +
+    '<input type="file" id="v10File" accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.flac,.opus" multiple hidden><audio id="v10Audio" preload="metadata"></audio></div>';
+  card.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-np],#v10NpMore"); if (!b) return;
+    e.preventDefault(); e.stopPropagation();
+    if (b.id === "v10NpMore") { v10NpMenu(); return; }
+    var k = b.getAttribute("data-np");
+    if (k === "connect") v10SpConnect(); else if (k === "file") v10PickFiles(); else v10Cmd(k);
+  });
+  $("#v10File").addEventListener("change", function (e) { v10LoadFiles(e.target.files); });
+  try { new IntersectionObserver(function (en) { V10.vis = en[0].isIntersecting; if (V10.vis) v10Viz(); }).observe(card); } catch (e) {}
+}
+function v10NpMenu() {
+  var rows = [];
+  if (V10.sp) rows.push('<button type="button" class="mrow" data-v10m="disc"><span class="grow">Disconnect Spotify</span></button>');
+  else rows.push('<button type="button" class="mrow" data-v10m="conn"><span class="grow">Connect Spotify</span><span aria-hidden="true">›</span></button>');
+  rows.push('<button type="button" class="mrow" data-v10m="file"><span class="grow">Play music from this device</span><span aria-hidden="true">›</span></button>');
+  rows.push('<button type="button" class="mrow" data-v10m="app"><span class="grow">Open ' + esc(currentMedia().name) + ' instead</span><span aria-hidden="true">↗</span></button>');
+  sheet("♪ MUSIC", '<p class="note v10-note">Spotify shows what you’re playing on any device and lets you control it here. Music from this device plays inside ZAPWISE.</p>' + rows.join(""), function (b) {
+    b.addEventListener("click", function (e) {
+      var x = e.target.closest("[data-v10m]"); if (!x) return; var k = x.getAttribute("data-v10m"); closeSheet();
+      if (k === "disc") { v10SpSave(null); V10.spNow = null; v10NpPaint(); toast("Spotify disconnected on this device"); }
+      else if (k === "conn") v10SpConnect(); else if (k === "file") v10PickFiles(); else openApp(currentMedia());
+    });
+  });
+}
+function v10NpPaint() {
+  var np = $("#v10Np"); if (!np) return;
+  var a = v10Active(), t = null, playing = false, srcl = "";
+  if (a === "local") { var q = V10.q[V10.qi]; t = { title: q.title || "Untitled", artist: q.artist || "Unknown artist", album: q.album || "", art: q.art }; playing = !V10.au.paused; srcl = "ON ZAPWISE · " + (V10.qi + 1) + "/" + V10.q.length; }
+  else if (a === "spotify") { t = V10.spNow; playing = t.playing; srcl = "SPOTIFY" + (playing ? " · LIVE" : " · PAUSED"); }
+  var state = t ? (playing ? "playing" : "paused") : (a === "spotify-idle" ? "connected" : (v10SpReady() ? "ready" : "idle"));
+  np.setAttribute("data-state", state); np.setAttribute("data-src", a || "none");
+  function set(id, v) { var el = $("#" + id); if (el && el.textContent !== v) el.textContent = v; }
+  set("v10SrcL", t ? srcl : (a === "spotify-idle" ? "SPOTIFY · CONNECTED" : ""));
+  set("v10Title", t ? t.title : (a === "spotify-idle" ? "Nothing playing on Spotify" : "Nothing playing"));
+  set("v10Artist", t ? t.artist : (a === "spotify-idle" ? "Start a song in Spotify on any device and it shows here" : "Connect Spotify to see what’s playing, or play music saved on this device"));
+  set("v10Album", t ? t.album : "");
+  var img = $("#v10Art"); if (img) { var src = t && t.art ? t.art : ""; if (src) { if (img.getAttribute("src") !== src) img.src = src; img.alt = t.album ? "Album art: " + t.album : "Album art"; img.hidden = false; } else { img.hidden = true; img.removeAttribute("src"); } }
+  var pp = $("#v10PP"); if (pp) { var lab = playing ? "Pause" : "Play"; if (pp.getAttribute("aria-label") !== lab) { pp.setAttribute("aria-label", lab); pp.innerHTML = v10Ico(playing ? "pause" : "play"); } }
+  var ctl = $("#v10Ctl"), pr = $("#v10ProgW"), row = $("#v10SrcRow"), cn = $("#v10Connect");
+  if (ctl) ctl.hidden = !t && a !== "spotify-idle";
+  if (pr) pr.hidden = !t;
+  if (row) row.hidden = !!t || a === "spotify-idle";
+  if (cn) cn.hidden = !!V10.sp;
+  $("#cardPlay").classList.toggle("is-playing", playing);
+  v10Prog(); v10Viz();
+}
+/* visualizer: real spectrum for music played here; play-state motion for Spotify (Spotify gives no audio data) */
+var V10_VB = 28, V10_LV = new Array(V10_VB).fill(0);
+function v10Viz() {
+  if (V10.raf) return;
+  var cv = $("#v10Viz"); if (!cv) return;
+  function frame(ts) {
+    V10.raf = 0;
+    var np = $("#v10Np"); if (!np) return;
+    var st = np.getAttribute("data-state"), playing = st === "playing", motion = v9Motion() && !matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var w = cv.clientWidth, h = cv.clientHeight; if (!w || !h) return;
+    var dpr = Math.min(2, window.devicePixelRatio || 1);
+    if (cv.width !== Math.round(w * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+    var g = cv.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+    var data = null;
+    if (playing && V10.an && v10Active() === "local") { data = new Uint8Array(V10.an.frequencyBinCount); V10.an.getByteFrequencyData(data); }
+    var t = (ts || 0) / 1000;
+    for (var i = 0; i < V10_VB; i++) {
+      var target;
+      if (!playing) target = 0.06 + 0.04 * Math.sin(i * 0.9);
+      else if (data) target = Math.pow((data[Math.min(data.length - 1, Math.floor(2 + i * (data.length - 6) / V10_VB))] || 0) / 255, 1.2);
+      else if (!motion) target = 0.25 + 0.35 * Math.abs(Math.sin(i * 1.7));
+      else target = 0.18 + 0.62 * Math.abs(Math.sin(t * (1.6 + (i % 5) * 0.37) + i * 0.8) * Math.sin(t * 0.9 + i * 0.33));
+      V10_LV[i] += (target - V10_LV[i]) * (motion ? 0.35 : 1);
+    }
+    var gap = 3, bw = Math.max(2, (w - gap * (V10_VB - 1)) / V10_VB), gr = g.createLinearGradient(0, h, 0, 0);
+    gr.addColorStop(0, "#05d9e8"); gr.addColorStop(0.6, "#b26bff"); gr.addColorStop(1, "#ff4fd8");
+    g.fillStyle = gr; g.shadowColor = playing ? "rgba(255,79,216,.55)" : "transparent"; g.shadowBlur = playing ? 8 : 0;
+    for (var j = 0; j < V10_VB; j++) { var bh = Math.max(2, V10_LV[j] * (h - 4)); g.globalAlpha = playing ? 0.95 : 0.35; g.fillRect(j * (bw + gap), (h - bh) / 2, bw, bh); }
+    g.globalAlpha = 1;
+    v10Prog();
+    if (playing && motion && V10.vis && !document.hidden) V10.raf = requestAnimationFrame(frame);
+  }
+  V10.raf = requestAnimationFrame(frame);
+}
+document.addEventListener("visibilitychange", function () { if (!document.hidden) { v10Viz(); if (V10.sp) v10SpPoll(); } });
+try { new MutationObserver(function () { v10Viz(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["class"] }); } catch (e) {}
+setInterval(function () { if (v10Active() === "spotify") v10Prog(); }, 1000);
+/* "Listen" and "play music" use the player here */
+var _v10OpenDest = v6OpenDest;
+v6OpenDest = function (id, o) { if (id === "listen") { v10GoPlayer(); return; } return _v10OpenDest(id, o); };
+function v10GoPlayer() { try { v6GoCard("cardPlay"); } catch (e) { var c = $("#cardPlay"); if (c) c.scrollIntoView({ block: "center" }); } var b = $("#cardPlay"); if (b) { b.classList.add("v10-pulse"); setTimeout(function () { b.classList.remove("v10-pulse"); }, 1400); } }
+var _v10Parse = v9Parse;
+v9Parse = function (raw) {
+  var r = _v10Parse(raw); if (!r || r.intent !== "media") return r;
+  var m = currentMedia(), a = v10Active(), what = (String(raw || "").trim().match(/^(?:play|put on|listen to)(?: some)?\s+(.{2,60})$/i) || [])[1] || "";
+  if (/^(music|songs?|something|a song|my music|tunes)$/i.test(what)) what = "";
+  var more = [{ label: "Play music from this device", run: function () { v10GoPlayer(); v10PickFiles(); } }, { label: "Open " + m.name + " instead", run: function () { if (what && V9_MUSICQ[MEDIA_KEY]) go(V9_MUSICQ[MEDIA_KEY] + encodeURIComponent(what)); else openApp(m); } }];
+  if (what && V10.sp) return { intent: "media", icon: "listen", title: "Play “" + what + "” on Spotify", sub: "Plays on your active Spotify device · shows here", tag: "SPOTIFY", primary: { label: "Play", run: function () { v10SpSearchPlay(what); } }, more: more };
+  if (a === "local" || a === "spotify" || a === "spotify-idle") return { intent: "media", icon: "listen", title: "Play music", sub: a === "local" ? "Your music on this device" : "Spotify · controlled here", tag: "ZAPWISE PLAYER", primary: { label: "Play", run: function () { v10GoPlayer(); v10Cmd("play"); } }, more: more };
+  return { intent: "media", icon: "listen", title: "Play music here", sub: "Connect Spotify or play music saved on this device", tag: "ZAPWISE PLAYER", primary: { label: "Open player", run: function () { v10GoPlayer(); } }, more: more };
+};
+function v10SpSearchPlay(q) {
+  v10GoPlayer();
+  v10SpApi("GET", "/search?type=track&limit=1&q=" + encodeURIComponent(q)).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+    var tr = j && j.tracks && j.tracks.items && j.tracks.items[0]; if (!tr) { toast("Nothing found on Spotify"); return; }
+    return v10SpApi("PUT", "/me/player/play", { uris: [tr.uri] }).then(function (r) { if (r.status === 404) toast("Open Spotify on any device first, then try again"); else if (r.status === 403) toast("Spotify only allows playback control with Premium"); setTimeout(v10SpPoll, 600); });
+  }).catch(function () { toast("Spotify didn’t answer"); });
+}
+(function v10NpInit() {
+  v10NpBuild(); V10.sp = v10SpLoad(); v10NpPaint();
+  fetch("/os/spotify.json", { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : {}; }).catch(function () { return {}; }).then(function (j) {
+    V10.cfg = j && typeof j.clientId === "string" && /^[A-Za-z0-9]{16,64}$/.test(j.clientId) ? { clientId: j.clientId } : null;
+    V10.cfgDone = true; v10SpCallback(); v10NpPaint(); if (V10.sp) v10SpPoll();
+  });
+})();
+
+/* ---- FOCUS: cyber ring, task, today total, immersive view ---- */
+function v10FocState() {
+  var total = focusMs(), left = total, now = Date.now();
+  if (FOC.st === "run") left = Math.max(0, FOC.end - now); else if (FOC.st === "pause") left = Math.max(0, Math.min(total, FOC.left || 0));
+  return { st: FOC.st, left: left, total: total, pct: FOC.st === "idle" ? 0 : Math.max(0, Math.min(1, 1 - left / total)) };
+}
+function v10FocToday() { var m = 0, n = 0; try { var s = Store.getLocal("focusStats", null) || {}; if (s.day === focusDayKey()) { m = +s.mins || 0; n = +s.count || 0; } } catch (e) {} return { m: m, n: n }; }
+function v10FocDecorate() {
+  var card = $("#mFocus"); if (!card) return;
+  card.classList.add("v10-foc");
+  var h = card.querySelector(".fz-h b"); if (h && h.textContent !== "FOCUS") h.textContent = "FOCUS";
+  var svg = card.querySelector(".fz-svg");
+  if (svg && !svg.querySelector("#v10fg")) svg.insertAdjacentHTML("afterbegin", '<defs><linearGradient id="v10fg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#05d9e8"/><stop offset=".55" stop-color="#b26bff"/><stop offset="1" stop-color="#ff4fd8"/></linearGradient></defs>');
+  var dial = card.querySelector("#focTap");
+  if (dial && !card.querySelector("#v10FocTd")) dial.insertAdjacentHTML("afterend", '<p class="v10-foc-td" id="v10FocTd" aria-live="polite"></p>');
+  var acts = card.querySelector(".fz-acts");
+  if (acts && !card.querySelector("#v10Task")) acts.insertAdjacentHTML("beforebegin", '<label class="v10-task"><span class="sr-only">Current task</span><input id="v10Task" type="text" maxlength="60" enterkeyhint="done" placeholder="What are you focusing on?" autocomplete="off"></label>');
+  if (acts && !card.querySelector("#v10Imm1")) acts.insertAdjacentHTML("beforeend", '<button type="button" class="fz-btn alt v10-imm-btn" id="v10Imm1" aria-label="Open full-screen focus">FULL SCREEN</button>');
+  var ti = card.querySelector("#v10Task");
+  if (ti && !ti._b) {
+    ti._b = 1; ti.value = Store.getLocal("v10task", "") || "";
+    ti.addEventListener("input", function () { Store.setLocal("v10task", ti.value.slice(0, 60)); });
+    ti.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); ti.blur(); } e.stopPropagation(); });
+  }
+  var ib = card.querySelector("#v10Imm1"); if (ib && !ib._b) { ib._b = 1; ib.addEventListener("click", function (e) { e.preventDefault(); e.stopPropagation(); v10ImmOpen(); }); }
+}
+function v10FocPaint() {
+  v10FocDecorate();
+  var td = $("#v10FocTd"), T = v10FocToday();
+  var s = "TODAY · " + T.m + " MIN" + (T.n ? " · " + T.n + (T.n === 1 ? " SESSION" : " SESSIONS") : "");
+  if (td && td.textContent !== s) td.textContent = s;
+  var o = $("#v10Imm"); if (!o || o.hidden) return;
+  var F = v10FocState(), sec = Math.ceil(F.left / 1000), C = 917.35;
+  var tm = Math.floor(sec / 60) + ":" + pad2(sec % 60), el = $("#v10ImmTime"); if (el.textContent !== tm) el.textContent = tm;
+  var stt = F.st === "run" ? "FOCUSING" : F.st === "pause" ? "PAUSED" : "READY · " + (FOC.mins || 25) + " MIN"; el = $("#v10ImmSt"); if (el.textContent !== stt) el.textContent = stt;
+  $("#v10ImmRing").setAttribute("stroke-dashoffset", (C * (1 - F.pct)).toFixed(2));
+  var go = $("#v10ImmGo"), gl = F.st === "run" ? "PAUSE" : F.st === "pause" ? "RESUME" : "START"; if (go.textContent !== gl) go.textContent = gl;
+  var task = (Store.getLocal("v10task", "") || "").trim(), tk = $("#v10ImmTask"); if (tk.textContent !== task) tk.textContent = task; tk.hidden = !task;
+  $("#v10Imm").classList.toggle("running", F.st === "run");
+  $("#v10ImmT2").textContent = s;
+}
+var V10_IMM_PREV = null, V10_WL = null;
+function v10ImmIsOpen() { var o = $("#v10Imm"); return !!(o && !o.hidden); }
+function v10ImmOpen() {
+  var o = $("#v10Imm");
+  if (!o) {
+    o = document.createElement("div"); o.id = "v10Imm"; o.className = "v10-imm"; o.hidden = true;
+    o.setAttribute("role", "dialog"); o.setAttribute("aria-modal", "true"); o.setAttribute("aria-label", "Full-screen focus");
+    o.innerHTML = '<div class="v10-imm-in"><small class="v10-imm-k">// FOCUS</small>' +
+      '<div class="v10-imm-ring"><svg viewBox="0 0 320 320" aria-hidden="true"><defs><linearGradient id="v10ig" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#05d9e8"/><stop offset=".55" stop-color="#b26bff"/><stop offset="1" stop-color="#ff4fd8"/></linearGradient></defs><circle class="t" cx="160" cy="160" r="146"/><circle class="p" id="v10ImmRing" cx="160" cy="160" r="146" transform="rotate(-90 160 160)" stroke-dasharray="917.35" stroke-dashoffset="917.35"/></svg>' +
+      '<div class="v10-imm-mid"><b id="v10ImmTime" role="timer" aria-live="off">25:00</b><span id="v10ImmSt">READY</span></div></div>' +
+      '<p class="v10-imm-task" id="v10ImmTask" hidden></p><p class="v10-imm-t2" id="v10ImmT2"></p>' +
+      '<div class="v10-imm-acts"><button type="button" class="fz-btn" id="v10ImmGo">START</button><button type="button" class="fz-btn alt" id="v10ImmReset">RESET</button><button type="button" class="fz-btn alt" id="v10ImmX">EXIT</button></div></div>';
+    document.body.appendChild(o);
+    o.addEventListener("click", function (e) {
+      var b = e.target.closest("button"); if (!b) return; e.preventDefault(); e.stopPropagation();
+      if (b.id === "v10ImmGo") focusToggle(); else if (b.id === "v10ImmReset") focusReset(); else if (b.id === "v10ImmX") v10ImmClose();
+      v10FocPaint(); v10WakeLock();
+    });
+    o.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") { e.preventDefault(); v10ImmClose(); return; }
+      if (e.key === "Tab") { var f = [].slice.call(o.querySelectorAll("button")); var i = f.indexOf(document.activeElement); e.preventDefault(); f[(i + (e.shiftKey ? -1 : 1) + f.length) % f.length].focus(); }
+      e.stopPropagation();
+    });
+  }
+  V10_IMM_PREV = document.activeElement; o.hidden = false; document.documentElement.classList.add("v10-imm-open");
+  v10FocPaint(); setTimeout(function () { var g = $("#v10ImmGo"); if (g) g.focus(); }, 30); v10WakeLock();
+}
+function v10ImmClose() {
+  var o = $("#v10Imm"); if (!o) return; o.hidden = true; document.documentElement.classList.remove("v10-imm-open");
+  try { if (V10_WL) { V10_WL.release(); V10_WL = null; } } catch (e) {}
+  try { (V10_IMM_PREV && V10_IMM_PREV.focus ? V10_IMM_PREV : $("#v10Imm1")).focus(); } catch (e) {}
+}
+function v10WakeLock() {
+  try {
+    if (v10ImmIsOpen() && FOC.st === "run" && !V10_WL && navigator.wakeLock) navigator.wakeLock.request("screen").then(function (l) { V10_WL = l; l.addEventListener("release", function () { V10_WL = null; }); }).catch(function () {});
+    else if (V10_WL && FOC.st !== "run") { V10_WL.release(); V10_WL = null; }
+  } catch (e) {}
+}
+var _v10AOO = anyOverlayOpen;
+anyOverlayOpen = function () { return _v10AOO() || v10ImmIsOpen(); };
+v10FocPaint(); setInterval(v10FocPaint, 500);
+try { window.ZAPOS = window.ZAPOS || {}; window.ZAPOS.v10 = { state: function () { return { active: v10Active(), np: ($("#v10Np") || {}).getAttribute && $("#v10Np").getAttribute("data-state"), sp: !!V10.sp, ready: v10SpReady(), cfgDone: V10.cfgDone, q: V10.q.length }; }, setCfg: function (id) { V10.cfg = id ? { clientId: id } : null; v10NpPaint(); }, poll: v10SpPoll, loadFiles: v10LoadFiles, focusOpen: v10ImmOpen, focusClose: v10ImmClose }; } catch (e) {}
 
 })(); /* end ZAPWISE//OS app scope */

@@ -176,3 +176,28 @@ Header (ZAPWISE//OS · LIVE · settings) → search / Ask ZAP AI + chips → Tod
 **Main site**: "AI shortcuts for work" positioning replaced everywhere (titles, meta, hero, header logo tagline → "// ONE DIGITAL COMMAND CENTER", nav, footer, OG image/alt, guide widget). Guides live under Learn. Homepage hero has an interactive mini orbit linking into `/os/?go=<dest>`; real v4.27 screenshots; new `zw-cyber.css` on main pages.
 
 **QA**: new `qa427.mjs` (OS) and `qa427_site.mjs` (main site), WebKit iPhone 13/SE/iPad mini + Chromium phones/tablet/desktop — see the audit Page for numbers. qa426 is superseded (it asserts the removed chip row/tiles).
+
+## v4.28.0 — 2026-11-10 — Declutter: time hero, real Now Playing, cyber Focus
+**Why**: the owner: "remove all that don't help us… have time showing above the rotating explore… take out the wind down where it says Accept… show who and what music is playing… use us instead… make focus mode better… we look too crowded."
+
+**Removed / tucked away**
+- The suggestion strip ("Wind down · Open YouTube Music · Accept") is gone, and so is the one-time welcome card.
+- The separate Today card: its time, date and weather now live in the hero; one clock engine, no duplicate clock.
+- Header status pills (LIVE, battery, GPS lock) and the version chip; the GPS pill on Navigate; the orbit's "DRAG TO SPIN" hint and front caption; Focus's sessions/streak/length row.
+- More space: 20–22 px between cards, roomier card padding on phones. Banking and Apps unchanged.
+
+**Time hero**: big glowing digital time + AM/PM and the full date sit directly above the orbit, with a small weather chip (tap → forecast). Car mode hides it with the orbit.
+
+**Now Playing (ours, not a hand-off)**
+- Album art, title, artist, album, progress, and prev / play-pause / next inside ZAPWISE, plus a cyber equalizer.
+- Music from this device: pick files; title/artist/album/cover come from the file's ID3 tags (or "Artist - Title" file names); plays here with the Media Session API (lock-screen controls and metadata); the equalizer is the real audio spectrum (Web Audio analyser).
+- Spotify: full Authorization Code + PKCE flow (no client secret), token refresh, currently-playing poll (5 s playing / 12 s paused, paused when hidden), play/pause/next/previous, "play <song>" plays the top Spotify match. Needs a free Spotify developer app; until `/os/spotify.json` has a Client ID the card shows a clean "Connect Spotify" state that explains the one-time setup (docs/SPOTIFY_SETUP.md). Spotify gives no audio data, so its equalizer moves with play state only.
+- The orbit's Listen and "play music" go to this player; opening another music app is now only under ···.
+- No fake track data: "Nothing playing" until a real source exists. Motion toggle / reduced motion freeze the equalizer.
+- CSP: connect-src adds accounts.spotify.com and api.spotify.com.
+
+**Focus**: large gradient ring with the time inside, 15/25/50 (+ custom), Start/Pause, Reset, "Today · N min · N sessions", a task field ("What are you focusing on?", saved on device), and a full-screen focus view (ring + time + task + Pause/Reset/Exit, Esc closes, focus trapped, screen kept awake while running where supported).
+
+**Desktop ≥1200 px**: time + orbit hero (2 columns) with Now Playing and Focus beside it; Navigate spans 2 columns next to Banking; Apps full width.
+
+**QA**: new `qa428.mjs` — 9 sizes WebKit (iPhone 13/SE/iPad mini/1440) + Chromium (iPhone 13/Pixel 7/1024/1440/1920): time above the orbit and ≥56 px, no duplicate clock, no Wind down/Accept/onboarding anywhere (also on a first visit), card order, no overflow/overlap, ≥44 px targets, 0 console errors; Now Playing not-connected, connected-ready (PKCE authorize URL), connected (mocked Spotify in the test: track, artist, album art, progress, pause/next calls, URL cleanup, no secret), device files (ID3, Media Session, visualizer, next, pause); Focus ring, task, full screen, Esc, reset; plus all qa427 orbit/one-answer/Shop checks. 481/481. qa427 is superseded (it expects the Today card).
