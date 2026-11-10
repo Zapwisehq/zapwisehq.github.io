@@ -145,3 +145,34 @@ Header (ZAPWISE//OS · LIVE · settings) → search / Ask ZAP AI + chips → Tod
 **Also**: map caption no longer covers map credits; weather button is ≥44 px tall; CLS 0.002.
 
 **QA**: new `qa426.mjs` — 9 sizes across WebKit (iPhone 13, iPhone SE, iPad mini, 1440) and Chromium (iPhone 13, Pixel 7, 1024, 1440, 1920): card order, removed UI absent, no fixed element over content while scrolling, Customize button reachable and uncovered at the bottom, no overlapping/duplicate visible text, 0 console errors, no horizontal overflow, ≥44 px targets, Phone sheet round-trip, All destinations, Ask ZAP AI (chip + typed), Menu shortcuts, `Q`, empty cards appear with content, `?tv=1`/`?car=1`, no automatic TV at 1920. Older suites (qa417_fn, qa419, qa421–qa424, interact_v5) updated where they asserted removed UI (orbit, sidebar, bottom bar, ZAP/Quick Actions cards, auto TV at 1920, 12 dashboard cards, 2 nav landmarks); originals backed up.
+
+## v4.27.0 — 2026-11-09 — The Orbit + one-answer ZAP AI + cyber everywhere
+**Why**: the owner loved the orbit, wanted everything "more cyber", a better Shop, and a smoother ZAP AI ("I type pizza but had to choose… so much option"). The main site still said "AI shortcuts for work".
+
+**Orbit = the only navigation**
+- Big original 3D-style orbit right under the search bar: glowing Z core, two rotating rings, perspective floor grid, 9 labeled destinations (Shop, Watch, Listen, Food, Navigate, Smart Home, Finance, Apps, ZAP AI).
+- Drag to spin with inertia (velocity clamped, decays and snaps to the nearest item), mouse tilt + parallax, tap/click opens, ←/→/↑/↓/Home/End move, Enter opens (roving tabindex). Labels stay full size and readable at every rotation (only the icon scales with depth).
+- Motion toggle and `prefers-reduced-motion` stop the ring animation, tilt and sweeps; orbit still works by tap and keys. Car mode hides it.
+- Desktop ≥1200 px: the orbit is the hero (2 columns × 2 rows) beside Today and Now Playing.
+- `?go=<dest>` deep link (used by the main-site mini orbit) opens that destination, then cleans the URL.
+- Removed duplicate navigation: search chip row (#v8Chips) and the Apps destination tiles (#v8Dest). Still no sidebar, bottom bar or second AI box. Card order unchanged: Today → Now Playing → Navigate → Focus → Money → Apps.
+
+**ZAP AI: one best answer**
+- New on-device parser (keywords, synonyms, Levenshtein fuzzy match — "piza" still works) returns ONE result card under the search bar as you type; Enter runs its primary button.
+- "pizza" → "Pizza near you" with one button (Google Maps search at your location, or your usual provider). "More ways" (small, collapsed) shows DoorDash, Uber Eats, Grubhub, Yelp; tapping one makes it your usual for food ("YOUR USUAL" tag + reset).
+- Same pattern for weather (live reading inline), take me home/work, headphones (opens Shop with results), play music, watch, gas/parking near me, focus 25 (one Confirm tap), reminders/notes (confirm), apps, finance, smart home, calendar, Connect. Questions/maths still go to ZAP AI chat; typing in the ZAP AI sheet renders the same single card with no online call for direct intents.
+- Food and Watch sheets open your usual service directly; your choice is remembered per intent (device keys `v9pref`, `v9use`).
+
+**Shop**
+- Search box + chips (Tech, Audio, Home, Gaming, Fashion, Deals). Results are handoff tiles (styled initials, no logos) to Amazon, Best Buy, Walmart, Target, eBay and Google Shopping search; Deals opens each store's real deals page.
+- Wishlist and price compare (prices you type) kept.
+- Product API research: Open Products Facts / Open Food Facts are free but barcode-only and have no prices; Open Prices is mostly groceries (France); Best Buy, eBay and Amazon APIs need keys/sign-ups. So Shop does not show any product, price or image it cannot verify — honest handoffs only.
+
+**Cyber design (original)**
+- New `v9.css`: neon cyan/magenta/purple on navy-black, chamfered cards, HUD corner brackets, grid lines, monospace `//` labels, glow on hover/focus, light sweep only when Motion is on. No glitch, no scanlines, no third-party assets. Targets ≥44 px.
+
+**Kept**: map design, gestures (down/left/right), shortcuts (`/`, `A`, `Q`), ZAP Connect, Plaid banking + spending, honest empty states, noindex.
+
+**Main site**: "AI shortcuts for work" positioning replaced everywhere (titles, meta, hero, header logo tagline → "// ONE DIGITAL COMMAND CENTER", nav, footer, OG image/alt, guide widget). Guides live under Learn. Homepage hero has an interactive mini orbit linking into `/os/?go=<dest>`; real v4.27 screenshots; new `zw-cyber.css` on main pages.
+
+**QA**: new `qa427.mjs` (OS) and `qa427_site.mjs` (main site), WebKit iPhone 13/SE/iPad mini + Chromium phones/tablet/desktop — see the audit Page for numbers. qa426 is superseded (it asserts the removed chip row/tiles).

@@ -1,7 +1,7 @@
 /* ZAPWISE//OS web app v4.13.2 (Nov 5, 2026). Equal-height desktop Focus/Phone. Plaid-only Bank. Motion toggle. No tabs. Source: edit app.js → build.sh → app.min.js. */
 (function () {
 "use strict";
-var VERSION = '4.26.0';
+var VERSION = '4.27.0';
 var APP_VERSION = VERSION;
 
 // v4.5: default Lite on coarse/mobile unless user already chose
@@ -246,7 +246,7 @@ function clone(o) { return o == null ? o : JSON.parse(JSON.stringify(o)); }
 var Store = (function () {
   var STATE_KEY = "zapos.state", DEVICE_KEY = "zapos.device", VER = 1;
   var PREF_KEYS = ["settings", "theme", "apps", "coins", "loc", "favs", "places", "holdings", "broker", "wallets", "accounts", "assistant"];                     // shared state (sync-ready)
-  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss", "mediaKey", "skipBoot", "bootDay", "uiSounds", "recentPins", "wxDay", "wxMode", "wxMode2", "portHist", "acctMigrated", "liteMode", "tiltCards", "motionTilt", "callLog", "zapChat", "focusStats", "wallpaper", "zapNotes", "zapReminders", "uiMotion", "welcomeSeen", "bankPrivacy", "mapTraffic", "bankManualCleared_v413", "searchProv", "focusCustom", "v5AppsOpen", "quickActions", "sugState", "v6lists", "v6List", "v6ha", "v6compare", "v6cal", "zaLog", "dash", "v7car", "v7tv", "v25days", "v426"]; // this device only
+  var DEVICE_KEYS = ["gps", "place", "wx", "mk", "focus", "seenHelp", "gpsLoc", "themeCss", "mediaKey", "skipBoot", "bootDay", "uiSounds", "recentPins", "wxDay", "wxMode", "wxMode2", "portHist", "acctMigrated", "liteMode", "tiltCards", "motionTilt", "callLog", "zapChat", "focusStats", "wallpaper", "zapNotes", "zapReminders", "uiMotion", "welcomeSeen", "bankPrivacy", "mapTraffic", "bankManualCleared_v413", "searchProv", "focusCustom", "v5AppsOpen", "quickActions", "sugState", "v6lists", "v6List", "v6ha", "v6compare", "v6cal", "zaLog", "dash", "v7car", "v7tv", "v25days", "v426", "v9pref", "v9use"]; // this device only
   function read(k) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
   function write(k, v) { if (dead) return false; try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
   var state = read(STATE_KEY), dev = read(DEVICE_KEY), subs = [], uiT = null, dead = false; // dead: after a reset, write nothing more
@@ -8154,7 +8154,7 @@ document.addEventListener("keydown", function (e) {
 
   /* ---- gestures: down (at top) = search, left = apps, right = quick actions. Never on map / scrollers / inputs / sheets ---- */
   var g = null;
-  var NOSWIPE = "#mapV, .map-v, input, textarea, select, [contenteditable], .places-scroller, .hw-hrs, .mk-ticker, .wx-temp-chart, .wx-sw, .sheet, .zap-sheet, .xp, .np-list, #dlPad, .srch-drop, .v6-orbit";
+  var NOSWIPE = "#mapV, .map-v, input, textarea, select, [contenteditable], .places-scroller, .hw-hrs, .mk-ticker, .wx-temp-chart, .wx-sw, .sheet, .zap-sheet, .xp, .np-list, #dlPad, .srch-drop, .v6-orbit, .v9-orbit, .v9-res";
   document.addEventListener("touchstart", function (e) {
     g = null;
     if (!e.touches || e.touches.length !== 1) return;
@@ -8430,11 +8430,11 @@ function v6OpenDest(id, o) {
       host.innerHTML = L.length ? L.map(function (x, i) { return '<div class="v6-sv" role="listitem"><button type="button" class="v6-sv-use" data-use="' + i + '">' + esc(x.t) + (x.price ? ' <small class="v6-px">' + esc(x.price) + (x.store ? " · " + esc(x.store) : "") + '</small>' : "") + '</button>' + (id === "shop" ? '<button type="button" class="chip" data-edit="' + i + '" aria-label="Add price, store or link for ' + esc(x.t) + '">✎</button>' : "") + (id !== "food" ? '<button type="button" class="chip v6-done' + (x.done ? " on" : "") + '" data-done="' + i + '" aria-pressed="' + (!!x.done) + '" aria-label="Mark ' + esc(x.t) + (id === "watch" ? ' as watched' : ' as got it') + '">' + (x.done ? (id === "watch" ? "✓ Watched" : "✓ Got it") : (id === "watch" ? "Watched?" : "Got it?")) + '</button>' : "") + '<button type="button" class="chip" data-del="' + i + '" aria-label="Remove ' + esc(x.t) + '">✕</button></div>'; }).join("") : '<p class="dim v6-empty">Nothing saved yet. Type something above and tap ＋ Save.</p>';
     }
     paintSaved();
-    b.querySelector("#v6DForm").addEventListener("submit", function (e) { e.preventDefault(); if (!q()) { inp.focus(); toast("Type something first"); return; } var first = b.querySelector(".v6-store"); if (first) first.focus(); toast("Pick a " + (id === "shop" ? "store" : "service") + " below"); });
+    b.querySelector("#v6DForm").addEventListener("submit", function (e) { e.preventDefault(); if (!q()) { inp.focus(); toast("Type something first"); return; } /* v4.27: Enter opens your usual service (or the first one) — no "pick one" step */ var pk = id === "food" ? Math.max(0, V9_FOOD.map(function (x) { return x.k; }).indexOf(v9Prefs().food)) : (v9Prefs()[id + "Svc"]) | 0, st0 = V6_STORES[id][pk] || V6_STORES[id][0]; go(v6StoreUrl(id, st0[1], q())); });
     b.querySelector("#v6Stores").addEventListener("click", function (e) {
       var s = e.target.closest("[data-store]"); if (!s) return;
       if (!q()) { inp.focus(); toast("Type something first"); return; }
-      var st = V6_STORES[id][+s.getAttribute("data-store")]; go(v6StoreUrl(id, st[1], q()));
+      var si = +s.getAttribute("data-store"), st = V6_STORES[id][si]; try { v9SetPref(id + "Svc", si); if (id === "food" && V9_FOOD[si]) v9SetPref("food", V9_FOOD[si].k); } catch (eSv) {} go(v6StoreUrl(id, st[1], q()));
     });
     b.querySelector("#v6DSave").addEventListener("click", function () {
       if (!q()) { inp.focus(); toast("Type something first"); return; }
@@ -9520,7 +9520,7 @@ function v8Phone() {
   var sq = $("#srchQ"); if (sq) { sq.placeholder = "Search or ask ZAP AI"; sq.setAttribute("aria-label", "Search or ask ZAP AI"); }
   /* Apps card: destination tiles + Phone */
   var apps = $("#appsSection"), cats = $("#v5Cats");
-  if (apps && cats && !$("#v8Dest")) {
+  if (false && apps && cats && !$("#v8Dest")) { /* v4.27: the orbit is the only navigation — Apps holds app shortcuts only */
     var T = [["shop", "Shop"], ["watch", "Watch"], ["food", "Food"], ["smarthome", "Smart Home"]];
     var d = document.createElement("div"); d.className = "v8-dest"; d.id = "v8Dest"; d.setAttribute("role", "list"); d.setAttribute("aria-label", "Places to go");
     d.innerHTML = T.map(function (t) { var c = (V6_DEST.filter(function (x) { return x.id === t[0]; })[0] || {}).c || "#05d9e8"; return '<button type="button" class="v8-tile" role="listitem" data-v8d="' + t[0] + '" style="--cc:' + c + '">' + v8Svg(t[0]) + '<b>' + t[1] + '</b></button>'; }).join("") +
@@ -9578,5 +9578,440 @@ function v8Phone() {
   try { applyDash(); } catch (eA) {}
   window.ZAPOS = window.ZAPOS || {}; window.ZAPOS.v8 = { paint: paint, phone: v8Phone, dests: v8Dests };
 })();
+
+
+/* ========== v4.27 ORBIT HOME · ZAP ONE ANSWER · SHOP ==========
+   The orbit under the search bar is the only way around the home screen (no destination tiles, sidebar,
+   bottom bar or second AI box). Typing gives ONE best result card; "More ways" only opens if tapped.
+   Common requests are understood on this device (keywords + synonyms + fuzzy match) and never go online. */
+var V9_ORBIT = ["shop", "watch", "listen", "food", "navigate", "smarthome", "finance", "apps", "zap"];
+var V9_SUB = { shop: "Compare stores", watch: "Where to stream", listen: "Your music app", food: "Eat near you", navigate: "Map & directions", smarthome: "Home apps", finance: "Banking & money", apps: "Your apps", zap: "Just ask" };
+function v9D(id) { return V6_DEST.filter(function (d) { return d.id === id; })[0] || { id: id, n: id, c: "#05d9e8" }; }
+function v9Motion() { return document.documentElement.classList.contains("motion-on"); }
+function v9Prefs() { var p = Store.getLocal("v9pref", null); return p && typeof p === "object" ? p : {}; }
+function v9SetPref(k, v) { var p = v9Prefs(); if (v == null) delete p[k]; else p[k] = v; Store.setLocal("v9pref", p); }
+
+/* ---- orbit ---- */
+(function v9OrbitInit() {
+  var pg = $("#osPage"), srch = $("#srch"); if (!pg || !srch || $("#v9OrbitCard")) return;
+  document.documentElement.classList.add("v9");
+  var ch = $("#v8Chips"); if (ch) ch.remove(); /* v4.27: the search bar answers directly; no extra AI chips row */
+  var card = document.createElement("section");
+  card.className = "card br v5c v9-orbit-card"; card.id = "v9OrbitCard"; card.setAttribute("aria-label", "Explore ZAPWISE"); card.style.setProperty("--acc", "#05d9e8");
+  card.innerHTML = '<div class="v5h"><b>EXPLORE</b><small class="v9-hint" aria-hidden="true">DRAG TO SPIN · TAP TO OPEN</small></div>' +
+    '<div class="v9-orbit" id="v9Orbit" role="menu" aria-label="ZAPWISE destinations. Arrow keys turn the ring, Enter opens.">' +
+    '<div class="v9-stage" aria-hidden="true"><div class="v9-grid"></div><div class="v9-ring r1"><i></i></div><div class="v9-ring r2"><i></i></div><div class="v9-ring r3"></div>' +
+    '<div class="v9-core"><span class="v9-core-glow"></span><svg viewBox="0 0 64 64" width="58" height="58"><defs><linearGradient id="v9zg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#05d9e8"/><stop offset=".55" stop-color="#b26bff"/><stop offset="1" stop-color="#ff4fd8"/></linearGradient></defs><path d="M16 15h32v7L27 42h21v7H16v-7l21-20H16z" fill="url(#v9zg)"/></svg></div></div>' +
+    V9_ORBIT.map(function (id, i) { var d = v9D(id); return '<button type="button" class="v9-item" role="menuitem" data-dest="' + id + '" data-i="' + i + '" tabindex="' + (i ? "-1" : "0") + '" style="--c:' + d.c + '" aria-label="' + esc(d.n) + ': ' + esc(V9_SUB[id]) + '"><span class="v9-ic">' + v6Svg(id, 22) + '</span><span class="v9-lbl">' + esc(d.n) + '</span></button>'; }).join("") +
+    '</div><div class="v9-front" id="v9Front" aria-hidden="true"><b></b><small></small></div>';
+  srch.parentNode.insertBefore(card, srch.nextSibling);
+  var sug = $("#v5Sug"); if (sug) srch.parentNode.insertBefore(sug, card); /* suggestions stay with the search, above the orbit */
+  var host = $("#v9Orbit"), stage = host.querySelector(".v9-stage"), items = [].slice.call(host.querySelectorAll(".v9-item")), front = $("#v9Front");
+  var N = items.length, step = Math.PI * 2 / N, rot = 0, cur = 0, raf = 0, vel = 0, tilt = { x: 0, y: 0 };
+  function wrapI(i) { return ((i % N) + N) % N; }
+  function nearest() { return wrapI(Math.round(-rot / step)); }
+  function layout() {
+    var W = host.clientWidth, H = host.clientHeight; if (!W || !H) return;
+    var iw = items[0].offsetWidth || 78, ih = items[0].offsetHeight || 70;
+    var rx = Math.max(70, W / 2 - iw / 2 - 4), ry = Math.max(70, H / 2 - ih / 2 - 4);
+    if (W > 560) rx = Math.min(rx, ry * 1.9);
+    var fi = nearest();
+    items.forEach(function (it, i) {
+      var a = i * step + rot, x = Math.sin(a) * rx, y = Math.cos(a) * ry, dep = (Math.cos(a) + 1) / 2;
+      var sc = 0.74 + 0.32 * dep;
+      it.style.transform = "translate3d(" + (W / 2 + x - iw / 2).toFixed(1) + "px," + (H / 2 + y - ih / 2).toFixed(1) + "px,0)";
+      it.style.setProperty("--sc", sc.toFixed(3)); /* depth scales the icon only, so every label stays full size */
+      it.style.zIndex = String(10 + Math.round(dep * 20));
+      it.style.setProperty("--dep", dep.toFixed(3));
+      it.classList.toggle("front", i === fi);
+    });
+    host.style.setProperty("--spin", (-rot * 180 / Math.PI).toFixed(2) + "deg");
+    var d = v9D(V9_ORBIT[fi]); if (front) { front.querySelector("b").textContent = d.n; front.querySelector("small").textContent = V9_SUB[d.id]; front.style.setProperty("--c", d.c); }
+  }
+  function applyTilt() {
+    stage.style.setProperty("--tx", tilt.x.toFixed(2) + "deg"); stage.style.setProperty("--ty", tilt.y.toFixed(2) + "deg");
+    host.style.setProperty("--px", (tilt.y * 1.2).toFixed(1) + "px"); host.style.setProperty("--py", (-tilt.x * 1.2).toFixed(1) + "px");
+  }
+  function stop() { if (raf) cancelAnimationFrame(raf); raf = 0; }
+  function tweenTo(target, cb) {
+    stop();
+    if (!v9Motion()) { rot = target; layout(); if (cb) cb(); return; }
+    var from = rot, t0 = performance.now(), dur = 320;
+    (function f(now) { var k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3); rot = from + (target - from) * e; layout(); if (k < 1) raf = requestAnimationFrame(f); else { raf = 0; if (cb) cb(); } })(t0);
+  }
+  function setCur(i, focus) {
+    cur = wrapI(i);
+    items.forEach(function (it, k) { it.setAttribute("tabindex", k === cur ? "0" : "-1"); });
+    var target = -cur * step, d = target - rot; d = ((d + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
+    tweenTo(rot + d);
+    if (focus) items[cur].focus({ preventScroll: true });
+  }
+  function snap() { setCur(nearest(), false); }
+  host.addEventListener("keydown", function (e) {
+    var k = e.key, i = items.indexOf(document.activeElement); if (i < 0) return;
+    if (document.documentElement.classList.contains("tv-nav") && (k === "ArrowUp" || k === "ArrowDown")) return;
+    var nx = null;
+    if (k === "ArrowRight" || k === "ArrowDown") nx = i + 1; else if (k === "ArrowLeft" || k === "ArrowUp") nx = i - 1;
+    else if (k === "Home") nx = 0; else if (k === "End") nx = N - 1;
+    if (nx == null) return;
+    e.preventDefault(); e.stopPropagation(); setCur(nx, true);
+  });
+  var lastPtr = 0;
+  host.addEventListener("focusin", function (e) { if (Date.now() - lastPtr < 800) return; var i = items.indexOf(e.target); if (i >= 0 && i !== cur) setCur(i, false); });
+  /* drag to spin with inertia; a tap still opens */
+  var dr = null, suppress = 0;
+  host.addEventListener("pointerdown", function (e) {
+    lastPtr = Date.now();
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    stop(); dr = { x: e.clientX, y: e.clientY, r: rot, moved: false, lx: e.clientX, lt: performance.now(), id: e.pointerId }; vel = 0;
+  });
+  host.addEventListener("pointermove", function (e) {
+    var R = host.getBoundingClientRect();
+    if (!dr) {
+      if (e.pointerType === "mouse" && v9Motion()) { tilt.y = ((e.clientX - R.left) / R.width - 0.5) * 10; tilt.x = -((e.clientY - R.top) / R.height - 0.5) * 8; applyTilt(); }
+      return;
+    }
+    var dx = e.clientX - dr.x;
+    if (!dr.moved && Math.abs(dx) < 8) return;
+    if (!dr.moved) { dr.moved = true; host.classList.add("dragging"); try { host.setPointerCapture(dr.id); } catch (eC) {} }
+    var k = 1.5 / Math.max(140, R.width / 2), now = performance.now(), dt = Math.max(12, now - dr.lt);
+    rot = dr.r + dx * k;
+    vel = Math.max(-0.012, Math.min(0.012, 0.7 * vel + 0.3 * ((e.clientX - dr.lx) * k / dt)));
+    dr.lx = e.clientX; dr.lt = now;
+    if (v9Motion()) { tilt.y = Math.max(-12, Math.min(12, dx / 14)); tilt.x = Math.max(-8, Math.min(8, (dr.y - e.clientY) / 16)); applyTilt(); }
+    layout();
+  });
+  function endDrag() {
+    if (!dr) return; var mv = dr.moved; dr = null; host.classList.remove("dragging");
+    tilt.x = 0; tilt.y = 0; applyTilt();
+    if (!mv) return;
+    suppress = Date.now();
+    if (!v9Motion() || Math.abs(vel) < 0.0006) { snap(); return; }
+    var last = performance.now();
+    (function coast(now) {
+      var dt = Math.min(40, now - last); last = now;
+      rot += vel * dt; vel *= Math.pow(0.94, dt / 16); layout();
+      if (Math.abs(vel) > 0.0004) raf = requestAnimationFrame(coast); else { raf = 0; snap(); }
+    })(last);
+  }
+  host.addEventListener("pointerup", endDrag); host.addEventListener("pointercancel", endDrag);
+  host.addEventListener("pointerleave", function () { if (!dr) { tilt.x = 0; tilt.y = 0; applyTilt(); } });
+  host.addEventListener("click", function (e) {
+    var it = e.target.closest(".v9-item"); if (!it) return;
+    if (Date.now() - suppress < 350) { e.preventDefault(); return; }
+    var i = +it.getAttribute("data-i"); cur = i; items.forEach(function (x, k) { x.setAttribute("tabindex", k === i ? "0" : "-1"); });
+    it.classList.add("v9-pulse"); setTimeout(function () { it.classList.remove("v9-pulse"); }, 500);
+    zaRun("dest." + it.getAttribute("data-dest"), {}, { quiet: true });
+    setCur(i, false);
+  });
+  layout();
+  try { new ResizeObserver(function () { layout(); }).observe(host); } catch (eR) { window.addEventListener("resize", layout); }
+  /* deep link from the homepage mini orbit: /os/?go=shop opens that destination once */
+  try { var gm = location.search.match(/[?&]go=([a-z]+)/); if (gm && V9_ORBIT.indexOf(gm[1]) >= 0) { var cu = new URL(location.href); cu.searchParams.delete("go"); history.replaceState(null, "", cu.pathname + (cu.search || "") + cu.hash); setCur(V9_ORBIT.indexOf(gm[1]), false); setTimeout(function () { zaRun("dest." + gm[1], {}, { quiet: true }); }, 1200); } } catch (eG) {}
+  window.ZAPOS = window.ZAPOS || {}; window.ZAPOS.v9 = window.ZAPOS.v9 || {};
+  window.ZAPOS.v9.orbit = { setCur: function (i) { setCur(i, true); }, cur: function () { return nearest(); }, rot: function () { return rot; }, items: N };
+})();
+
+/* ---- HUD layer on every card (corner brackets + chamfer edges; decorative only) ---- */
+function v9Hud() { [].forEach.call(document.querySelectorAll("#osPage > .card, #osPage > .v5c"), function (c) { if (!c.querySelector(":scope > .v9-hud")) { var i = document.createElement("i"); i.className = "v9-hud"; i.setAttribute("aria-hidden", "true"); c.appendChild(i); } }); }
+try { v9Hud(); setTimeout(v9Hud, 2500); } catch (eH) {}
+
+/* ---- on-device intent parser ---- */
+function v9Lev(a, b) {
+  if (a === b) return 0; if (Math.abs(a.length - b.length) > 2) return 9;
+  var m = a.length, n = b.length, p = [], c, i, j;
+  for (j = 0; j <= n; j++) p[j] = j;
+  for (i = 1; i <= m; i++) { c = [i]; for (j = 1; j <= n; j++) c[j] = Math.min(p[j] + 1, c[j - 1] + 1, p[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); p = c; }
+  return p[n];
+}
+function v9Fuzzy(tok, kw) { if (tok === kw) return 2; if (tok.length < 4 || kw.length < 4) return 0; var d = v9Lev(tok, kw); return d <= (kw.length >= 7 ? 2 : 1) ? 1 : 0; }
+var V9_FILL = /\b(please|pls|can you|could you|i want( to)?|i wanna|i'?d like( to)?|i need( to)?|get me|find me|show me|find|show|give me|some|a|an|the|me|for me|now|right now|tonight|today|order|buy|shop for|shopping for|look for|looking for|search( for)?|best|cheap|good)\b/g;
+var V9_K = {
+  food: ["pizza", "pizzas", "taco", "tacos", "sushi", "burger", "burgers", "wings", "thai", "chinese", "indian", "mexican", "italian", "ramen", "pho", "bbq", "barbecue", "coffee", "cafe", "breakfast", "brunch", "lunch", "dinner", "food", "restaurant", "restaurants", "hungry", "eat", "takeout", "delivery", "dessert", "donuts", "bagels", "sandwich", "sandwiches", "salad", "chicken", "seafood", "steak", "noodles", "boba", "icecream", "fries"],
+  shop: ["headphones", "headphone", "earbuds", "airpods", "laptop", "laptops", "phone", "phones", "iphone", "android", "tv", "tvs", "television", "monitor", "keyboard", "mouse", "speaker", "speakers", "charger", "cable", "tablet", "ipad", "smartwatch", "camera", "console", "ps5", "xbox", "controller", "gpu", "ssd", "router", "shoes", "sneakers", "jacket", "hoodie", "shirt", "jeans", "dress", "backpack", "bag", "sofa", "couch", "chair", "desk", "lamp", "mattress", "vacuum", "blender", "gift", "gifts", "deal", "deals", "shop", "shopping", "store", "macbook", "drone", "printer", "soundbar", "projector", "watches"],
+  weather: ["weather", "forecast", "temperature", "temp", "rain", "raining", "umbrella", "snow", "sunny", "humid", "humidity", "wind", "outside"],
+  media: ["music", "song", "songs", "playlist", "album", "listen", "podcast", "podcasts", "radio", "tunes"],
+  watch: ["movie", "movies", "show", "shows", "series", "film", "films", "stream", "trailer", "episode", "anime"],
+  focus: ["focus", "pomodoro", "concentrate", "deepwork"],
+  finance: ["bank", "banking", "balance", "balances", "money", "spending", "spent", "budget", "portfolio", "stocks", "stock", "crypto", "bitcoin", "btc", "investments", "finance", "transactions"],
+  smarthome: ["lights", "light", "thermostat", "lock", "locks", "smarthome", "devices", "hue"],
+  cal: ["calendar", "agenda", "schedule", "meetings", "events"],
+  near: ["gas", "parking", "pharmacy", "atm", "grocery", "groceries", "hospital", "gym", "hotel", "hotels", "charging", "bar", "bars", "park", "mall", "bank near"]
+};
+function v9Norm(raw) { return String(raw || "").toLowerCase().replace(/[’']/g, "'").replace(/[^\w\s'+\-.%/:]/g, " ").replace(/\s+/g, " ").trim(); }
+function v9Term(n) { return n.replace(V9_FILL, " ").replace(/\b(near( me| here| by)?|nearby|around( me| here)?|close by|delivered|delivery)\b/g, " ").replace(/\s+/g, " ").trim(); }
+function v9Score(toks, list) { var s = 0, hit = ""; toks.forEach(function (t) { list.forEach(function (k) { var f = v9Fuzzy(t, k); if (f > s) { s = f; hit = k; } }); }); return { s: s, hit: hit }; }
+function v9Cap(s) { s = String(s || ""); return s.charAt(0).toUpperCase() + s.slice(1); }
+function v9GpsLL() { try { var g = GPS || Store.getLocal("gps", null); if (g && isFinite(g.lat) && isFinite(g.lon)) return g.lat.toFixed(4) + "," + g.lon.toFixed(4); } catch (e) {} return ""; }
+var V9_FOOD = [
+  { k: "gmaps", n: "Google Maps", u: function (t) { var ll = v9GpsLL(); return "https://www.google.com/maps/search/" + encodeURIComponent(t + (ll ? "" : " near me")) + (ll ? "/@" + ll + ",14z" : ""); } },
+  { k: "doordash", n: "DoorDash", u: function (t) { return "https://www.doordash.com/search/store/" + encodeURIComponent(t) + "/"; } },
+  { k: "ubereats", n: "Uber Eats", u: function (t) { return "https://www.ubereats.com/search?q=" + encodeURIComponent(t); } },
+  { k: "grubhub", n: "Grubhub", u: function (t) { return "https://www.grubhub.com/search?queryText=" + encodeURIComponent(t); } },
+  { k: "yelp", n: "Yelp", u: function (t) { return "https://www.yelp.com/search?find_desc=" + encodeURIComponent(t); } }
+];
+var V9_STORES = [
+  { k: "amazon", n: "Amazon", m: "AM", c: "#ffb547", u: "https://www.amazon.com/s?k=", deal: "https://www.amazon.com/deals" },
+  { k: "bestbuy", n: "Best Buy", m: "BB", c: "#2ee6ff", u: "https://www.bestbuy.com/site/searchpage.jsp?st=", deal: "https://www.bestbuy.com/site/misc/deal-of-the-day/pcmcat248000050016.c" },
+  { k: "walmart", n: "Walmart", m: "WM", c: "#05d9e8", u: "https://www.walmart.com/search?q=", deal: "https://www.walmart.com/shop/deals" },
+  { k: "target", n: "Target", m: "TG", c: "#ff4f7b", u: "https://www.target.com/s?searchTerm=", deal: "https://www.target.com/c/top-deals/-/N-4xw74" },
+  { k: "ebay", n: "eBay", m: "EB", c: "#b26bff", u: "https://www.ebay.com/sch/i.html?_nkw=", deal: "https://www.ebay.com/deals" },
+  { k: "gshop", n: "Google Shopping", m: "GS", c: "#3dff9e", u: "https://www.google.com/search?tbm=shop&q=", deal: "https://www.google.com/search?tbm=shop&q=deals" }
+];
+var V9_MUSICQ = { spotify: "https://open.spotify.com/search/", ytmusic: "https://music.youtube.com/search?q=", music: "https://music.apple.com/us/search?term=", soundcloud: "https://soundcloud.com/search?q=", deezer: "https://www.deezer.com/search/", amazonmusic: "https://music.amazon.com/search/" };
+function v9Ext(n, u) { return { label: n + " ↗", ext: 1, run: function () { go(u); } }; }
+function v9AskMore(raw) { return { label: "Ask ZAP AI", run: function () { zaRun("zap.ask", { q: raw }, { quiet: true }); } }; }
+function v9WebMore(raw) { return { label: "Search " + searchProv().name + " ↗", ext: 1, run: function () { go(webSearchUrl(raw)); } }; }
+/* returns { intent, icon, title, sub, tag, primary:{label, run}, more:[…], body? } — never null for non-empty input */
+function v9Parse(raw) {
+  var n = v9Norm(raw); if (!n) return null;
+  var toks = n.split(" "), term = v9Term(n) || n, P = v9Prefs(), r;
+  function S(k) { return v9Score(toks, V9_K[k]); }
+  /* 1) exact app name / alias (e.g. "spotify", "instagram") */
+  var app = null; try { var h = findApps(n, 1)[0]; if (h && catalogMatchScore(h, n) >= 90) app = h; } catch (eA) {}
+  /* 2) routines + device commands that ZAP AI already knows */
+  if (/(get|got) me ready for work|ready for work|morning (brief|routine)|plan (my|the|out my) day|plan today|what can you do|^help$/.test(n)) {
+    var rt = /plan/.test(n) ? ["Plan my day", "Reminders, notes, focus and weather"] : (/what can|help/.test(n) ? ["What ZAP AI can do", "Commands that work on this device"] : ["Get ready for work", "Weather, commute and reminders"]);
+    return { intent: "routine", icon: "zap", title: rt[0], sub: rt[1], tag: "ON THIS DEVICE", primary: { label: "Run it", run: function () { zaRun("zap.ask", { q: raw }, { quiet: true }); } }, more: [] };
+  }
+  if (/^(take me|go|head|heading|drive|get me|directions|navigate|nav)( back)?( to)? home$|^home( please)?$|^go home/.test(n)) {
+    var hm = v6Place(/home|house/i);
+    return hm ? { intent: "nav.home", icon: "navigate", title: "Directions home", sub: "To “" + hm.name + "” with live traffic in your maps app", tag: "OPENS YOUR MAPS APP", primary: { label: "Start directions", run: function () { openDirectionsTo(hm); } }, more: [{ label: "Traffic map", run: function () { v6GoCard("panelNav"); } }] }
+      : { intent: "nav.home", icon: "navigate", title: "Home isn’t saved yet", sub: "Add Home on the Navigate map once — then this is one tap", tag: "ON THIS DEVICE", primary: { label: "Add Home", run: function () { v6GoCard("panelNav"); } }, more: [] };
+  }
+  if (/^(take me|go|head|drive|directions|navigate)( to)? (work|the office|office)$|^commute$|^(go to )?work$/.test(n)) {
+    var wk = v6Place(/work|office|job/i);
+    return wk ? { intent: "nav.work", icon: "navigate", title: "Directions to " + wk.name, sub: "Live traffic in your maps app", tag: "OPENS YOUR MAPS APP", primary: { label: "Start directions", run: function () { openDirectionsTo(wk); } }, more: [] }
+      : { intent: "nav.work", icon: "navigate", title: "Work isn’t saved yet", sub: "Add Work on the Navigate map once", tag: "ON THIS DEVICE", primary: { label: "Add Work", run: function () { v6GoCard("panelNav"); } }, more: [] };
+  }
+  var fm = n.match(/^(?:start (?:a )?)?(?:focus|pomodoro|deep ?work|concentrate)(?: (?:mode|timer|session))?(?: for)?(?: (\d{1,3}))?(?: ?(?:m|min|mins|minutes))?$/) || n.match(/^(\d{1,3}) ?(?:m|min|mins|minutes)? focus$/);
+  if (fm) {
+    var mins = Math.max(1, Math.min(180, +(fm[1] || 0) || (FOC && FOC.mins) || 25));
+    var running = FOC && FOC.st === "run";
+    return { intent: "focus", icon: "zap", title: running ? "Focus is running" : "Start " + mins + "-min focus", sub: running ? "Open the Focus card to see time left" : "Timer runs on this device", tag: "ON THIS DEVICE", primary: { label: running ? "Show focus" : "Start focus", run: function () { if (running) v6GoCard("mFocus"); else zaRun("focus.start", { mins: mins }); } }, more: [15, 25, 50].filter(function (x) { return x !== mins; }).map(function (x) { return { label: x + " min", run: function () { zaRun("focus.start", { mins: x }); } }; }) };
+  }
+  var rm = String(raw).trim().match(/^remind me (?:to |about )?(.{2,140})$/i);
+  if (rm) return { intent: "reminder", icon: "zap", title: "Save reminder", sub: "“" + rm[1] + "” · on this device, no phone alert", tag: "ON THIS DEVICE", primary: { label: "Save reminder", run: function () { zaRun("reminder.add", { text: rm[1] }, { confirmed: true }); } }, more: [] };
+  var nt = String(raw).trim().match(/^(?:add |save |new |take )?(?:a )?note:? (.{2,140})$/i);
+  if (nt) return { intent: "note", icon: "zap", title: "Save note", sub: "“" + nt[1] + "” · on this device", tag: "ON THIS DEVICE", primary: { label: "Save note", run: function () { zaRun("note.add", { text: nt[1] }, { confirmed: true }); } }, more: [] };
+  if (app && /^(weather|forecast|music|calendar|agenda|focus|shop|shopping|food|watch|apps|home|settings)$/.test(n)) app = null; /* built-in answers beat a same-named app */
+  if (app) return { intent: "app", icon: "apps", img: app.icon || ("/os/icons/" + String(app.id || "").replace(/^p-/, "") + ".jpg"), title: "Open " + app.name, sub: app.web ? "App, or its website" : "Opens the app", tag: "OPENS " + String(app.name).toUpperCase(), primary: { label: "Open " + app.name, run: function () { openApp(app); } }, more: [v9WebMore(raw)] };
+  /* saved places */
+  try { var pls = loadPlaces().filter(function (p) { var pn = v9Norm(p.name); return pn && (pn === n || pn === term || n === "to " + pn || ("directions to " + pn) === n); }); if (pls[0]) { var pl = pls[0]; return { intent: "place", icon: "navigate", title: "Directions to " + pl.name, sub: "Saved place · live traffic in your maps app", tag: "OPENS YOUR MAPS APP", primary: { label: "Start directions", run: function () { openDirectionsTo(pl); } }, more: [] }; } } catch (eP) {}
+  var nav = n.match(/^(?:directions|navigate|drive|take me|get me|how do i get|route)(?: me)? to (.{2,60})$/);
+  if (nav) return { intent: "nav.search", icon: "navigate", title: "Directions to " + v9Cap(nav[1]), sub: "Your maps app finds it and shows traffic", tag: "OPENS YOUR MAPS APP", primary: { label: "Open maps", run: function () { zaRun("nav.search", { q: nav[1] }, { quiet: true }); } }, more: [v9WebMore(nav[1])] };
+  /* weather */
+  var sw = S("weather");
+  if (sw.s >= 1 && toks.length <= 7) {
+    var tEl = $("#hwTemp"), cEl = $("#hwNow"), have = WX && WX.j && tEl && /\d/.test(tEl.textContent);
+    var rain = ""; try { rain = WX.j.daily.precipitation_probability_max[0]; } catch (eW) {}
+    var hl = ""; try { hl = "H " + Math.round(WX.j.daily.temperature_2m_max[0]) + "° · L " + Math.round(WX.j.daily.temperature_2m_min[0]) + "°"; } catch (eW2) {}
+    return have ? { intent: "weather", icon: "weather", title: tEl.textContent.trim() + " · " + (cEl ? cEl.textContent.trim() : ""), sub: [WX.place || "", hl, rain !== "" ? "Rain " + rain + "%" : ""].filter(Boolean).join(" · "), tag: "OPEN-METEO · ON THIS DEVICE", primary: { label: "Full forecast", run: function () { zaRun("weather.show", {}, { quiet: true }); } }, more: [] }
+      : { intent: "weather", icon: "weather", title: "Weather isn’t loaded yet", sub: navigator.onLine === false ? "You’re offline" : "Set your city or allow location on the Today card", tag: "ON THIS DEVICE", primary: { label: "Set up weather", run: function () { v6GoCard("panelToday"); } }, more: [] };
+  }
+  /* music */
+  var pm = n.match(/^(?:play|put on|listen to)(?: some)?(?: (.{2,60}))?$/), smd = S("media");
+  if (pm || (smd.s >= 1 && toks.length <= 4)) {
+    var m = currentMedia(), what = pm && pm[1] && !/^(music|songs?|something|a song|my music|tunes)$/.test(pm[1]) ? pm[1] : "";
+    var mk = MEDIA_KEY && V9_MUSICQ[MEDIA_KEY] ? MEDIA_KEY : "";
+    if (what && mk) return { intent: "media", icon: "listen", title: "Play “" + what + "”", sub: "Opens " + m.name + " search · playback happens there", tag: "OPENS " + m.name.toUpperCase(), primary: { label: "Open in " + m.name, run: function () { go(V9_MUSICQ[mk] + encodeURIComponent(what)); } }, more: [{ label: "Change music app", run: function () { v6OpenDest("listen"); } }] };
+    return { intent: "media", icon: "listen", title: "Play music", sub: "In " + m.name + " · your music app", tag: "OPENS " + m.name.toUpperCase(), primary: { label: "Open " + m.name, run: function () { zaRun("media.open", {}, { quiet: true }); } }, more: [{ label: "Change music app", run: function () { v6OpenDest("listen"); } }] };
+  }
+  /* watch */
+  var wt = n.match(/^(?:watch|stream|where (?:can i |to )?watch|where is) (.{2,60}?)(?: streaming)?$/), swt = S("watch");
+  if (wt || (swt.s >= 1 && toks.length <= 4)) {
+    var title = wt ? wt[1] : "";
+    if (title && !/^(something|a movie|movies?|tv|shows?|a show)$/.test(title)) return { intent: "watch", icon: "watch", title: "Where to watch “" + title + "”", sub: "JustWatch shows every service that streams it", tag: "OPENS JUSTWATCH", primary: { label: "Find where it streams", run: function () { go("https://www.justwatch.com/us/search?q=" + encodeURIComponent(title)); } }, more: [v9Ext("YouTube", "https://www.youtube.com/results?search_query=" + encodeURIComponent(title)), v9Ext("Netflix", "https://www.netflix.com/search?q=" + encodeURIComponent(title)), { label: "Save to watchlist", run: function () { v6OpenDest("watch", { q: title }); } }] };
+    return { intent: "watch", icon: "watch", title: "Find something to watch", sub: "Your watchlist and streaming searches", tag: "ON THIS DEVICE", primary: { label: "Open Watch", run: function () { zaRun("dest.watch", {}, { quiet: true }); } }, more: [] };
+  }
+  /* places near you (gas, parking, pharmacy…) */
+  var snr = S("near");
+  if (snr.s >= 2 && toks.length <= 4) { var nq = term || snr.hit; return { intent: "near", icon: "navigate", title: v9Cap(nq) + " near you", sub: v9GpsLL() ? "Around your location" : "Your maps app uses your location", tag: "OPENS GOOGLE MAPS", primary: { label: "Open Google Maps", run: function () { go(V9_FOOD[0].u(nq)); } }, more: [] }; }
+  /* food */
+  var sf = S("food");
+  if (sf.s >= 1 && toks.length <= 6 && !/\brecipe|how to|calories\b/.test(n)) {
+    var ft = term; if (!ft || /^(hungry|food|eat|i'?m hungry|something to eat|takeout)$/.test(ft)) ft = sf.hit && !/^(hungry|food|eat|takeout|delivery)$/.test(sf.hit) ? sf.hit : "restaurants";
+    var pref = P.food, prov = V9_FOOD.filter(function (x) { return x.k === pref; })[0] || V9_FOOD[0];
+    var label = ft === "restaurants" ? "Restaurants near you" : v9Cap(ft) + " near you";
+    return { intent: "food", icon: "food", title: label, sub: prov.k === "gmaps" ? (v9GpsLL() ? "Open now around your location" : "Google Maps uses your location") : "In " + prov.n + " · you order there", tag: "OPENS " + prov.n.toUpperCase() + (pref ? " · YOUR USUAL" : ""), primary: { label: "Open " + prov.n, run: function () { go(prov.u(ft)); } },
+      more: V9_FOOD.filter(function (x) { return x !== prov; }).map(function (x) { return { label: x.n + " ↗", ext: 1, pref: ["food", x.k, x.n], run: function () { go(x.u(ft)); } }; }).concat(pref ? [{ label: "Reset usual", run: function () { v9SetPref("food", null); toast("Google Maps is first again"); } }] : []) };
+  }
+  /* shop */
+  var ssh = S("shop");
+  if (ssh.s >= 1 && toks.length <= 7) {
+    var st = term.replace(/\b(shop|shopping|store)\b/g, "").trim() || (ssh.hit === "deals" || ssh.hit === "deal" ? "" : ssh.hit);
+    var deals = /\bdeals?\b/.test(n);
+    var ps = V9_STORES.filter(function (x) { return x.k === P.shop; })[0];
+    if (ps && st && !deals) return { intent: "shop", icon: "shop", title: v9Cap(st) + " at " + ps.n, sub: "Your usual store · prices and stock are on its page", tag: "OPENS " + ps.n.toUpperCase() + " · YOUR USUAL", primary: { label: "Search " + ps.n, run: function () { go(ps.u + encodeURIComponent(st)); } }, more: [{ label: "Compare all stores", run: function () { v9Shop({ q: st }); } }, { label: "Reset usual", run: function () { v9SetPref("shop", null); toast("Shop opens all stores again"); } }] };
+    return { intent: "shop", icon: "shop", title: st ? "Shop " + st : (deals ? "Today’s deals" : "Shop"), sub: st ? "6 stores side by side · real prices on each store’s page" : "Deals pages at 6 stores", tag: "ZAPWISE SHOP", primary: { label: st ? "See stores" : "Open Shop", run: function () { v9Shop({ q: st, cat: deals ? "deals" : "" }); } },
+      more: st ? V9_STORES.slice(0, 4).map(function (x) { return { label: x.n + " ↗", ext: 1, pref: ["shop", x.k, x.n], run: function () { go(x.u + encodeURIComponent(st)); } }; }) : [] };
+  }
+  /* money, smart home, calendar */
+  if (S("finance").s >= 2 && toks.length <= 5) return { intent: "finance", icon: "finance", title: /spend|spent|budget|transaction/.test(n) ? "Your spending" : "Your money", sub: "Banking and investments · amounts stay on this device", tag: "ON THIS DEVICE", primary: { label: "Open Money", run: function () { zaRun("dest.finance", {}, { quiet: true }); } }, more: [{ label: "ZAP Connect", run: function () { zaRun("connect.open", {}, { quiet: true }); } }] };
+  if ((S("smarthome").s >= 2 || /smart home|turn (on|off) the/.test(n)) && toks.length <= 6) return { intent: "smarthome", icon: "smarthome", title: "Smart Home", sub: "No devices connected yet · opens your home app", tag: "ON THIS DEVICE", primary: { label: "Open Smart Home", run: function () { zaRun("dest.smarthome", {}, { quiet: true }); } }, more: [] };
+  if (S("cal").s >= 2 && toks.length <= 5) return { intent: "cal", icon: "apps", title: "Today’s agenda", sub: "From your imported calendar, or open your calendar app", tag: "ON THIS DEVICE", primary: { label: "Show agenda", run: function () { zaRun("cal.agenda", {}, { quiet: true }); } }, more: [] };
+  if (/^(apps|my apps|all apps)$/.test(n)) return { intent: "apps", icon: "apps", title: "Your apps", sub: "Every app shortcut on this device", tag: "ON THIS DEVICE", primary: { label: "Open apps", run: function () { zaRun("dest.apps", {}, { quiet: true }); } }, more: [] };
+  if (/^(settings|connections|zap connect|privacy|permissions)$/.test(n)) return { intent: "connect", icon: "apps", title: "ZAP Connect", sub: "What’s connected and what it can read", tag: "ON THIS DEVICE", primary: { label: "Open ZAP Connect", run: function () { zaRun("connect.open", {}, { quiet: true }); } }, more: [{ label: "Settings", run: function () { openSettings(); } }] };
+  /* websites */
+  if (/^(https?:\/\/)?[a-z0-9-]+(\.[a-z0-9-]+)+(\/\S*)?$/i.test(String(raw).trim()) && zaSafeUrl(raw)) { var u = zaSafeUrl(raw); return { intent: "site", icon: "apps", title: "Open " + u.replace(/^https:\/\//, "").replace(/\/$/, "").slice(0, 40), sub: "Website", tag: "OPENS IN YOUR BROWSER", primary: { label: "Open site", run: function () { go(u); } }, more: [] }; }
+  /* questions, maths, conversions, calls → ZAP AI answers */
+  if (/[?]$|^(who|what|when|where|why|how|is|are|can|does|do|should|which|define|explain|translate|convert|calculate|tell me|call|text|message|email|add|schedule|set|what's|whats)\b|^[\d\s.+\-*/x()%^]+$|\b(usd|eur|gbp|to (usd|eur|gbp|cad|mxn))\b/.test(n) || toks.length >= 5) {
+    return { intent: "ask", icon: "zap", title: "Ask ZAP AI", sub: "“" + String(raw).trim().slice(0, 60) + "”", tag: v6SmartOn() ? "ON THIS DEVICE · ONLINE MODEL FOR OPEN QUESTIONS" : "ANSWERED ON THIS DEVICE", primary: { label: "Ask", run: function () { zaRun("zap.ask", { q: String(raw).trim() }, { quiet: true }); } }, more: [v9WebMore(raw)] };
+  }
+  /* anything else: the web, with ZAP AI one tap away */
+  return { intent: "web", icon: "apps", title: "Search " + searchProv().name + " for “" + String(raw).trim().slice(0, 40) + "”", sub: "Results open in your browser", tag: "OPENS " + searchProv().name.toUpperCase(), primary: { label: "Search", run: function () { go(webSearchUrl(raw)); } }, more: [v9AskMore(raw), { label: "Shop for it", run: function () { v9Shop({ q: String(raw).trim() }); } }, { label: "Find on the map ↗", ext: 1, run: function () { zaRun("nav.search", { q: String(raw).trim() }, { quiet: true }); } }] };
+}
+V6_IC.weather = "M7 18h10a4 4 0 0 0 .6-7.96A6 6 0 0 0 6.1 11 3.5 3.5 0 0 0 7 18z";
+function v9Icon(r) { if (r.img) return '<img src="' + esc(r.img) + '" alt="" width="40" height="40" decoding="async">'; return v6Svg(V6_IC[r.icon] ? r.icon : "zap", 24); }
+function v9CardHtml(r, opt) {
+  opt = opt || {};
+  var c = r.icon === "weather" ? "#2ee6ff" : (v9D(r.icon).c || "#05d9e8");
+  return '<div class="v9-best" style="--c:' + c + '" data-intent="' + esc(r.intent) + '">' +
+    '<div class="v9-best-h"><span class="v9-best-ic" aria-hidden="true">' + v9Icon(r) + '</span><span class="v9-best-t"><b>' + esc(r.title) + '</b><small>' + esc(r.sub) + '</small></span></div>' +
+    '<div class="v9-best-a"><button type="button" class="v9-go" data-v9="go">' + esc(r.primary.label) + (opt.enter ? '<kbd aria-hidden="true">↵</kbd>' : "") + '</button>' +
+    (r.more && r.more.length ? '<button type="button" class="v9-morebtn" data-v9="more" aria-expanded="false">More ways</button>' : "") + '</div>' +
+    (r.more && r.more.length ? '<div class="v9-more" hidden>' + r.more.map(function (m, i) { return '<button type="button" class="chip" data-v9m="' + i + '">' + esc(m.label) + '</button>'; }).join("") + '</div>' : "") +
+    '<span class="v9-tag">' + esc(r.tag) + '</span></div>';
+}
+function v9BindCard(el, r, done) {
+  el.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-v9],[data-v9m]"); if (!b) return;
+    e.preventDefault(); e.stopPropagation();
+    if (b.getAttribute("data-v9") === "more") { var mo = el.querySelector(".v9-more"); mo.hidden = !mo.hidden; b.setAttribute("aria-expanded", String(!mo.hidden)); b.textContent = mo.hidden ? "More ways" : "Fewer"; return; }
+    var act = b.hasAttribute("data-v9m") ? r.more[+b.getAttribute("data-v9m")] : r.primary;
+    if (!act) return;
+    if (act.pref) { v9SetPref(act.pref[0], act.pref[1]); setTimeout(function () { toast(act.pref[2] + " is your usual now — it’ll be first next time"); }, 900); }
+    v9Learn(r.intent);
+    if (done) done();
+    try { act.run(); } catch (eR) { toast("That didn’t work — try again"); }
+  });
+}
+function v9Learn(intent) { try { var L = Store.getLocal("v9use", null) || {}; L[intent] = (L[intent] || 0) + 1; Store.setLocal("v9use", L); } catch (e) {} }
+
+/* ---- search bar: one best result, Enter = do it ---- */
+(function v9Search() {
+  var f = $("#srch"), inp = $("#srchQ"); if (!f || !inp) return;
+  var res = document.createElement("section"); res.id = "v9Res"; res.className = "v9-res"; res.hidden = true; res.setAttribute("aria-label", "Best result"); res.setAttribute("aria-live", "polite");
+  f.parentNode.insertBefore(res, f.nextSibling);
+  var cur = null, tmr = 0;
+  var TRY = [["Pizza", "pizza"], ["Weather", "weather"], ["Take me home", "take me home"], ["Focus 25", "focus 25"], ["Headphones", "headphones"], ["Play music", "play music"]];
+  function clear() { inp.value = ""; res.hidden = true; res.innerHTML = ""; cur = null; try { inp.blur(); } catch (e) {} }
+  function paintTry() {
+    res.innerHTML = '<div class="v9-try"><small>TRY</small>' + TRY.map(function (t) { return '<button type="button" class="chip" data-v9try="' + esc(t[1]) + '">' + esc(t[0]) + '</button>'; }).join("") + '</div>';
+    res.hidden = false; cur = null;
+  }
+  function paint() {
+    var q = inp.value.trim();
+    if (!q) { if (document.activeElement === inp) paintTry(); else { res.hidden = true; res.innerHTML = ""; } cur = null; return; }
+    var r; try { r = v9Parse(q); } catch (e) { r = null; }
+    if (!r) { res.hidden = true; return; }
+    cur = r; res.innerHTML = v9CardHtml(r, { enter: true }); res.hidden = false;
+    v9BindCard(res.querySelector(".v9-best"), r, clear);
+  }
+  inp.addEventListener("input", function () { clearTimeout(tmr); tmr = setTimeout(paint, 60); });
+  inp.addEventListener("focus", function () { setTimeout(paint, 0); });
+  inp.addEventListener("blur", function () { setTimeout(function () { if (!inp.value.trim() && !res.contains(document.activeElement)) { res.hidden = true; res.innerHTML = ""; } }, 220); });
+  inp.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") { clear(); }
+    else if (e.key === "ArrowDown" && !res.hidden) { var g = res.querySelector(".v9-go, [data-v9try]"); if (g) { e.preventDefault(); e.stopPropagation(); g.focus(); } }
+  }, true);
+  res.addEventListener("mousedown", function (e) { if (e.target.closest("button")) e.preventDefault(); });
+  res.addEventListener("click", function (e) { var t = e.target.closest("[data-v9try]"); if (!t) return; inp.value = t.getAttribute("data-v9try"); paint(); var g = res.querySelector(".v9-go"); if (g) g.focus(); });
+  /* Enter / Go / voice submit → the best result, nothing else */
+  window.addEventListener("submit", function (e) {
+    if (e.target !== f) return;
+    e.preventDefault(); e.stopImmediatePropagation();
+    var q = inp.value.trim(); if (!q) return;
+    var r = null; try { r = v9Parse(q); } catch (eP) {}
+    if (!r) return;
+    v9Learn(r.intent); clear();
+    try { r.primary.run(); } catch (eR) { toast("That didn’t work — try again"); }
+  }, true);
+  window.ZAPOS = window.ZAPOS || {}; window.ZAPOS.v9 = window.ZAPOS.v9 || {}; window.ZAPOS.v9.parse = v9Parse;
+})();
+
+/* ---- ZAP AI sheet: the same one-answer cards for common requests (no online call) ---- */
+var _v9ZapHandle = zapHandle;
+zapHandle = function (raw) {
+  var q = String(raw || "").trim(); if (!q) return;
+  var r = null; try { r = v9Parse(q); } catch (e) {}
+  if (!r || /^(ask|web|routine|reminder|note)$/.test(r.intent)) return _v9ZapHandle(raw);
+  var zi = $("#zapIn"); if (zi) zi.value = "";
+  zapAppend("user", q);
+  var m = zapAppend("bot", "", null, { kind: r.tag, skipHist: true });
+  if (!m) return;
+  m.classList.add("v9-zmsg"); m.innerHTML = v9CardHtml(r);
+  v9BindCard(m.querySelector(".v9-best"), r, function () { if (r.intent !== "focus") { try { closeZapAssistant(); } catch (e2) {} } });
+  try { var h = loadZapHist(); h.push({ role: "bot", t: r.title + " — " + r.sub, at: Date.now() }); saveZapHist(h); } catch (eH) {}
+};
+
+/* ---- SHOP ---- */
+var V9_CATS = [
+  ["tech", "Tech", ["Laptops", "Phones", "Tablets", "Monitors", "Smartwatches", "Chargers"]],
+  ["audio", "Audio", ["Headphones", "Earbuds", "Bluetooth speakers", "Soundbars", "Turntables", "Microphones"]],
+  ["home", "Home", ["Air fryers", "Robot vacuums", "Desk lamps", "Office chairs", "Smart plugs", "Bedding"]],
+  ["gaming", "Gaming", ["Gaming headsets", "Controllers", "Gaming monitors", "Mechanical keyboards", "Gaming mice", "Gift cards"]],
+  ["fashion", "Fashion", ["Sneakers", "Hoodies", "Jackets", "Backpacks", "Sunglasses", "Watches"]],
+  ["deals", "Deals", []]
+];
+function v9Shop(o) {
+  o = o || {};
+  var state = { q: String(o.q || "").trim().slice(0, 80), cat: o.cat || "" };
+  var html = '<div class="v6-dest v9-shop">' +
+    '<form class="v9-shop-f" id="v9ShopF" autocomplete="off" role="search"><input id="v9ShopQ" type="search" enterkeyhint="search" maxlength="80" placeholder="Search products across stores" aria-label="Search products across stores" value="' + esc(state.q) + '"><button type="submit" class="v9-go">Search</button></form>' +
+    '<div class="v9-cats" role="group" aria-label="Categories">' + V9_CATS.map(function (c) { return '<button type="button" class="chip v9-cat" data-cat="' + c[0] + '" aria-pressed="false">' + c[1] + '</button>'; }).join("") + '</div>' +
+    '<div class="v9-shop-res" id="v9ShopRes"></div>' +
+    '<p class="note v9-honest">No sponsored results and no affiliate links. ZAPWISE doesn’t show prices, photos or stock it can’t verify — each store shows its own.</p>' +
+    '<div class="v6-list-h"><b>WISHLIST · ON THIS DEVICE</b><button type="button" class="chip" id="v9ShopSave">＋ Save</button></div>' +
+    '<div class="v6-saved" id="v9ShopSaved" role="list"></div>' +
+    '<div class="v6-row"><button type="button" class="chip accent" id="v9ShopCmp">⇄ Compare prices you saved</button><button type="button" class="v6-home-btn" data-v6-home="1">⌂ Back to Home</button></div></div>';
+  sheet("SHOP", html, function (b) {
+    var inp = b.querySelector("#v9ShopQ"), out = b.querySelector("#v9ShopRes");
+    function paintCats() { [].forEach.call(b.querySelectorAll(".v9-cat"), function (x) { x.setAttribute("aria-pressed", String(x.getAttribute("data-cat") === state.cat)); }); }
+    function tile(s, url, line) { return '<button type="button" class="v9-store" role="listitem" style="--c:' + s.c + '" data-url="' + esc(url) + '" data-sk="' + s.k + '"><span class="v9-mono" aria-hidden="true">' + s.m + '</span><span class="v9-store-t"><b>' + esc(s.n) + '</b><small>' + esc(line) + '</small></span><span class="v9-arrow" aria-hidden="true">↗</span></button>'; }
+    function paintRes() {
+      paintCats();
+      if (state.cat === "deals" && !state.q) {
+        out.innerHTML = '<div class="v9-res-h"><b>TODAY’S DEALS</b><small>Each store’s own deals page</small></div><div class="v9-stores" role="list">' + V9_STORES.map(function (s) { return tile(s, s.deal, "Deals at " + s.n); }).join("") + '</div>';
+        return;
+      }
+      if (!state.q) {
+        var c = V9_CATS.filter(function (x) { return x[0] === state.cat; })[0];
+        out.innerHTML = c ? '<div class="v9-res-h"><b>' + esc(c[1].toUpperCase()) + '</b><small>Pick one to compare stores</small></div><div class="v9-pop">' + c[2].map(function (p) { return '<button type="button" class="chip" data-pop="' + esc(p) + '">' + esc(p) + '</button>'; }).join("") + '</div>'
+          : '<p class="dim v6-empty">Type a product or pick a category.</p>';
+        return;
+      }
+      var q = state.q + (state.cat === "deals" ? " deals" : "");
+      out.innerHTML = '<div class="v9-res-h"><b>“' + esc(state.q.toUpperCase()) + '” AT 6 STORES</b><small>Tap a store to see its real prices</small></div><div class="v9-stores" role="list">' + V9_STORES.map(function (s) { return tile(s, s.u + encodeURIComponent(q), "Search " + s.n); }).join("") + '</div>';
+    }
+    function paintSaved() {
+      var L = v6Lists().shop, host = b.querySelector("#v9ShopSaved");
+      host.innerHTML = L.length ? L.map(function (x, i) { return '<div class="v6-sv" role="listitem"><button type="button" class="v6-sv-use" data-use="' + i + '">' + esc(x.t) + (x.price ? ' <small class="v6-px">' + esc(x.price) + (x.store ? " · " + esc(x.store) : "") + '</small>' : "") + '</button><button type="button" class="chip" data-edit="' + i + '" aria-label="Add price, store or link for ' + esc(x.t) + '">✎</button><button type="button" class="chip v6-done' + (x.done ? " on" : "") + '" data-done="' + i + '" aria-pressed="' + (!!x.done) + '" aria-label="Mark ' + esc(x.t) + ' as got it">' + (x.done ? "✓ Got it" : "Got it?") + '</button><button type="button" class="chip" data-del="' + i + '" aria-label="Remove ' + esc(x.t) + '">✕</button></div>'; }).join("") : '<p class="dim v6-empty">Nothing saved yet. Search something and tap ＋ Save.</p>';
+    }
+    paintRes(); paintSaved();
+    b.querySelector("#v9ShopF").addEventListener("submit", function (e) { e.preventDefault(); state.q = (inp.value || "").trim().slice(0, 80); if (!state.q) { inp.focus(); return; } if (state.cat !== "deals") state.cat = ""; paintRes(); try { inp.blur(); } catch (e2) {} });
+    b.addEventListener("click", function (e) {
+      var c = e.target.closest("[data-cat]"); if (c) { var k = c.getAttribute("data-cat"); state.cat = state.cat === k ? "" : k; if (k !== "deals") state.q = ""; inp.value = state.q; paintRes(); return; }
+      var p = e.target.closest("[data-pop]"); if (p) { state.q = p.getAttribute("data-pop"); inp.value = state.q; paintRes(); return; }
+      var s = e.target.closest("[data-url]"); if (s) { var u = s.getAttribute("data-url"); if (/^https:\/\//.test(u)) go(u); return; }
+      if (e.target.closest("[data-v6-home]")) { v6GoHome(); return; }
+      if (e.target.closest("#v9ShopCmp")) { v6Compare(); return; }
+      if (e.target.closest("#v9ShopSave")) {
+        var t = (inp.value || state.q || "").trim(); if (!t) { inp.focus(); toast("Type something first"); return; }
+        var L = v6Lists(); if (L.shop.some(function (x) { return x.t.toLowerCase() === t.toLowerCase(); })) { toast("Already saved"); return; }
+        if (L.shop.length >= 50) { toast("Up to 50 items"); return; }
+        L.shop.unshift({ t: t.slice(0, 80), at: Date.now() }); v6SaveLists(L); paintSaved(); toast("Saved on this device"); return;
+      }
+      var L2 = v6Lists(), u2 = e.target.closest("[data-use]"), d = e.target.closest("[data-del]"), dn = e.target.closest("[data-done]"), ed = e.target.closest("[data-edit]");
+      if (u2) { state.q = L2.shop[+u2.getAttribute("data-use")].t; inp.value = state.q; state.cat = ""; paintRes(); return; }
+      if (ed) { v6EditItem("shop", +ed.getAttribute("data-edit")); return; }
+      if (dn) { var it = L2.shop[+dn.getAttribute("data-done")]; it.done = !it.done; v6SaveLists(L2); paintSaved(); return; }
+      if (d) { var i = +d.getAttribute("data-del"), gone = L2.shop[i]; L2.shop.splice(i, 1); v6SaveLists(L2); paintSaved(); toast("Removed “" + gone.t.slice(0, 30) + "”"); }
+    });
+    if (!state.q) setTimeout(function () { try { if (matchMedia("(pointer:fine)").matches) inp.focus(); } catch (e) {} }, 80);
+  });
+}
+var _v9OpenDest = v6OpenDest;
+v6OpenDest = function (id, o) { if (id === "shop") return v9Shop(o || {}); return _v9OpenDest(id, o); };
 
 })(); /* end ZAPWISE//OS app scope */
