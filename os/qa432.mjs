@@ -172,7 +172,7 @@ for (const [w, h, name] of SIZES) {
   if (m.titleHit !== "v12Exp" && m.titleHit !== "offscreen") problems.push("title hit " + m.titleHit);
   if (!m.orbit || !m.bank || !m.map || !m.apps) problems.push("missing surface");
   if (m.robots !== "noindex,nofollow") problems.push(m.robots);
-  if (m.ver.indexOf("4.32.0") < 0) problems.push(m.ver);
+  if (m.ver.indexOf("4.32.1") < 0) problems.push(m.ver);
   if (w <= 900 && (!m.inBrowser || m.pad < 70)) problems.push("browser gap " + m.pad);
   if (problems.length) bad("layout " + name, problems.join("; ") + " play " + m.playH);
   else ok("layout " + name + " play " + m.playH + " clock " + m.clockH + " halo " + m.haloH);

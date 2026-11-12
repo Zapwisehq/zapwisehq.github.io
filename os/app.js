@@ -1,7 +1,7 @@
 /* ZAPWISE//OS web app v4.13.2 (Nov 5, 2026). Equal-height desktop Focus/Phone. Plaid-only Bank. Motion toggle. No tabs. Source: edit app.js → build.sh → app.min.js. */
 (function () {
 "use strict";
-var VERSION = '4.32.0';
+var VERSION = '4.32.1';
 var APP_VERSION = VERSION;
 
 // v4.5: default Lite on coarse/mobile unless user already chose
@@ -10833,7 +10833,7 @@ function v11Paint() {
     if (M11.mode === "local") { artist = artist || "Play a file from this device"; }
     else if (M11.st) { title = M11.st.name; artist = "Live · tap ▶"; album = g.n; }
     else { title = g.n; artist = "Live · tap ▶"; album = ""; }
-  } else if (M11.mode === "radio" && m.honest) { artist = "Live · this station doesn’t share song info"; album = g.n; }
+  } else if (M11.mode === "radio" && m.honest) { artist = "Live · no song title"; album = g.n; }
   set("v11Title", title); set("v11Artist", artist); set("v11Album", album);
   var img = $("#v11Art"), src = (M11.mode === "local" || (M11.mode === "radio" && hasSrc)) ? (m.art || "") : "";
   if (img) { if (src) { if (img.getAttribute("src") !== src) { img.hidden = true; img.onload = function () { img.hidden = false; }; img.onerror = function () { img.hidden = true; }; img.src = src; } else if (img.complete && img.naturalWidth) img.hidden = false; img.alt = album ? "Cover: " + album : "Cover art"; } else { img.hidden = true; img.removeAttribute("src"); } }
@@ -10875,17 +10875,20 @@ function v11VizNote(mode) {
 }
 function v11Viz() {
   if (M11.raf) return; var cv = $("#v11Viz"); if (!cv) return;
-  function comet(g, w, h, playing, motion, ts) {
-    var cx = w / 2, cy = h * 0.56, rx = Math.max(8, w * 0.42), ry = Math.max(3, Math.min(h * 0.32, 14));
-    g.lineWidth = 1.6;
-    g.beginPath(); g.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); g.strokeStyle = playing ? "rgba(5,217,232,.9)" : "rgba(5,217,232,.55)"; g.stroke();
-    g.beginPath(); g.ellipse(cx, cy, rx * 0.64, ry * 0.7, 0, 0, Math.PI * 2); g.strokeStyle = playing ? "rgba(255,79,216,.75)" : "rgba(178,107,255,.55)"; g.setLineDash([4, 5]); g.stroke(); g.setLineDash([]);
-    if (!playing) return;
-    var ang = motion ? ((ts || 0) / 1000) * 1.35 : -0.4;
-    var x = cx + Math.cos(ang) * rx, y = cy + Math.sin(ang) * ry;
-    g.shadowColor = "rgba(255,79,216,.9)"; g.shadowBlur = 12; g.fillStyle = "#fff";
-    g.beginPath(); g.arc(x, y, Math.max(2.4, Math.min(3.6, h * 0.14)), 0, Math.PI * 2); g.fill();
-    g.shadowBlur = 0;
+  function calmBars(g, w, h, playing, motion, ts) {
+    /* Short cluster on the left. Not a line, not a dot, not a progress track. */
+    var n = 10, gap = 3, bw = 3.5, t = (ts || 0) / 1000;
+    var gr = g.createLinearGradient(0, h, 0, 0);
+    gr.addColorStop(0, "#05d9e8"); gr.addColorStop(0.55, "#b26bff"); gr.addColorStop(1, "#ff4fd8");
+    g.fillStyle = gr; g.shadowColor = playing ? "rgba(255,79,216,.45)" : "transparent"; g.shadowBlur = playing && motion ? 4 : 0;
+    for (var i = 0; i < n; i++) {
+      var shape = 0.35 + 0.65 * Math.abs(Math.sin(i * 0.85));
+      var amp = !playing ? 0.32 * shape : (!motion ? 0.4 * shape : (0.22 + 0.7 * Math.abs(Math.sin(t * 1.25 + i * 0.7))) * shape);
+      var bh = Math.max(2, amp * (h - 1));
+      g.globalAlpha = playing ? 0.92 : 0.4;
+      g.fillRect(i * (bw + gap), h - bh, bw, bh);
+    }
+    g.globalAlpha = 1; g.shadowBlur = 0;
   }
   function frame(ts) {
     M11.raf = 0; var w = cv.clientWidth, h = cv.clientHeight; if (!w || !h) return;
@@ -10900,20 +10903,17 @@ function v11Viz() {
     }
     var mode = data ? "spectrum" : (playing ? (motion ? "motion" : "hold") : "idle");
     cv.dataset.viz = mode; v11VizNote(mode);
-    if (mode !== "spectrum") comet(g, w, h, playing, motion, ts);
+    if (mode !== "spectrum") calmBars(g, w, h, playing, motion, ts);
     else {
-      var t = (ts || 0) / 1000;
       for (var i = 0; i < N; i++) {
         var tg = Math.pow((data[Math.min(data.length - 1, 1 + Math.floor(i * (data.length * 0.7) / N))] || 0) / 255, 1.4);
         V11_LV[i] += (tg - V11_LV[i]) * (motion ? 0.4 : 1);
       }
-      var gap = 2, bw = Math.max(2, (w - gap * (N - 1)) / N), gr = g.createLinearGradient(0, h, 0, 0);
+      var gap = 2, bw = Math.max(2, Math.min(5, (w - gap * (N - 1)) / N)), gr = g.createLinearGradient(0, h, 0, 0);
       gr.addColorStop(0, "#05d9e8"); gr.addColorStop(0.55, "#b26bff"); gr.addColorStop(1, "#ff4fd8");
-      g.strokeStyle = "rgba(5,217,232,.28)"; g.lineWidth = 1; g.beginPath(); g.moveTo(0, h - 0.5); g.lineTo(w, h - 0.5); g.stroke();
-      g.fillStyle = gr; g.shadowColor = "rgba(255,79,216,.55)"; g.shadowBlur = motion ? 6 : 0;
-      for (var j = 0; j < N; j++) { if (V11_LV[j] < 0.05) continue; var bh = Math.max(3, V11_LV[j] * (h - 3)); g.globalAlpha = 0.95; g.fillRect(j * (bw + gap), h - bh - 1, bw, bh); }
+      g.fillStyle = gr; g.shadowColor = "rgba(255,79,216,.45)"; g.shadowBlur = motion ? 4 : 0;
+      for (var j = 0; j < N; j++) { if (V11_LV[j] < 0.05) continue; var bh = Math.max(3, V11_LV[j] * (h - 1)); g.globalAlpha = 0.95; g.fillRect(j * (bw + gap), h - bh, bw, bh); }
       g.globalAlpha = 1; g.shadowBlur = 0;
-      void t;
     }
     if (playing && motion && M11.vis && !document.hidden) M11.raf = requestAnimationFrame(frame);
   }
@@ -11005,7 +11005,7 @@ v6OpenDest = function (id, o) { if (id === "listen") { v11GoCard(); if (!(M11.el
   var old = $("#v10Np"); if (old) { try { var a = $("#v10Audio"); if (a) a.pause(); } catch (e) {} }
   var card = $("#cardPlay"); if (card) { card.innerHTML = ""; card.classList.add("v12-mini"); }
   v11Build(); v11Paint();
-  try { window.ZAPOS = window.ZAPOS || {}; window.ZAPOS.v11 = { M: M11, play: v11Play, pause: v11Pause, next: v11Next, prev: v11Prev, genre: v11PlayGenre, radio: v11PlayRadio, meta: v11Meta, intent: v11Intent, genres: V11_GEN, curated: V11_CURATED }; } catch (e) {}
+  try { window.ZAPOS = window.ZAPOS || {}; window.ZAPOS.v11 = { M: M11, play: v11Play, pause: v11Pause, next: v11Next, prev: v11Prev, genre: v11PlayGenre, radio: v11PlayRadio, meta: v11Meta, intent: v11Intent, paint: v11Paint, genres: V11_GEN, curated: V11_CURATED }; } catch (e) {}
 })();
 
 /* ========== v4.31 compact home: focus beside the clock, music as a mini player ========== */

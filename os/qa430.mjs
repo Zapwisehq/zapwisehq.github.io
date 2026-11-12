@@ -196,7 +196,7 @@ async function runBrowser(kind, browser, port) {
     if (info.overflow) bad(name, "horizontal overflow " + info.scrollW + ">" + info.clientW);
     else if (!info.orbit || !info.focus || !info.bank || !info.apps) bad(name, "missing surface " + JSON.stringify(info));
     else if (info.robots !== "noindex,nofollow") bad(name, "robots " + info.robots);
-    else if (info.ver.indexOf("4.32.0") < 0) bad(name, "version " + info.ver);
+    else if (info.ver.indexOf("4.32.1") < 0) bad(name, "version " + info.ver);
     else if (info.cardW < Math.min(w, 320) - 40 || info.cardH < 80) bad(name, "card " + info.cardW + "x" + info.cardH);
     else if (info.small.length) bad(name, "small controls " + info.small.join(", "));
     else ok(name);
