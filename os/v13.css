@@ -1,0 +1,163 @@
+/* ZAPWISE//OS v4.32 — focus halo under the clock, sonic rail under the orbit.
+   Same navy / cyan / magenta / purple glass. No extra navigation layer. */
+
+/* ---- focus: an orbit ring that belongs to the clock ---- */
+html.v13 .v10-time{gap:0}
+html.v13 .v13-halo{position:relative;width:min(100%,320px);margin:2px auto 0;z-index:2}
+html.v13 .v13-arc{display:block;width:100%;height:auto;overflow:visible}
+html.v13 .v13-arc .glass{fill:rgba(6,8,20,.72);stroke:none}
+html.v13 .v13-arc .trk{fill:none;stroke:rgba(5,217,232,.38);stroke-width:5}
+html.v13 .v13-arc .trk2{fill:none;stroke:rgba(178,107,255,.7);stroke-width:1.25;stroke-dasharray:3 4}
+html.v13 .v13-arc .prg{fill:none;stroke:#d7b6ff;stroke-width:5;stroke-linecap:round}
+html.v13 .v13-arc .node{fill:#fff;stroke:#b26bff;stroke-width:1.5}
+html.v13 .v13-halo[data-state="run"] .prg{stroke:#05d9e8;filter:drop-shadow(0 0 4px #05d9e8)}
+html.v13 .v13-halo[data-state="run"] .node{stroke:#05d9e8;fill:#e9fdff}
+html.v13 .v13-halo[data-state="pause"] .prg{stroke:#ffb547;filter:drop-shadow(0 0 4px #ffb547)}
+html.v13 .v13-halo[data-state="pause"] .node{stroke:#ffb547;fill:#fff6e4}
+html.v13 .v13-halo[data-state="done"] .prg{stroke:#ff4fd8;filter:drop-shadow(0 0 5px #ff4fd8)}
+html.v13 .v13-halo[data-state="done"] .node{stroke:#ff4fd8;fill:#ffe6f8}
+html.v13 .v13-halo[data-state="idle"] .trk{filter:drop-shadow(0 0 4px rgba(5,217,232,.45))}
+html.v13 .v13-go{
+  position:absolute;left:16px;right:54px;top:50%;transform:translateY(-50%);
+  min-width:44px;min-height:44px;height:48px;padding:0;border:0;background:transparent;color:#f4fbff;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;cursor:pointer;z-index:2
+}
+html.v13 .v13-time{font-family:"Rajdhani",var(--font);font-weight:700;font-size:28px;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:.02em;text-shadow:0 0 12px rgba(5,217,232,.65)}
+html.v13 .v13-st{font-family:var(--v9-mono);font-size:11px;font-weight:700;letter-spacing:.18em;line-height:1.15;color:#edd9ff}
+html.v13 .v13-halo[data-state="run"] .v13-st{color:#b8fbff}
+html.v13 .v13-halo[data-state="pause"] .v13-st{color:#ffe1a8}
+html.v13 .v13-halo[data-state="done"] .v13-st{color:#ffc4f3}
+html.v13 .v13-set{
+  position:absolute;right:0;top:50%;transform:translateY(-50%);z-index:3;
+  width:48px;height:48px;min-width:48px;min-height:48px;padding:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  border:1px solid rgba(178,107,255,.75);background:rgba(8,11,26,.94);color:#f6edff;
+  font-family:var(--v9-mono);font-size:10px;font-weight:700;letter-spacing:.12em;cursor:pointer;
+  clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);
+  box-shadow:0 0 12px -4px rgba(178,107,255,.9)
+}
+html.v13 .v13-set svg{width:15px;height:15px;display:block}
+html.v13 .v13-go:hover,html.v13 .v13-go:focus-visible,html.v13 .v13-set:hover,html.v13 .v13-set:focus-visible{outline:none}
+html.v13 .v13-set:hover,html.v13 .v13-set:focus-visible{border-color:#05d9e8;box-shadow:0 0 14px rgba(5,217,232,.55)}
+html.v13 .v13-go:focus-visible .v13-time{text-shadow:0 0 12px rgba(5,217,232,.9)}
+html.v13 .v10-sub{margin-top:8px}
+@media (max-width:900px){
+  html.v13.in-browser #app,html.v13.in-browser #osPage.v5-grid{padding-bottom:calc(28px + var(--browser-gap,56px) + env(safe-area-inset-bottom))!important}
+}
+html.v13 .v10-wx[hidden]{display:none!important}
+html.v13.motion-on .v13-halo[data-state="idle"] .trk2{animation:v13dash 9s linear infinite}
+html.v13.motion-on .v13-halo[data-state="run"] .node{animation:v13pulse 1.6s ease-in-out infinite}
+@keyframes v13dash{to{stroke-dashoffset:-42}}
+@keyframes v13pulse{50%{opacity:.4}}
+
+/* the open timer stays above the browser toolbar */
+html.v13.focus-open body > #mFocus{
+  top:calc((100dvh - var(--browser-gap,0px)) / 2)!important;
+  transform:translate(-50%,-50%)!important;
+  max-height:calc(100dvh - var(--browser-gap,0px) - max(20px,env(safe-area-inset-top)) - 16px)!important;
+  background:#070814!important;
+  box-shadow:inset 0 0 0 1px rgba(178,107,255,.55),0 18px 50px rgba(0,0,0,.72)!important
+}
+
+/* ---- music: a listening ring docked with the orbit ---- */
+@media (max-width:1199px){
+  html.v13 #osPage.v5-grid > #cardPlay{grid-column:1/-1!important;margin-top:-8px}
+}
+html.v13 #osPage.v5-grid > #cardPlay.v12-mini{
+  padding:8px 10px 8px!important;
+  background:
+    radial-gradient(120% 90% at 50% -20%,rgba(5,217,232,.18),transparent 52%),
+    linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,0) 42%),
+    rgba(8,11,26,.92)!important;
+  box-shadow:inset 0 0 0 1px rgba(255,79,216,.4),0 0 22px -10px rgba(255,79,216,.85),0 8px 18px rgba(0,0,0,.3)!important
+}
+html.v13 #osPage.v5-grid > #cardPlay.v12-mini.is-playing{
+  box-shadow:inset 0 0 0 1px rgba(255,79,216,.7),0 0 28px -6px rgba(255,79,216,.8),0 8px 18px rgba(0,0,0,.3)!important
+}
+html.v13 #cardPlay.v12-mini .v11{
+  position:relative;
+  display:grid!important;
+  grid-template-columns:52px minmax(0,1fr) 48px 44px;
+  grid-template-areas:"art meta pp next" "viz viz viz viz";
+  gap:4px 8px;align-items:center;padding-top:7px
+}
+html.v13 #cardPlay.v12-mini .v11::before{
+  content:"";position:absolute;left:8%;right:8%;top:0;height:11px;pointer-events:none;z-index:1;
+  border:1.5px solid rgba(5,217,232,.5);border-bottom:0;border-radius:40px 40px 0 0;
+  box-shadow:0 0 10px -3px rgba(5,217,232,.8)
+}
+html.v13 #cardPlay.v12-mini #v12Exp{
+  position:absolute;inset:0;z-index:2;width:auto;height:auto;min-height:0;margin:0;padding:0;
+  border:0;background:transparent;color:transparent;clip-path:none
+}
+html.v13 #v11.v12-sheet .v11-top{padding-right:60px}
+html.v13 #v11.v12-sheet #v12Exp{
+  inset:auto;left:auto;bottom:auto;top:8px;right:10px;z-index:5;width:48px;height:48px;min-height:48px;
+  border:1px solid rgba(5,217,232,.45);background:rgba(5,217,232,.08);color:#05d9e8;
+  clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)
+}
+/* genre and other sheets sit above the player so a tap on a chip is not eaten by the player scrim */
+html.v13 #scrim.scrim:not([hidden]){z-index:8700!important}
+html.v13 #sheet.sheet:not([hidden]){z-index:8800!important}
+html.v13 #v11.v12-sheet{
+  bottom:var(--browser-gap,0px);
+  max-height:calc(100dvh - var(--browser-gap,0px) - max(8px,env(safe-area-inset-top)));
+  padding-bottom:calc(16px + env(safe-area-inset-bottom));
+  background:
+    radial-gradient(80% 40% at 50% 0%,rgba(255,79,216,.16),transparent 60%),
+    #070814;
+  border:1px solid rgba(255,79,216,.5);
+  box-shadow:0 -18px 40px rgba(0,0,0,.55),0 0 24px -10px rgba(255,79,216,.55)
+}
+html.v13 #cardPlay.v12-mini .v11-art{
+  grid-area:art;width:52px!important;height:52px!important;overflow:visible!important;
+  clip-path:none!important;-webkit-clip-path:none!important;background:none!important;border:0!important;box-shadow:none!important
+}
+html.v13 #cardPlay.v12-mini .v11-art::before{
+  content:"";position:absolute;inset:0;z-index:1;
+  background:radial-gradient(120% 120% at 20% 10%,var(--g,#b26bff),transparent 62%),linear-gradient(135deg,rgba(5,217,232,.4),rgba(255,79,216,.38)),#0b0d1f;
+  border:1px solid rgba(255,79,216,.6);
+  clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)
+}
+html.v13 #cardPlay.v12-mini .v11-art::after{
+  content:"";position:absolute;inset:-5px;z-index:0;border-radius:50%;pointer-events:none;
+  border:1.5px solid rgba(178,107,255,.35);border-top-color:var(--g,#05d9e8);border-right-color:#ff4fd8
+}
+html.v13.motion-on #cardPlay.is-playing.v12-mini .v11-art::after{animation:v13spin 2.8s linear infinite}
+@keyframes v13spin{to{transform:rotate(360deg)}}
+html.v13 #cardPlay.v12-mini .v11-art img{z-index:2;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px)}
+html.v13 #cardPlay.v12-mini .v11-art .v11-ph{position:relative;z-index:2}
+html.v13 #cardPlay.v12-mini .v11-meta{grid-area:meta;z-index:3;min-height:44px;pointer-events:none}
+html.v13 #cardPlay.v12-mini .v11-title{font-size:16px;line-height:1.15;-webkit-line-clamp:1;color:#f4fbff}
+html.v13 #cardPlay.v12-mini .v11-artist{font-size:13px;line-height:1.2;-webkit-line-clamp:1;color:rgba(244,251,255,.9)}
+html.v13 #cardPlay.v12-mini .v12-st{color:#d7c4ff;letter-spacing:.14em}
+html.v13 #cardPlay.is-playing.v12-mini .v12-st{color:#ffb3ee}
+html.v13 #cardPlay.v12-mini .v11-viz{
+  grid-area:viz;display:block!important;width:calc(100% - 24px)!important;height:24px!important;margin:0 auto 8px;justify-self:center;pointer-events:none
+}
+html.v13 #cardPlay.v12-mini [data-m11="toggle"],
+html.v13 #cardPlay.v12-mini [data-m11="next"]{position:relative;z-index:4}
+html.v13 #cardPlay.v12-mini .v10-c.v10-pp{
+  width:48px!important;height:48px!important;border-radius:50%;clip-path:none;
+  background:radial-gradient(circle at 40% 35%,rgba(255,79,216,.7),rgba(8,11,26,.96) 64%);
+  border:1.5px solid #ff4fd8;
+  box-shadow:0 0 16px -3px #ff4fd8,inset 0 0 10px -4px #ff4fd8
+}
+html.v13 #cardPlay.v12-mini [data-m11="next"]{
+  width:44px!important;height:44px!important;border-color:rgba(5,217,232,.55);color:#eaf6ff
+}
+html.v13 .v13-viznote{margin:0;min-height:0;text-align:center;font-family:var(--v9-mono);font-size:10px;font-weight:700;letter-spacing:.16em;color:rgba(234,246,255,.72)}
+html.v13 .v13-viznote:empty{display:none}
+html.v13 #cardPlay.v12-mini .v13-viznote{display:none!important}
+@media (max-width:359px){
+  html.v13 #cardPlay.v12-mini .v11{grid-template-columns:44px minmax(0,1fr) 44px 44px;gap:4px 6px}
+  html.v13 #cardPlay.v12-mini .v11-art{width:44px!important;height:44px!important}
+  html.v13 .v13-halo{width:min(100%,292px)}
+  html.v13 .v13-time{font-size:24px}
+  html.v13 .v13-go{right:50px;left:12px}
+}
+@media (prefers-reduced-motion:reduce){
+  html.v13 .v13-arc .trk2,html.v13 .v13-arc .node,html.v13 #cardPlay .v11-art::after{animation:none!important}
+  html.v13 .v13-arc .prg{transition:none}
+}
+html:not(.motion-on) .v13-arc .trk2,html:not(.motion-on) .v13-arc .node,html:not(.motion-on) #cardPlay .v11-art::after{animation:none!important}

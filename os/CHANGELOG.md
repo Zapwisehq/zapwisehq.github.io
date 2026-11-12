@@ -240,3 +240,23 @@ Header (ZAPWISE//OS · LIVE · settings) → search / Ask ZAP AI + chips → Tod
 - Orbit, the big clock, the six stations, banking, the map and apps stay. `noindex` stays.
 - Checkpoint before the edit: git tag `checkpoint-pre-v4.31.0`.
 - QA: `os/qa431.mjs`. Chromium at 320/360/390/768/1366/1920: the player row is 82–86px, the clock stays 70–112px, the big Focus card stays off the dashboard until the chip is tapped, no horizontal overflow, `noindex` remains, and the orbit, map, banking and apps are still there. The chip opens the existing timer; after about a second the chip and the full timer both read 24:59 and FOCUS. Escape closes it. A file kept playing through expand and collapse (about 0.28s to 1.23s, same audio URL), the map did not move, the state read PLAYING, and pause, resume and next worked. The six genres are still in the sheet. WebKit at 390 and 1366: player 86px and 82px, focus chip 44px, orbit 392px and 480px.
+
+## v4.32.0 — 2026-11-12 — Focus ring and listening rail
+**Why**: on a real iPhone the v4.31 focus chip wrapped under the clock and looked disconnected, and the music row (title, “Live · tap”, a few dots, play, next) had none of the orbit’s presence. Location here means where they sit on the screen.
+
+**Focus**
+- The timer is a horizon ring directly under the clock, in the same cyan / magenta / purple glow. The session time and the state word sit inside the ring: READY, FOCUS, PAUSED, DONE. The arc fills as the session runs, freezes amber when paused, and completes in magenta when done.
+- One tap on the time starts, pauses, or resumes. SET, a separate control on the ring, opens the existing timer: 15 / 25 / 50, custom length, task, reset, full screen.
+- The countdown is still an end timestamp (and a saved remainder while paused), so backgrounding and reload keep the real time left.
+
+**Music**
+- A full-width rail under the orbit on phones and tablets, and beside the orbit from 1200 px up. Chamfered cover, a small orbit ring on the art, a core-style play button, and a wide stage.
+- Title and artist are the station’s real song when it sends one. Otherwise the station name. Nothing is invented.
+- When the stream can be analysed, the stage is a real spectrum. Otherwise it is a decorative orbit comet, and the full player says “MOTION · NOT THE AUDIO”. It is never described as audio-reactive.
+- Play, pause, and next are one tap and sit above the expand target, so they don’t also open the player. Tapping the title, art, or stage opens the full player as a sheet. The page does not jump and the audio element is not recreated.
+
+**Kept**: the orbit, read-only Plaid banking, the map, apps, Shop, ZAP one-shot, the six genres with in-genre fallback only, device files, volume, favorites, recents, Media Session, and `noindex,nofollow` on /os/. No autoplay.
+
+- The genre list opens above the player, so a chip tap is not swallowed by the player scrim.
+- Checkpoint before the edit: git tag `checkpoint-pre-v4.32.0`.
+- QA: `os/qa432.mjs` (device matrix, focus, music continuity, reduced motion) plus `os/qa431.mjs` and `os/qa430.mjs`.

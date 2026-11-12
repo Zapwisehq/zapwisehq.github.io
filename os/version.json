@@ -1,6 +1,6 @@
 {
-  "version": "4.31.0",
-  "built": "2026-11-10",
+  "version": "4.32.0",
+  "built": "2026-11-12",
   "channel": "stable",
-  "notes": "v4.31.0: Focus sits beside the clock as a small timer. Tap it for the full timer. Music is a compact player; tap the title for the full controls. Same six genres, and playback keeps going when you expand."
+  "notes": "v4.32.0: Focus is a ring under the clock. Tap the time to start, pause, or resume. SET opens length, task, reset, and full screen. Music is a listening rail under the orbit: real title or station name, a spectrum only when the audio can be read, otherwise a motion ring that is not the audio. One tap plays, pauses, and skips. The full player opens without restarting the song."
 }
