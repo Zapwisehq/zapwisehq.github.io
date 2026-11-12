@@ -260,3 +260,14 @@ Header (ZAPWISE//OS · LIVE · settings) → search / Ask ZAP AI + chips → Tod
 - The genre list opens above the player, so a chip tap is not swallowed by the player scrim.
 - Checkpoint before the edit: git tag `checkpoint-pre-v4.32.0`.
 - QA: `os/qa432.mjs` (device matrix, focus, music continuity, reduced motion) plus `os/qa431.mjs` and `os/qa430.mjs`.
+
+## v4.32.1 — 2026-11-12 — Music rail on a real phone
+**Why**: on an iPhone the live-radio rail did not match the device-file screenshot. A circle sat on the cover and was cut by the card edge, a rounded stroke ran through the title, the title ellipsized too early, and the decorative comet (used when the stream cannot be analysed) looked like a broken progress bar.
+
+- Cover is only the chamfered square, inside the card’s cut corner. No orbit ring around it.
+- The top arc is gone.
+- The title may use a second line. Ellipsis is only after that.
+- When the audio can be read, the stage is still a real spectrum, with no baseline track. Otherwise it is a short cluster of calm bars on the left. The full player still says “MOTION · NOT THE AUDIO”. It is not described as audio-reactive.
+- If a station sends no song, the rail says “Live · no song title” instead of a sentence that ellipsized.
+- Play, pause, next, and the full-player tap are unchanged.
+

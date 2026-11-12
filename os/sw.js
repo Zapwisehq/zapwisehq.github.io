@@ -1,11 +1,11 @@
-/* ZAPWISE//OS service worker v4.32.0
+/* ZAPWISE//OS service worker v4.32.1
    - Network-first for navigations + shell (index, app.js/css, catalog, sky, manifest).
    - Cache-first only for icons / images.
    - version.json is NEVER intercepted (always hits network for update checks).
    - skipWaiting on install; clients.claim + delete old caches on activate.
    Traffic tiles use network-first ≤2 min cache. OSM tiles stay longer offline cache. */
-const VER = "zapos-v4.32.0";
-const APP_VER = "4.32.0";
+const VER = "zapos-v4.32.1";
+const APP_VER = "4.32.1";
 const SHELL = [
   "/os/",
   "/os/index.html",
