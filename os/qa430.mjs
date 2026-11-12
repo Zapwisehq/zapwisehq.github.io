@@ -151,9 +151,17 @@ async function shutSheet(page) {
     document.body.style.overflow = "";
   });
 }
-async function playGenre(page, id, needle) {
+async function openGenres(page) {
   await shutSheet(page);
-  await page.click('[data-m11="pick"]', { timeout: 8000 });
+  const pick = page.locator('[data-m11="pick"]');
+  if (!(await pick.isVisible())) {
+    await page.click("#v12Exp");
+    await page.waitForTimeout(200);
+  }
+  await pick.click({ timeout: 8000 });
+}
+async function playGenre(page, id, needle) {
+  await openGenres(page);
   await page.waitForTimeout(800);
   await page.locator('[data-p-gen="' + id + '"]').click({ timeout: 8000 });
   let snap = null;
@@ -188,14 +196,13 @@ async function runBrowser(kind, browser, port) {
     if (info.overflow) bad(name, "horizontal overflow " + info.scrollW + ">" + info.clientW);
     else if (!info.orbit || !info.focus || !info.bank || !info.apps) bad(name, "missing surface " + JSON.stringify(info));
     else if (info.robots !== "noindex,nofollow") bad(name, "robots " + info.robots);
-    else if (info.ver.indexOf("4.30.0") < 0) bad(name, "version " + info.ver);
+    else if (info.ver.indexOf("4.32.0") < 0) bad(name, "version " + info.ver);
     else if (info.cardW < Math.min(w, 320) - 40 || info.cardH < 80) bad(name, "card " + info.cardW + "x" + info.cardH);
     else if (info.small.length) bad(name, "small controls " + info.small.join(", "));
     else ok(name);
   }
   await page.setViewportSize({ width: 390, height: 844 });
-  await shutSheet(page);
-  await page.click('[data-m11="pick"]');
+  await openGenres(page);
   await page.waitForSelector(".v11-chip");
   const chips = await page.locator(".v11-chip").allTextContents();
   if (chips.join("|") !== "Rock|Heavy Rock|Techno|Deep House|Jazz|Lo-fi") bad(kind + " chips", chips.join("|"));

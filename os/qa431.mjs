@@ -100,7 +100,7 @@ for (const [w, h] of [[320, 700], [360, 740], [390, 844], [768, 1024], [1366, 76
   else if (m.targets.length) bad(name, "small " + m.targets.join(", "));
   else if (!m.orbit || !m.bank || !m.map || !m.apps) bad(name, "missing surface");
   else if (m.robots !== "noindex,nofollow") bad(name, m.robots);
-  else if (m.ver.indexOf("4.31.0") < 0) bad(name, m.ver);
+  else if (m.ver.indexOf("4.32.0") < 0) bad(name, m.ver);
   else ok(name + " player " + m.playH + "px clock " + Math.round(m.clockPx) + "px");
   if (w === 390 || w === 1366) await page.screenshot({ path: path.join(outDir, "v" + w + ".png") });
 }

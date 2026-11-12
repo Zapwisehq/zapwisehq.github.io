@@ -1,7 +1,7 @@
 /* ZAPWISE//OS web app v4.13.2 (Nov 5, 2026). Equal-height desktop Focus/Phone. Plaid-only Bank. Motion toggle. No tabs. Source: edit app.js → build.sh → app.min.js. */
 (function () {
 "use strict";
-var VERSION = '4.31.0';
+var VERSION = '4.32.0';
 var APP_VERSION = VERSION;
 
 // v4.5: default Lite on coarse/mobile unless user already chose
@@ -759,7 +759,7 @@ function ensureFocusDom() {
   }
   return card;
 }
-var FOC_DONE_UNTIL = 0;
+var FOC_DONE_UNTIL = 0, FOC_ARM = false;
 function renderFocus() {
   var card = ensureFocusDom(); if (!card) return;
   var now = Date.now(), total = focusMs(), left = total;
@@ -772,7 +772,8 @@ function renderFocus() {
       FOC_DONE_UNTIL = now + 6000;
       try { bumpFocusSession(FOC.mins || 25); } catch (e0) {}
       toast("Focus done. Take 5.");
-      try { navigator.vibrate && navigator.vibrate([180, 80, 180]); } catch (e) {}
+      /* Vibration needs a gesture in this document. A reload that finishes a session still toasts; it does not call vibrate (Chrome logs that as an error). */
+      if (FOC_ARM) { try { navigator.vibrate && navigator.vibrate([180, 80, 180]); } catch (e) {} }
     }
   } else if (FOC.st === "pause") left = Math.max(0, Math.min(total, FOC.left || 0));
   else { if (FOC.st !== "idle") { FOC = { st: "idle", mins: FOC.mins || 25 }; Store.setLocal("focus", FOC); } left = total; }
@@ -813,7 +814,7 @@ function focusToggle() {
   if (FOC.st === "run") FOC = { st: "pause", left: Math.max(0, FOC.end - now), mins: FOC.mins || 25 };
   else if (FOC.st === "pause") FOC = { st: "run", end: now + Math.max(1000, FOC.left || 0), mins: FOC.mins || 25 };
   else FOC = { st: "run", end: now + focusMs(), mins: FOC.mins || 25 };
-  FOC_DONE_UNTIL = 0;
+  FOC_DONE_UNTIL = 0; FOC_ARM = true;
   Store.setLocal("focus", FOC); renderFocus();
 }
 function focusReset() {
@@ -7670,8 +7671,8 @@ function tourSteps() {
   var S = [
     ["#srch", "Search", "Search your apps, or the web with the provider you pick. The mic searches by voice."],
     ["#panelToday", "Today", "Time, date and weather. Tap the weather for hourly and days ahead. Calendar and Note open below."],
-    ["#cardPlay", "Now Playing", "A compact player under the orbit. Tap the title for the full controls and the six genres."],
-    ["#v12Foc", "Focus", "A small timer next to the clock. Tap it for the length, the task, and full screen."],
+    ["#cardPlay", "Now Playing", "A player under the orbit. Tap play or skip. Tap the title for the full player and the six genres. Playback keeps going."],
+    ["#v13Go", "Focus", "The ring under the clock. Tap the time to start, pause, or resume. SET opens the length, the task, reset, and full screen."],
     ["#panelNav", "Navigate", "Live map with traffic plus your saved places. Tap a place for directions."],
     ["#panelMoney", "Banking", "Your linked bank via Plaid. Only the last 4 digits show. The eye hides balances."],
     ["#cardInvest", "Investments", "Crypto prices, your holdings and watchlist. Tap View Portfolio for details."],
@@ -10018,6 +10019,7 @@ v6OpenDest = function (id, o) { if (id === "shop") return v9Shop(o || {}); retur
 /* ========== v4.28 DECLUTTER: time hero, real Now Playing, cyber Focus ========== */
 document.documentElement.classList.add("v10");
 document.documentElement.classList.add("v12");
+document.documentElement.classList.add("v13");
 ["#hSync", "#hBat", "#hGpsLock"].forEach(function (q) { var e = $(q); if (e) e.hidden = true; }); /* status pills tucked away */
 var V10_BOOT_Q = (function () { try { return new URLSearchParams(location.search); } catch (e) { return null; } })();
 /* ---- time hero above the orbit (mirrors the one clock engine, no second clock) ---- */
@@ -10791,9 +10793,11 @@ function v11Build() {
   card.innerHTML = '<div class="v12-echo" id="v12Echo" hidden aria-hidden="true"><b id="v12EchoT"></b><span id="v12EchoA"></span></div>' +
     '<div class="v5h"><b>NOW PLAYING</b><button type="button" class="v10-np-more" id="v11More" aria-label="Music: genres, stations, favorites">···</button></div>' +
     '<div class="v11" id="v11" data-state="idle">' +
+    '<button type="button" class="v12-exp" id="v12Exp" data-m11="expand" aria-expanded="false" aria-label="Show full player"></button>' +
     '<div class="v11-top"><div class="v11-art" id="v11ArtBox"><img id="v11Art" alt="" hidden referrerpolicy="no-referrer"><span class="v11-ph" aria-hidden="true">' + V10_NOTE_SVG + '</span></div>' +
-    '<div class="v11-meta"><button type="button" class="v12-exp" id="v12Exp" data-m11="expand" aria-expanded="false" aria-label="Show full player"></button><small class="v11-src" id="v11Src"></small><b class="v11-title" id="v11Title"></b><span class="v12-st" id="v12St"></span><span class="v11-artist" id="v11Artist"></span><span class="v11-album" id="v11Album"></span></div></div>' +
+    '<div class="v11-meta"><small class="v11-src" id="v11Src"></small><b class="v11-title" id="v11Title"></b><span class="v12-st" id="v12St"></span><span class="v11-artist" id="v11Artist"></span><span class="v11-album" id="v11Album"></span></div></div>' +
     '<canvas class="v10-viz v11-viz" id="v11Viz" aria-hidden="true"></canvas>' +
+    '<p class="v13-viznote" id="v13VizNote"></p>' +
     '<div class="v11-prog" id="v11ProgW"><div class="v10-track"><i id="v11Bar"></i></div><div class="v10-times"><span id="v11Pos"></span><span id="v11Dur"></span></div></div>' +
     '<div class="v11-live" id="v11Live" hidden><i aria-hidden="true"></i>LIVE</div>' +
     '<div class="v10-ctl v11-ctl" role="group" aria-label="Playback controls"><button type="button" class="v10-c" data-m11="prev" aria-label="Previous">' + v10Ico("prev") + '</button><button type="button" class="v10-c v10-pp" data-m11="toggle" id="v11PP" aria-label="Play">' + v10Ico("play") + '</button><button type="button" class="v10-c" data-m11="next" aria-label="Next">' + v10Ico("next") + '</button></div>' +
@@ -10864,28 +10868,53 @@ function v11Prog() {
   var a = $("#v11Pos"), b = $("#v11Dur"), ps = d ? v10Fmt(p * 1000) : "", ds = d ? v10Fmt(d * 1000) : ""; if (a && a.textContent !== ps) a.textContent = ps; if (b && b.textContent !== ds) b.textContent = ds;
 }
 var V11_LV = new Array(32).fill(0);
+function v11VizNote(mode) {
+  var note = $("#v13VizNote"); if (!note) return;
+  var nt = mode === "spectrum" ? "SPECTRUM · THIS AUDIO" : (mode === "motion" || mode === "hold" ? "MOTION · NOT THE AUDIO" : "");
+  if (note.textContent !== nt) note.textContent = nt;
+}
 function v11Viz() {
   if (M11.raf) return; var cv = $("#v11Viz"); if (!cv) return;
+  function comet(g, w, h, playing, motion, ts) {
+    var cx = w / 2, cy = h * 0.56, rx = Math.max(8, w * 0.42), ry = Math.max(3, Math.min(h * 0.32, 14));
+    g.lineWidth = 1.6;
+    g.beginPath(); g.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); g.strokeStyle = playing ? "rgba(5,217,232,.9)" : "rgba(5,217,232,.55)"; g.stroke();
+    g.beginPath(); g.ellipse(cx, cy, rx * 0.64, ry * 0.7, 0, 0, Math.PI * 2); g.strokeStyle = playing ? "rgba(255,79,216,.75)" : "rgba(178,107,255,.55)"; g.setLineDash([4, 5]); g.stroke(); g.setLineDash([]);
+    if (!playing) return;
+    var ang = motion ? ((ts || 0) / 1000) * 1.35 : -0.4;
+    var x = cx + Math.cos(ang) * rx, y = cy + Math.sin(ang) * ry;
+    g.shadowColor = "rgba(255,79,216,.9)"; g.shadowBlur = 12; g.fillStyle = "#fff";
+    g.beginPath(); g.arc(x, y, Math.max(2.4, Math.min(3.6, h * 0.14)), 0, Math.PI * 2); g.fill();
+    g.shadowBlur = 0;
+  }
   function frame(ts) {
     M11.raf = 0; var w = cv.clientWidth, h = cv.clientHeight; if (!w || !h) return;
     var playing = M11.state === "playing", motion = v9Motion() && !matchMedia("(prefers-reduced-motion: reduce)").matches, N = V11_LV.length;
     var dpr = Math.min(2, window.devicePixelRatio || 1); if (cv.width !== Math.round(w * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
     var g = cv.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
-    var data = null; if (playing && M11.an && M11.el === V11_CORS_A) { data = new Uint8Array(M11.an.frequencyBinCount); M11.an.getByteFrequencyData(data); }
-    var t = (ts || 0) / 1000;
-    for (var i = 0; i < N; i++) {
-      var tg;
-      if (!playing) tg = 0.06 + 0.04 * Math.sin(i * 0.9);
-      else if (data) tg = Math.pow((data[Math.min(data.length - 1, 1 + Math.floor(i * (data.length * 0.7) / N))] || 0) / 255, 1.4);
-      else if (!motion) tg = 0.25 + 0.35 * Math.abs(Math.sin(i * 1.7));
-      else tg = 0.18 + 0.62 * Math.abs(Math.sin(t * (1.6 + (i % 5) * 0.37) + i * 0.8) * Math.sin(t * 0.9 + i * 0.33));
-      V11_LV[i] += (tg - V11_LV[i]) * (motion ? 0.4 : 1);
+    var data = null, energy = 0;
+    if (playing && M11.an && M11.el === V11_CORS_A) {
+      data = new Uint8Array(M11.an.frequencyBinCount); M11.an.getByteFrequencyData(data);
+      for (var e = 0; e < data.length; e++) energy += data[e];
+      if (!energy) data = null;
     }
-    var gap = 3, bw = Math.max(2, (w - gap * (N - 1)) / N), gr = g.createLinearGradient(0, h, 0, 0);
-    gr.addColorStop(0, "#05d9e8"); gr.addColorStop(0.6, "#b26bff"); gr.addColorStop(1, "#ff4fd8");
-    g.fillStyle = gr; g.shadowColor = playing ? "rgba(255,79,216,.55)" : "transparent"; g.shadowBlur = playing ? 8 : 0;
-    for (var j = 0; j < N; j++) { var bh = Math.max(2, V11_LV[j] * (h - 4)); g.globalAlpha = playing ? 0.95 : 0.35; g.fillRect(j * (bw + gap), (h - bh) / 2, bw, bh); }
-    g.globalAlpha = 1;
+    var mode = data ? "spectrum" : (playing ? (motion ? "motion" : "hold") : "idle");
+    cv.dataset.viz = mode; v11VizNote(mode);
+    if (mode !== "spectrum") comet(g, w, h, playing, motion, ts);
+    else {
+      var t = (ts || 0) / 1000;
+      for (var i = 0; i < N; i++) {
+        var tg = Math.pow((data[Math.min(data.length - 1, 1 + Math.floor(i * (data.length * 0.7) / N))] || 0) / 255, 1.4);
+        V11_LV[i] += (tg - V11_LV[i]) * (motion ? 0.4 : 1);
+      }
+      var gap = 2, bw = Math.max(2, (w - gap * (N - 1)) / N), gr = g.createLinearGradient(0, h, 0, 0);
+      gr.addColorStop(0, "#05d9e8"); gr.addColorStop(0.55, "#b26bff"); gr.addColorStop(1, "#ff4fd8");
+      g.strokeStyle = "rgba(5,217,232,.28)"; g.lineWidth = 1; g.beginPath(); g.moveTo(0, h - 0.5); g.lineTo(w, h - 0.5); g.stroke();
+      g.fillStyle = gr; g.shadowColor = "rgba(255,79,216,.55)"; g.shadowBlur = motion ? 6 : 0;
+      for (var j = 0; j < N; j++) { if (V11_LV[j] < 0.05) continue; var bh = Math.max(3, V11_LV[j] * (h - 3)); g.globalAlpha = 0.95; g.fillRect(j * (bw + gap), h - bh - 1, bw, bh); }
+      g.globalAlpha = 1; g.shadowBlur = 0;
+      void t;
+    }
     if (playing && motion && M11.vis && !document.hidden) M11.raf = requestAnimationFrame(frame);
   }
   M11.raf = requestAnimationFrame(frame);
@@ -11009,22 +11038,38 @@ function v12MusicToggle() {
   v11Paint(); v11Viz();
 }
 function v12FocSync() {
-  var chip = $("#v12Foc"), t = $("#v12FocTime"), s = $("#v12FocSt"), ring = $("#v12FocRing");
-  if (!chip || !t) return;
+  var halo = $("#v13Halo"), go = $("#v13Go"), chip = $("#v12Foc"), t = $("#v12FocTime"), s = $("#v12FocSt");
+  if (!t) return;
   var tv = ($("#mFocV") && $("#mFocV").textContent) || "25:00";
   var raw = ($("#mFocL") && $("#mFocL").textContent) || "READY";
-  var sv = /FOCUS/.test(raw) ? "FOCUS" : /PAUSE/.test(raw) ? "PAUSED" : /DONE/.test(raw) ? "DONE" : "READY";
+  var done = /DONE/.test(raw);
+  var sv = /FOCUS/.test(raw) ? "FOCUS" : /PAUSE/.test(raw) ? "PAUSED" : done ? "DONE" : "READY";
+  var state = /FOCUS/.test(raw) ? "run" : /PAUSE/.test(raw) ? "pause" : done ? "done" : "idle";
   if (t.textContent !== tv) t.textContent = tv;
   if (s && s.textContent !== sv) s.textContent = sv;
-  var card = $("#mFocus");
-  if (card) { chip.classList.toggle("running", card.classList.contains("running")); chip.classList.toggle("paused", card.classList.contains("paused")); }
-  if (ring) {
-    var fr = $("#focRing"), C = 87.96, pct = 0;
-    if (fr) { var dash = +fr.getAttribute("stroke-dasharray") || 326.73, off = +fr.getAttribute("stroke-dashoffset") || 0; pct = dash ? Math.max(0, Math.min(1, 1 - off / dash)) : 0; }
-    ring.setAttribute("stroke-dashoffset", (C * (1 - pct)).toFixed(2));
+  if (halo) { halo.setAttribute("data-state", state); halo.classList.toggle("running", state === "run"); halo.classList.toggle("paused", state === "pause"); halo.classList.toggle("done", state === "done"); }
+  if (chip) {
+    chip.classList.toggle("running", state === "run"); chip.classList.toggle("paused", state === "pause");
+    var lab = "Focus controls. " + tv + ", " + sv + ".";
+    if (chip.getAttribute("aria-label") !== lab) chip.setAttribute("aria-label", lab);
   }
-  var lab = "Focus " + tv + ", " + sv + ". Open the timer.";
-  if (chip.getAttribute("aria-label") !== lab) chip.setAttribute("aria-label", lab);
+  var pct = 0, fr = $("#focRing");
+  if (done) pct = 1;
+  else if (fr && state !== "idle") { var dash = +fr.getAttribute("stroke-dasharray") || 326.73, off = +fr.getAttribute("stroke-dashoffset") || 0; pct = dash ? Math.max(0, Math.min(1, 1 - off / dash)) : 0; }
+  var arc = $("#v13Arc"), node = $("#v13Node");
+  if (arc && arc.getTotalLength) {
+    try {
+      var len = arc.getTotalLength() || 1, draw = Math.max(0, Math.min(1, pct));
+      arc.setAttribute("stroke-dasharray", len.toFixed(2));
+      arc.setAttribute("stroke-dashoffset", (len * (1 - draw)).toFixed(2));
+      if (node) { var pt = arc.getPointAtLength(Math.max(0, Math.min(len - 0.01, len * draw))); node.setAttribute("cx", pt.x.toFixed(2)); node.setAttribute("cy", pt.y.toFixed(2)); }
+    } catch (eN) {}
+  }
+  if (go) {
+    var mins = (FOC && FOC.mins) || 25;
+    var gl = state === "run" ? ("Pause focus, " + tv + " remaining") : state === "pause" ? ("Resume focus, " + tv + " remaining") : state === "done" ? "Focus done. Start again" : ("Start " + mins + " minute focus");
+    if (go.getAttribute("aria-label") !== gl) go.setAttribute("aria-label", gl);
+  }
 }
 function v12FocusOpen() {
   try { closeSheet(true); } catch (e) {}
@@ -11046,16 +11091,23 @@ function v12FocusClose() {
   var chip = $("#v12Foc"); if (chip) { chip.setAttribute("aria-expanded", "false"); try { chip.focus(); } catch (e) {} }
 }
 (function v12Init() {
-  var time = $("#v10Time"), clock = time && time.querySelector(".v10-clock");
-  if (time && clock && !$("#v12Foc")) {
-    var row = document.createElement("div"); row.className = "v12-row";
-    time.insertBefore(row, clock); row.appendChild(clock);
-    var chip = document.createElement("button");
-    chip.type = "button"; chip.className = "v12-foc"; chip.id = "v12Foc";
-    chip.setAttribute("aria-expanded", "false"); chip.setAttribute("aria-controls", "mFocus");
-    chip.innerHTML = '<svg viewBox="0 0 36 36" aria-hidden="true"><circle class="t" cx="18" cy="18" r="14"/><circle class="p" id="v12FocRing" cx="18" cy="18" r="14" transform="rotate(-90 18 18)" stroke-dasharray="87.96" stroke-dashoffset="87.96"/></svg><span class="v12-foc-tx"><b id="v12FocTime">25:00</b><small id="v12FocSt">READY</small></span>';
-    row.appendChild(chip);
-    chip.addEventListener("click", function (e) { e.preventDefault(); e.stopPropagation(); if (document.documentElement.classList.contains("focus-open")) v12FocusClose(); else v12FocusOpen(); });
+  var time = $("#v10Time");
+  if (time && !$("#v13Halo")) {
+    var sub = time.querySelector(".v10-sub");
+    var halo = document.createElement("div");
+    halo.className = "v13-halo"; halo.id = "v13Halo"; halo.setAttribute("data-state", "idle"); halo.setAttribute("role", "group"); halo.setAttribute("aria-label", "Focus timer");
+    halo.innerHTML = '<svg class="v13-arc" viewBox="0 0 340 108" aria-hidden="true">' +
+      '<ellipse class="glass" cx="170" cy="54" rx="142" ry="36"/>' +
+      '<ellipse class="trk" cx="170" cy="54" rx="150" ry="42"/>' +
+      '<ellipse class="trk2" cx="170" cy="54" rx="124" ry="26"/>' +
+      '<path class="prg" id="v13Arc" pathLength="100" d="M170 12 A150 42 0 1 1 169.9 12"/>' +
+      '<circle class="node" id="v13Node" cx="170" cy="12" r="4.5"/>' +
+      '</svg>' +
+      '<button type="button" class="v13-go" id="v13Go" aria-label="Start 25 minute focus"><span class="v13-time" id="v12FocTime">25:00</span><span class="v13-st" id="v12FocSt">READY</span></button>' +
+      '<button type="button" class="v13-set" id="v12Foc" aria-expanded="false" aria-controls="mFocus" aria-label="Focus controls. 25:00, READY."><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6h16v2H4zm0 5h10v2H4zm0 5h16v2H4z"/></svg><span>SET</span></button>';
+    if (sub) time.insertBefore(halo, sub); else time.appendChild(halo);
+    $("#v13Go").addEventListener("click", function (e) { e.preventDefault(); e.stopPropagation(); focusToggle(); });
+    $("#v12Foc").addEventListener("click", function (e) { e.preventDefault(); e.stopPropagation(); if (document.documentElement.classList.contains("focus-open")) v12FocusClose(); else v12FocusOpen(); });
   }
   var card = $("#mFocus");
   if (card && !card.querySelector("#v12FocX")) {
